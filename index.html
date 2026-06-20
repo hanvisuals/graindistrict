@@ -439,37 +439,34 @@ async function genScript(){
 
   try{
     const raw=await api(
-      `You are a filmmaker creating a detailed shot plan for a personal ${fmt} YouTube video in a ${tone} tone, like Gawx Art.
+      `You are a filmmaker building a shot plan for a personal YouTube video in a ${tone} tone, like Gawx Art. Subject: HAN, a filmmaker in NYC.
 
-The main character is HAN — a filmmaker based in NYC. He is always the subject. Every shot either:
-- Shows HAN directly (his hands, face, silhouette, POV)
-- Shows what HAN is looking at from his perspective
-- Shows HAN interacting with his environment
+There are 4 block types. Each type has DIFFERENT content rules:
 
-Create a shot plan that mixes:
-- VOICEOVER blocks: HAN speaks over footage, first person narration
-- BROLL blocks: silent visual moments featuring HAN — his hands, his movement, his POV — no narration
-- MUSIC blocks: music only, no voice, emotional beat — show HAN in motion or stillness
-- TRANSITION blocks: brief cuts — HAN walking away, door closing, cut to black
+VOICEOVER — HAN speaks. Write the EXACT words he says out loud. First person.
+Example: [VOICEOVER] 00:00-00:06 · I've been staring at this ceiling for twenty minutes and I still don't know what to shoot today.
 
-Rules:
-- Total duration: ${durMin}-${durMax} minutes (${Math.round(totalSec)} seconds total)
-- Mix all 4 types naturally — not just voiceover
-- Each block has a realistic duration (voiceover 3-10s, broll 2-6s, music 3-15s, transition 1-3s)
+BROLL — No talking. Describe only what the CAMERA SEES. No dialogue, no narration. Visual description only.
+Example: [BROLL] 00:06-00:09 · HAN's hand reaches for his camera on the nightstand. Fingers wrap around the grip.
+
+MUSIC — No talking, no narration. Only music plays. Describe the VISUAL ACTION and mood. No spoken words.
+Example: [MUSIC] 00:09-00:16 · Music swells. Three quick cuts — HAN lacing his shoes, grabbing his jacket, door closing behind him.
+
+TRANSITION — Brief moment between scenes. Describe only the visual cut or pause.
+Example: [TRANSITION] 00:16-00:17 · Cut to black. One beat.
+
+CRITICAL RULES:
+- VOICEOVER = spoken words ONLY. Never describe visuals in a voiceover block.
+- BROLL = visual description ONLY. Never include spoken words.
+- MUSIC = visual montage description ONLY. No dialogue.
+- TRANSITION = one line, very brief.
+- Total duration: ${durMin}-${durMax} minutes (${Math.round(totalSec)} seconds)
+- Mix all 4 types naturally across the video
 - Timecodes must be cumulative and accurate
-- Always write from HAN's perspective — "I grab my camera", "my hand reaches for the coffee", "I look up at the building"
-- Be specific and cinematic. Aesthetic: harsh flash, grain, analog, anti-polished, Gawx Art style.
+- Aesthetic: harsh flash, grain, analog, anti-polished
 
-Return ONLY a plain text list, one block per line, in this exact format:
-[TYPE] 00:00-00:05 · content description
-
-Where TYPE is one of: VOICEOVER, BROLL, MUSIC, TRANSITION
-
-Example:
-[VOICEOVER] 00:00-00:04 · I wake up to an empty apartment, the city outside my window a distant hum.
-[BROLL] 00:04-00:07 · My hand reaches out and knocks a glass off the nightstand. I don't move to catch it.
-[MUSIC] 00:07-00:12 · Glass in slow motion. Cut to my face, staring at the ceiling.
-[TRANSITION] 00:12-00:14 · I sit up. Deep breath. Cut.`,
+Return ONLY a plain text list, one block per line:
+[TYPE] 00:00-00:00 · content`,
       `Create a shot plan for: ${topic}`
     );
 
