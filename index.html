@@ -90,6 +90,44 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 #s5{flex-direction:column;overflow:hidden;}
 .cbar{height:44px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 1.2rem;border-bottom:1px solid var(--border);background:var(--surface);z-index:10;}
 .ctopic{font-family:var(--sans);font-size:.8rem;font-weight:300;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:400px;}
+.canvas-container{flex:1;display:flex;overflow:hidden;position:relative;}
+.script-panel{
+  width:0;flex-shrink:0;overflow:hidden;
+  background:var(--surface);border-right:1px solid var(--border);
+  transition:width .25s ease;display:flex;flex-direction:column;
+}
+.script-panel.open{width:280px;}
+.sp-header{padding:.7rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.sp-title{font-family:var(--mono);font-size:.42rem;letter-spacing:.18em;color:var(--text-dimmer);text-transform:uppercase;}
+.sp-close{font-family:var(--mono);font-size:.4rem;color:var(--text-dimmer);background:none;border:none;cursor:pointer;padding:0;transition:color .12s;}
+.sp-close:hover{color:var(--gold);}
+.sp-list{flex:1;overflow-y:auto;padding:.5rem;}
+.sp-list::-webkit-scrollbar{width:2px;}
+.sp-list::-webkit-scrollbar-thumb{background:var(--border-light);}
+.sp-block{
+  padding:.5rem .65rem;margin-bottom:.3rem;
+  border-left:2px solid var(--border);
+  cursor:pointer;transition:all .15s;border-radius:0 4px 4px 0;
+}
+.sp-block:hover{background:var(--surface2,#1c1a17);border-left-color:var(--text-dimmer);}
+.sp-block.active{background:#1e1c18;border-left-color:var(--gold);}
+.sp-block[data-type="voiceover"]{border-left-color:#3a2e10;}
+.sp-block[data-type="broll"]{border-left-color:#0e1e30;}
+.sp-block[data-type="music"]{border-left-color:#20103a;}
+.sp-block[data-type="transition"]{border-left-color:#141e14;}
+.sp-block.active[data-type="voiceover"]{border-left-color:var(--c-vo);background:rgba(201,168,76,.06);}
+.sp-block.active[data-type="broll"]{border-left-color:var(--c-broll);background:rgba(90,138,204,.06);}
+.sp-block.active[data-type="music"]{border-left-color:var(--c-music);background:rgba(170,90,204,.06);}
+.sp-block.active[data-type="transition"]{border-left-color:var(--c-trans);background:rgba(90,106,90,.06);}
+.sp-num{font-family:var(--mono);font-size:.28rem;letter-spacing:.12em;color:var(--text-dimmer);text-transform:uppercase;margin-bottom:.15rem;}
+.sp-type{font-family:var(--mono);font-size:.26rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.2rem;}
+.sp-block[data-type="voiceover"] .sp-type{color:var(--c-vo);}
+.sp-block[data-type="broll"] .sp-type{color:var(--c-broll);}
+.sp-block[data-type="music"] .sp-type{color:var(--c-music);}
+.sp-block[data-type="transition"] .sp-type{color:var(--c-trans);}
+.sp-tc{font-family:var(--mono);font-size:.26rem;color:var(--text-dimmer);margin-bottom:.2rem;}
+.sp-text{font-family:var(--sans);font-size:.68rem;font-weight:300;color:var(--text-dim);line-height:1.45;}
+.sp-block.active .sp-text{color:var(--text);}
 .viewport{flex:1;position:relative;overflow:hidden;cursor:grab;background-color:var(--bg);background-image:linear-gradient(rgba(255,255,255,.015) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.015) 1px,transparent 1px);background-size:24px 24px;}
 .viewport.panning{cursor:grabbing;}
 .canvas-world{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform;}
@@ -102,6 +140,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 }
 .node-card:hover{box-shadow:0 8px 32px rgba(0,0,0,.45);}
 .node-card.dragging{cursor:grabbing;box-shadow:0 16px 48px rgba(0,0,0,.7);z-index:1000;transform:scale(1.02);}
+.node-card.selected{box-shadow:0 0 0 2px var(--gold), 0 8px 32px rgba(0,0,0,.5);}
 
 /* Top stripe per type */
 .nc-stripe{height:3px;border-radius:var(--radius) var(--radius) 0 0;}
@@ -274,12 +313,22 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
   <div class="cbar">
     <div class="ctopic" id="ctopic"></div>
     <div class="tbar-r">
+      <button class="btn" id="scriptToggle" onclick="toggleScript()">script</button>
       <button class="btn" onclick="doExport()">export</button>
       <button class="btn" onclick="show('s1')">← new</button>
     </div>
   </div>
-  <div class="viewport" id="vp">
-    <div class="canvas-world" id="cw"></div>
+  <div class="canvas-container">
+    <div class="script-panel" id="scriptPanel">
+      <div class="sp-header">
+        <span class="sp-title">script</span>
+        <button class="sp-close" onclick="toggleScript()">×</button>
+      </div>
+      <div class="sp-list" id="spList"></div>
+    </div>
+    <div class="viewport" id="vp">
+      <div class="canvas-world" id="cw"></div>
+    </div>
   </div>
   <div class="timeline" id="timeline"></div>
 
@@ -313,6 +362,40 @@ let nodes=[], nid=1;
 let scale=1, panX=80, panY=80;
 let isPan=false, lmx=0, lmy=0;
 let dragNode=null, dragOX=0, dragOY=0;
+let selectedNodeId=null;
+
+function toggleScript(){
+  const panel=document.getElementById('scriptPanel');
+  panel.classList.toggle('open');
+}
+
+function selectNode(nodeId){
+  selectedNodeId=nodeId;
+  // Update card highlights
+  document.querySelectorAll('.node-card').forEach(c=>c.classList.remove('selected'));
+  const node=nodes.find(n=>n.id===nodeId);
+  if(node){
+    const grp=document.getElementById('grp-'+nodeId);
+    grp?.querySelector('.node-card')?.classList.add('selected');
+  }
+  // Update script panel highlight
+  document.querySelectorAll('.sp-block').forEach(b=>{
+    b.classList.toggle('active', parseInt(b.dataset.nodeId)===nodeId);
+  });
+  // Scroll script panel to active block
+  const activeBlock=document.querySelector('.sp-block.active');
+  activeBlock?.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function panToNode(nodeId){
+  const node=nodes.find(n=>n.id===nodeId);
+  if(!node)return;
+  const vp=document.getElementById('vp');
+  const rect=vp.getBoundingClientRect();
+  panX=rect.width/2-(node.x+CARD_W/2)*scale;
+  panY=rect.height/2-(node.y+100)*scale;
+  updateT();
+}
 
 const CARD_W=220, SHOT_W=170, SHOT_GAP=6, SHOT_H=90, SHOT_GAP_Y=6, COL_GAP=52;
 
@@ -466,11 +549,36 @@ Rules:
     document.getElementById('ctopic').textContent=topic;
     scale=1;panX=80;panY=80;
     renderCanvas();
+    renderScriptPanel();
     renderTimeline();
     updateT();
     show('s5');
     setTimeout(()=>{document.getElementById('hint').style.opacity='0';},4000);
   }catch(e){alert('Error: '+e.message);show('s3');}
+}
+
+// ===== SCRIPT PANEL =====
+function renderScriptPanel(){
+  const list=document.getElementById('spList');
+  if(!list)return;
+  list.innerHTML='';
+  nodes.forEach((node,idx)=>{
+    const block=document.createElement('div');
+    block.className='sp-block';
+    block.setAttribute('data-type',node.type);
+    block.setAttribute('data-node-id',node.id);
+    if(node.id===selectedNodeId)block.classList.add('active');
+    block.innerHTML=`
+      <div class="sp-num">block ${String(idx+1).padStart(2,'0')}</div>
+      <div class="sp-type">${TYPE_LABELS[node.type]||node.type}</div>
+      <div class="sp-tc">${node.tcStart} — ${node.tcEnd}</div>
+      <div class="sp-text">${esc(node.content)}</div>`;
+    block.onclick=()=>{
+      selectNode(node.id);
+      panToNode(node.id);
+    };
+    list.appendChild(block);
+  });
 }
 
 // ===== RENDER =====
@@ -491,7 +599,7 @@ function renderCanvas(){
 
     card.innerHTML=`
       <div class="nc-stripe"></div>
-      <div class="nc-tag">block ${String(idx+1).padStart(2,'0')}</div>
+      <div class="nc-tag">${String(idx+1).padStart(2,'0')} · ${TYPE_LABELS[node.type]||node.type}</div>
       <div class="nc-body">
         <div class="nc-type-badge">${TYPE_LABELS[node.type]||node.type}</div>
         <div class="nc-text">${esc(node.content)}</div>
@@ -518,6 +626,11 @@ function renderCanvas(){
       dragOY=(e.clientY-rect.top-panY)/scale-node.y;
       grp.style.zIndex=500;
       card.classList.add('dragging');
+    });
+    grp.addEventListener('click',e=>{
+      if(e.target.closest('button')||e.target.closest('label')||e.target.closest('[contenteditable]')||e.target.tagName==='INPUT')return;
+      selectNode(node.id);
+      renderScriptPanel();
     });
 
     grp.appendChild(card);
