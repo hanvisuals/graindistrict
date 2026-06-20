@@ -134,9 +134,10 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 
 /* NODE CARD */
 .node-card{
-  position:absolute;width:220px;background:var(--card);
+  width:220px;background:var(--card);
   border-radius:var(--radius);cursor:grab;
   transition:box-shadow .2s,transform .1s;overflow:visible;
+  flex-shrink:0;
 }
 .node-card:hover{box-shadow:0 8px 32px rgba(0,0,0,.45);}
 .node-card.dragging{cursor:grabbing;box-shadow:0 16px 48px rgba(0,0,0,.7);z-index:1000;transform:scale(1.02);}
@@ -174,7 +175,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 .nc-img-del{position:absolute;top:.2rem;right:.25rem;font-family:var(--mono);font-size:.28rem;color:var(--card-dim);background:rgba(240,237,232,.85);border:none;cursor:pointer;border-radius:3px;padding:.08rem .18rem;}
 
 /* SHOT NODES */
-.shot-node{position:absolute;width:170px;background:var(--card);border-radius:8px;overflow:hidden;transition:box-shadow .15s;}
+.shot-node{width:170px;background:var(--card);border-radius:8px;overflow:hidden;transition:box-shadow .15s;}
 .shot-node:hover{box-shadow:0 4px 16px rgba(0,0,0,.35);}
 .shn-stripe{height:2.5px;width:100%;}
 .shot-node[data-k="shot"] .shn-stripe{background:var(--c-shot);}
@@ -192,7 +193,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 .shn-text{padding:.1rem .45rem .45rem;font-family:var(--sans);font-size:.66rem;font-weight:300;line-height:1.4;color:var(--card-text);word-wrap:break-word;overflow-wrap:break-word;white-space:normal;outline:none;user-select:text;cursor:text;max-height:100px;overflow-y:auto;}
 
 /* ADD SHOT BUTTONS */
-.add-col{position:absolute;display:flex;flex-direction:column;gap:.22rem;}
+.add-col{display:flex;flex-direction:column;gap:.22rem;}
 .asb{font-family:var(--mono);font-size:.34rem;letter-spacing:.08em;text-transform:uppercase;padding:.2rem .45rem;border:1px solid var(--border-light);background:rgba(16,14,12,.92);cursor:pointer;outline:none;transition:all .12s;white-space:nowrap;border-radius:5px;}
 .asb[data-k="shot"]{color:var(--c-shot);}
 .asb[data-k="action"]{color:var(--c-action);}
@@ -589,13 +590,13 @@ function renderCanvas(){
   nodes.forEach((node,idx)=>{
     const grp=document.createElement('div');
     grp.id='grp-'+node.id;
-    grp.style.cssText=`position:absolute;left:${node.x}px;top:${node.y}px;overflow:visible;`;
+    grp.style.cssText=`position:absolute;left:${node.x}px;top:${node.y}px;overflow:visible;display:flex;align-items:flex-start;gap:${SHOT_GAP}px;`;
 
     // Main card
     const card=document.createElement('div');
     card.className='node-card';
     card.setAttribute('data-type',node.type);
-    card.style.cssText='position:absolute;left:0;top:0;';
+    card.style.cssText='position:relative;left:0;top:0;width:'+CARD_W+'px;';
 
     card.innerHTML=`
       <div class="nc-stripe"></div>
@@ -621,9 +622,11 @@ function renderCanvas(){
       if(e.target.closest('button')||e.target.closest('label')||e.target.closest('[contenteditable]')||e.target.tagName==='INPUT')return;
       e.preventDefault();
       dragNode=node;
-      const rect=document.getElementById('vp').getBoundingClientRect();
-      dragOX=(e.clientX-rect.left-panX)/scale-node.x;
-      dragOY=(e.clientY-rect.top-panY)/scale-node.y;
+      const vpRect=document.getElementById('vp').getBoundingClientRect();
+      const canvasX=(e.clientX-vpRect.left-panX)/scale;
+      const canvasY=(e.clientY-vpRect.top-panY)/scale;
+      dragOX=canvasX-node.x;
+      dragOY=canvasY-node.y;
       grp.style.zIndex=500;
       card.classList.add('dragging');
     });
@@ -635,13 +638,16 @@ function renderCanvas(){
 
     grp.appendChild(card);
 
-    // Shot nodes
+    // Shot nodes column
+    const shotsCol=document.createElement('div');
+    shotsCol.style.cssText=`display:flex;flex-direction:column;width:${SHOT_W}px;flex-shrink:0;`;
+
     node.shots.forEach((shot,si)=>{
       const shn=document.createElement('div');
       shn.className='shot-node';
       shn.id='shn-'+shot.id;
       shn.setAttribute('data-k',shot.k);
-      shn.style.cssText=`position:absolute;left:${CARD_W+SHOT_GAP}px;top:${si*(SHOT_H+SHOT_GAP_Y)}px;`;
+      shn.style.cssText=`position:relative;left:0;top:0;margin-bottom:${SHOT_GAP_Y}px;`;
       shn.innerHTML=`
         <div class="shn-stripe"></div>
         <div class="shn-head">
@@ -651,13 +657,14 @@ function renderCanvas(){
         <div class="shn-text" contenteditable="true">${esc(shot.t)}</div>`;
       shn.querySelector('[contenteditable]').addEventListener('input',function(){shot.t=this.textContent;});
       shn.addEventListener('mousedown',e=>e.stopPropagation());
-      grp.appendChild(shn);
+      shotsCol.appendChild(shn);
     });
+    grp.appendChild(shotsCol);
 
     // Add shot buttons
     const acol=document.createElement('div');
     acol.className='add-col';
-    acol.style.cssText=`position:absolute;left:${CARD_W+SHOT_GAP+SHOT_W+5}px;top:0;`;
+    acol.style.cssText=`position:relative;margin-left:4px;`;
     ['shot','action','emotion','tech'].forEach(k=>{
       const b=document.createElement('button');
       b.className='asb';b.dataset.k=k;b.textContent='+ '+k;
@@ -729,9 +736,9 @@ document.addEventListener('mousemove',e=>{
 
   // Canvas drag
   if(dragNode){
-    const rect=document.getElementById('vp').getBoundingClientRect();
-    dragNode.x=(e.clientX-rect.left-panX)/scale-dragOX;
-    dragNode.y=(e.clientY-rect.top-panY)/scale-dragOY;
+    const vpRect2=document.getElementById('vp').getBoundingClientRect();
+    dragNode.x=(e.clientX-vpRect2.left-panX)/scale-dragOX;
+    dragNode.y=(e.clientY-vpRect2.top-panY)/scale-dragOY;
     const grpEl=document.getElementById('grp-'+dragNode.id);
     if(grpEl){grpEl.style.left=dragNode.x+'px';grpEl.style.top=dragNode.y+'px';}
   }
