@@ -782,9 +782,7 @@ if(tlEl){
     tlIsDown=true;tlScrollStart=e.pageX;tlScrollLeft2=tlEl.scrollLeft;
   });
 }
-document.addEventListener('mousemove',e=>{
-  if(tlIsDown&&tlEl)tlEl.scrollLeft=tlScrollLeft2-(e.pageX-tlScrollStart);
-});
+// timeline scroll merged into main mousemove below
 document.addEventListener('mouseup',()=>{tlIsDown=false;});
 
 // ===== VIEWPORT EVENTS =====
@@ -804,6 +802,8 @@ vp.addEventListener('mousedown',e=>{
 });
 
 document.addEventListener('mousemove',e=>{
+  // Timeline scroll
+  if(tlIsDown&&tlEl)tlEl.scrollLeft=tlScrollLeft2-(e.pageX-tlScrollStart);
   // Pan
   if(isPan){panX+=e.clientX-lmx;panY+=e.clientY-lmy;lmx=e.clientX;lmy=e.clientY;updateT();}
   // Drag card
