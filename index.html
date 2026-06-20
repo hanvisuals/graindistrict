@@ -797,8 +797,17 @@ vp.addEventListener('wheel',e=>{
   updateT();
 },{passive:false});
 
+let spaceDown=false;
+document.addEventListener('keydown',e=>{if(e.code==='Space'&&!e.target.closest('[contenteditable]')){e.preventDefault();spaceDown=true;vp.style.cursor='grab';}});
+document.addEventListener('keyup',e=>{if(e.code==='Space'){spaceDown=false;isPan=false;vp.style.cursor='';}});
+
 vp.addEventListener('mousedown',e=>{
-  if(e.button===1){e.preventDefault();isPan=true;lmx=e.clientX;lmy=e.clientY;vp.classList.add('panning');}
+  // Middle mouse OR space+left click = pan
+  if(e.button===1||(e.button===0&&spaceDown)){
+    e.preventDefault();
+    isPan=true;lmx=e.clientX;lmy=e.clientY;
+    vp.classList.add('panning');
+  }
 });
 
 document.addEventListener('mousemove',e=>{
@@ -818,7 +827,7 @@ document.addEventListener('mousemove',e=>{
 
 document.addEventListener('mouseup',e=>{
   // Pan end
-  if(e.button===1){isPan=false;vp.classList.remove('panning');}
+  if(e.button===1||e.button===0){if(isPan&&!dragNode){isPan=false;vp.classList.remove('panning');}}
   // Card drag end
   if(e.button===0&&dragNode){
     document.getElementById('grp-'+dragNode.id).style.zIndex='';
