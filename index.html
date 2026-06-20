@@ -803,6 +803,32 @@ vp.addEventListener('mousedown',e=>{
   if(e.button===1){e.preventDefault();isPan=true;lmx=e.clientX;lmy=e.clientY;vp.classList.add('panning');}
 });
 
+document.addEventListener('mousemove',e=>{
+  // Pan
+  if(isPan){panX+=e.clientX-lmx;panY+=e.clientY-lmy;lmx=e.clientX;lmy=e.clientY;updateT();}
+  // Drag card
+  if(dragNode){
+    const vpRectD=document.getElementById('vp').getBoundingClientRect();
+    dragNode.x=(e.clientX-vpRectD.left-panX)/scale-dragOX;
+    dragNode.y=(e.clientY-vpRectD.top-panY)/scale-dragOY;
+    const grpEl=document.getElementById('grp-'+dragNode.id);
+    if(grpEl){grpEl.style.left=dragNode.x+'px';grpEl.style.top=dragNode.y+'px';}
+  }
+});
+
+document.addEventListener('mouseup',e=>{
+  // Pan end
+  if(e.button===1){isPan=false;vp.classList.remove('panning');}
+  // Card drag end
+  if(e.button===0&&dragNode){
+    document.getElementById('grp-'+dragNode.id).style.zIndex='';
+    document.getElementById('grp-'+dragNode.id).querySelector('.node-card')?.classList.remove('dragging');
+    dragNode=null;
+    nodes.sort((a,b)=>a.x-b.x);
+    renderTimeline();
+  }
+});
+
 // ===== EXPORT =====
 function doExport(){
   let out=`GRAIN DISTRICT — ${topic.toUpperCase()}\nDuration: ${durMin}–${durMax} minutes\n${'='.repeat(50)}\n\n`;
