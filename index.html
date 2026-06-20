@@ -465,11 +465,25 @@ Return ONLY plain text, one block per line:
 
 function parseBlocks(text){
   return text.split('\n').map(line=>{
-    line=line.trim();if(!line)return null;
-    const tm=line.match(/\[(VOICEOVER|BROLL|MUSIC|TRANSITION)\]/i);if(!tm)return null;
-    const tcm=line.match(/(\d{2}:\d{2})-(\d{2}:\d{2})/);
-    const cm=line.match(/·\s*(.+)$/);
-    return{type:tm[1].toLowerCase(),tcStart:tcm?tcm[1]:'00:00',tcEnd:tcm?tcm[2]:'00:05',content:cm?cm[1].trim():line,shots:[],img:null};
+    line=line.trim();if(!line||line.startsWith('#'))return null;
+    // Match [TYPE] or TYPE: at start of line
+    const tm=line.match(/\[?(VOICEOVER|BROLL|MUSIC|TRANSITION)\]?/i);
+    if(!tm)return null;
+    const type=tm[1].toLowerCase();
+    // Match timecode patterns: 00:00-00:05 or 00:00 - 00:05
+    const tcm=line.match(/(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})/);
+    // Match content after · or : or just take everything after the type+timecode
+    let content='';
+    const cdot=line.match(/[·•]\s*(.+)$/);
+    if(cdot){content=cdot[1].trim();}
+    else{
+      // Remove type tag and timecode, take the rest
+      content=line.replace(/\[?(VOICEOVER|BROLL|MUSIC|TRANSITION)\]?/i,'').replace(/(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})/,'').replace(/^[:\s·•]+/,'').trim();
+    }
+    if(!content)return null;
+    const tcStart=tcm?tcm[1].padStart(5,'0'):'00:00';
+    const tcEnd=tcm?tcm[2].padStart(5,'0'):'00:05';
+    return{type,tcStart,tcEnd,content,shots:[],img:null};
   }).filter(Boolean);
 }
 
