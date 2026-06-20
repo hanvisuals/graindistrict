@@ -49,9 +49,11 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 #s2,#s4{align-items:center;justify-content:center;gap:1.4rem;}
 @keyframes bth{0%,100%{opacity:.2;transform:scale(.9);}50%{opacity:1;transform:scale(1);}}
 .ldot{width:8px;height:8px;border-radius:50%;background:var(--gold);animation:bth 1.4s ease infinite;}
-.lstep{font-family:var(--mono);font-size:.46rem;letter-spacing:.14em;color:var(--text-dimmer);text-transform:uppercase;}
+.lstep{font-family:var(--mono);font-size:.46rem;letter-spacing:.14em;color:var(--text-dimmer);text-transform:uppercase;transition:opacity .4s;}
 .lstep.on{color:var(--gold);}
-.lsub{font-family:var(--sans);font-size:.85rem;font-weight:300;color:var(--text-dimmer);font-style:italic;}
+.lsub{font-family:var(--sans);font-size:.85rem;font-weight:300;color:var(--text-dimmer);font-style:italic;transition:opacity .4s;}
+@keyframes fadeMsg{0%{opacity:0;transform:translateY(6px);}100%{opacity:1;transform:translateY(0);}}
+.msg-fade{animation:fadeMsg .5s ease forwards;}
 /* REVIEW */
 #s3{flex-direction:column;}
 .rbody{flex:1;overflow-y:auto;display:flex;flex-direction:column;align-items:center;padding:2rem;}
@@ -155,7 +157,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 .nc{position:absolute;background:var(--card);border-radius:var(--r);cursor:grab;transition:box-shadow .2s;min-width:180px;max-width:220px;}
 .nc:hover{box-shadow:0 4px 20px rgba(0,0,0,.35);}
 .nc.drag{cursor:grabbing;box-shadow:0 12px 40px rgba(0,0,0,.6);z-index:999;}
-.nc.sel{box-shadow:0 0 0 2.5px var(--gold),0 8px 28px rgba(0,0,0,.5);}
+.nc.sel{box-shadow:0 0 0 1.5px rgba(201,168,76,.5), 0 0 20px rgba(201,168,76,.2), 0 8px 28px rgba(0,0,0,.5);}
 .nc-stripe{height:4px;border-radius:var(--r) var(--r) 0 0;}
 .nc[data-t="voiceover"] .nc-stripe{background:var(--c-vo);}
 .nc[data-t="broll"] .nc-stripe{background:var(--c-br);}
@@ -280,8 +282,8 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 <div id="s2" class="screen">
   <div class="topbar"><span class="logo">Grain District</span></div>
   <div class="ldot"></div>
-  <div class="lstep on">— building your shot plan</div>
-  <div class="lsub">about 15 seconds...</div>
+  <div class="lstep on" id="s2msg">— reading your idea</div>
+  <div class="lsub" id="s2sub">this takes about 15 seconds</div>
 </div>
 
 <!-- S3 REVIEW -->
@@ -307,8 +309,8 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 <div id="s4" class="screen">
   <div class="topbar"><span class="logo">Grain District</span></div>
   <div class="ldot"></div>
-  <div class="lstep on">— generating shot details</div>
-  <div class="lsub">almost there...</div>
+  <div class="lstep on" id="s4msg">— analyzing each block</div>
+  <div class="lsub" id="s4sub">imagining the shots...</div>
 </div>
 
 <!-- S5 CANVAS -->
@@ -317,6 +319,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
     <div class="ctopic" id="ctopic"></div>
     <div class="tbar-r">
       <button class="btn" onclick="fitScreen()">fit</button>
+      <button class="btn" id="scriptPanelBtn" onclick="toggleScriptPanel()">script</button>
       <button class="btn" onclick="doExport()">export</button>
       <button class="btn" onclick="show('s1')">← new</button>
     </div>
@@ -357,6 +360,15 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
     </div>
   </div>
   <div class="timeline" id="tl"></div>
+
+  <!-- Script overlay panel -->
+  <div id="scriptOverlay" style="display:none;position:absolute;top:48px;right:0;width:320px;height:calc(100% - 48px - 54px);background:var(--surface);border-left:1px solid var(--border);z-index:150;flex-direction:column;overflow:hidden;box-shadow:-4px 0 20px rgba(0,0,0,.4);">
+    <div style="padding:.7rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+      <span style="font-family:var(--mono);font-size:.46rem;letter-spacing:.18em;color:var(--gold);text-transform:uppercase">full script</span>
+      <button onclick="toggleScriptPanel()" style="font-family:var(--mono);font-size:.42rem;color:var(--text-dimmer);background:none;border:none;cursor:pointer;padding:.1rem .3rem;">× close</button>
+    </div>
+    <div id="scriptOverlayContent" style="flex:1;overflow-y:auto;padding:1rem 1.2rem;font-family:var(--sans);font-size:.85rem;font-weight:300;line-height:1.85;color:var(--text-dim);white-space:pre-wrap;user-select:text;"></div>
+  </div>
 
   <!-- Canvas toolbar -->
   <div class="canvas-toolbar">
@@ -458,10 +470,42 @@ document.getElementById('modalTypes').querySelectorAll('.modal-type').forEach(b=
 document.addEventListener('keydown',e=>{
   if(e.code==='Space'&&!e.target.isContentEditable&&e.target.tagName!=='TEXTAREA'&&e.target.tagName!=='INPUT'){e.preventDefault();spaceDown=true;}
   if(e.code==='Escape'){closeModal();cancelConnect();}
+  if((e.code==='Delete'||e.code==='Backspace')&&!e.target.isContentEditable&&e.target.tagName!=='TEXTAREA'&&e.target.tagName!=='INPUT'){
+    if(selImgId!==null){delImgNode(selImgId);selImgId=null;}
+  }
 });
 document.addEventListener('keyup',e=>{if(e.code==='Space'){spaceDown=false;if(isPan){isPan=false;document.getElementById('vp').classList.remove('panning');}}});
 
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+
+const S2_MSGS=[
+  '— reading your idea','— shaping the story','— writing the voiceover',
+  '— building the shot plan','— crafting each moment','— almost done'
+];
+const S4_MSGS=[
+  '— analyzing each block','— imagining the shots','— choosing the lenses',
+  '— thinking about light','— planning the movement','— finishing up'
+];
+let loadingInterval=null;
+
+function startLoadingAnim(screen){
+  if(loadingInterval)clearInterval(loadingInterval);
+  const msgs=screen==='s2'?S2_MSGS:S4_MSGS;
+  const msgEl=document.getElementById(screen+'msg');
+  if(!msgEl)return;
+  let i=0;
+  msgEl.textContent=msgs[0];
+  loadingInterval=setInterval(()=>{
+    i=(i+1)%msgs.length;
+    msgEl.style.opacity='0';
+    setTimeout(()=>{
+      if(msgEl)msgEl.textContent=msgs[i];
+      msgEl.style.opacity='1';
+      msgEl.classList.add('msg-fade');
+      setTimeout(()=>msgEl.classList.remove('msg-fade'),500);
+    },300);
+  },2200);
+}
 
 // Canvas modes
 function setMode(mode){
@@ -480,6 +524,27 @@ function cancelConnect(){
 }
 
 // Modal
+function toggleScriptPanel(){
+  const overlay=document.getElementById('scriptOverlay');
+  const btn=document.getElementById('scriptPanelBtn');
+  const isOpen=overlay.style.display==='flex';
+  overlay.style.display=isOpen?'none':'flex';
+  if(btn){btn.classList.toggle('on',!isOpen);}
+  if(!isOpen){
+    let txt='';
+    nodes.forEach((n,i)=>{
+      txt+=`[${n.type.toUpperCase()}] ${n.tcStart} — ${n.tcEnd}
+${n.content}
+`;
+      if(n.shots.length){n.shots.forEach(s=>{txt+=`  [${s.k.toUpperCase()}] ${s.t}
+`;});}
+      txt+='
+';
+    });
+    document.getElementById('scriptOverlayContent').textContent=txt||'(no blocks yet)';
+  }
+}
+
 function toggleScript(){
   const sv=document.getElementById('scriptView');
   const btn=document.getElementById('scriptTabBtn');
@@ -550,6 +615,7 @@ async function genScript(){
   inputLang=detectLang(topic);
   document.getElementById('gobtn').disabled=true;
   show('s2');
+  startLoadingAnim('s2');
   const totalSec=(durMin+durMax)/2*60;
   // Detect language from input
   const trChars=/[çğışöüÇĞİŞÖÜ]/;
@@ -634,8 +700,8 @@ k must be: shot, action, emotion, or tech. HAN always in frame or POV. Include l
 function renderAll(){
   renderBlockList();
   renderBlockDetail();
-  renderCanvas();
-  renderImgNodes();
+  renderCanvas(); // clears cw
+  renderImgNodes(); // adds img nodes back to cw
   renderConnections();
   renderTL();
   updateT();
@@ -778,12 +844,16 @@ function renderCanvas(){
     el.addEventListener('click',e=>{
       if(e.target.closest('.nc-port'))return;
       selId=node.id;selImgId=null;
-      renderAll();
-      // Scroll block list to selected item
+      renderBlockList();
+      renderBlockDetail();
+      // Update canvas selection without full re-render
+      document.querySelectorAll('.nc').forEach(c=>c.classList.remove('sel'));
+      el.classList.add('sel');
+      // Scroll block list
       setTimeout(()=>{
         const selItem=document.querySelector('.bl-item.sel');
         if(selItem)selItem.scrollIntoView({behavior:'smooth',block:'nearest'});
-      },50);
+      },30);
     });
     cw.appendChild(el);
   });
@@ -850,8 +920,16 @@ function addImageNode(e){
     const r=vp.getBoundingClientRect();
     const cx=(r.width/2-px)/scale;
     const cy=(r.height/2-py)/scale;
-    imgNodes.push({id:nid++,src:ev.target.result,x:cx-80,y:cy-60,w:160,h:120});
-    renderImgNodes();
+    const tmpImg=new Image();
+    tmpImg.onload=()=>{
+      const maxW=200,maxH=300;
+      let w=tmpImg.naturalWidth,h=tmpImg.naturalHeight;
+      if(w>maxW){h=Math.round(h*(maxW/w));w=maxW;}
+      if(h>maxH){w=Math.round(w*(maxH/h));h=maxH;}
+      imgNodes.push({id:nid++,src:ev.target.result,x:Math.round(cx-w/2),y:Math.round(cy-h/2),w,h});
+      renderImgNodes();
+    };
+    tmpImg.src=ev.target.result;
   };
   reader.readAsDataURL(file);
   e.target.value='';
