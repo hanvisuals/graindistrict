@@ -1,0 +1,1 @@
+{"functions":[{"bundler":"zisi","buildData":{"runtimeAPIVersion":1},"mainFile":"C:\\Users\\seyit\\gd\\netlify\\functions\\claude.js","name":"claude","priority":10,"runtimeVersion":"nodejs24.x","path":"C:\\Users\\seyit\\gd\\.netlify\\functions\\claude.zip","runtime":"js"}],"system":{"arch":"x64","platform":"win32"},"timestamp":1781757511406,"version":1}
