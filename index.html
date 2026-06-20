@@ -559,6 +559,53 @@ Rules:
   }catch(e){alert('Error: '+e.message);show('s3');}
 }
 
+// ===== TIMELINE =====
+let tlDragIdx=null, tlDragStartX=0, tlBlockW=0;
+
+function renderTimeline(){
+  const tl=document.getElementById('timeline');
+  if(!tl)return;
+  tl.innerHTML='';
+  const bw=Math.max(80,Math.min(160,(tl.offsetWidth-60)/Math.max(nodes.length,1)));
+
+  nodes.forEach((node,idx)=>{
+    const block=document.createElement('div');
+    block.className='tl-block';
+    block.style.width=bw+'px';
+    block.style.background=TYPE_COLORS[node.type]||TYPE_COLORS.voiceover;
+    block.setAttribute('data-idx',idx);
+    block.innerHTML=`
+      <div class="tl-tc">${node.tcStart} — ${node.tcEnd}</div>
+      <div class="tl-label">${esc(node.content.split(' ').slice(0,4).join(' '))}…</div>
+      <div class="tl-type">${TYPE_LABELS[node.type]||node.type}</div>`;
+
+    block.addEventListener('click',()=>{
+      const vp=document.getElementById('vp');
+      const rect=vp.getBoundingClientRect();
+      panX=rect.width/2-(node.x+CARD_W/2)*scale;
+      panY=rect.height/2-(node.y+80)*scale;
+      updateT();
+      selectNode(node.id);
+      renderScriptPanel();
+    });
+
+    block.addEventListener('mousedown',e=>{
+      e.stopPropagation();
+      tlDragIdx=idx;
+      tlDragStartX=e.clientX;
+      tlBlockW=bw;
+      block.classList.add('dragging-tl');
+    });
+
+    tl.appendChild(block);
+  });
+
+  const total=document.createElement('div');
+  total.className='tl-total';
+  total.textContent=`${durMin}–${durMax} min`;
+  tl.appendChild(total);
+}
+
 // ===== SCRIPT PANEL =====
 function renderScriptPanel(){
   const list=document.getElementById('spList');
@@ -725,6 +772,20 @@ function updateT(){
   vp.style.backgroundSize=gs+'px '+gs+'px';
   vp.style.backgroundPosition=gx+'px '+gy+'px';
 }
+
+// ===== TIMELINE SCROLL =====
+let tlIsDown=false,tlScrollStart=0,tlScrollLeft2=0;
+const tlEl=document.getElementById('timeline');
+if(tlEl){
+  tlEl.addEventListener('mousedown',e=>{
+    if(e.target.closest('.tl-block'))return;
+    tlIsDown=true;tlScrollStart=e.pageX;tlScrollLeft2=tlEl.scrollLeft;
+  });
+}
+document.addEventListener('mousemove',e=>{
+  if(tlIsDown&&tlEl)tlEl.scrollLeft=tlScrollLeft2-(e.pageX-tlScrollStart);
+});
+document.addEventListener('mouseup',()=>{tlIsDown=false;});
 
 // ===== VIEWPORT EVENTS =====
 const vp=document.getElementById('vp');
