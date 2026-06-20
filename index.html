@@ -503,14 +503,9 @@ function toggleScriptPanel(){
   if(!open){
     let txt='';
     nodes.forEach(n=>{
-      txt+='['+n.type.toUpperCase()+'] '+n.tcStart+' — '+n.tcEnd+'
-'+n.content+'
-';
-      if(n.shots.length){n.shots.forEach(s=>{txt+='  ['+s.k.toUpperCase()+'] '+s.t+'
-';});txt+='
-';}
-      txt+='
-';
+      txt+='['+n.type.toUpperCase()+'] '+n.tcStart+' - '+n.tcEnd+'\n'+n.content+'\n';
+      if(n.shots.length){n.shots.forEach(s=>{txt+='  ['+s.k.toUpperCase()+'] '+s.t+'\n';});txt+='\n';}
+      txt+='\n';
     });
     document.getElementById('scriptOverlayContent').textContent=txt||'(no blocks yet)';
   }
