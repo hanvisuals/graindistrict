@@ -134,10 +134,9 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 
 /* NODE CARD */
 .node-card{
-  width:220px;background:var(--card);
+  background:var(--card);
   border-radius:var(--radius);cursor:grab;
   transition:box-shadow .2s,transform .1s;overflow:visible;
-  flex-shrink:0;
 }
 .node-card:hover{box-shadow:0 8px 32px rgba(0,0,0,.45);}
 .node-card.dragging{cursor:grabbing;box-shadow:0 16px 48px rgba(0,0,0,.7);z-index:1000;transform:scale(1.02);}
@@ -175,7 +174,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 .nc-img-del{position:absolute;top:.2rem;right:.25rem;font-family:var(--mono);font-size:.28rem;color:var(--card-dim);background:rgba(240,237,232,.85);border:none;cursor:pointer;border-radius:3px;padding:.08rem .18rem;}
 
 /* SHOT NODES */
-.shot-node{width:170px;background:var(--card);border-radius:8px;overflow:hidden;transition:box-shadow .15s;}
+.shot-node{background:var(--card);border-radius:8px;overflow:hidden;transition:box-shadow .15s;}
 .shot-node:hover{box-shadow:0 4px 16px rgba(0,0,0,.35);}
 .shn-stripe{height:2.5px;width:100%;}
 .shot-node[data-k="shot"] .shn-stripe{background:var(--c-shot);}
@@ -193,7 +192,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 .shn-text{padding:.1rem .45rem .45rem;font-family:var(--sans);font-size:.66rem;font-weight:300;line-height:1.4;color:var(--card-text);word-wrap:break-word;overflow-wrap:break-word;white-space:normal;outline:none;user-select:text;cursor:text;max-height:100px;overflow-y:auto;}
 
 /* ADD SHOT BUTTONS */
-.add-col{display:flex;flex-direction:column;gap:.22rem;}
+.add-col{position:absolute;display:flex;flex-direction:column;gap:.22rem;}
 .asb{font-family:var(--mono);font-size:.34rem;letter-spacing:.08em;text-transform:uppercase;padding:.2rem .45rem;border:1px solid var(--border-light);background:rgba(16,14,12,.92);cursor:pointer;outline:none;transition:all .12s;white-space:nowrap;border-radius:5px;}
 .asb[data-k="shot"]{color:var(--c-shot);}
 .asb[data-k="action"]{color:var(--c-action);}
@@ -585,15 +584,17 @@ function renderCanvas(){
   cw.innerHTML='';
 
   nodes.forEach((node,idx)=>{
+    // Outer group - absolutely positioned on canvas
     const grp=document.createElement('div');
     grp.id='grp-'+node.id;
-    grp.style.cssText=`position:absolute;left:${node.x}px;top:${node.y}px;overflow:visible;display:flex;align-items:flex-start;gap:${SHOT_GAP}px;`;
+    grp.style.cssText=`position:absolute;left:${node.x}px;top:${node.y}px;width:${CARD_W+SHOT_GAP+SHOT_W+40}px;overflow:visible;`;
 
-    // Main card
+    // Main card - fixed width, left side
     const card=document.createElement('div');
     card.className='node-card';
     card.setAttribute('data-type',node.type);
-    card.style.cssText='position:relative;left:0;top:0;width:'+CARD_W+'px;';
+    if(node.id===selectedNodeId)card.classList.add('selected');
+    card.style.cssText=`position:absolute;left:0;top:0;width:${CARD_W}px;`;
 
     card.innerHTML=`
       <div class="nc-stripe"></div>
@@ -609,11 +610,12 @@ function renderCanvas(){
       </div>
       <div class="nc-port"></div>
       <label class="nc-img-slot" id="imgslot-${node.id}">
-        ${node.img?`<img src="${node.img}" alt="">`:'<span class="nc-img-label">+ reference image</span>'}
+        ${node.img?`<img src="${node.img}" alt="">`:'<span class="nc-img-label">+ ref image</span>'}
         ${node.img?`<button class="nc-img-del" onclick="clearImg(event,${node.id})">×</button>`:''}
         <input class="nc-img-input" type="file" accept="image/*" onchange="loadImg(event,${node.id})">
       </label>`;
 
+    // Drag handler on group
     grp.addEventListener('mousedown',e=>{
       if(e.button!==0)return;
       if(e.target.closest('button')||e.target.closest('label')||e.target.closest('[contenteditable]')||e.target.tagName==='INPUT')return;
@@ -627,6 +629,8 @@ function renderCanvas(){
       grp.style.zIndex=500;
       card.classList.add('dragging');
     });
+
+    // Click to select
     grp.addEventListener('click',e=>{
       if(e.target.closest('button')||e.target.closest('label')||e.target.closest('[contenteditable]')||e.target.tagName==='INPUT')return;
       selectNode(node.id);
@@ -635,16 +639,13 @@ function renderCanvas(){
 
     grp.appendChild(card);
 
-    // Shot nodes column
-    const shotsCol=document.createElement('div');
-    shotsCol.style.cssText=`display:flex;flex-direction:column;width:${SHOT_W}px;flex-shrink:0;`;
-
+    // Shot nodes - absolutely positioned to the right of card
     node.shots.forEach((shot,si)=>{
       const shn=document.createElement('div');
       shn.className='shot-node';
       shn.id='shn-'+shot.id;
       shn.setAttribute('data-k',shot.k);
-      shn.style.cssText=`position:relative;left:0;top:0;margin-bottom:${SHOT_GAP_Y}px;`;
+      shn.style.cssText=`position:absolute;left:${CARD_W+SHOT_GAP}px;top:${si*(SHOT_H+SHOT_GAP_Y)}px;width:${SHOT_W}px;`;
       shn.innerHTML=`
         <div class="shn-stripe"></div>
         <div class="shn-head">
@@ -654,14 +655,13 @@ function renderCanvas(){
         <div class="shn-text" contenteditable="true">${esc(shot.t)}</div>`;
       shn.querySelector('[contenteditable]').addEventListener('input',function(){shot.t=this.textContent;});
       shn.addEventListener('mousedown',e=>e.stopPropagation());
-      shotsCol.appendChild(shn);
+      grp.appendChild(shn);
     });
-    grp.appendChild(shotsCol);
 
-    // Add shot buttons
+    // Add shot buttons - to the right of shot nodes
     const acol=document.createElement('div');
     acol.className='add-col';
-    acol.style.cssText=`position:relative;margin-left:4px;`;
+    acol.style.cssText=`position:absolute;left:${CARD_W+SHOT_GAP+SHOT_W+5}px;top:0;`;
     ['shot','action','emotion','tech'].forEach(k=>{
       const b=document.createElement('button');
       b.className='asb';b.dataset.k=k;b.textContent='+ '+k;
@@ -674,112 +674,6 @@ function renderCanvas(){
     cw.appendChild(grp);
   });
 }
-
-// ===== TIMELINE =====
-let tlDragIdx=null, tlDragStartX=0, tlBlockW=0;
-
-function renderTimeline(){
-  const tl=document.getElementById('timeline');
-  tl.innerHTML='';
-  const bw=Math.max(80,Math.min(160,(tl.offsetWidth-60)/Math.max(nodes.length,1)));
-
-  nodes.forEach((node,idx)=>{
-    const block=document.createElement('div');
-    block.className='tl-block';
-    block.style.width=bw+'px';
-    block.style.background=TYPE_COLORS[node.type]||TYPE_COLORS.voiceover;
-    block.setAttribute('data-idx',idx);
-    block.innerHTML=`
-      <div class="tl-tc">${node.tcStart} — ${node.tcEnd}</div>
-      <div class="tl-label">${esc(node.content.split(' ').slice(0,4).join(' '))}…</div>
-      <div class="tl-type">${TYPE_LABELS[node.type]||node.type}</div>`;
-
-    block.addEventListener('click',()=>{
-      const vp=document.getElementById('vp');
-      const rect=vp.getBoundingClientRect();
-      panX=rect.width/2-(node.x+CARD_W/2)*scale;
-      panY=rect.height/2-(node.y+80)*scale;
-      updateT();
-    });
-
-    block.addEventListener('mousedown',e=>{
-      e.stopPropagation();
-      tlDragIdx=idx;
-      tlDragStartX=e.clientX;
-      tlBlockW=bw;
-      block.classList.add('dragging-tl');
-    });
-
-    tl.appendChild(block);
-  });
-
-  const total=document.createElement('div');
-  total.className='tl-total';
-  total.textContent=`${durMin}–${durMax} min`;
-  tl.appendChild(total);
-}
-
-// Timeline drag reorder
-let tlIsDown=false, tlScrollStart=0, tlScrollLeft=0;
-const tl=document.getElementById('timeline');
-tl.addEventListener('mousedown',e=>{
-  if(e.target.closest('.tl-block'))return;
-  tlIsDown=true;tlScrollStart=e.pageX;tlScrollLeft=tl.scrollLeft;
-});
-
-document.addEventListener('mousemove',e=>{
-  // Timeline scroll
-  if(tlIsDown){tl.scrollLeft=tlScrollLeft-(e.pageX-tlScrollStart);}
-
-  // Canvas drag
-  if(dragNode){
-    const vpRect2=document.getElementById('vp').getBoundingClientRect();
-    dragNode.x=(e.clientX-vpRect2.left-panX)/scale-dragOX;
-    dragNode.y=(e.clientY-vpRect2.top-panY)/scale-dragOY;
-    const grpEl=document.getElementById('grp-'+dragNode.id);
-    if(grpEl){grpEl.style.left=dragNode.x+'px';grpEl.style.top=dragNode.y+'px';}
-  }
-
-  // Pan
-  if(isPan){panX+=e.clientX-lmx;panY+=e.clientY-lmy;lmx=e.clientX;lmy=e.clientY;updateT();}
-});
-
-document.addEventListener('mouseup',e=>{
-  tlIsDown=false;tl.style.cursor='grab';
-
-  // Timeline block reorder
-  if(tlDragIdx!==null){
-    const dx=e.clientX-tlDragStartX;
-    const steps=Math.round(dx/tlBlockW);
-    if(steps!==0){
-      const newIdx=Math.min(Math.max(tlDragIdx+steps,0),nodes.length-1);
-      if(newIdx!==tlDragIdx){
-        const moved=nodes.splice(tlDragIdx,1)[0];
-        nodes.splice(newIdx,0,moved);
-        // Reposition all cards
-        const colW=CARD_W+SHOT_GAP+SHOT_W+COL_GAP;
-        nodes.forEach((n,i)=>{n.x=60+i*colW;});
-        renderCanvas();
-      }
-    }
-    tl.querySelectorAll('.tl-block').forEach(b=>b.classList.remove('dragging-tl'));
-    tlDragIdx=null;
-    renderTimeline();
-  }
-
-  // Canvas drag end
-  if(e.button===0&&dragNode){
-    document.getElementById('grp-'+dragNode.id).style.zIndex='';
-    document.getElementById('grp-'+dragNode.id).querySelector('.node-card')?.classList.remove('dragging');
-    dragNode=null;
-    // Re-sort by x and update timeline
-    nodes.sort((a,b)=>a.x-b.x);
-    renderTimeline();
-  }
-
-  // Pan end
-  if(e.button===1){isPan=false;document.getElementById('vp').classList.remove('panning');}
-});
 
 // ===== IMAGE =====
 function loadImg(e,nodeId){
