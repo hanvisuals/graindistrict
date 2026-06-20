@@ -139,6 +139,8 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 .shot-item[data-k="tech"] .shot-k{color:var(--c-tech);}
 .shot-del{font-family:var(--mono);font-size:.42rem;color:var(--text-dimmer);background:none;border:none;cursor:pointer;padding:0;}
 .shot-del:hover{color:#cc5555;}
+.shot-add-btn{font-family:var(--mono);font-size:.36rem;letter-spacing:.08em;text-transform:uppercase;padding:.14rem .35rem;border:1px solid var(--border-light);background:transparent;color:var(--text-dim);cursor:pointer;outline:none;transition:all .12s;border-radius:3px;}
+.shot-add-btn:hover{border-color:var(--gold);color:var(--gold);}
 .shot-ta{width:100%;background:transparent;border:none;outline:none;font-family:var(--sans);font-size:.82rem;font-weight:300;line-height:1.5;color:var(--text);padding:.1rem .6rem .5rem;resize:none;user-select:text;}
 .bd-regen{width:100%;font-family:var(--mono);font-size:.46rem;letter-spacing:.14em;text-transform:uppercase;padding:.5rem;border:1px solid var(--border-light);background:transparent;color:var(--text-dim);cursor:pointer;outline:none;transition:all .15s;margin-top:.2rem;}
 .bd-regen:hover{border-color:var(--gold);color:var(--gold);}
@@ -196,14 +198,14 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 .tl-typ{font-family:var(--mono);font-size:.28rem;letter-spacing:.07em;color:rgba(255,255,255,.4);text-transform:uppercase;margin-top:.08rem;}
 .tl-total{font-family:var(--mono);font-size:.36rem;letter-spacing:.1em;color:var(--text-dimmer);text-transform:uppercase;margin-left:1rem;flex-shrink:0;}
 /* GUIDE */
-.guide{position:fixed;bottom:62px;right:1rem;background:rgba(14,12,10,.96);border:1px solid var(--border-light);border-radius:8px;padding:.8rem 1rem;z-index:200;backdrop-filter:blur(8px);pointer-events:none;min-width:210px;}
+.guide{position:fixed;bottom:62px;right:1rem;max-height:calc(100vh - 130px);overflow-y:auto;background:rgba(14,12,10,.96);border:1px solid var(--border-light);border-radius:8px;padding:.8rem 1rem;z-index:200;backdrop-filter:blur(8px);pointer-events:none;min-width:210px;}
 .guide-title{font-family:var(--mono);font-size:.44rem;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;margin-bottom:.5rem;padding-bottom:.35rem;border-bottom:1px solid var(--border);}
 .guide-sec{font-family:var(--mono);font-size:.36rem;letter-spacing:.12em;color:var(--text-dimmer);text-transform:uppercase;margin:.5rem 0 .25rem;}
 .gi{display:flex;align-items:center;gap:.4rem;font-family:var(--sans);font-size:.76rem;font-weight:300;color:var(--text-dim);margin-bottom:.22rem;}
 .gd{width:9px;height:9px;flex-shrink:0;border-radius:2px;}
 .gd.r{border-radius:50%;}
 /* Toolbar */
-.canvas-toolbar{position:fixed;bottom:62px;left:330px;display:flex;align-items:center;gap:.4rem;z-index:100;}
+.canvas-toolbar{position:fixed;top:56px;left:330px;display:flex;align-items:center;gap:.4rem;z-index:100;padding:.4rem .6rem;background:rgba(14,12,10,.92);border-bottom:1px solid var(--border);border-right:1px solid var(--border);}
 .tb-btn{font-family:var(--mono);font-size:.42rem;letter-spacing:.1em;text-transform:uppercase;padding:.3rem .7rem;border:1px solid var(--border-light);background:rgba(14,12,10,.92);color:var(--text-dim);cursor:pointer;outline:none;transition:all .14s;backdrop-filter:blur(6px);border-radius:4px;}
 .tb-btn:hover{border-color:var(--gold);color:var(--gold);}
 .tb-btn.mode-on{border-color:var(--gold);color:var(--gold);background:rgba(201,168,76,.1);}
@@ -510,8 +512,12 @@ async function genScript(){
   document.getElementById('gobtn').disabled=true;
   show('s2');
   const totalSec=(durMin+durMax)/2*60;
+  // Detect language from input
+  const trChars=/[çğışöüÇĞİŞÖÜ]/;
+  const trWords=/(ve|bir|bu|de|da|ile|için|ama|bugün|gün|ben|sen|biz|var|yok|çok|daha|nasıl|neden|ne|kim|nerede|gidiyorum|yapıyorum|istiyorum)/i;
+  if(trChars.test(topic)||trWords.test(topic))inputLang='tr'; else inputLang='en';
   const langInstr=inputLang==='tr'
-    ?'IMPORTANT: Write the entire shot plan in TURKISH. All block content must be in Turkish.'
+    ?'ÇOK ÖNEMLİ: Tüm shot planını TÜRKÇE yaz. Her blok içeriği Türkçe olmalı. Hiçbir şeyi İngilizce yazma.'
     :'Write the entire shot plan in ENGLISH.';
   try{
     const raw=await api(
