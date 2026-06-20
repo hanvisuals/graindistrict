@@ -420,10 +420,13 @@ function addBlock(){
 // API
 async function api(system,user){
   const r=await fetch(WORKER,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system,user})});
-  if(!r.ok)throw new Error('API '+r.status);
-  const d=await r.json();
+  const responseText = await r.text();
+  if(!r.ok)throw new Error('API '+r.status+': '+responseText.substring(0,200));
+  let d;
+  try{d=JSON.parse(responseText);}catch(e){throw new Error('JSON parse error: '+responseText.substring(0,200));}
   if(d.content?.[0]?.text)return d.content[0].text;
-  throw new Error('Bad response');
+  if(d.error)throw new Error('Worker error: '+JSON.stringify(d.error).substring(0,200));
+  throw new Error('Bad response: '+responseText.substring(0,300));
 }
 
 // Gen script
