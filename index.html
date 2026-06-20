@@ -355,20 +355,26 @@ async function genScript(){
 
   try{
     const raw=await api(
-      `You are a filmmaker creating a detailed shot plan for a ${fmt} YouTube video in a ${tone} tone, like Gawx Art.
+      `You are a filmmaker creating a detailed shot plan for a personal ${fmt} YouTube video in a ${tone} tone, like Gawx Art.
+
+The main character is HAN — a filmmaker based in NYC. He is always the subject. Every shot either:
+- Shows HAN directly (his hands, face, silhouette, POV)
+- Shows what HAN is looking at from his perspective
+- Shows HAN interacting with his environment
 
 Create a shot plan that mixes:
-- VOICEOVER blocks: when the filmmaker speaks over footage
-- BROLL blocks: silent visual moments, no narration (action, atmosphere)
-- MUSIC blocks: music only, no voice, emotional beat
-- TRANSITION blocks: brief cuts, silence, between scenes
+- VOICEOVER blocks: HAN speaks over footage, first person narration
+- BROLL blocks: silent visual moments featuring HAN — his hands, his movement, his POV — no narration
+- MUSIC blocks: music only, no voice, emotional beat — show HAN in motion or stillness
+- TRANSITION blocks: brief cuts — HAN walking away, door closing, cut to black
 
 Rules:
 - Total duration: ${durMin}-${durMax} minutes (${Math.round(totalSec)} seconds total)
 - Mix all 4 types naturally — not just voiceover
 - Each block has a realistic duration (voiceover 3-10s, broll 2-6s, music 3-15s, transition 1-3s)
 - Timecodes must be cumulative and accurate
-- Be specific and cinematic. Aesthetic: harsh flash, grain, analog, anti-polished.
+- Always write from HAN's perspective — "I grab my camera", "my hand reaches for the coffee", "I look up at the building"
+- Be specific and cinematic. Aesthetic: harsh flash, grain, analog, anti-polished, Gawx Art style.
 
 Return ONLY a plain text list, one block per line, in this exact format:
 [TYPE] 00:00-00:05 · content description
@@ -377,9 +383,9 @@ Where TYPE is one of: VOICEOVER, BROLL, MUSIC, TRANSITION
 
 Example:
 [VOICEOVER] 00:00-00:04 · I wake up to an empty apartment, the city outside my window a distant hum.
-[BROLL] 00:04-00:07 · Alarm goes off, hand reaches out and knocks a glass off the nightstand.
-[MUSIC] 00:07-00:12 · Glass shatters in slow motion, music swells.
-[TRANSITION] 00:12-00:14 · Cut to black. Single breath.`,
+[BROLL] 00:04-00:07 · My hand reaches out and knocks a glass off the nightstand. I don't move to catch it.
+[MUSIC] 00:07-00:12 · Glass in slow motion. Cut to my face, staring at the ceiling.
+[TRANSITION] 00:12-00:14 · I sit up. Deep breath. Cut.`,
       `Create a shot plan for: ${topic}`
     );
 
@@ -418,11 +424,13 @@ async function buildCanvas(){
   try{
     // Get shot details for each block
     const raw=await api(
-      `You are a cinematographer. For each numbered block, suggest 2-3 specific shots.
-Return ONLY valid JSON: [{"i":0,"shots":[{"k":"shot","t":"specific framing, lens, light"},{"k":"action","t":"what moves"},{"k":"emotion","t":"feeling + visual approach"}]}]
+      `You are a cinematographer for a personal filmmaking YouTube channel. The subject is always HAN — a filmmaker in NYC. Aesthetic: harsh flash, grain, analog, anti-polished.
+
+For each numbered block, suggest 2-3 specific shots always featuring HAN or his POV.
+Return ONLY valid JSON: [{"i":0,"shots":[{"k":"shot","t":"specific framing, lens, light, HAN in frame or his POV"},{"k":"action","t":"what HAN does or sees"},{"k":"emotion","t":"feeling + how to achieve visually"}]}]
 k options: shot, action, emotion, tech.
-For MUSIC and TRANSITION blocks, focus on visual atmosphere only.
-Be specific: lens (24mm/35mm/50mm/85mm), lighting (harsh flash/soft/available/backlight), movement (static/handheld/dolly/rack focus).`,
+Always include: lens (24mm/35mm/50mm/85mm), lighting (harsh flash/soft window/available/backlight), movement (static/handheld/dolly/rack focus).
+HAN must be present — his hands, face, silhouette, or POV in every shot.`,
       `Blocks:\n${blocks.map((b,i)=>`${i}: [${b.type.toUpperCase()}] ${b.tcStart}-${b.tcEnd} · ${b.content}`).join('\n')}\n\nReturn shot ideas.`
     );
 
@@ -659,8 +667,9 @@ async function regenNode(nodeId){
   const node=nodes.find(n=>n.id===nodeId);if(!node)return;
   try{
     const raw=await api(
-      `Cinematographer. For this block suggest 3 shots. Include lens, lighting, movement. Harsh flash, grain, analog.
-Return ONLY JSON: [{"k":"shot","t":"framing, lens, light"},{"k":"action","t":"what moves"},{"k":"emotion","t":"feeling + how"}]`,
+      `Cinematographer for a personal NYC filmmaker YouTube channel. Subject is always HAN. Harsh flash, grain, analog aesthetic.
+Suggest 3 shots always featuring HAN or his POV. Include lens, lighting, movement.
+Return ONLY JSON: [{"k":"shot","t":"HAN in frame or his POV, lens, light"},{"k":"action","t":"what HAN does or sees"},{"k":"emotion","t":"feeling + visual approach"}]`,
       `Block: [${node.type.toUpperCase()}] ${node.tcStart}-${node.tcEnd} · ${node.content}\nSuggest 3 shots.`
     );
     let shots=[];
