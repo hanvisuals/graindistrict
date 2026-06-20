@@ -67,7 +67,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 .ctopic{font-family:var(--sans);font-size:.9rem;font-weight:300;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:300px;}
 .canvas-body{flex:1;display:flex;overflow:hidden;}
 /* LEFT PANEL */
-.left-panel{width:320px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.left-panel{width:320px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;position:relative;}
 .block-list{flex-shrink:0;max-height:210px;overflow-y:auto;border-bottom:1px solid var(--border);}
 .block-list::-webkit-scrollbar{width:3px;}
 .block-list::-webkit-scrollbar-thumb{background:var(--border-light);}
@@ -131,7 +131,9 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 .shot-item[data-k="action"]{border-left-color:var(--c-action);}
 .shot-item[data-k="emotion"]{border-left-color:var(--c-emotion);}
 .shot-item[data-k="tech"]{border-left-color:var(--c-tech);}
-.shot-head{padding:.38rem .6rem .18rem;display:flex;align-items:center;justify-content:space-between;}
+.shot-head{padding:.38rem .6rem .18rem;display:flex;align-items:center;justify-content:space-between;gap:.3rem;}
+.shot-to-card{font-family:var(--mono);font-size:.32rem;letter-spacing:.06em;text-transform:uppercase;padding:.1rem .28rem;border:1px solid var(--border-light);background:transparent;color:var(--gold-dim);cursor:pointer;outline:none;transition:all .1s;border-radius:2px;margin-left:auto;}
+.shot-to-card:hover{border-color:var(--gold);color:var(--gold);background:rgba(201,168,76,.08);}
 .shot-k{font-family:var(--mono);font-size:.44rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;}
 .shot-item[data-k="shot"] .shot-k{color:var(--c-shot);}
 .shot-item[data-k="action"] .shot-k{color:var(--c-action);}
@@ -325,8 +327,19 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
       <div class="block-list" id="blockList">
         <div class="block-list-head">
           <span class="bl-title">blocks</span>
-          <button class="bl-add" onclick="openModal()">+ add block</button>
+          <div style="display:flex;gap:.3rem">
+            <button class="bl-add" onclick="toggleScript()" id="scriptTabBtn">script</button>
+            <button class="bl-add" onclick="openModal()">+ add</button>
+          </div>
         </div>
+      </div>
+      <!-- Script view overlay -->
+      <div id="scriptView" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:var(--surface);z-index:50;flex-direction:column;overflow:hidden;">
+        <div style="padding:.6rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+          <span style="font-family:var(--mono);font-size:.44rem;letter-spacing:.16em;color:var(--text-dimmer);text-transform:uppercase">full script</span>
+          <button onclick="toggleScript()" style="font-family:var(--mono);font-size:.4rem;color:var(--text-dimmer);background:none;border:none;cursor:pointer">× close</button>
+        </div>
+        <div id="scriptViewContent" style="flex:1;overflow-y:auto;padding:1rem;font-family:var(--sans);font-size:.85rem;font-weight:300;line-height:1.8;color:var(--text-dim);white-space:pre-wrap;user-select:text;"></div>
       </div>
       <div class="block-detail" id="blockDetail">
         <div class="bd-empty">
@@ -467,6 +480,32 @@ function cancelConnect(){
 }
 
 // Modal
+function toggleScript(){
+  const sv=document.getElementById('scriptView');
+  const btn=document.getElementById('scriptTabBtn');
+  const isOpen=sv.style.display==='flex';
+  sv.style.display=isOpen?'none':'flex';
+  btn.style.borderColor=isOpen?'':' var(--gold)';
+  btn.style.color=isOpen?'':'var(--gold)';
+  if(!isOpen){
+    // Build script text
+    let txt='';
+    nodes.forEach((n,i)=>{
+      txt+=`[${n.type.toUpperCase()}] ${n.tcStart} — ${n.tcEnd}
+${n.content}
+
+`;
+      if(n.shots.length){
+        n.shots.forEach(s=>{txt+=`  [${s.k.toUpperCase()}] ${s.t}
+`;});
+        txt+='
+';
+      }
+    });
+    document.getElementById('scriptViewContent').textContent=txt;
+  }
+}
+
 function openModal(){document.getElementById('modalBg').classList.remove('hidden');setTimeout(()=>document.getElementById('modalContent').focus(),50);}
 function closeModal(){document.getElementById('modalBg').classList.add('hidden');}
 document.getElementById('modalBg').addEventListener('click',e=>{if(e.target===document.getElementById('modalBg'))closeModal();});
@@ -630,7 +669,11 @@ function renderBlockDetail(){
   }).join('');
   const shotsHtml=node.shots.length?node.shots.map(sh=>`
     <div class="shot-item" data-k="${sh.k}">
-      <div class="shot-head"><span class="shot-k">${sh.k}</span><button class="shot-del" onclick="delShot(${node.id},${sh.id})">×</button></div>
+      <div class="shot-head">
+        <span class="shot-k">${sh.k}</span>
+        <button class="shot-to-card" onclick="shotToCard(${node.id},${sh.id})" title="Add to selected canvas card">→ card</button>
+        <button class="shot-del" onclick="delShot(${node.id},${sh.id})">×</button>
+      </div>
       <textarea class="shot-ta" rows="2" onchange="updateShot(${node.id},${sh.id},this.value)">${esc(sh.t)}</textarea>
     </div>`).join(''):'<div style="font-family:var(--mono);font-size:.44rem;color:var(--text-dimmer);padding:.3rem 0">no shots yet — add below or regenerate</div>';
   detail.innerHTML=`
@@ -734,7 +777,13 @@ function renderCanvas(){
     });
     el.addEventListener('click',e=>{
       if(e.target.closest('.nc-port'))return;
-      selId=node.id;selImgId=null;renderAll();
+      selId=node.id;selImgId=null;
+      renderAll();
+      // Scroll block list to selected item
+      setTimeout(()=>{
+        const selItem=document.querySelector('.bl-item.sel');
+        if(selItem)selItem.scrollIntoView({behavior:'smooth',block:'nearest'});
+      },50);
     });
     cw.appendChild(el);
   });
@@ -919,6 +968,22 @@ async function regenNode(id){
   if(btn){btn.textContent='↻ regenerate shot ideas';btn.disabled=false;}
 }
 
+// Add shot from detail panel to a canvas card
+function shotToCard(fromNodeId,shotId){
+  // The shot already belongs to the node - this copies it
+  // Actually shots ARE the card's shots. "→ card" means: this shot is already on this card.
+  // What user wants: move shot idea from one card to another, or confirm it's added.
+  // Since shots are already on the card - just highlight it was added with a flash
+  const el=document.getElementById('nc-'+fromNodeId);
+  if(el){
+    el.style.transition='box-shadow .1s';
+    el.style.boxShadow='0 0 0 3px var(--gold)';
+    setTimeout(()=>{el.style.boxShadow='';el.style.transition='box-shadow .2s';},600);
+  }
+  // Scroll canvas to show the card
+  panToNode(nodes.find(n=>n.id===fromNodeId));
+}
+
 // Fit
 function fitScreen(){
   if(!nodes.length)return;
@@ -1023,7 +1088,7 @@ document.addEventListener('mouseup',e=>{
   if(e.button===0&&dragN){
     document.getElementById('nc-'+dragN.id)?.classList.remove('drag');
     document.getElementById('nc-'+dragN.id).style.zIndex='';
-    dragN=null;nodes.sort((a,b)=>a.x-b.x);nodes.forEach((n,i)=>{n.x=60+i*(NC_W+NC_GAP);});renderAll();
+    dragN=null;renderBlockList();renderTL();renderConnections();
   }
   if(e.button===0&&dragImg){
     document.getElementById('img-'+dragImg.id)?.classList.remove('drag');
