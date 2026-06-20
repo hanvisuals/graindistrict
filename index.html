@@ -424,18 +424,37 @@ async function buildCanvas(){
   try{
     // Get shot details for each block
     const raw=await api(
-      `You are a cinematographer for a personal filmmaking YouTube channel. The subject is always HAN — a filmmaker in NYC. Aesthetic: harsh flash, grain, analog, anti-polished.
+      `You are a cinematographer. Return ONLY a valid JSON array, nothing else. No explanation, no markdown, no text before or after.
 
-For each numbered block, suggest 2-3 specific shots always featuring HAN or his POV.
-Return ONLY valid JSON: [{"i":0,"shots":[{"k":"shot","t":"specific framing, lens, light, HAN in frame or his POV"},{"k":"action","t":"what HAN does or sees"},{"k":"emotion","t":"feeling + how to achieve visually"}]}]
-k options: shot, action, emotion, tech.
-Always include: lens (24mm/35mm/50mm/85mm), lighting (harsh flash/soft window/available/backlight), movement (static/handheld/dolly/rack focus).
-HAN must be present — his hands, face, silhouette, or POV in every shot.`,
+Format: [{"i":0,"shots":[{"k":"shot","t":"..."},{"k":"action","t":"..."},{"k":"emotion","t":"..."}]}]
+
+Rules:
+- k must be one of: shot, action, emotion, tech
+- Subject is always HAN (filmmaker, NYC). His hands, face, POV in every shot.
+- Include lens (24mm/35mm/50mm/85mm), lighting (harsh flash/window/available), movement (static/handheld/dolly)
+- Aesthetic: grain, analog, anti-polished
+- Return valid JSON only — no trailing commas`,
       `Blocks:\n${blocks.map((b,i)=>`${i}: [${b.type.toUpperCase()}] ${b.tcStart}-${b.tcEnd} · ${b.content}`).join('\n')}\n\nReturn shot ideas.`
     );
 
     let sd=[];
-    try{const m=raw.match(/\[[\s\S]*\]/);if(m)sd=JSON.parse(m[0]);}catch(e){}
+    try{
+      // Try to find JSON array in response
+      const m=raw.match(/\[[\s\S]*\]/);
+      if(m){
+        // Clean up common JSON issues
+        let clean=m[0].replace(/,\s*\]/g,']').replace(/,\s*\}/g,'}');
+        sd=JSON.parse(clean);
+      }
+    }catch(e){
+      console.error('Shot parse error:',e);
+      // Try to extract individual objects
+      try{
+        const objs=raw.match(/\{[^{}]+\}/g)||[];
+        const shots=objs.map(o=>{try{return JSON.parse(o);}catch(e){return null;}}).filter(Boolean);
+        if(shots.length) sd=[{i:0,shots}];
+      }catch(e2){}
+    }
 
     const colW=CARD_W+SHOT_GAP+SHOT_W+COL_GAP;
     nodes=blocks.map((block,i)=>{
