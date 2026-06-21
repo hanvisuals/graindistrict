@@ -137,7 +137,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 .nc{position:absolute;background:var(--card);border-radius:var(--r);cursor:grab;transition:box-shadow .2s;}
 .nc:hover{box-shadow:0 4px 20px rgba(0,0,0,.35);}
 .nc.drag{cursor:grabbing;box-shadow:0 12px 40px rgba(0,0,0,.6);}
-.nc.sel{box-shadow:0 0 0 1.5px rgba(201,168,76,.6),0 0 18px rgba(201,168,76,.25),0 8px 28px rgba(0,0,0,.5);}
+.nc.sel{box-shadow:0 0 0 2px rgba(201,168,76,.8),0 0 24px rgba(201,168,76,.35),0 0 48px rgba(201,168,76,.15),0 8px 28px rgba(0,0,0,.5);}
 .nc-stripe{height:4px;border-radius:var(--r) var(--r) 0 0;}
 .nc[data-t="voiceover"] .nc-stripe{background:var(--c-vo);}
 .nc[data-t="broll"] .nc-stripe{background:var(--c-br);}
@@ -161,7 +161,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--s
 .img-node img{display:block;width:100%;height:100%;object-fit:cover;}
 .img-node-del{position:absolute;top:.3rem;right:.3rem;font-family:var(--mono);font-size:.38rem;color:white;background:rgba(0,0,0,.7);border:none;cursor:pointer;border-radius:3px;padding:.1rem .28rem;opacity:0;}
 .img-node:hover .img-node-del{opacity:1;}
-.img-node-resize{position:absolute;bottom:0;right:0;width:14px;height:14px;cursor:se-resize;background:rgba(0,0,0,.5);}
+.img-node-resize{position:absolute;bottom:0;right:0;width:14px;height:14px;cursor:se-resize;background:rgba(201,168,76,.5);border-radius:2px;}
+.img-node-resize-nw{position:absolute;top:0;left:0;width:14px;height:14px;cursor:nw-resize;background:rgba(201,168,76,.5);border-radius:2px;}
+.img-node-resize-ne{position:absolute;top:0;right:0;width:14px;height:14px;cursor:ne-resize;background:rgba(201,168,76,.5);border-radius:2px;}
+.img-node-resize-sw{position:absolute;bottom:0;left:0;width:14px;height:14px;cursor:sw-resize;background:rgba(201,168,76,.5);border-radius:2px;}
 .conn-svg{position:absolute;top:0;left:0;pointer-events:none;overflow:visible;}
 .timeline{flex-shrink:0;height:54px;background:var(--surface);border-top:1px solid var(--border);overflow-x:auto;overflow-y:hidden;display:flex;align-items:center;padding:0 1rem;gap:3px;}
 .timeline::-webkit-scrollbar{height:3px;}
@@ -398,7 +401,7 @@ var spaceDown=false;
 var canvasMode='select';
 var connFrom=null;
 var modalType='voiceover';
-var resizing=null,rsX=0,rsY=0,rsW=0,rsH=0;
+var resizing=null,rsX=0,rsY=0,rsW=0,rsH=0,rsCorner="se";
 
 var S2=[' reading your idea',' shaping the story',' writing the script',' building the plan',' crafting each moment',' almost done'];
 var S4=[' analyzing each block',' imagining the shots',' choosing the lenses',' thinking about light',' planning movement',' finishing up'];
@@ -498,7 +501,29 @@ function api(sys,usr){
 }
 
 function detectLang(t){
-  return /[\u00e7\u011f\u0131\u015f\u00f6\u00fc\u00c7\u011e\u0130\u015e\u00d6\u00dc]/.test(t)?'tr':'en';
+  // Turkish
+  if(/[\u00e7\u011f\u0131\u015f\u00f6\u00fc\u00c7\u011e\u0130\u015e\u00d6\u00dc]/.test(t))return'tr';
+  // Spanish
+  if(/[\u00e1\u00e9\u00ed\u00f3\u00fa\u00fc\u00f1\u00c1\u00c9\u00cd\u00d3\u00da\u00d1\u00bf\u00a1]/.test(t))return'es';
+  // French
+  if(/[\u00e0\u00e2\u00e6\u00e7\u00e8\u00ea\u00eb\u00ee\u00ef\u00f4\u00f9\u00fb\u00fc\u00ff\u0153\u0152]/.test(t))return'fr';
+  // German
+  if(/[\u00e4\u00f6\u00fc\u00c4\u00d6\u00dc\u00df]/.test(t))return'de';
+  // Portuguese
+  if(/[\u00e3\u00f5\u00c3\u00d5\u00e0\u00e1\u00e2\u00ea\u00ed\u00f3\u00fa]/.test(t))return'pt';
+  return'en';
+}
+
+function langInstrFor(lang){
+  var m={
+    tr:'YOU MUST write ALL content in TURKISH language. Her sey Turkce olmali.',
+    es:'YOU MUST write ALL content in SPANISH language. Todo debe estar en espanol.',
+    fr:'YOU MUST write ALL content in FRENCH language. Tout doit etre en francais.',
+    de:'YOU MUST write ALL content in GERMAN language. Alles muss auf Deutsch sein.',
+    pt:'YOU MUST write ALL content in PORTUGUESE language. Tudo deve estar em portugues.',
+    en:'Write the entire content in ENGLISH.'
+  };
+  return m[lang]||m.en;
 }
 
 function genScript(){
@@ -510,9 +535,7 @@ function genScript(){
   document.getElementById('gobtn').disabled=true;
   show('s2');startLoad('s2');
   var totalSec=(durMin+durMax)/2*60;
-  var langInstr=inputLang==='tr'
-    ?'YOU MUST write ALL content in TURKISH language. Every block must be in Turkish. Do not use English.'
-    :'Write the entire shot plan in ENGLISH.';
+  var langInstr=langInstrFor(inputLang);
   var sys='You are a filmmaker building a shot plan for a personal YouTube video in a '+tone+' tone, like Gawx Art. Subject: HAN, a filmmaker in NYC.\n'+langInstr+'\n\n4 block types:\nVOICEOVER - Write the EXACT words HAN says out loud. First person. No visual description.\nBROLL - No talking. Describe only what the CAMERA SEES. No dialogue.\nMUSIC - No talking. Only music plays. Describe the visual montage only.\nTRANSITION - One line. Very brief visual cut or pause.\n\nRULES:\n- Total duration: '+durMin+'-'+durMax+' minutes (~'+Math.round(totalSec)+' seconds)\n- NEVER follow repeating patterns. Let emotion and story rhythm decide.\n- HAN is always the subject in every block.\n- Aesthetic: harsh flash, grain, analog, anti-polished.\n\nReturn ONLY plain text, one block per line:\n[TYPE] 00:00-00:00 - content';
   var usr='Create shot plan for: '+topic;
   api(sys,usr).then(function(raw){
@@ -542,7 +565,7 @@ function buildCanvas(){
   var blocks=parseBlocks(text);
   if(!blocks.length){alert('No valid blocks found. Check the format.');return;}
   show('s4');startLoad('s4');
-  var langInstr=inputLang==='tr'?'Write all shot descriptions in TURKISH language.':'Write all shot descriptions in English.';
+  var langInstr=langInstrFor(inputLang);
   var sys='You are a cinematographer. Return ONLY a valid JSON array. No explanation, no markdown.\n'+langInstr+'\nFormat: [{"i":0,"shots":[{"k":"shot","t":"..."},{"k":"action","t":"..."},{"k":"emotion","t":"..."}]}]\nk must be: shot, action, emotion, or tech. HAN always in frame or POV. Include lens (24/35/50/85mm), lighting, movement. Grain, analog.';
   var usr='Blocks:\n'+blocks.map(function(b,i){return i+': ['+b.type.toUpperCase()+'] '+b.tcStart+'-'+b.tcEnd+' - '+b.content;}).join('\n')+'\n\nReturn shot ideas for each block.';
   api(sys,usr).then(function(raw){
@@ -562,7 +585,7 @@ function buildCanvas(){
 }
 
 function renderAll(){
-  renderBlockList();renderBlockDetail();renderCanvas();renderImgNodes();renderConns();renderTL();updateT();
+  renderBlockList();renderBlockDetail();renderCanvas();renderImgNodes();renderAttachedShots();renderConns();renderTL();updateT();
 }
 
 function renderBlockList(){
@@ -682,11 +705,7 @@ function renderBlockDetail(){
       var sh2=document.createElement('div');sh2.className='shot-head';
       var sk=document.createElement('span');sk.className='shot-k';sk.textContent=sh.k;
       var toCard=document.createElement('button');toCard.className='shot-to-card';toCard.textContent='-> card';
-      toCard.onclick=function(){
-        var nc=document.getElementById('nc-'+node.id);
-        if(nc){nc.style.boxShadow='0 0 0 3px var(--gold)';setTimeout(function(){nc.style.boxShadow='';},700);}
-        panToNode(node);
-      };
+      toCard.onclick=function(){addShotToCanvas(node.id,sh.id);};
       var sdel=document.createElement('button');sdel.className='shot-del';sdel.textContent='x';
       sdel.onclick=function(){delShot(node.id,sh.id);};
       sh2.appendChild(sk);sh2.appendChild(toCard);sh2.appendChild(sdel);
@@ -786,11 +805,14 @@ function renderImgNodes(){
     var del=document.createElement('button');del.className='img-node-del';del.textContent='x';
     del.onclick=function(){delImgNode(img.id);};
     var rs=document.createElement('div');rs.className='img-node-resize';
-    rs.addEventListener('mousedown',function(e){
-      e.stopPropagation();e.preventDefault();
-      resizing=img;rsX=e.clientX;rsY=e.clientY;rsW=img.w;rsH=img.h;
-    });
-    el.appendChild(i);el.appendChild(del);el.appendChild(rs);
+    (function(corner){rs.addEventListener('mousedown',function(e){e.stopPropagation();e.preventDefault();resizing=img;rsX=e.clientX;rsY=e.clientY;rsW=img.w;rsH=img.h;rsCorner=corner;});}('se'));
+    var rsNW=document.createElement('div');rsNW.className='img-node-resize-nw';
+    (function(corner){rsNW.addEventListener('mousedown',function(e){e.stopPropagation();e.preventDefault();resizing=img;rsX=e.clientX;rsY=e.clientY;rsW=img.w;rsH=img.h;rsCorner=corner;});}('nw'));
+    var rsNE=document.createElement('div');rsNE.className='img-node-resize-ne';
+    (function(corner){rsNE.addEventListener('mousedown',function(e){e.stopPropagation();e.preventDefault();resizing=img;rsX=e.clientX;rsY=e.clientY;rsW=img.w;rsH=img.h;rsCorner=corner;});}('ne'));
+    var rsSW=document.createElement('div');rsSW.className='img-node-resize-sw';
+    (function(corner){rsSW.addEventListener('mousedown',function(e){e.stopPropagation();e.preventDefault();resizing=img;rsX=e.clientX;rsY=e.clientY;rsW=img.w;rsH=img.h;rsCorner=corner;});}('sw'));
+    el.appendChild(i);el.appendChild(del);el.appendChild(rs);el.appendChild(rsNW);el.appendChild(rsNE);el.appendChild(rsSW);
     el.addEventListener('mousedown',function(e){
       if(e.target===del||e.target===rs)return;
       if(e.button!==0)return;
@@ -933,7 +955,7 @@ function regenNode(id){
   var n=null;for(var i=0;i<nodes.length;i++){if(nodes[i].id===id){n=nodes[i];break;}}
   if(!n)return;
   var btn=document.querySelector('.bd-regen');if(btn){btn.textContent='generating...';btn.disabled=true;}
-  var langInstr=inputLang==='tr'?'Write all shot descriptions in TURKISH language.':'Write all shot descriptions in English.';
+  var langInstr=langInstrFor(inputLang);
   var sys='Cinematographer. 3 shots. HAN always in frame or POV. Lens, lighting, movement. Grain, analog. '+langInstr+' Return ONLY JSON: [{"k":"shot","t":"..."},{"k":"action","t":"..."},{"k":"emotion","t":"..."}]';
   var usr='Block: ['+n.type.toUpperCase()+'] '+n.tcStart+'-'+n.tcEnd+' - '+n.content;
   api(sys,usr).then(function(raw){
@@ -942,6 +964,69 @@ function regenNode(id){
     renderBlockDetail();renderCanvas();
   }).catch(function(e){alert('Error: '+e.message);})
   .then(function(){if(btn){btn.textContent='regenerate shot ideas';btn.disabled=false;}});
+}
+
+function addShotToCanvas(nodeId,shotId){
+  var node=null;for(var i=0;i<nodes.length;i++){if(nodes[i].id===nodeId){node=nodes[i];break;}}
+  if(!node)return;
+  var sh=null;for(var i=0;i<node.shots.length;i++){if(node.shots[i].id===shotId){sh=node.shots[i];break;}}
+  if(!sh)return;
+  // Count how many shot nodes already attached to this card
+  var attached=node.attachedShots||[];
+  var idx=attached.length;
+  var shotNode={
+    id:nid++,parentId:nodeId,k:sh.k,t:sh.t,
+    // Position: below the card, stacked
+    offsetX:0,offsetY:180+idx*80
+  };
+  if(!node.attachedShots)node.attachedShots=[];
+  node.attachedShots.push(shotNode);
+  renderCanvas();renderImgNodes();renderConns();renderAttachedShots();
+  // Flash the card
+  var nc=document.getElementById('nc-'+nodeId);
+  if(nc){
+    nc.style.transition='box-shadow .1s';
+    nc.style.boxShadow='0 0 0 3px var(--gold),0 0 30px rgba(201,168,76,.5)';
+    setTimeout(function(){nc.style.boxShadow='';nc.style.transition='';},600);
+  }
+}
+
+function renderAttachedShots(){
+  document.querySelectorAll('.attached-shot').forEach(function(el){el.remove();});
+  var cw=document.getElementById('cw');
+  nodes.forEach(function(node){
+    if(!node.attachedShots||!node.attachedShots.length)return;
+    node.attachedShots.forEach(function(sn){
+      var el=document.createElement('div');
+      el.className='attached-shot';
+      el.setAttribute('data-k',sn.k);
+      var x=node.x+sn.offsetX;
+      var y=node.y+sn.offsetY;
+      el.style.cssText='position:absolute;left:'+x+'px;top:'+y+'px;width:'+NC_W+'px;background:var(--card);border-radius:6px;border-left:4px solid '+(sn.k==='shot'?'var(--c-shot)':sn.k==='action'?'var(--c-action)':sn.k==='emotion'?'var(--c-emotion)':'var(--c-tech)')+';box-shadow:0 2px 10px rgba(0,0,0,.3);';
+      // Connector line indicator
+      var line=document.createElement('div');
+      line.style.cssText='position:absolute;top:-'+(sn.offsetY-165)+'px;left:'+Math.floor(NC_W/2)+'px;width:2px;height:'+(sn.offsetY-165)+'px;background:rgba(201,168,76,.3);pointer-events:none;';
+      var head=document.createElement('div');
+      head.style.cssText='padding:.32rem .55rem .12rem;display:flex;align-items:center;justify-content:space-between;';
+      var klbl=document.createElement('span');
+      klbl.style.cssText='font-family:var(--mono);font-size:.44rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:'+(sn.k==='shot'?'var(--c-shot)':sn.k==='action'?'var(--c-action)':sn.k==='emotion'?'var(--c-emotion)':'var(--c-tech)')+';';
+      klbl.textContent=sn.k;
+      var delbtn=document.createElement('button');
+      delbtn.style.cssText='font-family:var(--mono);font-size:.38rem;color:var(--card-dimmer);background:none;border:none;cursor:pointer;padding:0;';
+      delbtn.textContent='x';
+      (function(nid2,snid){delbtn.onclick=function(){
+        var n2=null;for(var j=0;j<nodes.length;j++){if(nodes[j].id===nid2){n2=nodes[j];break;}}
+        if(n2&&n2.attachedShots)n2.attachedShots=n2.attachedShots.filter(function(s){return s.id!==snid;});
+        renderAttachedShots();
+      };})(node.id,sn.id);
+      head.appendChild(klbl);head.appendChild(delbtn);
+      var body=document.createElement('div');
+      body.style.cssText='padding:.1rem .55rem .45rem;font-family:var(--sans);font-size:.76rem;font-weight:300;line-height:1.4;color:var(--card-text);word-wrap:break-word;';
+      body.textContent=sn.t||'(empty)';
+      el.appendChild(line);el.appendChild(head);el.appendChild(body);
+      cw.appendChild(el);
+    });
+  });
 }
 
 function fitScreen(){
@@ -1022,9 +1107,13 @@ document.addEventListener('mousemove',function(e){
   }
   if(resizing){
     var dx=(e.clientX-rsX)/scale,dy=(e.clientY-rsY)/scale;
-    resizing.w=Math.max(80,rsW+dx);resizing.h=Math.max(60,rsH+dy);
+    if(rsCorner==='se'){resizing.w=Math.max(80,rsW+dx);resizing.h=Math.max(60,rsH+dy);}
+    else if(rsCorner==='nw'){resizing.w=Math.max(80,rsW-dx);resizing.h=Math.max(60,rsH-dy);resizing.x=resizing.x+(rsW-resizing.w);resizing.y=resizing.y+(rsH-resizing.h);}
+    else if(rsCorner==='ne'){resizing.w=Math.max(80,rsW+dx);resizing.h=Math.max(60,rsH-dy);resizing.y=resizing.y+(rsH-resizing.h);}
+    else if(rsCorner==='sw'){resizing.w=Math.max(80,rsW-dx);resizing.h=Math.max(60,rsH+dy);resizing.x=resizing.x+(rsW-resizing.w);}
     var rs2=document.getElementById('img-'+resizing.id);
-    if(rs2){rs2.style.width=resizing.w+'px';rs2.style.height=resizing.h+'px';}
+    if(rs2){rs2.style.width=resizing.w+'px';rs2.style.height=resizing.h+'px';rs2.style.left=resizing.x+'px';rs2.style.top=resizing.y+'px';}
+    rsX=e.clientX;rsY=e.clientY;rsW=resizing.w;rsH=resizing.h;
   }
   if(connFrom){
     var r3=vp.getBoundingClientRect();
