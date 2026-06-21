@@ -531,29 +531,20 @@ function cancelConnect(){
 function toggleScript(){
   const sv=document.getElementById('scriptView');
   const btn=document.getElementById('scriptTabBtn');
+  if(!sv)return;
   const isOpen=sv.style.display==='flex';
   sv.style.display=isOpen?'none':'flex';
-  btn.style.borderColor=isOpen?'':' var(--gold)';
-  btn.style.color=isOpen?'':'var(--gold)';
+  if(btn){btn.style.borderColor=isOpen?'':'var(--gold)';btn.style.color=isOpen?'':'var(--gold)';}
   if(!isOpen){
-    // Build script text
     let txt='';
-    nodes.forEach((n,i)=>{
-      txt+=`[${n.type.toUpperCase()}] ${n.tcStart} - ${n.tcEnd}
-${n.content}
-
-`;
-      if(n.shots.length){
-        n.shots.forEach(s=>{txt+=`  [${s.k.toUpperCase()}] ${s.t}
-`;});
-        txt+='
-';
-      }
+    nodes.forEach(function(n){
+      txt+='['+n.type.toUpperCase()+'] '+n.tcStart+' - '+n.tcEnd+'\n'+n.content+'\n\n';
+      if(n.shots.length){n.shots.forEach(function(s){txt+='  ['+s.k.toUpperCase()+'] '+s.t+'\n';});txt+='\n';}
     });
-    document.getElementById('scriptViewContent').textContent=txt;
+    const el=document.getElementById('scriptViewContent');
+    if(el)el.textContent=txt;
   }
 }
-
 function openModal(){document.getElementById('modalBg').classList.remove('hidden');setTimeout(()=>document.getElementById('modalContent').focus(),50);}
 function closeModal(){document.getElementById('modalBg').classList.add('hidden');}
 document.getElementById('modalBg').addEventListener('click',e=>{if(e.target===document.getElementById('modalBg'))closeModal();});
