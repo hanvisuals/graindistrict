@@ -437,7 +437,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 const WORKER='https://billowing-dust-fa1agrain-api.seyithankartal.workers.dev/';
 const NC_W=200, NC_GAP=36;
 const TYPE_COLORS={voiceover:'#3a2e10',broll:'#0e1e30',music:'#20103a',transition:'#141e14',empty:'#1e1e1e'};
-const TYPE_LABELS={voiceover:'voiceover',broll:'b-roll',music:'music',transition:'transition',empty:'—'};
+const TYPE_LABELS={voiceover:'voiceover',broll:'b-roll',music:'music',transition:'transition',empty:'-'};
 const TYPE_CSS={voiceover:'act-vo',broll:'act-br',music:'act-mu',transition:'act-tr',empty:''};
 const SHOT_COLORS={shot:'var(--c-shot)',action:'var(--c-action)',emotion:'var(--c-emotion)',tech:'var(--c-tech)'};
 
@@ -476,8 +476,8 @@ document.addEventListener('keyup',e=>{if(e.code==='Space'){spaceDown=false;if(is
 
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
 
-const S2_MSGS=['— reading your idea','— shaping the story','— writing the script','— building the plan','— crafting each moment','— almost done'];
-const S4_MSGS=['— analyzing each block','— imagining the shots','— choosing the lenses','— thinking about light','— planning movement','— finishing up'];
+const S2_MSGS=['- reading your idea','- shaping the story','- writing the script','- building the plan','- crafting each moment','- almost done'];
+const S4_MSGS=['- analyzing each block','- imagining the shots','- choosing the lenses','- thinking about light','- planning movement','- finishing up'];
 let _loadInt=null;
 function startLoadingAnim(screen){
   if(_loadInt)clearInterval(_loadInt);
@@ -539,7 +539,7 @@ function toggleScript(){
     // Build script text
     let txt='';
     nodes.forEach((n,i)=>{
-      txt+=`[${n.type.toUpperCase()}] ${n.tcStart} — ${n.tcEnd}
+      txt+=`[${n.type.toUpperCase()}] ${n.tcStart} - ${n.tcEnd}
 ${n.content}
 
 `;
@@ -613,17 +613,17 @@ async function genScript(){
 ${langInstr}
 
 4 block types with STRICT content rules:
-VOICEOVER — Write the EXACT words HAN says out loud. First person. No visual description.
-BROLL — No talking. Describe only what the CAMERA SEES. No dialogue.
-MUSIC — No talking. Only music plays. Describe the visual montage only.
-TRANSITION — One line. Very brief visual cut or pause.
+VOICEOVER - Write the EXACT words HAN says out loud. First person. No visual description.
+BROLL - No talking. Describe only what the CAMERA SEES. No dialogue.
+MUSIC - No talking. Only music plays. Describe the visual montage only.
+TRANSITION - One line. Very brief visual cut or pause.
 
 RULES:
 - Total duration: ${durMin}-${durMax} minutes (~${Math.round(totalSec)} seconds)
 - NEVER follow repeating patterns. Let emotion and story rhythm decide the order.
 - Sometimes 3 BROLL in a row. Sometimes VOICEOVER cuts straight to MUSIC.
 - Timecodes must be cumulative and accurate.
-- HAN is always the subject — his hands, face, POV in every block.
+- HAN is always the subject - his hands, face, POV in every block.
 - Aesthetic: harsh flash, grain, analog, anti-polished.
 
 Return ONLY plain text, one block per line:
@@ -725,7 +725,7 @@ function renderBlockDetail(){
         <button class="shot-del" onclick="delShot(${node.id},${sh.id})">×</button>
       </div>
       <textarea class="shot-ta" rows="2" onchange="updateShot(${node.id},${sh.id},this.value)">${esc(sh.t)}</textarea>
-    </div>`).join(''):'<div style="font-family:var(--mono);font-size:.44rem;color:var(--text-dimmer);padding:.3rem 0">no shots yet — add below or regenerate</div>';
+    </div>`).join(''):'<div style="font-family:var(--mono);font-size:.44rem;color:var(--text-dimmer);padding:.3rem 0">no shots yet - add below or regenerate</div>';
   detail.innerHTML=`
     <div class="bd-content">
       <div class="bd-row">
@@ -740,7 +740,7 @@ function renderBlockDetail(){
         <div class="bd-tc-row">
           <span class="bd-lbl" style="margin-bottom:0">timecode</span>
           <input class="bd-tc-in" value="${node.tcStart}" onchange="changeTc(${node.id},'start',this.value)">
-          <span class="bd-tc-sep">—</span>
+          <span class="bd-tc-sep">-</span>
           <input class="bd-tc-in" value="${node.tcEnd}" onchange="changeTc(${node.id},'end',this.value)">
         </div>
       </div>
@@ -785,7 +785,7 @@ function renderCanvas(){
       <div class="nc-inner">
         <div class="nc-badge">${TYPE_LABELS[node.type]||node.type}</div>
         <div class="nc-text">${esc(node.content)}</div>
-        <div class="nc-tc">${node.tcStart} — ${node.tcEnd}</div>
+        <div class="nc-tc">${node.tcStart} - ${node.tcEnd}</div>
         <div class="nc-footer">${shotDots}</div>
       </div>
       <div class="nc-port" id="port-${node.id}" title="Connect: drag to another card"></div>`;
@@ -970,7 +970,7 @@ function renderTL(){
   nodes.forEach((node,idx)=>{
     const b=document.createElement('div');
     b.className='tl-block';b.style.width=bw+'px';b.style.background=TYPE_COLORS[node.type]||TYPE_COLORS.voiceover;
-    b.innerHTML=`<div class="tl-tc">${node.tcStart}—${node.tcEnd}</div><div class="tl-lbl">${esc(node.content.split(' ').slice(0,4).join(' '))}…</div><div class="tl-typ">${TYPE_LABELS[node.type]||node.type}</div>`;
+    b.innerHTML=`<div class="tl-tc">${node.tcStart}-${node.tcEnd}</div><div class="tl-lbl">${esc(node.content.split(' ').slice(0,4).join(' '))}…</div><div class="tl-typ">${TYPE_LABELS[node.type]||node.type}</div>`;
     b.addEventListener('click',()=>{selId=node.id;renderAll();panToNode(node);});
     b.addEventListener('mousedown',e=>{e.stopPropagation();tlDragIdx=idx;tlDragX=e.clientX;tlIsDrag=false;b.classList.add('tl-drag');});
     tl.appendChild(b);
@@ -998,7 +998,7 @@ function changeTc(id,which,val){
   if(which==='start')n.tcStart=val;else n.tcEnd=val;
   renderBlockList();renderTL();
   const el=document.getElementById('nc-'+id);
-  if(el)el.querySelector('.nc-tc').textContent=n.tcStart+' — '+n.tcEnd;
+  if(el)el.querySelector('.nc-tc').textContent=n.tcStart+' - '+n.tcEnd;
 }
 function updateContent(id,val){
   const n=nodes.find(x=>x.id===id);if(!n)return;n.content=val;
@@ -1053,9 +1053,9 @@ function fitScreen(){
 
 // Export
 function doExport(){
-  let out=`GRAIN DISTRICT — ${topic.toUpperCase()}\nDuration: ${durMin}–${durMax} min\n${'='.repeat(50)}\n\n`;
+  let out=`GRAIN DISTRICT - ${topic.toUpperCase()}\nDuration: ${durMin}–${durMax} min\n${'='.repeat(50)}\n\n`;
   nodes.forEach((n,i)=>{
-    out+=`[${n.type.toUpperCase()}] ${n.tcStart} — ${n.tcEnd}\n${n.content}\n\n`;
+    out+=`[${n.type.toUpperCase()}] ${n.tcStart} - ${n.tcEnd}\n${n.content}\n\n`;
     n.shots.forEach(s=>{out+=`  [${s.k.toUpperCase()}] ${s.t}\n`;});
     out+='\n';
   });
