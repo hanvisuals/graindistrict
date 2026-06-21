@@ -590,8 +590,8 @@ function detectLang(t){
 function langInstr(lang,type){
   var names={tr:'TURKISH',es:'SPANISH',fr:'FRENCH',de:'GERMAN',en:'ENGLISH'};
   var name=names[lang]||'ENGLISH';
-  if(lang==='en')return 'Write everything in English.';
-  return 'YOU MUST write ALL '+type+' in '+name+'. Do not use English at all. Every single word must be in '+name+'.';
+  if(lang==='en')return '';
+  return 'CRITICAL LANGUAGE RULE: You MUST write ALL '+type+' in '+name+' ONLY. Do NOT use any English words whatsoever. Every single word, sentence, and phrase must be in '+name+'. Responding in English is not acceptable under any circumstances.';
 }
 
 function api(sys,usr){
@@ -614,7 +614,7 @@ function genScript(){
   show('s2');startLoad('s2');
   var totalSec=(durMin+durMax)/2*60;
   var li=langInstr(inputLang,'shot plan content');
-  var sys='You are a filmmaker building a shot plan for a personal YouTube video in a '+tone+' tone, like Gawx Art. Subject: HAN, a filmmaker in NYC.\n\n'+li+'\n\n4 block types:\nVOICEOVER - Write the EXACT words HAN says out loud. First person. No visual description.\nBROLL - No talking. Describe only what the CAMERA SEES. No dialogue.\nMUSIC - No talking. Only music plays. Describe the visual montage only.\nTRANSITION - One line. Very brief visual cut or pause.\n\nRULES:\n- Total duration: '+durMin+'-'+durMax+' minutes (~'+Math.round(totalSec)+' seconds)\n- NEVER follow repeating patterns. Let emotion and story rhythm decide.\n- HAN is always the subject in every block.\n- Aesthetic: harsh flash, grain, analog, anti-polished.\n\nReturn ONLY plain text, one block per line:\n[TYPE] 00:00-00:00 - content';
+  var sys=(li?li+'\n\n':'')+'You are a filmmaker building a shot plan for a personal YouTube video in a '+tone+' tone, like Gawx Art. Subject: HAN, a filmmaker in NYC.\n\n4 block types:\nVOICEOVER - Write the EXACT words HAN says out loud. First person. No visual description.\nBROLL - No talking. Describe only what the CAMERA SEES. No dialogue.\nMUSIC - No talking. Only music plays. Describe the visual montage only.\nTRANSITION - One line. Very brief visual cut or pause.\n\nRULES:\n- Total duration: '+durMin+'-'+durMax+' minutes (~'+Math.round(totalSec)+' seconds)\n- NEVER follow repeating patterns. Let emotion and story rhythm decide.\n- HAN is always the subject in every block.\n- Aesthetic: harsh flash, grain, analog, anti-polished.'+(li?'\n\n'+li:'')+'\n\nReturn ONLY plain text, one block per line:\n[TYPE] 00:00-00:00 - content';
   api(sys,'Create shot plan for: '+topic).then(function(raw){
     stopLoad();
     document.getElementById('scriptTa').value=raw.trim();
@@ -643,7 +643,7 @@ function buildCanvas(){
   if(!blocks.length){alert('No valid blocks found. Check the format.');return;}
   show('s4');startLoad('s4');
   var li=langInstr(inputLang,'shot descriptions');
-  var sys='You are a cinematographer. Return ONLY a valid JSON array. No explanation, no markdown.\n'+li+'\nFormat: [{"i":0,"shots":[{"k":"shot","t":"..."},{"k":"action","t":"..."},{"k":"emotion","t":"..."}]}]\nk must be: shot, action, emotion, or tech. HAN always in frame or POV. Include lens, lighting, movement. Grain, analog.';
+  var sys=(li?li+'\n':'')+'You are a cinematographer. Return ONLY a valid JSON array. No explanation, no markdown.\nFormat: [{"i":0,"shots":[{"k":"shot","t":"..."},{"k":"action","t":"..."},{"k":"emotion","t":"..."}]}]\nk must be: shot, action, emotion, or tech. HAN always in frame or POV. Include lens, lighting, movement. Grain, analog.'+(li?'\n'+li:'');
   var usr='Blocks:\n'+blocks.map(function(b,i){return i+': ['+b.type.toUpperCase()+'] '+b.tcStart+'-'+b.tcEnd+' - '+b.content;}).join('\n')+'\n\nReturn shot ideas for each block.';
   api(sys,usr).then(function(raw){
     stopLoad();
@@ -667,7 +667,7 @@ function surpriseMe(){
   show('s2');startLoad('s2');
   var totalSec=(durMin+durMax)/2*60;
   var li=langInstr(inputLang,'shot plan content');
-  var sys='You are a filmmaker. Create a DIFFERENT, UNEXPECTED shot plan for the same topic. Try a completely different narrative approach, different structure, different emotional arc. Subject: HAN, a filmmaker in NYC.\n'+li+'\n\nVOICEOVER - exact spoken words. BROLL - camera sees. MUSIC - montage. TRANSITION - cut.\n\nReturn ONLY plain text:\n[TYPE] 00:00-00:00 - content';
+  var sys=(li?li+'\n\n':'')+'You are a filmmaker. Create a DIFFERENT, UNEXPECTED shot plan for the same topic. Try a completely different narrative approach, different structure, different emotional arc. Subject: HAN, a filmmaker in NYC.\n\nVOICEOVER - exact spoken words. BROLL - camera sees. MUSIC - montage. TRANSITION - cut.\n\nReturn ONLY plain text:\n[TYPE] 00:00-00:00 - content'+(li?'\n\n'+li:'');
   api(sys,'Create a surprising, different shot plan for: '+topic+'. Duration: '+durMin+'-'+durMax+' minutes (~'+Math.round(totalSec)+' sec). Tone: '+tone).then(function(raw){
     stopLoad();
     document.getElementById('scriptTa').value=raw.trim();
@@ -835,6 +835,20 @@ function addShotToCanvas(nodeId,shotId){
   }
 }
 
+function updateAttLines(){
+  document.querySelectorAll('.att-line').forEach(function(el){el.remove();});
+  var cw=document.getElementById('cw');
+  attShots.forEach(function(att){
+    var pnode=null;for(var i=0;i<nodes.length;i++){if(nodes[i].id===att.parentId){pnode=nodes[i];break;}}
+    if(!pnode)return;
+    var line=document.createElement('div');line.className='att-line';
+    var x1=pnode.x+NC_W/2,y1=pnode.y+140,x2=att.x+NC_W/2,y2=att.y;
+    var len=Math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));
+    var angle=Math.atan2(y2-y1,x2-x1)*180/Math.PI;
+    line.style.cssText='position:absolute;left:'+x1+'px;top:'+y1+'px;width:'+len+'px;height:1px;background:rgba(201,168,76,.3);transform-origin:0 50%;transform:rotate('+angle+'deg);pointer-events:none;z-index:0;';
+    cw.appendChild(line);
+  });
+}
 function renderAttShots(){
   document.querySelectorAll('.att-shot,.att-line').forEach(function(el){el.remove();});
   var cw=document.getElementById('cw');
@@ -1233,7 +1247,7 @@ function planNode(id){
   if(!n)return;
   var btn=document.querySelector('.plan-btn');if(btn){btn.textContent='planning...';btn.disabled=true;}
   var li=langInstr(inputLang,'shot descriptions');
-  var sys='You are a cinematographer. Give 4 shot ideas for this block. HAN always in frame or POV. Include lens, lighting, movement. Grain, analog. '+li+' Return ONLY JSON: [{"k":"shot","t":"..."},{"k":"action","t":"..."},{"k":"emotion","t":"..."},{"k":"tech","t":"..."}]';
+  var sys=(li?li+' ':'')+' You are a cinematographer. Give 4 shot ideas for this block. HAN always in frame or POV. Include lens, lighting, movement. Grain, analog. Return ONLY JSON: [{"k":"shot","t":"..."},{"k":"action","t":"..."},{"k":"emotion","t":"..."},{"k":"tech","t":"..."}]'+(li?' '+li:'');
   var usr='Block: ['+n.type.toUpperCase()+'] '+n.tcStart+'-'+n.tcEnd+' - '+n.content;
   api(sys,usr).then(function(raw){
     var shots=[];try{var m=raw.match(/\[[\s\S]*\]/);if(m)shots=JSON.parse(m[0]);}catch(e){}
@@ -1250,7 +1264,7 @@ function reviseBlock(nodeId,instruction){
   var n=null;for(var i=0;i<nodes.length;i++){if(nodes[i].id===nodeId){n=nodes[i];break;}}
   if(!n)return;
   var li=langInstr(inputLang,'block content');
-  var sys='You are a filmmaker. Revise this block content based on the instruction. Keep same block type. Return ONLY the revised content text, nothing else. '+li;
+  var sys=(li?li+' ':'')+' You are a filmmaker. Revise this block content based on the instruction. Keep same block type. Return ONLY the revised content text, nothing else.'+(li?' '+li:'');
   var usr='Current content: '+n.content+'\nInstruction: '+instruction;
   api(sys,usr).then(function(raw){
     saveHistory();
@@ -1386,7 +1400,7 @@ document.addEventListener('mousemove',function(e){
         if(ael){ael.style.left=a.x+'px';ael.style.top=a.y+'px';}
       }
     });
-    renderConns();updateMinimap();
+    updateAttLines();renderConns();updateMinimap();
   }
   if(dragAtt){
     var r2=vp.getBoundingClientRect();
@@ -1434,7 +1448,7 @@ document.addEventListener('mouseup',function(e){
   if(e.button===0&&dragN){
     var el=document.getElementById('nc-'+dragN.id);
     if(el){el.classList.remove('drag');el.style.zIndex='';}
-    dragN=null;saveHistory();renderTL();renderBlockList();renderConns();updateMinimap();
+    dragN=null;saveHistory();renderTL();renderBlockList();renderAttShots();renderConns();updateMinimap();
   }
   if(e.button===0&&dragAtt){
     var el2=document.getElementById('att-'+dragAtt.id);
