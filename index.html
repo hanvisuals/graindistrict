@@ -458,7 +458,7 @@ var canvasMode='select';
 var connFrom=null;
 var modalType='voiceover';
 var resizing=null,rsX=0,rsY=0,rsW=0,rsH=0,rsCorner='se',rsOX=0,rsOY=0;
-var history=[],historyIdx=-1;
+var undoStack=[],undoIdx=-1;
 var S2=[' reading your idea',' shaping the story',' writing the script',' building the plan',' crafting each moment',' almost done'];
 var S4=[' analyzing each block',' imagining the shots',' choosing the lenses',' thinking about light',' planning movement',' finishing up'];
 var loadInt=null;
@@ -481,15 +481,15 @@ function stopLoad(){if(loadInt){clearInterval(loadInt);loadInt=null;}}
 // Undo
 function saveHistory(){
   var state={nodes:JSON.stringify(nodes),attShots:JSON.stringify(attShots),imgNodes:JSON.stringify(imgNodes),noteNodes:JSON.stringify(noteNodes),conns:JSON.stringify(conns)};
-  history=history.slice(0,historyIdx+1);
-  history.push(state);
-  if(history.length>30)history.shift();
-  historyIdx=history.length-1;
+  undoStack=undoStack.slice(0,undoIdx+1);
+  undoStack.push(state);
+  if(undoStack.length>30)undoStack.shift();
+  undoIdx=undoStack.length-1;
 }
 function undoAction(){
-  if(historyIdx<=0)return;
-  historyIdx--;
-  var state=history[historyIdx];
+  if(undoIdx<=0)return;
+  undoIdx--;
+  var state=undoStack[undoIdx];
   nodes=JSON.parse(state.nodes);
   attShots=JSON.parse(state.attShots);
   imgNodes=JSON.parse(state.imgNodes);
@@ -654,7 +654,7 @@ function buildCanvas(){
       var shots=(entry.shots||[]).map(function(sh){return{id:nid++,k:sh.k||'shot',t:sh.t||''};});
       return{id:nid++,type:b.type,tcStart:b.tcStart,tcEnd:b.tcEnd,content:b.content,shots:shots,x:60+i*(NC_W+NC_GAP),y:80};
     });
-    attShots=[];imgNodes=[];noteNodes=[];conns=[];history=[];historyIdx=-1;
+    attShots=[];imgNodes=[];noteNodes=[];conns=[];undoStack=[];undoIdx=-1;
     document.getElementById('ctopic').textContent=topic;
     scale=1;px=60;py=80;selId=null;selImgId=null;selNoteId=null;
     saveHistory();
