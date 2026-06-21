@@ -572,8 +572,8 @@ function addBlock(){
 
 // Language detection
 function detectLang(text){
-  const turkishChars=/[çğışöüÇĞİŞÖÜ]/;
-  const turkishWords=/\b(ve|bir|bu|de|da|ile|için|ama|ya|ne|nasıl|nerede|ben|sen|biz|onlar|var|yok)\b/i;
+  const turkishChars=/[\u00e7\u011f\u0131\u015f\u00f6\u00fc\u00c7\u011e\u0130\u015e\u00d6\u00dc]/;
+  const turkishWords=/\b(ve|bir|bu|de|da|ile|icin|ama|ya|ne|nasil|nerede|ben|sen|biz|onlar|var|yok)\b/i;
   if(turkishChars.test(text)||turkishWords.test(text))return'tr';
   return'en';
 }
@@ -595,17 +595,17 @@ async function genScript(){
   durMin=parseInt(document.getElementById('durMin').value)||2;
   durMax=parseInt(document.getElementById('durMax').value)||4;
   if(!topic)return;
-  inputLang=/[çğışöüÇĞİŞÖÜ]/.test(topic)?'tr':'en';
+  inputLang=/[\u00e7\u011f\u0131\u015f\u00f6\u00fc\u00c7\u011e\u0130\u015e\u00d6\u00dc]/.test(topic)?'tr':'en';
   document.getElementById('gobtn').disabled=true;
   show('s2');
   startLoadingAnim('s2');
   const totalSec=(durMin+durMax)/2*60;
   // Detect language from input
-  const trChars=/[çğışöüÇĞİŞÖÜ]/;
-  const trWords=/(ve|bir|bu|de|da|ile|için|ama|bugün|gün|ben|sen|biz|var|yok|çok|daha|nasıl|neden|ne|kim|nerede|gidiyorum|yapıyorum|istiyorum)/i;
+  const trChars=/[\u00e7\u011f\u0131\u015f\u00f6\u00fc\u00c7\u011e\u0130\u015e\u00d6\u00dc]/;
+  const trWords=/(ve|bir|bu|de|da|ile|icin|ama|bugun|gun|ben|sen|biz|var|yok|cok|daha|nasil|neden|ne|kim|nerede|gidiyorum|yapiyorum|istiyorum)/i;
   if(trChars.test(topic)||trWords.test(topic))inputLang='tr'; else inputLang='en';
   const langInstr=inputLang==='tr'
-    ?'ÇOK ÖNEMLİ: Tüm shot planını TÜRKÇE yaz. Her blok içeriği Türkçe olmalı. Hiçbir şeyi İngilizce yazma.'
+    ?'YOU MUST write ALL content in TURKISH language. Every block must be in Turkish. Do not use English.'
     :'Write the entire shot plan in ENGLISH.';
   try{
     const raw=await api(
@@ -627,7 +627,7 @@ RULES:
 - Aesthetic: harsh flash, grain, analog, anti-polished.
 
 Return ONLY plain text, one block per line:
-[TYPE] 00:00-00:00 · content`,
+[TYPE] 00:00-00:00 - content`,
       `Create shot plan for: ${topic}`
     );
     document.getElementById('scriptTa').value=raw.trim();
@@ -640,11 +640,11 @@ function parseBlocks(text){
   return text.split('\n').map(line=>{
     line=line.trim();if(!line||line.startsWith('#'))return null;
     const tm=line.match(/\[?(VOICEOVER|BROLL|MUSIC|TRANSITION)\]?/i);if(!tm)return null;
-    const tcm=line.match(/(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})/);
-    const cdot=line.match(/[·•]\s*(.+)$/);
+    const tcm=line.match(/(\d{1,2}:\d{2})\s*[--]\s*(\d{1,2}:\d{2})/);
+    const cdot=line.match(/[-\u2022]\s*(.+)$/);
     let content='';
     if(cdot){content=cdot[1].trim();}
-    else{content=line.replace(/\[?(VOICEOVER|BROLL|MUSIC|TRANSITION)\]?/i,'').replace(/(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})/,'').replace(/^[:\s·•]+/,'').trim();}
+    else{content=line.replace(/\[?(VOICEOVER|BROLL|MUSIC|TRANSITION)\]?/i,'').replace(/(\d{1,2}:\d{2})\s*[--]\s*(\d{1,2}:\d{2})/,'').replace(/^[:\s-\u2022]+/,'').trim();}
     if(!content)return null;
     return{type:tm[1].toLowerCase(),tcStart:tcm?tcm[1]:'00:00',tcEnd:tcm?tcm[2]:'00:05',content,shots:[],img:null};
   }).filter(Boolean);
@@ -663,7 +663,7 @@ async function buildCanvas(){
 ${langInstr}
 Format: [{"i":0,"shots":[{"k":"shot","t":"..."},{"k":"action","t":"..."},{"k":"emotion","t":"..."}]}]
 k must be: shot, action, emotion, or tech. HAN always in frame or POV. Include lens (24/35/50/85mm), lighting, movement. Grain, analog.`,
-      `Blocks:\n${blocks.map((b,i)=>`${i}: [${b.type.toUpperCase()}] ${b.tcStart}-${b.tcEnd} · ${b.content}`).join('\n')}\n\nShot ideas for each.`
+      `Blocks:\n${blocks.map((b,i)=>`${i}: [${b.type.toUpperCase()}] ${b.tcStart}-${b.tcEnd} - ${b.content}`).join('\n')}\n\nShot ideas for each.`
     );
     let sd=[];
     try{const m=raw.match(/\[[\s\S]*\]/);if(m)sd=JSON.parse(m[0]);}catch(e){console.warn('Shot parse:',e);}
@@ -709,7 +709,7 @@ function renderBlockDetail(){
   const detail=document.getElementById('blockDetail');
   const node=nodes.find(n=>n.id===selId);
   if(!node){
-    detail.innerHTML='<div class="bd-empty"><div class="bd-empty-txt">← select a block</div><div class="bd-empty-hint">Click any block in the list or on the canvas</div></div>';
+    detail.innerHTML='<div class="bd-empty"><div class="bd-empty-txt"><- select a block</div><div class="bd-empty-hint">Click any block in the list or on the canvas</div></div>';
     return;
   }
   const idx=nodes.indexOf(node);
@@ -721,8 +721,8 @@ function renderBlockDetail(){
     <div class="shot-item" data-k="${sh.k}">
       <div class="shot-head">
         <span class="shot-k">${sh.k}</span>
-        <button class="shot-to-card" onclick="shotToCard(${node.id},${sh.id})" title="Add to selected canvas card">→ card</button>
-        <button class="shot-del" onclick="delShot(${node.id},${sh.id})">×</button>
+        <button class="shot-to-card" onclick="shotToCard(${node.id},${sh.id})" title="Add to selected canvas card">-> card</button>
+        <button class="shot-del" onclick="delShot(${node.id},${sh.id})">x</button>
       </div>
       <textarea class="shot-ta" rows="2" onchange="updateShot(${node.id},${sh.id},this.value)">${esc(sh.t)}</textarea>
     </div>`).join(''):'<div style="font-family:var(--mono);font-size:.44rem;color:var(--text-dimmer);padding:.3rem 0">no shots yet - add below or regenerate</div>';
@@ -761,7 +761,7 @@ function renderBlockDetail(){
         </div>
         ${shotsHtml}
       </div>
-      <button class="bd-regen" onclick="regenNode(${node.id})">↻ regenerate shot ideas</button>
+      <button class="bd-regen" onclick="regenNode(${node.id})">R regenerate shot ideas</button>
     </div>`;
   detail.querySelectorAll('.shot-ta').forEach(ta=>{
     ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';
@@ -849,7 +849,7 @@ function renderImgNodes(){
     el.className='img-node'+(img.id===selImgId?' sel':'');
     el.id='img-'+img.id;
     el.style.cssText=`left:${img.x}px;top:${img.y}px;width:${img.w}px;height:${img.h}px;`;
-    el.innerHTML=`<img src="${img.src}" alt=""><button class="img-node-del" onclick="delImgNode(${img.id})">×</button><div class="img-node-resize"></div>`;
+    el.innerHTML=`<img src="${img.src}" alt=""><button class="img-node-del" onclick="delImgNode(${img.id})">x</button><div class="img-node-resize"></div>`;
 
     // Drag
     el.addEventListener('mousedown',e=>{
@@ -970,12 +970,12 @@ function renderTL(){
   nodes.forEach((node,idx)=>{
     const b=document.createElement('div');
     b.className='tl-block';b.style.width=bw+'px';b.style.background=TYPE_COLORS[node.type]||TYPE_COLORS.voiceover;
-    b.innerHTML=`<div class="tl-tc">${node.tcStart}-${node.tcEnd}</div><div class="tl-lbl">${esc(node.content.split(' ').slice(0,4).join(' '))}…</div><div class="tl-typ">${TYPE_LABELS[node.type]||node.type}</div>`;
+    b.innerHTML=`<div class="tl-tc">${node.tcStart}-${node.tcEnd}</div><div class="tl-lbl">${esc(node.content.split(' ').slice(0,4).join(' '))}...</div><div class="tl-typ">${TYPE_LABELS[node.type]||node.type}</div>`;
     b.addEventListener('click',()=>{selId=node.id;renderAll();panToNode(node);});
     b.addEventListener('mousedown',e=>{e.stopPropagation();tlDragIdx=idx;tlDragX=e.clientX;tlIsDrag=false;b.classList.add('tl-drag');});
     tl.appendChild(b);
   });
-  const tot=document.createElement('div');tot.className='tl-total';tot.textContent=`${durMin}–${durMax} min`;tl.appendChild(tot);
+  const tot=document.createElement('div');tot.className='tl-total';tot.textContent=`${durMin}-${durMax} min`;tl.appendChild(tot);
 }
 
 // Node ops
@@ -1017,18 +1017,18 @@ async function regenNode(id){
   try{
     const raw=await api(
       `Cinematographer. 3 shots. HAN in frame or POV. Lens, lighting, movement. Grain, analog. ${langInstr} Return ONLY JSON: [{"k":"shot","t":"..."},{"k":"action","t":"..."},{"k":"emotion","t":"..."}]`,
-      `Block: [${n.type.toUpperCase()}] ${n.tcStart}-${n.tcEnd} · ${n.content}`
+      `Block: [${n.type.toUpperCase()}] ${n.tcStart}-${n.tcEnd} - ${n.content}`
     );
     let shots=[];try{const m=raw.match(/\[[\s\S]*\]/);if(m)shots=JSON.parse(m[0]);}catch(e){}
     n.shots=shots.map(s=>({id:nid++,k:s.k||'shot',t:s.t||''}));renderBlockDetail();renderCanvas();
   }catch(e){alert('Error: '+e.message);}
-  if(btn){btn.textContent='↻ regenerate shot ideas';btn.disabled=false;}
+  if(btn){btn.textContent='R regenerate shot ideas';btn.disabled=false;}
 }
 
 // Add shot from detail panel to a canvas card
 function shotToCard(fromNodeId,shotId){
   // The shot already belongs to the node - this copies it
-  // Actually shots ARE the card's shots. "→ card" means: this shot is already on this card.
+  // Actually shots ARE the card's shots. "-> card" means: this shot is already on this card.
   // What user wants: move shot idea from one card to another, or confirm it's added.
   // Since shots are already on the card - just highlight it was added with a flash
   const el=document.getElementById('nc-'+fromNodeId);
@@ -1053,7 +1053,7 @@ function fitScreen(){
 
 // Export
 function doExport(){
-  let out=`GRAIN DISTRICT - ${topic.toUpperCase()}\nDuration: ${durMin}–${durMax} min\n${'='.repeat(50)}\n\n`;
+  let out=`GRAIN DISTRICT - ${topic.toUpperCase()}\nDuration: ${durMin}-${durMax} min\n${'='.repeat(50)}\n\n`;
   nodes.forEach((n,i)=>{
     out+=`[${n.type.toUpperCase()}] ${n.tcStart} - ${n.tcEnd}\n${n.content}\n\n`;
     n.shots.forEach(s=>{out+=`  [${s.k.toUpperCase()}] ${s.t}\n`;});
