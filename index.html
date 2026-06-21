@@ -640,11 +640,11 @@ function parseBlocks(text){
   return text.split('\n').map(line=>{
     line=line.trim();if(!line||line.startsWith('#'))return null;
     const tm=line.match(/\[?(VOICEOVER|BROLL|MUSIC|TRANSITION)\]?/i);if(!tm)return null;
-    const tcm=line.match(/(\d{1,2}:\d{2})\s*[--]\s*(\d{1,2}:\d{2})/);
+    const tcm=line.match(/(\d{1,2}:\d{2})\s*[-]\s*(\d{1,2}:\d{2})/);
     const cdot=line.match(/[-\u2022]\s*(.+)$/);
     let content='';
     if(cdot){content=cdot[1].trim();}
-    else{content=line.replace(/\[?(VOICEOVER|BROLL|MUSIC|TRANSITION)\]?/i,'').replace(/(\d{1,2}:\d{2})\s*[--]\s*(\d{1,2}:\d{2})/,'').replace(/^[:\s-\u2022]+/,'').trim();}
+    else{content=line.replace(/\[?(VOICEOVER|BROLL|MUSIC|TRANSITION)\]?/i,'').replace(/(\d{1,2}:\d{2})\s*[-]\s*(\d{1,2}:\d{2})/,'').replace(/^[:\s-\u2022]+/,'').trim();}
     if(!content)return null;
     return{type:tm[1].toLowerCase(),tcStart:tcm?tcm[1]:'00:00',tcEnd:tcm?tcm[2]:'00:05',content,shots:[],img:null};
   }).filter(Boolean);
