@@ -331,6 +331,14 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 .ms-play svg{width:12px;height:12px;}
 .ms-time{font-family:var(--mono);font-size:10px;letter-spacing:.04em;color:rgba(255,255,255,.45);flex-shrink:0;}
 .ms-time b{color:#fff;font-weight:700;}
+.ms-vol{display:flex;align-items:center;gap:5px;flex-shrink:0;}
+.ms-vol-btn{background:none;border:none;cursor:pointer;color:rgba(255,255,255,.5);padding:2px;display:flex;align-items:center;transition:color .12s;}
+.ms-vol-btn:hover{color:#fff;}
+.ms-vol-btn.muted{color:rgba(255,80,80,.7);}
+.ms-vol-btn svg{width:15px;height:15px;}
+.ms-vol-slider{-webkit-appearance:none;appearance:none;width:64px;height:3px;border-radius:2px;background:rgba(255,255,255,.16);outline:none;cursor:pointer;}
+.ms-vol-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:11px;height:11px;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 0 4px rgba(0,0,0,.5);}
+.ms-vol-slider::-moz-range-thumb{width:11px;height:11px;border:none;border-radius:50%;background:#fff;cursor:pointer;}
 .ms-meta{display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
 .ms-field{display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:5px;padding:2px 4px 2px 7px;}
 .ms-field label{font-family:var(--mono);font-size:8px;letter-spacing:.06em;color:rgba(255,255,255,.32);text-transform:uppercase;}
@@ -858,6 +866,12 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
         <svg id="msPlayIcon" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
       </button>
       <span class="ms-time"><b id="msCur">0:00</b> / <span id="msTot">0:00</span></span>
+      <div class="ms-vol" title="Volume">
+        <button class="ms-vol-btn" id="msVolBtn" onclick="msToggleMute()">
+          <svg id="msVolIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a9 9 0 0 1 0 14"/></svg>
+        </button>
+        <input class="ms-vol-slider" id="msVol" type="range" min="0" max="100" value="100" oninput="msSetVol(this.value)">
+      </div>
       <span class="ms-title">music analysis</span>
       <div class="ms-meta" id="msMeta">
         <span class="ms-field"><label>BPM</label><input id="mfBpm" data-k="bpm" value="—"></span>
@@ -1403,6 +1417,7 @@ function msToggle(){
   if(!songURL){alert('Upload a song first (music mode).');return;}
   if(au.src!==songURL)au.src=songURL;
   if(msPlaying){msStop();au.pause();return;}
+  var sl=document.getElementById('msVol');msSetVol(sl?sl.value:100);
   msPlaying=true;setMsPlayIcon(true);
   au.play().catch(function(){});
   function loop(){
@@ -1414,6 +1429,29 @@ function msToggle(){
   au.onended=function(){msStop();};
 }
 function msStop(){msPlaying=false;setMsPlayIcon(false);if(msRAF){cancelAnimationFrame(msRAF);msRAF=null;}}
+var msVolPrev=100;
+function msSetVol(v){
+  v=Math.max(0,Math.min(100,+v));
+  var au=document.getElementById('stripAudio');
+  au.volume=v/100;au.muted=(v===0);
+  var sl=document.getElementById('msVol');if(sl&&+sl.value!==v)sl.value=v;
+  if(v>0)msVolPrev=v;
+  updateVolIcon(v,au.muted);
+}
+function msToggleMute(){
+  var au=document.getElementById('stripAudio');
+  if(au.muted||au.volume===0){msSetVol(msVolPrev||100);}
+  else{msVolPrev=Math.round(au.volume*100)||100;msSetVol(0);}
+}
+function updateVolIcon(v,muted){
+  var btn=document.getElementById('msVolBtn'), ic=document.getElementById('msVolIcon');
+  if(!ic)return;
+  btn.classList.toggle('muted',muted||v===0);
+  var base='<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>';
+  if(muted||v===0){ic.innerHTML=base+'<line x1="22" y1="9" x2="16" y2="15"/><line x1="16" y1="9" x2="22" y2="15"/>';}
+  else if(v<55){ic.innerHTML=base+'<path d="M15.5 8.5a5 5 0 0 1 0 7"/>';}
+  else{ic.innerHTML=base+'<path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a9 9 0 0 1 0 14"/>';}
+}
 function setMsPlayIcon(p){
   document.getElementById('msPlayIcon').innerHTML=p
     ?'<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>'
