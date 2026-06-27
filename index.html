@@ -42,9 +42,17 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 .dur-lbl{font-family:var(--sans);font-size:13px;color:var(--text-3);}
 .dur-input{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:13px;padding:7px 10px;outline:none;width:68px;text-align:center;transition:border-color .15s;}
 .dur-input:focus{border-color:var(--border-hi);}
-.gobtn{width:100%;font-family:var(--sans);font-size:14px;font-weight:600;padding:.82rem;border:none;background:#fff;color:#111;cursor:pointer;outline:none;border-radius:var(--r);transition:background .15s;}
-.gobtn:hover{background:rgba(255,255,255,.88);}
-.gobtn:disabled{opacity:.3;pointer-events:none;}
+.gobtn{position:relative;width:100%;font-family:var(--sans);font-size:15px;font-weight:700;letter-spacing:.01em;line-height:1.5;padding:.95rem 1.2rem;border:none;border-radius:12px;cursor:pointer;outline:none;color:#0a0a0a;overflow:hidden;display:flex;align-items:center;justify-content:center;gap:9px;background:linear-gradient(110deg,#fff 0%,#f3ead0 50%,#fff 100%);background-size:220% 100%;box-shadow:0 4px 20px rgba(201,168,76,.18),0 0 0 1px rgba(255,255,255,.1) inset;transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .28s,background-position .5s;animation:goPulse 2.8s ease-in-out infinite;}
+.gobtn span{position:relative;z-index:2;}
+.gobtn svg{position:relative;z-index:2;width:17px;height:17px;transition:transform .22s cubic-bezier(.2,.8,.2,1);}
+.gobtn:hover{transform:translateY(-2px);background-position:100% 0;box-shadow:0 12px 36px rgba(201,168,76,.38),0 0 0 1px rgba(255,255,255,.25) inset;animation:none;}
+.gobtn:hover svg{transform:translateX(5px);}
+.gobtn:active{transform:translateY(0) scale(.98);box-shadow:0 3px 14px rgba(201,168,76,.3),0 0 0 1px rgba(255,255,255,.2) inset;}
+.gobtn::after{content:'';position:absolute;top:0;left:-65%;width:45%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.85),transparent);transform:skewX(-18deg);opacity:0;z-index:1;}
+.gobtn:hover::after{animation:goShine .95s ease;}
+.gobtn:disabled{opacity:.3;pointer-events:none;animation:none;}
+@keyframes goPulse{0%,100%{box-shadow:0 4px 20px rgba(201,168,76,.16),0 0 0 1px rgba(255,255,255,.1) inset;}50%{box-shadow:0 6px 28px rgba(201,168,76,.34),0 0 0 1px rgba(255,255,255,.18) inset;}}
+@keyframes goShine{0%{left:-65%;opacity:0;}25%{opacity:.9;}100%{left:135%;opacity:0;}}
 /* LOADING */
 #s2,#s4{align-items:center;justify-content:center;gap:1.6rem;}
 @keyframes glitch-a{0%,100%{clip-path:inset(0 0 96% 0);transform:translate(-3px,0);}20%{clip-path:inset(20% 0 60% 0);transform:translate(3px,0);}40%{clip-path:inset(75% 0 8% 0);transform:translate(-2px,0);}60%{clip-path:inset(45% 0 35% 0);transform:translate(3px,0);}80%{clip-path:inset(88% 0 3% 0);transform:translate(-3px,0);}}
@@ -607,9 +615,17 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 .s1-music-only{display:none;flex-direction:column;gap:1.3rem;}
 #s1.mv-mode .s1-youtube-only{display:none;}
 #s1.mv-mode .s1-music-only{display:flex;}
-.mv-hint-box{width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:var(--r);padding:.85rem 1.1rem;min-height:48px;display:flex;align-items:center;backdrop-filter:blur(16px);}
-.mv-hint-text{font-family:var(--sans);font-size:13px;color:rgba(255,255,255,.35);transition:opacity .35s;line-height:1.5;}
+.mv-suggest{display:none;align-items:center;gap:8px;margin-top:9px;padding:0 2px;}
+#s1.mv-mode .mv-suggest{display:flex;}
+.mv-suggest-dot{width:6px;height:6px;border-radius:50%;background:rgba(180,100,220,.9);flex-shrink:0;box-shadow:0 0 8px rgba(180,100,220,.7);animation:mvDot 1.8s ease-in-out infinite;}
+@keyframes mvDot{0%,100%{opacity:.4;transform:scale(.85);}50%{opacity:1;transform:scale(1.15);}}
+.mv-hint-text{font-family:var(--sans);font-size:12.5px;font-style:italic;color:rgba(255,255,255,.4);transition:opacity .35s;line-height:1.45;}
 .mv-hint-text.fade{opacity:0;}
+/* upload song + length row */
+.song-row{display:flex;gap:12px;align-items:flex-start;}
+.song-up-col{flex:1;min-width:0;}
+.song-len-col{flex-shrink:0;width:92px;}
+.song-len-in{width:100%;text-align:center;}
 </style>
 </head>
 <body>
@@ -678,6 +694,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
     <div>
       <div class="ilabel" id="s1TopicLabel">what is this video about?</div>
       <textarea class="ita" id="topicIn" placeholder="a rainy morning in NYC... or NYC'de yagmurlu bir sabah..." rows="3"></textarea>
+      <div class="mv-suggest" id="mvSuggest">
+        <span class="mv-suggest-dot"></span>
+        <span class="mv-hint-text" id="mvHintText">Describe the mood -- dark, romantic, euphoric?</span>
+      </div>
     </div>
     <div class="s1-youtube-only">
       <div>
@@ -692,25 +712,24 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
       </div>
     </div>
     <div class="s1-music-only">
-      <div>
-        <div class="ilabel">upload song</div>
-        <label class="song-up" id="songUp">
-          <span class="song-up-ic">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-          </span>
-          <span class="song-up-txt">
-            <span class="song-up-t1" id="songUpT1">Drop or choose an audio file</span>
-            <span class="song-up-t2" id="songUpT2">mp3 · wav · m4a — synced playback on the canvas</span>
-          </span>
-          <input type="file" accept="audio/*" id="songFile" style="display:none" onchange="onSongPick(event)">
-          <button class="song-up-clear" id="songClear" style="display:none" onclick="clearSong(event)">✕</button>
-        </label>
-      </div>
-      <div>
-        <div class="ilabel">song length</div>
-        <div class="dur-row">
-          <input class="dur-input" id="durMmss" value="3:30" style="width:80px" placeholder="3:23">
-          <span class="dur-lbl">mm:ss</span>
+      <div class="song-row">
+        <div class="song-up-col">
+          <div class="ilabel">upload song</div>
+          <label class="song-up" id="songUp">
+            <span class="song-up-ic">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            </span>
+            <span class="song-up-txt">
+              <span class="song-up-t1" id="songUpT1">Drop or choose an audio file</span>
+              <span class="song-up-t2" id="songUpT2">mp3 · wav · m4a</span>
+            </span>
+            <input type="file" accept="audio/*" id="songFile" style="display:none" onchange="onSongPick(event)">
+            <button class="song-up-clear" id="songClear" style="display:none" onclick="clearSong(event)">✕</button>
+          </label>
+        </div>
+        <div class="song-len-col">
+          <div class="ilabel">length</div>
+          <input class="dur-input song-len-in" id="durMmss" value="3:30" placeholder="mm:ss" title="Auto-filled from the track — or type it">
         </div>
       </div>
       <div>
@@ -722,11 +741,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
             <input type="file" accept="image/*" multiple id="recceFiles" style="display:none" onchange="addRecceImages(event)">
           </label>
         </div>
-        <div class="recce-hint" id="recceHint">Mekanda çektiğin kareleri yükle — AI bunları analiz edip plana yansıtsın.</div>
-        <textarea class="recce-prompt" id="reccePrompt" rows="2" placeholder="Bu mekanlarda ne çekmek istiyorsun? Fikirler, açılar, vibe... (opsiyonel)"></textarea>
-      </div>
-      <div class="mv-hint-box">
-        <span class="mv-hint-text" id="mvHintText">Describe the mood -- dark, romantic, euphoric?</span>
+        <div class="recce-hint" id="recceHint">Mekan görsellerini yükle — şarkı ve üstteki prompt ile birlikte analiz edilip plana yansır.</div>
       </div>
     </div>
     <div class="s1-youtube-only">
@@ -749,7 +764,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
         </div>
       </div>
     </div>
-    <button class="gobtn" id="gobtn" onclick="goToChoice()">generate shot plan</button>
+    <button class="gobtn" id="gobtn" onclick="goToChoice()"><span>generate shot plan</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
   </div>
 </div>
 
