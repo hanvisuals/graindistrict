@@ -388,6 +388,24 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 .recce-prompt{width:100%;margin-top:8px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--sans);font-size:13px;line-height:1.5;padding:10px 12px;resize:none;outline:none;user-select:text;transition:border-color .15s;}
 .recce-prompt:focus{border-color:var(--border-hi);}
 .recce-prompt::placeholder{color:var(--text-3);}
+/* RECCE PANEL (final page — show/hide uploaded location photos) */
+.recce-panel{display:none;position:fixed;top:60px;left:1rem;width:288px;max-height:72vh;background:rgba(11,11,11,.97);border:1px solid var(--border);border-radius:12px;z-index:55;backdrop-filter:blur(20px);box-shadow:0 16px 50px rgba(0,0,0,.7);flex-direction:column;overflow:hidden;animation:recce-in .18s ease;}
+.recce-panel.open{display:flex;}
+@keyframes recce-in{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
+.recce-panel-head{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--border);cursor:grab;flex-shrink:0;}
+.recce-panel-head.dragging{cursor:grabbing;}
+.recce-panel-title{font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:rgba(255,255,255,.5);text-transform:uppercase;}
+.recce-panel-x{background:none;border:none;color:var(--text-3);cursor:pointer;font-size:12px;padding:2px 5px;border-radius:4px;transition:color .12s,background .12s;}
+.recce-panel-x:hover{color:#fff;background:rgba(255,255,255,.08);}
+.recce-panel-grid{padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:7px;overflow-y:auto;}
+.recce-panel-grid::-webkit-scrollbar{width:3px;}
+.recce-panel-grid::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px;}
+.recce-panel-grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:7px;border:1px solid rgba(255,255,255,.1);cursor:zoom-in;transition:transform .15s,border-color .15s;display:block;}
+.recce-panel-grid img:hover{transform:scale(1.04);border-color:rgba(120,170,225,.5);}
+.recce-panel-empty{grid-column:1/-1;padding:22px 12px;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.04em;color:var(--text-3);line-height:1.6;}
+.recce-lightbox{display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.92);align-items:center;justify-content:center;backdrop-filter:blur(12px);cursor:zoom-out;}
+.recce-lightbox.open{display:flex;}
+.recce-lightbox img{max-width:90vw;max-height:90vh;border-radius:8px;box-shadow:0 24px 80px rgba(0,0,0,.85);}
 /* PLAYBACK OVERLAY (program monitor) */
 .pb-overlay{display:none;position:absolute;inset:0;z-index:60;background:rgba(5,5,6,.98);flex-direction:column;backdrop-filter:blur(20px);}
 .pb-overlay.open{display:flex;}
@@ -855,10 +873,11 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
       <button class="btn" onclick="undoAction()" title="Ctrl+Z">undo</button>
       <button class="btn" onclick="fitScreen()">fit</button>
       <button class="btn on" id="scriptBtn" onclick="toggleScript()">script</button>
+      <button class="btn" id="recceBtn" onclick="toggleReccePanel()" style="display:none">recce</button>
       <button class="btn" id="previewBtn" onclick="openPlayback()">▶ preview</button>
       <button class="btn" onclick="surpriseMe()">surprise me</button>
       <button class="btn" onclick="doExport()">export</button>
-      <button class="btn" onclick="projectBrief='';projectConstraints='';show('s1')">new</button>
+      <button class="btn" onclick="projectBrief='';projectConstraints='';clearRecce();var rp=document.getElementById('reccePanel');if(rp)rp.classList.remove('open');show('s1')">new</button>
     </div>
   </div>
   <div class="canvas-body">
@@ -973,6 +992,16 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
     <div class="gi">Ctrl+Z = undo</div>
   </div>
   <div class="zoom-ind" id="zind">100%</div>
+  <div class="recce-panel" id="reccePanel">
+    <div class="recce-panel-head" id="reccePanelHead">
+      <span class="recce-panel-title">⠿ recce <span id="recceCount" style="color:rgba(120,170,225,.9)"></span></span>
+      <button class="recce-panel-x" onclick="toggleReccePanel()">✕</button>
+    </div>
+    <div class="recce-panel-grid" id="reccePanelGrid"></div>
+  </div>
+  <div class="recce-lightbox" id="recceLightbox" onclick="closeRecceLightbox()">
+    <img id="recceLightboxImg" src="" alt="">
+  </div>
   <div class="pb-overlay" id="pbOverlay">
     <div class="pb-top">
       <span class="pb-top-title">Playback</span>
@@ -1651,6 +1680,63 @@ function recceContext(){
   return ctx;
 }
 
+/* ===== RECCE PANEL on final page (show/hide) ===== */
+function updateRecceBtn(){
+  var btn=document.getElementById('recceBtn');if(!btn)return;
+  btn.style.display=recceImages.length?'':'none';
+}
+function toggleReccePanel(){
+  var panel=document.getElementById('reccePanel');
+  var btn=document.getElementById('recceBtn');
+  if(panel.classList.contains('open')){
+    panel.classList.remove('open');if(btn)btn.classList.remove('on');
+  }else{
+    renderReccePanelGrid();
+    panel.classList.add('open');if(btn)btn.classList.add('on');
+  }
+}
+function renderReccePanelGrid(){
+  var grid=document.getElementById('reccePanelGrid');if(!grid)return;
+  document.getElementById('recceCount').textContent=recceImages.length?('· '+recceImages.length):'';
+  if(!recceImages.length){grid.innerHTML='<div class="recce-panel-empty">No recce photos uploaded for this project.</div>';return;}
+  grid.innerHTML='';
+  recceImages.forEach(function(im){
+    var img=document.createElement('img');
+    img.src=im.thumb;img.alt=im.name||'';
+    img.onclick=function(){openRecceLightbox(im.thumb);};
+    grid.appendChild(img);
+  });
+}
+function openRecceLightbox(src){
+  var lb=document.getElementById('recceLightbox');
+  document.getElementById('recceLightboxImg').src=src;
+  lb.classList.add('open');
+}
+function closeRecceLightbox(){document.getElementById('recceLightbox').classList.remove('open');}
+/* draggable recce panel */
+(function(){
+  var dragging=false,ox=0,oy=0;
+  document.addEventListener('mousedown',function(e){
+    var h=e.target.closest&&e.target.closest('.recce-panel-head');
+    if(!h||e.target.closest('.recce-panel-x'))return;
+    var p=document.getElementById('reccePanel');var r=p.getBoundingClientRect();
+    dragging=true;ox=e.clientX-r.left;oy=e.clientY-r.top;
+    p.style.right='auto';p.style.bottom='auto';p.style.left=r.left+'px';p.style.top=r.top+'px';
+    h.classList.add('dragging');e.preventDefault();
+  });
+  document.addEventListener('mousemove',function(e){
+    if(!dragging)return;
+    var p=document.getElementById('reccePanel');
+    var nx=Math.max(0,Math.min(window.innerWidth-p.offsetWidth,e.clientX-ox));
+    var ny=Math.max(0,Math.min(window.innerHeight-p.offsetHeight,e.clientY-oy));
+    p.style.left=nx+'px';p.style.top=ny+'px';
+  });
+  document.addEventListener('mouseup',function(){
+    if(!dragging)return;dragging=false;
+    var h=document.querySelector('.recce-panel-head');if(h)h.classList.remove('dragging');
+  });
+})();
+
 /* ===== PLAYBACK / PROGRAM MONITOR ===== */
 function pbNodesSorted(){
   return nodes.slice().sort(function(a,b){return tcToSec(a.tcStart)-tcToSec(b.tcStart);});
@@ -2116,7 +2202,7 @@ function surpriseMe(){
 }
 
 function renderAll(){
-  renderBlockList();renderBlockDetail();renderCanvas();renderAttShots();renderImgNodes();renderNoteNodes();renderConns();renderTL();renderMusicStrip();updateT();
+  renderBlockList();renderBlockDetail();renderCanvas();renderAttShots();renderImgNodes();renderNoteNodes();renderConns();renderTL();renderMusicStrip();updateRecceBtn();updateT();
 }
 
 function renderBlockList(){
