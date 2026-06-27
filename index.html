@@ -226,6 +226,17 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 .sb-panel-pldr{width:100%;height:100%;background:rgba(255,255,255,.03);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:rgba(255,255,255,.2);animation:sb-pulse 1.2s ease infinite;}
 .sb-panel-close{position:absolute;top:5px;right:5px;background:rgba(0,0,0,.55);border:none;border-radius:50%;width:18px;height:18px;color:rgba(255,255,255,.6);cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);transition:background .12s;}
 .sb-panel-close:hover{background:rgba(0,0,0,.85);}
+/* recce location reference above the storyboard */
+.loc-panel{position:absolute;border-radius:6px;overflow:hidden;border:1px solid rgba(120,170,225,.45);box-shadow:0 6px 22px rgba(0,0,0,.7);z-index:2;}
+.loc-panel img{display:block;width:100%;height:100%;object-fit:cover;}
+.loc-panel-tag{position:absolute;top:4px;left:4px;font-family:var(--mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:#fff;background:rgba(90,138,204,.9);padding:2px 6px;border-radius:4px;}
+.loc-panel-x{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.55);border:none;border-radius:50%;width:18px;height:18px;color:rgba(255,255,255,.85);cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);transition:background .12s;}
+.loc-panel-x:hover{background:rgba(220,40,40,.85);}
+/* recce location picker in block detail */
+.bd-loc-row{display:flex;gap:6px;flex-wrap:wrap;}
+.bd-loc-thumb{width:52px;height:40px;object-fit:cover;border-radius:5px;border:1px solid var(--border);cursor:pointer;transition:border-color .12s,transform .12s;}
+.bd-loc-thumb:hover{transform:scale(1.06);border-color:var(--border-hi);}
+.bd-loc-thumb.sel{border-color:rgba(120,170,225,.95);box-shadow:0 0 0 1px rgba(120,170,225,.6);}
 .sb-regen{position:absolute;background:rgba(12,12,12,.85);border:1px solid rgba(255,255,255,.14);border-radius:50%;width:22px;height:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.45);transition:color .15s,background .12s,transform .2s;backdrop-filter:blur(4px);z-index:3;}
 .sb-regen:hover{color:rgba(255,255,255,.9);background:rgba(30,30,30,.9);transform:rotate(-30deg);}
 .sb-regen svg{width:11px;height:11px;display:block;}
@@ -388,21 +399,21 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 .recce-prompt{width:100%;margin-top:8px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--sans);font-size:13px;line-height:1.5;padding:10px 12px;resize:none;outline:none;user-select:text;transition:border-color .15s;}
 .recce-prompt:focus{border-color:var(--border-hi);}
 .recce-prompt::placeholder{color:var(--text-3);}
-/* RECCE PANEL (final page — show/hide uploaded location photos) */
-.recce-panel{display:none;position:fixed;top:60px;left:1rem;width:288px;max-height:72vh;background:rgba(11,11,11,.97);border:1px solid var(--border);border-radius:12px;z-index:55;backdrop-filter:blur(20px);box-shadow:0 16px 50px rgba(0,0,0,.7);flex-direction:column;overflow:hidden;animation:recce-in .18s ease;}
+/* RECCE PANEL (final page — horizontal filmstrip, show/hide) */
+.recce-panel{display:none;position:fixed;top:56px;left:50%;transform:translateX(-50%);max-width:78vw;background:rgba(11,11,11,.97);border:1px solid var(--border);border-radius:12px;z-index:55;backdrop-filter:blur(20px);box-shadow:0 16px 50px rgba(0,0,0,.7);flex-direction:column;overflow:hidden;animation:recce-in .18s ease;}
 .recce-panel.open{display:flex;}
-@keyframes recce-in{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
-.recce-panel-head{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--border);cursor:grab;flex-shrink:0;}
+@keyframes recce-in{from{opacity:0;transform:translate(-50%,-6px);}to{opacity:1;transform:translate(-50%,0);}}
+.recce-panel-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:8px 12px 6px;cursor:grab;flex-shrink:0;}
 .recce-panel-head.dragging{cursor:grabbing;}
 .recce-panel-title{font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:rgba(255,255,255,.5);text-transform:uppercase;}
 .recce-panel-x{background:none;border:none;color:var(--text-3);cursor:pointer;font-size:12px;padding:2px 5px;border-radius:4px;transition:color .12s,background .12s;}
 .recce-panel-x:hover{color:#fff;background:rgba(255,255,255,.08);}
-.recce-panel-grid{padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:7px;overflow-y:auto;}
-.recce-panel-grid::-webkit-scrollbar{width:3px;}
-.recce-panel-grid::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px;}
-.recce-panel-grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:7px;border:1px solid rgba(255,255,255,.1);cursor:zoom-in;transition:transform .15s,border-color .15s;display:block;}
+.recce-panel-grid{padding:0 10px 11px;display:flex;flex-direction:row;gap:8px;overflow-x:auto;overflow-y:hidden;}
+.recce-panel-grid::-webkit-scrollbar{height:4px;}
+.recce-panel-grid::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:2px;}
+.recce-panel-grid img{height:96px;width:auto;max-width:170px;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,.1);cursor:zoom-in;transition:transform .15s,border-color .15s;display:block;flex-shrink:0;}
 .recce-panel-grid img:hover{transform:scale(1.04);border-color:rgba(120,170,225,.5);}
-.recce-panel-empty{grid-column:1/-1;padding:22px 12px;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.04em;color:var(--text-3);line-height:1.6;}
+.recce-panel-empty{padding:18px 22px;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.04em;color:var(--text-3);line-height:1.6;}
 .recce-lightbox{display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.92);align-items:center;justify-content:center;backdrop-filter:blur(12px);cursor:zoom-out;}
 .recce-lightbox.open{display:flex;}
 .recce-lightbox img{max-width:90vw;max-height:90vh;border-radius:8px;box-shadow:0 24px 80px rgba(0,0,0,.85);}
@@ -634,6 +645,18 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 @keyframes mvDot{0%,100%{opacity:.4;transform:scale(.85);}50%{opacity:1;transform:scale(1.15);}}
 .mv-hint-text{font-family:var(--sans);font-size:12.5px;font-style:italic;color:rgba(255,255,255,.4);transition:opacity .35s;line-height:1.45;}
 .mv-hint-text.fade{opacity:0;}
+/* AI mode switch (replaces the generate/own page) */
+.ai-mode{display:flex;align-items:center;gap:9px;padding:9px 13px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.03);cursor:pointer;user-select:none;transition:border-color .15s,background .15s;}
+.ai-mode:hover{border-color:var(--border-hi);background:rgba(255,255,255,.05);}
+.ai-mode-ic{font-size:13px;color:var(--text-3);transition:color .2s;}
+.ai-mode.on .ai-mode-ic{color:rgba(201,168,76,.95);}
+.ai-mode-txt{font-family:var(--sans);font-size:13px;font-weight:600;color:var(--text-2);flex:1;}
+.ai-mode-sw{width:34px;height:19px;border-radius:11px;background:rgba(255,255,255,.12);position:relative;flex-shrink:0;transition:background .2s;}
+.ai-mode.on .ai-mode-sw{background:rgba(201,168,76,.55);}
+.ai-mode-knob{position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#fff;transition:left .2s cubic-bezier(.3,1.4,.5,1);box-shadow:0 1px 3px rgba(0,0,0,.4);}
+.ai-mode.on .ai-mode-knob{left:17px;}
+.ai-mode-state{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--text-3);width:26px;text-align:right;}
+.ai-mode.on .ai-mode-state{color:rgba(201,168,76,.95);}
 /* upload song + length row */
 .song-row{display:flex;gap:12px;align-items:flex-start;}
 .song-up-col{flex:1;min-width:0;}
@@ -777,7 +800,13 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
         </div>
       </div>
     </div>
-    <button class="gobtn" id="gobtn" onclick="goToChoice()"><span>generate shot plan</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+    <div class="ai-mode on" id="aiModeSwitch" onclick="toggleAi()" title="AI on: generate the plan for you · AI off: open a blank canvas">
+      <span class="ai-mode-ic">✦</span>
+      <span class="ai-mode-txt" id="aiModeTxt">Generate with AI</span>
+      <span class="ai-mode-sw"><span class="ai-mode-knob"></span></span>
+      <span class="ai-mode-state" id="aiModeState">ON</span>
+    </div>
+    <button class="gobtn" id="gobtn" onclick="goToChoice()"><span id="gobtnTxt">generate shot plan</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
   </div>
 </div>
 
@@ -821,27 +850,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
   <div class="lsub">about 15 seconds...</div>
 </div>
 
-<div id="s_pc" class="screen" style="flex-direction:column;position:relative;">
-  <div class="kb-prog-wrap"><div class="kb-prog-fill" style="width:66%"></div></div>
-  <button class="kb-back" onclick="show('s1')">Back</button>
-  <div class="kb-wrap" style="gap:2.2rem">
-    <div style="text-align:center">
-      <h1 class="kb-title">Build your plan.</h1>
-      <p class="kb-sub" style="margin-top:.7rem">Generate an AI-crafted shot plan, or write one from scratch.</p>
-    </div>
-    <div class="pc-vert-stack">
-      <button class="pc-ai-primary" onclick="pcChoice='ai';pcContinue()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-        Generate with AI
-      </button>
-      <button class="pc-own-ghost" onclick="pcChoice='own';pcContinue()">Write your own</button>
-    </div>
-  </div>
-</div>
-
 <div id="s3" class="screen s3-split-screen">
   <div class="s3-topbar">
-    <button class="s3-back-btn" onclick="show('s_pc')">Back</button>
+    <button class="s3-back-btn" onclick="show('s1')">Back</button>
     <div class="s3-topbar-labels">
       <span class="s3-col-label">BRIEF</span>
       <span class="s3-col-label">PLAN</span>
@@ -1721,7 +1732,7 @@ function closeRecceLightbox(){document.getElementById('recceLightbox').classList
     if(!h||e.target.closest('.recce-panel-x'))return;
     var p=document.getElementById('reccePanel');var r=p.getBoundingClientRect();
     dragging=true;ox=e.clientX-r.left;oy=e.clientY-r.top;
-    p.style.right='auto';p.style.bottom='auto';p.style.left=r.left+'px';p.style.top=r.top+'px';
+    p.style.transform='none';p.style.right='auto';p.style.bottom='auto';p.style.left=r.left+'px';p.style.top=r.top+'px';
     h.classList.add('dragging');e.preventDefault();
   });
   document.addEventListener('mousemove',function(e){
@@ -1995,7 +2006,7 @@ function generateBrief(){
     projectBrief=raw.trim();
     document.getElementById('briefDisplay').innerHTML=renderMarkdown(projectBrief);
     show('s_brief');
-  }).catch(function(e){stopLoad();alert('Error: '+e.message);show('s_pc');});
+  }).catch(function(e){stopLoad();alert('Error: '+e.message);show('s1');});
 }
 
 function useBrief(){
@@ -2006,7 +2017,7 @@ function useBrief(){
 
 function skipBrief(){
   projectBrief='';
-  show('s_pc');
+  show('s1');
 }
 
 function goToChoice(){
@@ -2024,15 +2035,31 @@ function goToChoice(){
     durMax=parseInt(document.getElementById('durMax').value)||4;
   }
   inputLang=detectLang(topic);
-  show('s_pc');
+  if(aiMode){
+    var el=document.getElementById('s1');
+    el.classList.add('screen-blur-out');
+    setTimeout(function(){el.classList.remove('screen-blur-out');genScript();},270);
+  }else{
+    document.getElementById('briefContent').innerHTML='';
+    document.getElementById('scriptTa').value='';
+    document.getElementById('wc').textContent='0 blocks';
+    show('s3');
+  }
 }
 
+var aiMode=true;
+function toggleAi(){
+  aiMode=!aiMode;
+  var sw=document.getElementById('aiModeSwitch');
+  sw.classList.toggle('on',aiMode);
+  document.getElementById('aiModeState').textContent=aiMode?'ON':'OFF';
+  document.getElementById('aiModeTxt').textContent=aiMode?'Generate with AI':'Write it yourself';
+  document.getElementById('gobtnTxt').textContent=aiMode?'generate shot plan':'open blank canvas';
+}
 
 function pcContinue(){
   if(pcChoice==='ai'){
-    var el=document.getElementById('s_pc');
-    el.classList.add('screen-blur-out');
-    setTimeout(function(){el.classList.remove('screen-blur-out');genScript();},270);
+    genScript();
   }else{
     document.getElementById('briefContent').innerHTML='';
     document.getElementById('scriptTa').value='';
@@ -2063,7 +2090,7 @@ function genScript(){
     document.getElementById('scriptTa').value=planText;
     document.getElementById('wc').textContent=planText.split('\n').filter(function(l){return l.trim();}).length+' blocks';
     show('s3');
-  }).catch(function(e){stopLoad();alert('Error: '+e.message);show('s_pc');});
+  }).catch(function(e){stopLoad();alert('Error: '+e.message);show('s1');});
 }
 
 function parseBlocks(text){
@@ -2294,6 +2321,25 @@ function renderBlockDetail(){
   revRow.appendChild(revIn);revRow.appendChild(revBtn);
   revDiv.appendChild(revLbl);revDiv.appendChild(revRow);wrap.appendChild(revDiv);
 
+  // Recce location picker (music mode, when photos uploaded)
+  if(projectType==='music' && recceImages.length){
+    var locDiv=document.createElement('div');
+    var locLbl=document.createElement('div');locLbl.className='bd-lbl';locLbl.textContent='location · pick from recce';
+    var locRow=document.createElement('div');locRow.className='bd-loc-row';
+    recceImages.forEach(function(im){
+      var t=document.createElement('img');
+      t.className='bd-loc-thumb'+(node.recceLoc===im.thumb?' sel':'');
+      t.src=im.thumb;t.title=im.name||'';
+      t.onclick=function(){
+        saveHistory();
+        node.recceLoc=(node.recceLoc===im.thumb)?null:im.thumb;
+        renderBlockDetail();renderCanvas();
+      };
+      locRow.appendChild(t);
+    });
+    locDiv.appendChild(locLbl);locDiv.appendChild(locRow);wrap.appendChild(locDiv);
+  }
+
   // Plan button
   var cardCount=attShots.filter(function(a){return a.parentId===node.id;}).length;
   var planBtn=document.createElement('button');planBtn.className='plan-btn';
@@ -2463,6 +2509,20 @@ function renderCanvas(){
         cw.appendChild(regenBtn);
       }
       cw.appendChild(panel);
+    }
+    // Recce location reference, placed above the storyboard (or above the node)
+    if(node.recceLoc){
+      var hasSb=node.sbUrl||node.sbLoading;
+      var sbStackH=hasSb?(SB_PANEL_H+(node.sbLoading?0:30)+8):0;
+      var locH=64;
+      var locPanel=document.createElement('div');locPanel.className='loc-panel';
+      locPanel.style.cssText='left:'+node.x+'px;top:'+(node.y-sbStackH-locH-8)+'px;width:'+NC_W+'px;height:'+locH+'px;';
+      var limg=document.createElement('img');limg.src=node.recceLoc;limg.alt='location';
+      var ltag=document.createElement('span');ltag.className='loc-panel-tag';ltag.textContent='location';
+      var lx=document.createElement('button');lx.className='loc-panel-x';lx.textContent='x';
+      (function(n){lx.addEventListener('click',function(e){e.stopPropagation();saveHistory();n.recceLoc=null;renderCanvas();renderBlockDetail();});})(node);
+      locPanel.appendChild(limg);locPanel.appendChild(ltag);locPanel.appendChild(lx);
+      cw.appendChild(locPanel);
     }
     // Storyboard icon button on node
     var sbNodeBtn=document.createElement('button');sbNodeBtn.className='nc-sb-btn'+(node.sbLoading?' loading':'');
@@ -2845,7 +2905,12 @@ function planNode(id){
     sys=(li?li+' ':'')+' You are a cinematographer. Give 4 shot ideas for this block. Include lens, lighting, movement. Grain, analog. Return ONLY JSON: [{"k":"shot","t":"..."},{"k":"action","t":"..."},{"k":"emotion","t":"..."},{"k":"tech","t":"..."}]'+(li?' '+li:'');
   }
   usr='Block: ['+n.type.toUpperCase()+'] '+n.tcStart+'-'+n.tcEnd+' - '+n.content;
-  api(sys,usr).then(function(raw){
+  var userContent=usr;
+  if(projectType==='music' && n.recceLoc){
+    usr+='\n\nThis block is shot at the real location in the attached photo. Base the location, framing, lighting and blocking on what is actually visible in it.';
+    userContent=[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:n.recceLoc.split(',')[1]}},{type:'text',text:usr}];
+  }
+  api(sys,userContent).then(function(raw){
     var shots=[];try{var m=raw.match(/\[[\s\S]*\]/);if(m)shots=JSON.parse(m[0]);}catch(e){}
     saveHistory();
     attShots=attShots.filter(function(a){return a.parentId!==n.id;});
