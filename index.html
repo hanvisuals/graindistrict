@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HVNVSLS</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -888,7 +889,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
       <button class="btn" id="previewBtn" onclick="openPlayback()">▶ preview</button>
       <button class="btn" onclick="surpriseMe()">surprise me</button>
       <button class="btn" onclick="doExport()">export</button>
-      <button class="btn" onclick="projectBrief='';projectConstraints='';clearRecce();var rp=document.getElementById('reccePanel');if(rp)rp.classList.remove('open');show('s1')">new</button>
+      <button class="btn" onclick="if(window.gdNewProject)gdNewProject();projectBrief='';projectConstraints='';clearRecce();var rp=document.getElementById('reccePanel');if(rp)rp.classList.remove('open');show('s1')">new</button>
     </div>
   </div>
   <div class="canvas-body">
@@ -3094,6 +3095,255 @@ document.addEventListener('mouseup',function(e){
   if(connFrom)cancelConn();
   tlScroll=false;
 });
+
+/* ===================== GRAINDISTRICT CLOUD — auth + projects + autosave ===================== */
+(function(){
+  var SUPA_URL='https://ajpjgkkqitgtomefjpng.supabase.co';
+  var SUPA_KEY='sb_publishable_sbN0reZyuPuqsO7S86vgaw_hdwAl5jJ';
+  if(!window.supabase||!window.supabase.createClient){ console.error('[gd] Supabase library failed to load'); return; }
+  var sb=window.supabase.createClient(SUPA_URL,SUPA_KEY);
+  window.gdSB=sb;
+
+  var me=null;                 // {id,email}
+  var currentProjectId=null;
+  var currentRole='owner';
+  var saveTimer=null;
+
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+  /* ---------- styles ---------- */
+  var css=''
+  +'.gd-acct{position:fixed;top:9px;right:14px;z-index:10000;display:flex;align-items:center;gap:8px;font-family:var(--sans);}'
+  +'.gd-pill{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:500;padding:6px 13px;border-radius:999px;border:1px solid var(--border-hi);background:rgba(255,255,255,.05);color:var(--text-2);cursor:pointer;transition:all .15s;backdrop-filter:blur(8px);}'
+  +'.gd-pill:hover{background:rgba(255,255,255,.1);color:#fff;}'
+  +'.gd-pill.primary{background:#fff;color:#000;border-color:#fff;}'
+  +'.gd-pill.primary:hover{background:rgba(255,255,255,.85);}'
+  +'.gd-email{font-family:var(--mono);font-size:10px;color:var(--text-3);letter-spacing:.02em;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'
+  +'.gd-save-state{font-family:var(--mono);font-size:9px;letter-spacing:.04em;color:var(--text-3);text-transform:uppercase;}'
+  +'.gd-ov{position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:20px;}'
+  +'.gd-ov.show{display:flex;}'
+  +'.gd-modal{position:relative;width:100%;max-width:430px;background:var(--surface);border:1px solid var(--border-hi);border-radius:16px;padding:26px;box-shadow:0 30px 80px rgba(0,0,0,.6);}'
+  +'.gd-modal h2{font-family:var(--sans);font-size:19px;font-weight:600;margin-bottom:4px;}'
+  +'.gd-modal p.sub{font-size:12px;color:var(--text-3);margin-bottom:18px;}'
+  +'.gd-field{margin-bottom:12px;}'
+  +'.gd-field label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3);margin-bottom:5px;font-weight:600;}'
+  +'.gd-input{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:var(--sans);font-size:14px;padding:11px 13px;outline:none;transition:border-color .15s;}'
+  +'.gd-input:focus{border-color:var(--border-hi);}'
+  +'.gd-btn{width:100%;background:#fff;color:#000;border:none;border-radius:10px;font-family:var(--sans);font-size:14px;font-weight:600;padding:12px;cursor:pointer;transition:opacity .15s;margin-top:6px;}'
+  +'.gd-btn:hover{opacity:.85;}'
+  +'.gd-btn:disabled{opacity:.5;cursor:default;}'
+  +'.gd-link{background:none;border:none;color:var(--text-2);font-family:var(--sans);font-size:12px;cursor:pointer;text-decoration:underline;margin-top:14px;}'
+  +'.gd-err{font-size:12px;margin-top:10px;min-height:16px;color:#e0686a;}'
+  +'.gd-x{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--text-3);font-size:20px;cursor:pointer;line-height:1;}'
+  +'.gd-x:hover{color:#fff;}'
+  +'.gd-plist{display:flex;flex-direction:column;gap:7px;}'
+  +'.gd-pbody{max-height:46vh;overflow:auto;margin:0 -6px;padding:0 6px;}'
+  +'.gd-pcard{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border:1px solid var(--border);border-radius:11px;background:rgba(255,255,255,.02);cursor:pointer;transition:all .14s;}'
+  +'.gd-pcard:hover{border-color:var(--border-hi);background:rgba(255,255,255,.05);}'
+  +'.gd-pcard .nm{font-size:13px;font-weight:500;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
+  +'.gd-pcard .mt{font-family:var(--mono);font-size:9px;color:var(--text-3);margin-top:3px;letter-spacing:.02em;}'
+  +'.gd-prole{font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.05em;padding:3px 7px;border-radius:6px;border:1px solid var(--border);color:var(--text-2);flex-shrink:0;}'
+  +'.gd-pdel{background:none;border:none;color:var(--text-3);cursor:pointer;font-size:13px;padding:4px;flex-shrink:0;}'
+  +'.gd-pdel:hover{color:#e0686a;}'
+  +'.gd-empty{text-align:center;color:var(--text-3);font-size:12px;padding:26px 0;}'
+  +'.gd-sec{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);font-weight:700;margin:16px 0 6px;}';
+  var st=document.createElement('style'); st.textContent=css; document.head.appendChild(st);
+
+  /* ---------- DOM ---------- */
+  var root=document.createElement('div');
+  root.innerHTML=''
+  +'<div class="gd-acct" id="gdAcct"></div>'
+  +'<div class="gd-ov" id="gdAuthOv"><div class="gd-modal">'
+  +'  <button class="gd-x" data-close>&times;</button>'
+  +'  <h2 id="gdAuthTitle">Sign in</h2>'
+  +'  <p class="sub">Save your projects to the cloud and share them.</p>'
+  +'  <div class="gd-field"><label>Email</label><input class="gd-input" id="gdEmail" type="email" autocomplete="email" placeholder="you@email.com"></div>'
+  +'  <div class="gd-field"><label>Password</label><input class="gd-input" id="gdPass" type="password" autocomplete="current-password" placeholder="••••••••"></div>'
+  +'  <button class="gd-btn" id="gdAuthBtn">Sign in</button>'
+  +'  <div class="gd-err" id="gdAuthErr"></div>'
+  +'  <button class="gd-link" id="gdAuthToggle">Create an account</button>'
+  +'</div></div>'
+  +'<div class="gd-ov" id="gdProjOv"><div class="gd-modal">'
+  +'  <button class="gd-x" data-close>&times;</button>'
+  +'  <h2>Your projects</h2>'
+  +'  <p class="sub">Open a saved project, or start a new one.</p>'
+  +'  <button class="gd-btn" id="gdNewBtn" style="margin-bottom:6px;">+ New project</button>'
+  +'  <div class="gd-pbody" id="gdProjBody"></div>'
+  +'</div></div>';
+  document.body.appendChild(root);
+
+  function byId(id){ return document.getElementById(id); }
+  function setSaveState(s){ var el=byId('gdSaveState'); if(!el)return; el.textContent=(s==='saving'?'saving…':s==='saved'?'✓ saved':s==='error'?'⚠ save failed':''); }
+
+  /* ---------- serialize / restore full board state ---------- */
+  function serialize(){
+    return {
+      v:1, projectType:projectType, topic:topic, tone:tone, fmt:fmt, inputLang:inputLang,
+      durMin:durMin, durMax:durMax, projectBrief:projectBrief, projectConstraints:projectConstraints,
+      aiMode:(typeof aiMode!=='undefined'?aiMode:true),
+      songName:songName, songDuration:songDuration, songAnalysis:songAnalysis,
+      recceImages:recceImages,
+      nodes:nodes, attShots:attShots, imgNodes:imgNodes, noteNodes:noteNodes, conns:conns, nid:nid,
+      script:(byId('scriptTa')?byId('scriptTa').value:''),
+      view:{scale:scale,px:px,py:py}
+    };
+  }
+  function restore(d){
+    d=d||{};
+    projectType=d.projectType||'youtube'; topic=d.topic||''; tone=d.tone||tone; fmt=d.fmt||fmt;
+    inputLang=d.inputLang||'en'; durMin=d.durMin||durMin; durMax=d.durMax||durMax;
+    projectBrief=d.projectBrief||''; projectConstraints=d.projectConstraints||'';
+    if(typeof d.aiMode!=='undefined'&&typeof aiMode!=='undefined') aiMode=d.aiMode;
+    songName=d.songName||''; songDuration=d.songDuration||0; songAnalysis=d.songAnalysis||null; songURL=null;
+    recceImages=d.recceImages||[];
+    nodes=d.nodes||[]; attShots=d.attShots||[]; imgNodes=d.imgNodes||[]; noteNodes=d.noteNodes||[]; conns=d.conns||[]; nid=d.nid||1;
+    var sta=byId('scriptTa'); if(sta) sta.value=d.script||'';
+    if(d.view){ scale=d.view.scale||1; px=(d.view.px==null?60:d.view.px); py=(d.view.py==null?80:d.view.py); }
+    undoStack=[]; undoIdx=-1;
+    show('s5');
+    if(typeof renderAll==='function') renderAll();
+    if(typeof renderRecceGrid==='function') renderRecceGrid();
+    saveHistory();
+  }
+
+  /* ---------- autosave ---------- */
+  function onBoard(){ var s=byId('s5'); return s&&s.classList.contains('active'); }
+  function scheduleSave(){
+    if(!me||!onBoard()) return;
+    if(currentRole==='viewer') return;
+    if((nodes&&nodes.length)||(noteNodes&&noteNodes.length)||(imgNodes&&imgNodes.length)){
+      if(saveTimer) clearTimeout(saveTimer);
+      saveTimer=setTimeout(doSave,1400);
+    }
+  }
+  function doSave(){
+    if(!me||!onBoard()||currentRole==='viewer') return;
+    var data=serialize();
+    var name=((topic||projectBrief||'Untitled')+'').replace(/\s+/g,' ').trim().slice(0,80)||'Untitled';
+    setSaveState('saving');
+    if(!currentProjectId){
+      sb.from('projects').insert({name:name,data:data}).select('id').single().then(function(r){
+        if(r.error){ setSaveState('error'); console.error('[gd] create',r.error); return; }
+        currentProjectId=r.data.id; currentRole='owner'; setSaveState('saved');
+      });
+    } else {
+      sb.from('projects').update({name:name,data:data}).eq('id',currentProjectId).then(function(r){
+        if(r.error){ setSaveState('error'); console.error('[gd] update',r.error); return; }
+        setSaveState('saved');
+      });
+    }
+  }
+  window.gdNewProject=function(){ currentProjectId=null; currentRole='owner'; setSaveState(''); };
+
+  /* ---------- account widget ---------- */
+  function renderAccount(){
+    var a=byId('gdAcct'); if(!a) return;
+    if(me){
+      a.innerHTML='<span class="gd-save-state" id="gdSaveState"></span>'
+        +'<button class="gd-pill" id="gdProjBtn">&#9729; Projects</button>'
+        +'<span class="gd-email">'+esc(me.email)+'</span>'
+        +'<button class="gd-pill" id="gdSignOut">Sign out</button>';
+      byId('gdProjBtn').onclick=openProjects;
+      byId('gdSignOut').onclick=function(){ sb.auth.signOut(); currentProjectId=null; };
+    } else {
+      a.innerHTML='<button class="gd-pill primary" id="gdSignIn">Sign in</button>';
+      byId('gdSignIn').onclick=openAuth;
+    }
+  }
+
+  /* ---------- auth modal ---------- */
+  var authMode='signin';
+  function openAuth(){ byId('gdAuthErr').textContent=''; byId('gdAuthOv').classList.add('show'); setTimeout(function(){byId('gdEmail').focus();},40); }
+  function setAuthMode(m){
+    authMode=m;
+    byId('gdAuthTitle').textContent=(m==='signin'?'Sign in':'Create account');
+    byId('gdAuthBtn').textContent=(m==='signin'?'Sign in':'Create account');
+    byId('gdAuthToggle').textContent=(m==='signin'?'Create an account':'I already have an account');
+  }
+  function doAuth(){
+    var email=byId('gdEmail').value.trim(), pass=byId('gdPass').value, err=byId('gdAuthErr'), btn=byId('gdAuthBtn');
+    err.style.color='#e0686a'; err.textContent='';
+    if(!email||!pass){ err.textContent='Enter your email and password.'; return; }
+    btn.disabled=true;
+    var p=(authMode==='signup')?sb.auth.signUp({email:email,password:pass}):sb.auth.signInWithPassword({email:email,password:pass});
+    p.then(function(r){
+      btn.disabled=false;
+      if(r.error){ err.textContent=r.error.message||'Failed.'; return; }
+      if(authMode==='signup'&&!(r.data&&r.data.session)){
+        err.style.color='#7aa37a'; err.textContent='Account created. Check your email to confirm, then sign in.'; setAuthMode('signin'); return;
+      }
+      byId('gdAuthOv').classList.remove('show'); byId('gdPass').value='';
+    });
+  }
+  byId('gdAuthToggle').onclick=function(){ setAuthMode(authMode==='signin'?'signup':'signin'); byId('gdAuthErr').textContent=''; };
+  byId('gdAuthBtn').onclick=doAuth;
+  byId('gdPass').addEventListener('keydown',function(e){ if(e.key==='Enter') doAuth(); });
+
+  /* ---------- projects modal ---------- */
+  function pcard(p,role){
+    var dt=p.updated_at?new Date(p.updated_at).toLocaleDateString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+    return '<div class="gd-pcard" data-open="'+p.id+'">'
+      +'<div style="min-width:0"><div class="nm">'+esc(p.name||'Untitled')+'</div><div class="mt">'+dt+'</div></div>'
+      +'<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">'
+      +'<span class="gd-prole">'+esc(role)+'</span>'
+      +(role==='owner'?'<button class="gd-pdel" data-del="'+p.id+'" title="Delete">✕</button>':'')
+      +'</div></div>';
+  }
+  function openProjects(){
+    var body=byId('gdProjBody'); body.innerHTML='<div class="gd-empty">Loading…</div>';
+    byId('gdProjOv').classList.add('show');
+    var mineP=sb.from('projects').select('id,name,updated_at').eq('owner_id',me.id).order('updated_at',{ascending:false});
+    var sharedP=sb.from('project_members').select('role,project:projects(id,name,updated_at)').ilike('email',me.email);
+    Promise.all([mineP,sharedP]).then(function(res){
+      var mine=res[0], shared=res[1], html='';
+      html+='<div class="gd-sec">Owned by me</div>';
+      if(mine.data&&mine.data.length){ html+='<div class="gd-plist">'; mine.data.forEach(function(p){ html+=pcard(p,'owner'); }); html+='</div>'; }
+      else html+='<div class="gd-empty">No projects yet — build a board and it saves here automatically.</div>';
+      var sh=(shared.data||[]).filter(function(r){return r.project;});
+      if(sh.length){ html+='<div class="gd-sec">Shared with me</div><div class="gd-plist">'; sh.forEach(function(r){ html+=pcard(r.project,r.role); }); html+='</div>'; }
+      body.innerHTML=html;
+      body.querySelectorAll('[data-open]').forEach(function(el){ el.onclick=function(e){ if(e.target.closest('[data-del]'))return; openProject(el.getAttribute('data-open')); }; });
+      body.querySelectorAll('[data-del]').forEach(function(el){ el.onclick=function(e){ e.stopPropagation(); delProject(el.getAttribute('data-del')); }; });
+    },function(e){ body.innerHTML='<div class="gd-empty">Could not load projects.</div>'; console.error('[gd] list',e); });
+  }
+  function openProject(id){
+    sb.from('projects').select('*').eq('id',id).single().then(function(r){
+      if(r.error){ alert('Could not open project.'); console.error(r.error); return; }
+      currentProjectId=r.data.id;
+      sb.rpc('project_role',{pid:id}).then(function(rr){
+        currentRole=(rr&&rr.data)||(r.data.owner_id===me.id?'owner':'viewer');
+        restore(r.data.data);
+        byId('gdProjOv').classList.remove('show');
+        setSaveState('saved');
+      });
+    });
+  }
+  function delProject(id){
+    if(!confirm('Delete this project permanently?')) return;
+    sb.from('projects').delete().eq('id',id).then(function(r){
+      if(r.error){ alert('Delete failed.'); return; }
+      if(currentProjectId===id) currentProjectId=null;
+      openProjects();
+    });
+  }
+  byId('gdNewBtn').onclick=function(){ window.gdNewProject(); byId('gdProjOv').classList.remove('show'); show('s0'); };
+
+  /* ---------- overlay close ---------- */
+  [].forEach.call(document.querySelectorAll('.gd-ov'),function(ov){
+    ov.addEventListener('click',function(e){ if(e.target===ov) ov.classList.remove('show'); });
+    [].forEach.call(ov.querySelectorAll('[data-close]'),function(b){ b.onclick=function(){ ov.classList.remove('show'); }; });
+  });
+
+  /* ---------- wrap saveHistory for autosave ---------- */
+  if(typeof saveHistory==='function'){
+    var _origSave=saveHistory;
+    saveHistory=function(){ _origSave.apply(this,arguments); scheduleSave(); };
+  }
+
+  /* ---------- session bootstrap ---------- */
+  sb.auth.onAuthStateChange(function(_e,s){ me=s?{id:s.user.id,email:s.user.email}:null; renderAccount(); });
+  sb.auth.getSession().then(function(r){ var s=r.data.session; me=s?{id:s.user.id,email:s.user.email}:null; renderAccount(); });
+})();
 </script>
 </body>
 </html>
