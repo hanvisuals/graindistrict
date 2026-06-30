@@ -3146,7 +3146,17 @@ document.addEventListener('mouseup',function(e){
   +'.gd-pdel{background:none;border:none;color:var(--text-3);cursor:pointer;font-size:13px;padding:4px;flex-shrink:0;}'
   +'.gd-pdel:hover{color:#e0686a;}'
   +'.gd-empty{text-align:center;color:var(--text-3);font-size:12px;padding:26px 0;}'
-  +'.gd-sec{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);font-weight:700;margin:16px 0 6px;}';
+  +'.gd-sec{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);font-weight:700;margin:16px 0 6px;}'
+  +'.gd-home{position:fixed;top:48px;left:0;bottom:0;width:252px;background:var(--surface);border-right:1px solid var(--border);z-index:9000;display:none;flex-direction:column;padding:16px 14px;}'
+  +'.gd-home.show{display:flex;}'
+  +'.gd-home-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}'
+  +'.gd-home-title{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-2);}'
+  +'.gd-home-hide{background:none;border:none;color:var(--text-3);cursor:pointer;font-size:17px;padding:0 6px;border-radius:6px;line-height:1;}'
+  +'.gd-home-hide:hover{color:#fff;background:rgba(255,255,255,.08);}'
+  +'.gd-home-list{flex:1;overflow:auto;display:flex;flex-direction:column;gap:7px;margin-top:12px;}'
+  +'.gd-home-tab{position:fixed;top:58px;left:0;z-index:9000;display:none;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-left:none;border-radius:0 9px 9px 0;color:var(--text-2);cursor:pointer;padding:9px 10px 9px 8px;font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;}'
+  +'.gd-home-tab.show{display:flex;}'
+  +'.gd-home-tab:hover{color:#fff;}';
   var st=document.createElement('style'); st.textContent=css; document.head.appendChild(st);
 
   /* ---------- DOM ---------- */
@@ -3169,7 +3179,12 @@ document.addEventListener('mouseup',function(e){
   +'  <p class="sub">Open a saved project, or start a new one.</p>'
   +'  <button class="gd-btn" id="gdNewBtn" style="margin-bottom:6px;">+ New project</button>'
   +'  <div class="gd-pbody" id="gdProjBody"></div>'
-  +'</div></div>';
+  +'</div></div>'
+  +'<div class="gd-home" id="gdHome">'
+  +'  <div class="gd-home-head"><span class="gd-home-title">Projects</span><button class="gd-home-hide" id="gdHomeHide" title="Hide panel">&laquo;</button></div>'
+  +'  <div class="gd-home-list" id="gdHomeList"></div>'
+  +'</div>'
+  +'<button class="gd-home-tab" id="gdHomeTab" title="Show projects">&raquo; <span>projects</span></button>';
   document.body.appendChild(root);
 
   function byId(id){ return document.getElementById(id); }
@@ -3323,10 +3338,48 @@ document.addEventListener('mouseup',function(e){
     sb.from('projects').delete().eq('id',id).then(function(r){
       if(r.error){ alert('Delete failed.'); return; }
       if(currentProjectId===id) currentProjectId=null;
-      openProjects();
+      if(byId('gdProjOv').classList.contains('show')) openProjects();
+      updateHomePanel();
     });
   }
   byId('gdNewBtn').onclick=function(){ window.gdNewProject(); byId('gdProjOv').classList.remove('show'); show('s0'); };
+
+  /* ---------- home projects panel (one-click, hideable) ---------- */
+  function wireCards(container){
+    [].forEach.call(container.querySelectorAll('[data-open]'),function(el){ el.onclick=function(e){ if(e.target.closest('[data-del]'))return; openProject(el.getAttribute('data-open')); }; });
+    [].forEach.call(container.querySelectorAll('[data-del]'),function(el){ el.onclick=function(e){ e.stopPropagation(); delProject(el.getAttribute('data-del')); }; });
+  }
+  function renderHomePanel(){
+    var list=byId('gdHomeList'); if(!list||!me) return;
+    var mineP=sb.from('projects').select('id,name,updated_at').eq('owner_id',me.id).order('updated_at',{ascending:false});
+    var sharedP=sb.from('project_members').select('role,project:projects(id,name,updated_at)').ilike('email',me.email);
+    Promise.all([mineP,sharedP]).then(function(res){
+      var mine=res[0].data||[], shared=(res[1].data||[]).filter(function(r){return r.project;});
+      var html='';
+      mine.forEach(function(p){ html+=pcard(p,'owner'); });
+      if(shared.length){ html+='<div class="gd-sec">Shared with me</div>'; shared.forEach(function(r){ html+=pcard(r.project,r.role); }); }
+      if(!html) html='<div class="gd-empty">No projects yet.<br>Build a board — it saves here automatically.</div>';
+      list.innerHTML=html;
+      wireCards(list);
+    },function(e){ list.innerHTML='<div class="gd-empty">Could not load.</div>'; console.error('[gd] home',e); });
+  }
+  function updateHomePanel(){
+    var panel=byId('gdHome'), tab=byId('gdHomeTab');
+    if(!panel||!tab) return;
+    var onHome=byId('s0')&&byId('s0').classList.contains('active');
+    var hidden=localStorage.getItem('gd_home_hidden')==='1';
+    if(me&&onHome&&!hidden){ panel.classList.add('show'); tab.classList.remove('show'); renderHomePanel(); }
+    else if(me&&onHome&&hidden){ panel.classList.remove('show'); tab.classList.add('show'); }
+    else { panel.classList.remove('show'); tab.classList.remove('show'); }
+  }
+  byId('gdHomeHide').onclick=function(){ localStorage.setItem('gd_home_hidden','1'); updateHomePanel(); };
+  byId('gdHomeTab').onclick=function(){ localStorage.removeItem('gd_home_hidden'); updateHomePanel(); };
+
+  /* ---------- wrap show(): reset project context on home + refresh panel ---------- */
+  if(typeof show==='function'){
+    var _origShow=show;
+    show=function(id){ _origShow.apply(this,arguments); if(id==='s0'){ currentProjectId=null; currentRole='owner'; setSaveState(''); } updateHomePanel(); };
+  }
 
   /* ---------- overlay close ---------- */
   [].forEach.call(document.querySelectorAll('.gd-ov'),function(ov){
@@ -3341,8 +3394,8 @@ document.addEventListener('mouseup',function(e){
   }
 
   /* ---------- session bootstrap ---------- */
-  sb.auth.onAuthStateChange(function(_e,s){ me=s?{id:s.user.id,email:s.user.email}:null; renderAccount(); });
-  sb.auth.getSession().then(function(r){ var s=r.data.session; me=s?{id:s.user.id,email:s.user.email}:null; renderAccount(); });
+  sb.auth.onAuthStateChange(function(_e,s){ me=s?{id:s.user.id,email:s.user.email}:null; renderAccount(); updateHomePanel(); });
+  sb.auth.getSession().then(function(r){ var s=r.data.session; me=s?{id:s.user.id,email:s.user.email}:null; renderAccount(); updateHomePanel(); });
 })();
 </script>
 </body>
