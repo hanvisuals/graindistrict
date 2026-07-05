@@ -336,6 +336,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 #s5.has-music .zoom-ind{bottom:165px;}
 .tl-abbr{font-family:var(--mono);font-size:8px;letter-spacing:.04em;color:rgba(255,255,255,.8);font-weight:700;text-transform:uppercase;pointer-events:none;user-select:none;text-shadow:0 1px 2px rgba(0,0,0,.7);}
 .tl-total{font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:rgba(255,255,255,.2);text-transform:uppercase;margin-left:10px;flex-shrink:0;}
+.timeline.two-lane{height:96px;}
+.tl-lanes{position:relative;flex-shrink:0;height:74px;}
+.tl-block.tl-abs{position:absolute;}
 /* MUSIC ANALYSIS STRIP (above timeline) */
 .music-strip{flex-shrink:0;display:none;flex-direction:column;background:#060606;border-top:1px solid rgba(255,255,255,.06);}
 .music-strip.on{display:flex;}
@@ -769,17 +772,17 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
           <input class="dur-input song-len-in" id="durMmss" value="3:30" placeholder="mm:ss" title="Auto-filled from the track — or type it">
         </div>
       </div>
-      <div>
-        <div class="ilabel">location scouting · recce</div>
-        <div class="recce-grid" id="recceGrid">
-          <label class="recce-add" id="recceAdd">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-            <span>add photos</span>
-            <input type="file" accept="image/*" multiple id="recceFiles" style="display:none" onchange="addRecceImages(event)">
-          </label>
-        </div>
-        <div class="recce-hint" id="recceHint">Mekan görsellerini yükle — şarkı ve üstteki prompt ile birlikte analiz edilip plana yansır.</div>
+    </div>
+    <div>
+      <div class="ilabel">location scouting · recce</div>
+      <div class="recce-grid" id="recceGrid">
+        <label class="recce-add" id="recceAdd">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+          <span>add photos</span>
+          <input type="file" accept="image/*" multiple id="recceFiles" style="display:none" onchange="addRecceImages(event)">
+        </label>
       </div>
+      <div class="recce-hint" id="recceHint">Mekan görsellerini yükle — üstteki prompt ile birlikte analiz edilip plana yansır.</div>
     </div>
     <div class="s1-youtube-only">
       <div>
@@ -1696,7 +1699,7 @@ function renderRecceGrid(){
 
 /* build Claude user content: recce images (vision) + text */
 function buildUserContent(text){
-  if(projectType==='music' && recceImages.length){
+  if(recceImages.length){
     var arr=recceImages.map(function(im){return {type:'image',source:{type:'base64',media_type:im.mediaType,data:im.data}};});
     arr.push({type:'text',text:text});
     return arr;
@@ -1720,7 +1723,7 @@ function recceContext(){
   var ctx='';
   var p=document.getElementById('reccePrompt');
   var pv=p?p.value.trim():'';
-  if(projectType==='music' && recceImages.length){
+  if(recceImages.length){
     ctx+='\n\nLOCATION SCOUTING (RECCE): '+recceImages.length+' real photos of the actual shooting location(s) are attached above. Study them carefully — use the REAL architecture, textures, light, colours and space you see in these photos to design the shot plan. Ground every shot in what is actually shoot-able at these locations.';
   }
   if(pv)ctx+='\n\nDIRECTOR\'S RECCE NOTES:\n'+pv;
@@ -1973,6 +1976,11 @@ function api(sys,usr){
     });
 }
 
+function ytCutRules(totalSec){
+  var approxCuts=Math.round(totalSec/3);
+  return '\n\nTWO LAYERS:\nAUDIO LAYER = VOICEOVER (one block per sentence or breath-group; its timecode spans the time the line takes to say, ~2.3 words per second) and MUSIC (montage section, no talking).\nVISUAL LAYER = BROLL (one camera cut) and TRANSITION.\n\nCUTTING MATH:\n- One sentence is NEVER one image. While a VOICEOVER line plays, cover its timespan with 2-5 BROLL cuts. Write the VOICEOVER line first, then immediately the BROLL cuts that play under it - their timecodes OVERLAP the voiceover timecode.\n- Every BROLL block is ONE cut, 1-4 seconds, never longer. A detail moment (e.g. making an espresso) is never one 10-second shot - it is 3-4 different angles cut together.\n- Generate approximately '+approxCuts+' BROLL cuts in total across the video.\n- Vary shot sizes every cut. No two consecutive cuts with the same framing.\n- MUSIC sections still get full cut-by-cut BROLL coverage.';
+}
+
 function buildGenSys(totalSec,li){
   var dur=durMin+'-'+durMax+' minutes (~'+Math.round(totalSec)+' seconds)';
   var base='';
@@ -1984,7 +1992,7 @@ function buildGenSys(totalSec,li){
   }else if(projectType==='other'){
     base='You are a director building a shot plan for a video project.\n\n5 block types:\nINTRO - Opening sequence. How it starts.\nMAIN - Core content. The main visual segment.\nSEGMENT - A distinct section or chapter within the video.\nOUTRO - Closing sequence. How it ends.\nTRANSITION - One line. Brief cut or pause.\n\nRULES:\n- Total duration: '+dur+'\n- Each block describes what happens visually and structurally.';
   }else{
-    base='You are a filmmaker building a shot plan for a personal YouTube video in a '+tone+' tone.\n\n4 block types:\nVOICEOVER - Write the EXACT words spoken out loud. First person. No visual description.\nBROLL - No talking. Describe only what the CAMERA SEES. No dialogue.\nMUSIC - No talking. Only music plays. Describe the visual montage only.\nTRANSITION - One line. Very brief visual cut or pause.\n\nRULES:\n- Total duration: '+dur+'\n- NEVER follow repeating patterns. Let emotion and story rhythm decide.\n- Aesthetic: harsh flash, grain, analog, anti-polished.'+stylePack('script');
+    base='You are a filmmaker building a cut-by-cut plan for a personal YouTube video in a '+tone+' tone.\n\n4 block types:\nVOICEOVER - Write the EXACT words spoken out loud. First person. No visual description.\nBROLL - No talking. ONE single camera cut. Describe only what the CAMERA SEES: framing, lens, movement, subject.\nMUSIC - No talking. Only music plays. Marks a montage section.\nTRANSITION - One line. Match cut, smash cut or brief pause.'+ytCutRules(totalSec)+'\n\nRULES:\n- Total duration: '+dur+'\n- NEVER follow repeating patterns. Let emotion and story rhythm decide.\n- Aesthetic: harsh flash, grain, analog, anti-polished.'+stylePack('script');
   }
   return (li?li+'\n\n':'')+base+(li?'\n\n'+li:'')+'\n\nReturn ONLY plain text, one block per line:\n[TYPE] 00:00-00:00 - content';
 }
@@ -2255,7 +2263,7 @@ function surpriseMe(){
   var totalSec=(durMin+durMax)/2*60;
   var li=langInstr(inputLang,'shot plan content');
   var blocks=(PT_BLOCKS[projectType]||PT_BLOCKS.youtube).join(', ');
-  var sys=(li?li+'\n\n':'')+'You are a filmmaker. Create a DIFFERENT, UNEXPECTED shot plan for the same topic. Try a completely different narrative approach, different structure, different emotional arc.\n\nUse these block types: '+blocks+stylePack('script')+'\n\nReturn ONLY plain text:\n[TYPE] 00:00-00:00 - content'+(li?'\n\n'+li:'');
+  var sys=(li?li+'\n\n':'')+'You are a filmmaker. Create a DIFFERENT, UNEXPECTED shot plan for the same topic. Try a completely different narrative approach, different structure, different emotional arc.\n\nUse these block types: '+blocks+(projectType==='youtube'?ytCutRules(totalSec):'')+stylePack('script')+'\n\nReturn ONLY plain text:\n[TYPE] 00:00-00:00 - content'+(li?'\n\n'+li:'');
   api(sys,'Create a surprising, different shot plan for: '+topic+'. Duration: '+durMin+'-'+durMax+' minutes (~'+Math.round(totalSec)+' sec). Tone: '+tone).then(function(raw){
     stopLoad();
     document.getElementById('scriptTa').value=raw.trim();
@@ -2358,7 +2366,7 @@ function renderBlockDetail(){
   revDiv.appendChild(revLbl);revDiv.appendChild(revRow);wrap.appendChild(revDiv);
 
   // Recce location picker (music mode, when photos uploaded)
-  if(projectType==='music' && recceImages.length){
+  if(recceImages.length){
     var locDiv=document.createElement('div');
     var locLbl=document.createElement('div');locLbl.className='bd-lbl';locLbl.textContent='location · pick from recce';
     var locRow=document.createElement('div');locRow.className='bd-loc-row';
@@ -2809,6 +2817,36 @@ function renderTL(){
   if(!totalSecs)return;
   var pxPerSec=Math.max(14,(tl.parentElement.offsetWidth-40)/totalSecs);
   var ABBR={verse:'VS',chorus:'CH',hook:'HK',lip_sync:'LS',bridge:'BR',intro:'IN',outro:'OT',transition:'—',voiceover:'VO',broll:'BR',music:'MU',scene:'SC',dialogue:'DL',action:'AC',montage:'MT',main:'MN',segment:'SG'};
+  var AUDIO_TYPES={voiceover:1,music:1};
+  var hasAudio=false,hasVisual=false;
+  nodes.forEach(function(n){if(AUDIO_TYPES[n.type])hasAudio=true;else hasVisual=true;});
+  tl.classList.toggle('two-lane',projectType==='youtube'&&hasAudio&&hasVisual);
+  if(projectType==='youtube'&&hasAudio&&hasVisual){
+    var lanes=document.createElement('div');lanes.className='tl-lanes';
+    lanes.style.width=Math.ceil(totalSecs*pxPerSec)+'px';
+    nodes.forEach(function(node){
+      var s=tcToSec(node.tcStart),e=tcToSec(node.tcEnd);
+      var w=Math.max(4,Math.round(Math.max(e-s,0.5)*pxPerSec));
+      var b=document.createElement('div');
+      b.className='tl-block tl-abs'+(selId===node.id?' sel':'');
+      b.id='tlb-'+node.id;
+      b.style.left=Math.round(s*pxPerSec)+'px';
+      b.style.top=AUDIO_TYPES[node.type]?'0':'40px';
+      b.style.width=w+'px';
+      b.style.background=DC[node.type]||'#555';
+      b.title=(TL[node.type]||node.type).toUpperCase()+' '+node.tcStart+'-'+node.tcEnd+'\n'+node.content.slice(0,80);
+      if(w>20){
+        var sp=document.createElement('span');sp.className='tl-abbr';
+        sp.textContent=ABBR[node.type]||node.type.slice(0,2).toUpperCase();
+        b.appendChild(sp);
+      }
+      b.addEventListener('click',function(){selId=node.id;renderAll();panToNode(node);});
+      lanes.appendChild(b);
+    });
+    tl.appendChild(lanes);
+    var tot2=document.createElement('div');tot2.className='tl-total';tot2.textContent=nodes.length+' blocks  '+durMin+'-'+durMax+'min';tl.appendChild(tot2);
+    return;
+  }
   nodes.forEach(function(node){
     var dur=Math.max(tcToSec(node.tcEnd)-tcToSec(node.tcStart),0.5);
     var w=Math.max(4,Math.round(dur*pxPerSec));
@@ -2942,7 +2980,7 @@ function planNode(id){
   }
   usr='Block: ['+n.type.toUpperCase()+'] '+n.tcStart+'-'+n.tcEnd+' - '+n.content;
   var userContent=usr;
-  if(projectType==='music' && n.recceLoc){
+  if(n.recceLoc){
     usr+='\n\nThis block is shot at the real location in the attached photo. Base the location, framing, lighting and blocking on what is actually visible in it.';
     userContent=[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:n.recceLoc.split(',')[1]}},{type:'text',text:usr}];
   }
