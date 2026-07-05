@@ -800,6 +800,13 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
           <button class="opt" data-v="essay">visual essay</button>
         </div>
       </div>
+      <div>
+        <div class="ilabel">style</div>
+        <div class="opts" id="styleOpts">
+          <button class="opt on" data-v="none">none</button>
+          <button class="opt" data-v="gawx">gawx</button>
+        </div>
+      </div>
     </div>
     <div class="ai-mode on" id="aiModeSwitch" onclick="toggleAi()" title="AI on: generate the plan for you · AI off: open a blank canvas">
       <span class="ai-mode-ic">✦</span>
@@ -1176,7 +1183,32 @@ function genStoryboard(attId){
 var DC={voiceover:'var(--c-vo)',broll:'var(--c-br)',music:'var(--c-mu)',transition:'var(--c-tr)',intro:'#cc6688',verse:'#5588cc',chorus:'#cc8844',bridge:'#44aacc',hook:'#8855cc',lip_sync:'#c44488',outro:'#cc5555',scene:'#5aaa7a',dialogue:'#aa5a5a',action:'#cc7744',montage:'#6677cc',main:'#888888',segment:'#777777'};
 var PT_BLOCKS={youtube:['VOICEOVER','BROLL','MUSIC','TRANSITION'],music:['VERSE','CHORUS','HOOK','LIP_SYNC','BRIDGE','INTRO','OUTRO','TRANSITION'],film:['SCENE','DIALOGUE','ACTION','MONTAGE','TRANSITION'],other:['INTRO','MAIN','SEGMENT','OUTRO','TRANSITION']};
 
-var tone='introspective',fmt='voiceover',topic='',inputLang='en',projectType='youtube';
+var tone='introspective',fmt='voiceover',styleMode='none',topic='',inputLang='en',projectType='youtube';
+
+var STYLE_PACKS={
+gawx:{
+  script:'STYLE MODE - GAWX (writing):\n'+
+    '- First person, past tense, confessional but never self-pitying.\n'+
+    '- Narrative arc: memory hook (3 tiny specific memories) -> one-sentence turning point ("it was time for change") -> naive first attempt that fails -> research rabbit hole -> admission of searching in the wrong place -> reframe ("instead of copying X, I would copy Y") -> numbered personal manifesto with half-joking rules -> process montage -> philosophical ending that CALLS BACK a line from the opening.\n'+
+    '- VOICEOVER montage moments use short comma-free list sentences: "two beds. one bed. the first desk." Each fragment implies one cut.\n'+
+    '- Insight lines use triple parallel constructions: "less of a routine, more of a ritual. less of an obligation, more of an experiment."\n'+
+    '- Admit flaws casually and in passing ("selfishness took over", "naively...").\n'+
+    '- Chapter transitions are exactly one sentence.',
+  shots:'STYLE MODE - GAWX (visuals):\n'+
+    '- Every abstract idea becomes a PHYSICAL metaphor built by hand: scale models, paper, cardboard, handwritten text on screen. Never CGI, never stock footage, never generic b-roll.\n'+
+    '- List sentences -> rapid jump cuts, one item per cut, fixed camera, only the object changes.\n'+
+    '- Turning-point lines -> single static wide shot, music stops.\n'+
+    '- Research sections -> screen recordings, macro shots of book covers and pages, accelerating cuts, overlapping images.\n'+
+    '- Montage sections -> handheld camera, over-the-shoulder or ceiling angle, no dialogue.\n'+
+    '- Narration pairs with macro detail shots: pencil tip, paint, paper texture, hands working.\n'+
+    '- The ending visually calls back to the opening shot.'
+}
+};
+function stylePack(part){
+  if(projectType!=='youtube')return '';
+  var p=STYLE_PACKS[styleMode];
+  return p?'\n\n'+p[part]:'';
+}
 var durMin=2,durMax=4;
 var songURL=null,songName='',songDuration=0;
 var songAnalysis=null;
@@ -1238,6 +1270,9 @@ function undoAction(){
 
 document.getElementById('toneOpts').querySelectorAll('.opt').forEach(function(b){
   b.onclick=function(){document.getElementById('toneOpts').querySelectorAll('.opt').forEach(function(x){x.classList.remove('on');});b.classList.add('on');tone=b.dataset.v;};
+});
+document.getElementById('styleOpts').querySelectorAll('.opt').forEach(function(b){
+  b.onclick=function(){document.getElementById('styleOpts').querySelectorAll('.opt').forEach(function(x){x.classList.remove('on');});b.classList.add('on');styleMode=b.dataset.v;};
 });
 document.getElementById('fmtOpts').querySelectorAll('.opt').forEach(function(b){
   b.onclick=function(){document.getElementById('fmtOpts').querySelectorAll('.opt').forEach(function(x){x.classList.remove('on');});b.classList.add('on');fmt=b.dataset.v;};
@@ -1949,7 +1984,7 @@ function buildGenSys(totalSec,li){
   }else if(projectType==='other'){
     base='You are a director building a shot plan for a video project.\n\n5 block types:\nINTRO - Opening sequence. How it starts.\nMAIN - Core content. The main visual segment.\nSEGMENT - A distinct section or chapter within the video.\nOUTRO - Closing sequence. How it ends.\nTRANSITION - One line. Brief cut or pause.\n\nRULES:\n- Total duration: '+dur+'\n- Each block describes what happens visually and structurally.';
   }else{
-    base='You are a filmmaker building a shot plan for a personal YouTube video in a '+tone+' tone.\n\n4 block types:\nVOICEOVER - Write the EXACT words spoken out loud. First person. No visual description.\nBROLL - No talking. Describe only what the CAMERA SEES. No dialogue.\nMUSIC - No talking. Only music plays. Describe the visual montage only.\nTRANSITION - One line. Very brief visual cut or pause.\n\nRULES:\n- Total duration: '+dur+'\n- NEVER follow repeating patterns. Let emotion and story rhythm decide.\n- Aesthetic: harsh flash, grain, analog, anti-polished.';
+    base='You are a filmmaker building a shot plan for a personal YouTube video in a '+tone+' tone.\n\n4 block types:\nVOICEOVER - Write the EXACT words spoken out loud. First person. No visual description.\nBROLL - No talking. Describe only what the CAMERA SEES. No dialogue.\nMUSIC - No talking. Only music plays. Describe the visual montage only.\nTRANSITION - One line. Very brief visual cut or pause.\n\nRULES:\n- Total duration: '+dur+'\n- NEVER follow repeating patterns. Let emotion and story rhythm decide.\n- Aesthetic: harsh flash, grain, analog, anti-polished.'+stylePack('script');
   }
   return (li?li+'\n\n':'')+base+(li?'\n\n'+li:'')+'\n\nReturn ONLY plain text, one block per line:\n[TYPE] 00:00-00:00 - content';
 }
@@ -1998,7 +2033,7 @@ function renderMarkdown(text){
 
 function generateBrief(){
   show('s2');startLoad('s2');
-  var sys='You are a professional film director and creative producer. Based on the project description, write a concise creative brief with these sections:\n\n1. CONCEPT: A catchy concept name and 2-3 sentence visual theme\n2. VISUAL APPROACH: Color palette, lens/camera plan, mood, key aesthetic decisions\n3. SCENE BREAKDOWN: Each location with costume suggestion, key actions, lighting notes\n4. SHOOTING SCHEDULE: Suggested time blocks for each scene\n\nBe creative but strictly within the constraints described. If real location photos are attached, base the visual approach and scene breakdown on what is actually visible in them. Write in the same language the user used. Keep it tight and actionable.';
+  var sys='You are a professional film director and creative producer. Based on the project description, write a concise creative brief with these sections:\n\n1. CONCEPT: A catchy concept name and 2-3 sentence visual theme\n2. VISUAL APPROACH: Color palette, lens/camera plan, mood, key aesthetic decisions\n3. SCENE BREAKDOWN: Each location with costume suggestion, key actions, lighting notes\n4. SHOOTING SCHEDULE: Suggested time blocks for each scene\n\nBe creative but strictly within the constraints described. If real location photos are attached, base the visual approach and scene breakdown on what is actually visible in them. Write in the same language the user used. Keep it tight and actionable.'+stylePack('shots');
   var constraints=document.getElementById('constraintsIn');
   var cv=constraints?constraints.value.trim():'';
   var userMsg='Project type: '+projectType+'\nDuration: '+durMin+'-'+durMax+' min\n\nProject description:\n'+topic+(cv?'\n\nEquipment & constraints:\n'+cv:'')+recceContext()+songAnalysisSummary();
@@ -2078,7 +2113,7 @@ function genScript(){
   var planSys=buildGenSys(totalSec,li);
   var extra=recceContext()+songAnalysisSummary();
   var planMsg='Create shot plan for: '+topic+'. Duration: '+durMin+'-'+durMax+' minutes. Tone: '+tone+extra;
-  var briefSys='You are a professional film director and creative producer. Based on this project description, write a concise creative brief with these sections:\n\n1. CONCEPT: A catchy concept name and 2-3 sentence visual theme\n2. VISUAL APPROACH: Color palette, lens/camera plan, mood, key aesthetic decisions\n3. SCENE BREAKDOWN: Each location with costume suggestion, key actions, lighting notes\n4. SHOOTING SCHEDULE: Suggested time blocks for each scene\n\nBe creative but strictly within the constraints described. If real location photos are attached, base the visual approach and scene breakdown on what is actually visible in them. Write in the same language the user used. Keep it tight and actionable.';
+  var briefSys='You are a professional film director and creative producer. Based on this project description, write a concise creative brief with these sections:\n\n1. CONCEPT: A catchy concept name and 2-3 sentence visual theme\n2. VISUAL APPROACH: Color palette, lens/camera plan, mood, key aesthetic decisions\n3. SCENE BREAKDOWN: Each location with costume suggestion, key actions, lighting notes\n4. SHOOTING SCHEDULE: Suggested time blocks for each scene\n\nBe creative but strictly within the constraints described. If real location photos are attached, base the visual approach and scene breakdown on what is actually visible in them. Write in the same language the user used. Keep it tight and actionable.'+stylePack('shots');
   var briefMsg='Project type: '+projectType+'\nDuration: '+durMin+'-'+durMax+' min\n\nProject description:\n'+topic+extra;
   Promise.all([
     api(briefSys,buildUserContent(briefMsg)),
@@ -2126,7 +2161,7 @@ function buildCanvasSys(li){
   return briefCtx+(li?li+'\n':'')+
     'You are a cinematographer. Return ONLY a valid JSON array. No explanation, no markdown.\n'+
     'Format: [{"i":0,"shots":[{"k":"shot","t":"..."},{"k":"action","t":"..."},{"k":"emotion","t":"..."},{"k":"tech","t":"..."}]}]\n'+
-    'k must be: shot, action, emotion, or tech. Include lens, lighting, movement. Grain, analog.'+(li?'\n'+li:'');
+    'k must be: shot, action, emotion, or tech. Include lens, lighting, movement. Grain, analog.'+stylePack('shots')+(li?'\n'+li:'');
 }
 
 function buildCanvas(){
@@ -2220,7 +2255,7 @@ function surpriseMe(){
   var totalSec=(durMin+durMax)/2*60;
   var li=langInstr(inputLang,'shot plan content');
   var blocks=(PT_BLOCKS[projectType]||PT_BLOCKS.youtube).join(', ');
-  var sys=(li?li+'\n\n':'')+'You are a filmmaker. Create a DIFFERENT, UNEXPECTED shot plan for the same topic. Try a completely different narrative approach, different structure, different emotional arc.\n\nUse these block types: '+blocks+'\n\nReturn ONLY plain text:\n[TYPE] 00:00-00:00 - content'+(li?'\n\n'+li:'');
+  var sys=(li?li+'\n\n':'')+'You are a filmmaker. Create a DIFFERENT, UNEXPECTED shot plan for the same topic. Try a completely different narrative approach, different structure, different emotional arc.\n\nUse these block types: '+blocks+stylePack('script')+'\n\nReturn ONLY plain text:\n[TYPE] 00:00-00:00 - content'+(li?'\n\n'+li:'');
   api(sys,'Create a surprising, different shot plan for: '+topic+'. Duration: '+durMin+'-'+durMax+' minutes (~'+Math.round(totalSec)+' sec). Tone: '+tone).then(function(raw){
     stopLoad();
     document.getElementById('scriptTa').value=raw.trim();
@@ -2903,7 +2938,7 @@ function planNode(id){
   if(projectType==='music'){
     sys=(li?li+' ':'')+' You are a music video director. Give 5 shot ideas for this music section. Return ONLY JSON: [{"k":"location","t":"..."},{"k":"acting","t":"..."},{"k":"shot","t":"..."},{"k":"lighting","t":"..."},{"k":"props","t":"..."}]. k must be exactly: location, acting, shot, lighting, props.'+(li?' '+li:'');
   }else{
-    sys=(li?li+' ':'')+' You are a cinematographer. Give 4 shot ideas for this block. Include lens, lighting, movement. Grain, analog. Return ONLY JSON: [{"k":"shot","t":"..."},{"k":"action","t":"..."},{"k":"emotion","t":"..."},{"k":"tech","t":"..."}]'+(li?' '+li:'');
+    sys=(li?li+' ':'')+' You are a cinematographer. Give 4 shot ideas for this block. Include lens, lighting, movement. Grain, analog.'+stylePack('shots')+' Return ONLY JSON: [{"k":"shot","t":"..."},{"k":"action","t":"..."},{"k":"emotion","t":"..."},{"k":"tech","t":"..."}]'+(li?' '+li:'');
   }
   usr='Block: ['+n.type.toUpperCase()+'] '+n.tcStart+'-'+n.tcEnd+' - '+n.content;
   var userContent=usr;
@@ -3193,7 +3228,7 @@ document.addEventListener('mouseup',function(e){
   /* ---------- serialize / restore full board state ---------- */
   function serialize(){
     return {
-      v:1, projectType:projectType, topic:topic, tone:tone, fmt:fmt, inputLang:inputLang,
+      v:1, projectType:projectType, topic:topic, tone:tone, fmt:fmt, styleMode:styleMode, inputLang:inputLang,
       durMin:durMin, durMax:durMax, projectBrief:projectBrief, projectConstraints:projectConstraints,
       aiMode:(typeof aiMode!=='undefined'?aiMode:true),
       songName:songName, songDuration:songDuration, songAnalysis:songAnalysis,
@@ -3205,7 +3240,7 @@ document.addEventListener('mouseup',function(e){
   }
   function restore(d){
     d=d||{};
-    projectType=d.projectType||'youtube'; topic=d.topic||''; tone=d.tone||tone; fmt=d.fmt||fmt;
+    projectType=d.projectType||'youtube'; topic=d.topic||''; tone=d.tone||tone; fmt=d.fmt||fmt; styleMode=d.styleMode||styleMode;
     inputLang=d.inputLang||'en'; durMin=d.durMin||durMin; durMax=d.durMax||durMax;
     projectBrief=d.projectBrief||''; projectConstraints=d.projectConstraints||'';
     if(typeof d.aiMode!=='undefined'&&typeof aiMode!=='undefined') aiMode=d.aiMode;
