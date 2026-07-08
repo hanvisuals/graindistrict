@@ -1196,7 +1196,8 @@ gawx:{
     '- VOICEOVER montage moments use short comma-free list sentences: "two beds. one bed. the first desk." Each fragment implies one cut.\n'+
     '- Insight lines use triple parallel constructions: "less of a routine, more of a ritual. less of an obligation, more of an experiment."\n'+
     '- Admit flaws casually and in passing ("selfishness took over", "naively...").\n'+
-    '- Chapter transitions are exactly one sentence.',
+    '- Chapter transitions are exactly one sentence.\n'+
+    '- The example lines above are English but they only illustrate TECHNIQUE. When the topic is in another language, write everything in that language - translate the techniques, never the examples.',
   shots:'STYLE MODE - GAWX (visuals):\n'+
     '- Every abstract idea becomes a PHYSICAL metaphor built by hand: scale models, paper, cardboard, handwritten text on screen. Never CGI, never stock footage, never generic b-roll.\n'+
     '- List sentences -> rapid jump cuts, one item per cut, fixed camera, only the object changes.\n'+
@@ -1956,6 +1957,22 @@ function detectLang(t){
   if(/[\u00e0\u00e2\u00e6\u00e8\u00ea\u00eb\u00ee\u00ef\u00f4\u00f9\u00fb\u00ff\u0153]/.test(t))return 'fr';
   // German chars
   if(/[\u00e4\u00f6\u00fc\u00c4\u00d6\u00dc\u00df]/.test(t))return 'de';
+  // Turkish typed without diacritics (very common on phones):
+  // exact match for short function words, stem-prefix match for longer roots,
+  // plus distinctive verb/possessive suffixes
+  var TR_EXACT={bir:1,bi:1,ve:1,bu:1,su:1,ile:1,ama:1,cok:1,ilk:1,son:1,ben:1,biz:1,gun:1,yil:1,yol:1,sey:1,var:1,yok:1,once:1,ev:1,ay:1};
+  var TR_STEMS=['icin','gibi','daha','yeni','benim','bana','bizim','nasil','neden','niye','hakkinda','uzerine','gunluk','sabah','aksam','gece','hafta','evde','evim','sehir','sokak','hayat','yasa','yalniz','kendi','olan','olmak','oldu','sonra','simdi','zaman','seyler','hikaye','istanbul','ankara','izmir','tasin','geldim','gittim','yaptim','ettim','anlat','deneme','kadar','kucuk','buyuk','eski','uzun','kisa','yagmur','kahve','dukkan','mahalle','rutin','video'];
+  var TR_SUFFIX=/(iyorum|iyor|digim|dugum|acagim|ecegim|mistim|larim|lerim|lari|leri|inda|inde|imda|imde|sinda|sinde)$/;
+  var words=t.toLowerCase().split(/[^a-z]+/).filter(Boolean);
+  var score=0;
+  words.forEach(function(w){
+    if(TR_EXACT[w]){score++;return;}
+    if(w.length>=4){
+      for(var i=0;i<TR_STEMS.length;i++){if(w.indexOf(TR_STEMS[i])===0){score++;return;}}
+      if(TR_SUFFIX.test(w))score++;
+    }
+  });
+  if(score>=2||(score>=1&&words.length<=2))return 'tr';
   return 'en';
 }
 
@@ -1994,7 +2011,7 @@ function buildGenSys(totalSec,li){
   }else{
     base='You are a filmmaker building a cut-by-cut plan for a personal YouTube video in a '+tone+' tone.\n\n4 block types:\nVOICEOVER - Write the EXACT words spoken out loud. First person. No visual description.\nBROLL - No talking. ONE single camera cut. Describe only what the CAMERA SEES: framing, lens, movement, subject.\nMUSIC - No talking. Only music plays. Marks a montage section.\nTRANSITION - One line. Match cut, smash cut or brief pause.'+ytCutRules(totalSec)+'\n\nRULES:\n- Total duration: '+dur+'\n- NEVER follow repeating patterns. Let emotion and story rhythm decide.\n- Aesthetic: harsh flash, grain, analog, anti-polished.'+stylePack('script');
   }
-  return (li?li+'\n\n':'')+base+(li?'\n\n'+li:'')+'\n\nReturn ONLY plain text, one block per line:\n[TYPE] 00:00-00:00 - content';
+  return (li?li+'\n\n':'')+base+(li?'\n\n'+li:'')+'\n\nLANGUAGE: Write ALL block content - voiceover words, visual descriptions, everything after the timecode - in the SAME LANGUAGE the user wrote the topic in. Keep the [TYPE] tags in English.\n\nReturn ONLY plain text, one block per line:\n[TYPE] 00:00-00:00 - content';
 }
 
 var pcChoice='ai';
@@ -2164,7 +2181,7 @@ function ensureFullPlan(planSys,text,tries){
   var lines=text.trim().split('\n').filter(function(l){return l.trim();});
   if(lines.length&&!/\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}/.test(lines[lines.length-1]))lines.pop();
   var tail=lines.slice(-6).join('\n');
-  var contMsg='The shot plan below is INCOMPLETE - it stops at '+fmtTime(end)+' but the video must reach at least '+fmtTime(target)+'. Continue the SAME plan from '+fmtTime(end)+' onward. Do not repeat existing blocks. Keep the same style, layers and cutting math.\n\nLast blocks for context:\n'+tail+'\n\nReturn ONLY the new blocks, same plain text format, nothing else.';
+  var contMsg='The shot plan below is INCOMPLETE - it stops at '+fmtTime(end)+' but the video must reach at least '+fmtTime(target)+'. Continue the SAME plan from '+fmtTime(end)+' onward. Do not repeat existing blocks. Keep the same style, layers and cutting math.\n\nLast blocks for context:\n'+tail+'\n\nWrite in the SAME LANGUAGE as the existing blocks. Return ONLY the new blocks, same plain text format, nothing else.';
   return api(planSys,contMsg).then(function(more){
     return ensureFullPlan(planSys,lines.join('\n')+'\n'+more.trim(),tries+1);
   });
@@ -2186,7 +2203,8 @@ function buildCanvasSys(li){
   return briefCtx+(li?li+'\n':'')+
     'You are a cinematographer. Return ONLY a valid JSON array. No explanation, no markdown.\n'+
     'Format: [{"i":0,"shots":[{"k":"shot","t":"..."},{"k":"action","t":"..."},{"k":"emotion","t":"..."},{"k":"tech","t":"..."}]}]\n'+
-    'k must be: shot, action, emotion, or tech. Include lens, lighting, movement. Grain, analog.'+stylePack('shots')+(li?'\n'+li:'');
+    'k must be: shot, action, emotion, or tech. Include lens, lighting, movement. Grain, analog.\n'+
+    'Write all "t" values in the same language as the script blocks.'+stylePack('shots')+(li?'\n'+li:'');
 }
 
 function buildCanvas(){
@@ -2280,7 +2298,7 @@ function surpriseMe(){
   var totalSec=(durMin+durMax)/2*60;
   var li=langInstr(inputLang,'shot plan content');
   var blocks=(PT_BLOCKS[projectType]||PT_BLOCKS.youtube).join(', ');
-  var sys=(li?li+'\n\n':'')+'You are a filmmaker. Create a DIFFERENT, UNEXPECTED shot plan for the same topic. Try a completely different narrative approach, different structure, different emotional arc.\n\nUse these block types: '+blocks+(projectType==='youtube'?ytCutRules(totalSec):'')+stylePack('script')+'\n\nReturn ONLY plain text:\n[TYPE] 00:00-00:00 - content'+(li?'\n\n'+li:'');
+  var sys=(li?li+'\n\n':'')+'You are a filmmaker. Create a DIFFERENT, UNEXPECTED shot plan for the same topic. Try a completely different narrative approach, different structure, different emotional arc.\n\nUse these block types: '+blocks+(projectType==='youtube'?ytCutRules(totalSec):'')+stylePack('script')+'\n\nLANGUAGE: write all block content in the same language the topic is written in. Keep the [TYPE] tags in English.\n\nReturn ONLY plain text:\n[TYPE] 00:00-00:00 - content'+(li?'\n\n'+li:'');
   api(sys,'Create a surprising, different shot plan for: '+topic+'. Duration: '+durMin+'-'+durMax+' minutes (~'+Math.round(totalSec)+' sec). Tone: '+tone).then(function(raw){return ensureFullPlan(sys,raw);}).then(function(raw){
     stopLoad();
     document.getElementById('scriptTa').value=raw.trim();
@@ -2991,9 +3009,9 @@ function planNode(id){
   var li=langInstr(inputLang,'shot descriptions');
   var sys,usr;
   if(projectType==='music'){
-    sys=(li?li+' ':'')+' You are a music video director. Give 5 shot ideas for this music section. Return ONLY JSON: [{"k":"location","t":"..."},{"k":"acting","t":"..."},{"k":"shot","t":"..."},{"k":"lighting","t":"..."},{"k":"props","t":"..."}]. k must be exactly: location, acting, shot, lighting, props.'+(li?' '+li:'');
+    sys=(li?li+' ':'')+' You are a music video director. Give 5 shot ideas for this music section. Return ONLY JSON: [{"k":"location","t":"..."},{"k":"acting","t":"..."},{"k":"shot","t":"..."},{"k":"lighting","t":"..."},{"k":"props","t":"..."}]. k must be exactly: location, acting, shot, lighting, props. Write all "t" values in the same language as the script blocks.'+(li?' '+li:'');
   }else{
-    sys=(li?li+' ':'')+' You are a cinematographer. Give 4 shot ideas for this block. Include lens, lighting, movement. Grain, analog.'+stylePack('shots')+' Return ONLY JSON: [{"k":"shot","t":"..."},{"k":"action","t":"..."},{"k":"emotion","t":"..."},{"k":"tech","t":"..."}]'+(li?' '+li:'');
+    sys=(li?li+' ':'')+' You are a cinematographer. Give 4 shot ideas for this block. Include lens, lighting, movement. Grain, analog. Write all "t" values in the same language as the block content.'+stylePack('shots')+' Return ONLY JSON: [{"k":"shot","t":"..."},{"k":"action","t":"..."},{"k":"emotion","t":"..."},{"k":"tech","t":"..."}]'+(li?' '+li:'');
   }
   usr='Block: ['+n.type.toUpperCase()+'] '+n.tcStart+'-'+n.tcEnd+' - '+n.content;
   var userContent=usr;
@@ -3020,7 +3038,7 @@ function reviseBlock(nodeId,instruction){
   var n=null;for(var i=0;i<nodes.length;i++){if(nodes[i].id===nodeId){n=nodes[i];break;}}
   if(!n)return;
   var li=langInstr(inputLang,'block content');
-  var sys=(li?li+' ':'')+' You are a filmmaker. Revise this block content based on the instruction. Keep same block type. Return ONLY the revised content text, nothing else.'+(li?' '+li:'');
+  var sys=(li?li+' ':'')+' You are a filmmaker. Revise this block content based on the instruction. Keep same block type. Keep the same language as the original content unless the instruction says otherwise. Return ONLY the revised content text, nothing else.'+(li?' '+li:'');
   var usr='Current content: '+n.content+'\nInstruction: '+instruction;
   api(sys,usr).then(function(raw){
     saveHistory();
