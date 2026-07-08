@@ -330,6 +330,12 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 .tl-block:hover{opacity:1;height:40px;}
 .tl-block.sel{opacity:1;outline:1.5px solid rgba(255,255,255,.65);outline-offset:-1px;height:40px;}
 .tl-block.tl-playing{opacity:1;height:42px;box-shadow:0 0 0 1.5px rgba(255,255,255,.9),0 0 12px rgba(255,255,255,.4);}
+.tb-menu{position:absolute;bottom:44px;left:50%;transform:translateX(-50%);background:rgba(18,18,18,.97);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:4px;display:none;flex-direction:column;min-width:110px;box-shadow:0 8px 30px rgba(0,0,0,.6);backdrop-filter:blur(20px);}
+.tb-menu.open{display:flex;}
+.tb-menu button{background:none;border:none;color:var(--text-2);font-family:var(--sans);font-size:12px;text-align:left;padding:7px 10px;border-radius:6px;cursor:pointer;transition:all .12s;white-space:nowrap;}
+.tb-menu button:hover{background:rgba(255,255,255,.08);color:#fff;}
+.tb-btn.busy{opacity:.35;pointer-events:none;animation:tb-pulse 1s ease infinite;}
+@keyframes tb-pulse{50%{opacity:.7;}}
 /* when music strip is visible, lift the floating toolbar + legend above it */
 #s5.has-music .toolbar{bottom:200px;}
 #s5.has-music .guide{bottom:190px;}
@@ -999,6 +1005,19 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
     <button class="tb-btn" onclick="clearConns()" data-tip="Clear Lines">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/><line x1="18" y1="3" x2="6" y2="21" stroke-width="2"/></svg>
     </button>
+    <div class="tb-sep"></div>
+    <div style="position:relative">
+      <button class="tb-btn" id="btnTranslate" onclick="toggleLangMenu()" data-tip="Translate Board">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a13.5 13.5 0 0 1 0 18a13.5 13.5 0 0 1 0-18z"/></svg>
+      </button>
+      <div class="tb-menu" id="langMenu">
+        <button onclick="translateBoard('en')">English</button>
+        <button onclick="translateBoard('tr')">Türkçe</button>
+        <button onclick="translateBoard('es')">Español</button>
+        <button onclick="translateBoard('fr')">Français</button>
+        <button onclick="translateBoard('de')">Deutsch</button>
+      </div>
+    </div>
   </div>
   <div class="guide">
     <div class="guide-title">legend</div>
@@ -1008,7 +1027,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
     <div class="gi"><div class="gd" style="background:var(--c-mu)"></div>music</div>
     <div class="gi"><div class="gd" style="background:var(--c-tr)"></div>transition</div>
     <div class="guide-sec">controls</div>
-    <div class="gi">scroll = zoom</div>
+    <div class="gi">scroll / 2-finger = pan</div>
+    <div class="gi">pinch / ctrl+scroll = zoom</div>
     <div class="gi">space+drag = pan</div>
     <div class="gi">hover node = connect dots</div>
     <div class="gi">Ctrl+Z = undo</div>
@@ -2204,6 +2224,32 @@ function ensureFullPlan(planSys,text,tries,prevEnd){
   });
 }
 
+/* default canvas layout: group each audio block (voiceover/music) with the
+   visual cuts that play under it - audio card on top, its cuts in a row below */
+var AUDIO_BLOCKS={voiceover:1,music:1};
+function layoutBlocks(blocks){
+  var hasAudio=false,hasVisual=false;
+  blocks.forEach(function(b){if(AUDIO_BLOCKS[b.type])hasAudio=true;else hasVisual=true;});
+  if(!(projectType==='youtube'&&hasAudio&&hasVisual)){
+    return blocks.map(function(b,i){return {x:60+i*(NC_W+NC_GAP),y:80};});
+  }
+  var groups=[],cur=null;
+  blocks.forEach(function(b,i){
+    if(AUDIO_BLOCKS[b.type]){cur={audio:i,visuals:[]};groups.push(cur);}
+    else{if(!cur){cur={audio:null,visuals:[]};groups.push(cur);}cur.visuals.push(i);}
+  });
+  var pos=new Array(blocks.length);
+  var gx=60,GROUP_GAP=110,AUDIO_Y=80,VISUAL_Y=330;
+  groups.forEach(function(g){
+    var cols=Math.max(g.visuals.length,1);
+    var w=cols*NC_W+(cols-1)*NC_GAP;
+    if(g.audio!=null)pos[g.audio]={x:Math.round(gx+(w-NC_W)/2),y:AUDIO_Y};
+    g.visuals.forEach(function(bi,j){pos[bi]={x:gx+j*(NC_W+NC_GAP),y:VISUAL_Y};});
+    gx+=w+GROUP_GAP;
+  });
+  return pos;
+}
+
 function buildCanvasSys(li){
   var briefCtx=projectBrief?('Production Brief context (use specified equipment, locations, lighting plan from this):\n'+projectBrief+'\n\n'):'';
   if(projectType==='music'){
@@ -2268,15 +2314,19 @@ function buildCanvas(){
 
     var li=langInstr(inputLang,'shot descriptions');
     var sys=buildCanvasSys(li);
-    var usr='Blocks:\n'+blocks.map(function(b,i){return i+': ['+b.type.toUpperCase()+'] '+b.tcStart+'-'+b.tcEnd+' - '+b.content;}).join('\n')+'\n\nReturn shot ideas for each block.';
+    // in cut-by-cut youtube plans, shot ideas belong to the visual cuts - skip audio blocks
+    var idxBlocks=blocks.map(function(b,i){return{b:b,i:i};});
+    if(projectType==='youtube')idxBlocks=idxBlocks.filter(function(o){return !AUDIO_BLOCKS[o.b.type];});
+    if(!idxBlocks.length)idxBlocks=blocks.map(function(b,i){return{b:b,i:i};});
+    var usr='Blocks:\n'+idxBlocks.map(function(o){return o.i+': ['+o.b.type.toUpperCase()+'] '+o.b.tcStart+'-'+o.b.tcEnd+' - '+o.b.content;}).join('\n')+'\n\nReturn shot ideas for each block, using the same "i" indexes as given.';
 
     api(sys,usr).then(function(raw){
       clearInterval(clInt);
       var sd=[];
       try{var m=raw.match(/\[[\s\S]*\]/);if(m)sd=JSON.parse(m[0]);}catch(e){console.warn('Shot parse:',e);}
+      var posArr=layoutBlocks(blocks);
       nodes=blocks.map(function(b,i){
-        var entry=sd.filter(function(x){return x.i===i;})[0]||{shots:[]};
-        return{id:nid++,type:b.type,tcStart:b.tcStart,tcEnd:b.tcEnd,content:b.content,shots:[],x:60+i*(NC_W+NC_GAP),y:80};
+        return{id:nid++,type:b.type,tcStart:b.tcStart,tcEnd:b.tcEnd,content:b.content,shots:[],x:posArr[i].x,y:posArr[i].y};
       });
       attShots=[];imgNodes=[];noteNodes=[];conns=[];undoStack=[];undoIdx=-1;
       nodeDrawerClosed={};sbSeed=Math.floor(Math.random()*99999)+1;
@@ -2940,6 +2990,47 @@ function tcToSec(tc){
   return parseInt(parts[0]||0)*60+parseInt(parts[1]||0);
 }
 
+/* ===== one-click board translation ===== */
+var LANG_NAMES={en:'English',tr:'Turkish',es:'Spanish',fr:'French',de:'German'};
+function toggleLangMenu(){document.getElementById('langMenu').classList.toggle('open');}
+document.addEventListener('click',function(e){
+  var m=document.getElementById('langMenu');
+  if(m&&m.classList.contains('open')&&!e.target.closest('#btnTranslate')&&!e.target.closest('#langMenu'))m.classList.remove('open');
+});
+function translateBoard(lang){
+  document.getElementById('langMenu').classList.remove('open');
+  var items=[];
+  nodes.forEach(function(n){if(n.content)items.push({ref:n,field:'content'});});
+  attShots.forEach(function(a){if(a.t)items.push({ref:a,field:'t'});});
+  noteNodes.forEach(function(nn){if(nn.text)items.push({ref:nn,field:'text'});});
+  if(!items.length)return;
+  saveHistory();
+  var btn=document.getElementById('btnTranslate');btn.classList.add('busy');
+  var name=LANG_NAMES[lang]||lang;
+  var CH=40,chunks=[];
+  for(var i=0;i<items.length;i+=CH)chunks.push(items.slice(i,i+CH));
+  var p=Promise.resolve();
+  chunks.forEach(function(chunk){
+    p=p.then(function(){
+      var payload=chunk.map(function(it,j){return {i:j,t:it.ref[it.field]};});
+      var sys='You are a professional translator for film production documents. Translate every "t" value into '+name+'. Keep cinematography terms natural in the target language (lens sizes like 85mm, camera moves, framing terms). Do not add or remove information. Return ONLY a JSON array of {"i":number,"t":"translated text"} using the exact same "i" values, nothing else.';
+      return api(sys,JSON.stringify(payload)).then(function(raw){
+        var arr=[];try{var mm=raw.match(/\[[\s\S]*\]/);if(mm)arr=JSON.parse(mm[0]);}catch(e){}
+        arr.forEach(function(o){var it=chunk[o.i];if(it&&typeof o.t==='string'&&o.t.trim())it.ref[it.field]=o.t.trim();});
+      });
+    });
+  });
+  p.then(function(){
+    inputLang=lang; // later AI actions (revise, plan block) answer in the new language
+    renderAll();
+    btn.classList.remove('busy');
+  }).catch(function(e){
+    btn.classList.remove('busy');
+    renderAll();
+    alert('Translate error: '+e.message);
+  });
+}
+
 function addNoteNode(){
   saveHistory();
   var vp=document.getElementById('vp');
@@ -3107,14 +3198,33 @@ var vp=document.getElementById('vp');
 var tl=document.getElementById('tl');
 var tlScroll=false,tlSX=0,tlSL=0;
 
+function zoomAt(cx,cy,factor){
+  var r=vp.getBoundingClientRect();
+  var target=Math.min(Math.max(scale*factor,.1),4);
+  var nf=target/scale;
+  px=(cx-r.left)-(cx-r.left-px)*nf;
+  py=(cy-r.top)-(cy-r.top-py)*nf;
+  scale=target;updateT();
+}
 vp.addEventListener('wheel',function(e){
   e.preventDefault();
-  var f=e.deltaY<0?1.08:0.93;
-  var r=vp.getBoundingClientRect();
-  px=(e.clientX-r.left)-(e.clientX-r.left-px)*f;
-  py=(e.clientY-r.top)-(e.clientY-r.top-py)*f;
-  scale=Math.min(Math.max(scale*f,.1),4);updateT();
+  if(e.ctrlKey||e.metaKey){
+    // touchpad pinch (browsers report it as ctrl+wheel) or ctrl+scroll on a mouse -> zoom
+    zoomAt(e.clientX,e.clientY,Math.exp(-e.deltaY*0.012));
+  }else{
+    // two-finger touchpad scroll (or mouse wheel) -> pan
+    px-=e.deltaX;py-=e.deltaY;updateT();
+  }
 },{passive:false});
+// Safari reports pinch via gesture events instead of ctrl+wheel
+var gestBase=1;
+vp.addEventListener('gesturestart',function(e){e.preventDefault();gestBase=scale;});
+vp.addEventListener('gesturechange',function(e){
+  e.preventDefault();
+  var target=Math.min(Math.max(gestBase*e.scale,.1),4);
+  zoomAt(e.clientX,e.clientY,target/scale);
+});
+vp.addEventListener('gestureend',function(e){e.preventDefault();});
 
 tl.addEventListener('wheel',function(e){
   e.preventDefault();
