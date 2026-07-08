@@ -2011,7 +2011,7 @@ function buildGenSys(totalSec,li){
   }else{
     base='You are a filmmaker building a cut-by-cut plan for a personal YouTube video in a '+tone+' tone.\n\n4 block types:\nVOICEOVER - Write the EXACT words spoken out loud. First person. No visual description.\nBROLL - No talking. ONE single camera cut. Describe only what the CAMERA SEES: framing, lens, movement, subject.\nMUSIC - No talking. Only music plays. Marks a montage section.\nTRANSITION - One line. Match cut, smash cut or brief pause.'+ytCutRules(totalSec)+'\n\nRULES:\n- Total duration: '+dur+'\n- NEVER follow repeating patterns. Let emotion and story rhythm decide.\n- Aesthetic: harsh flash, grain, analog, anti-polished.'+stylePack('script');
   }
-  return (li?li+'\n\n':'')+base+(li?'\n\n'+li:'')+'\n\nLANGUAGE: Write ALL block content - voiceover words, visual descriptions, everything after the timecode - in the SAME LANGUAGE the user wrote the topic in. Keep the [TYPE] tags in English.\n\nReturn ONLY plain text, one block per line:\n[TYPE] 00:00-00:00 - content';
+  return (li?li+'\n\n':'')+base+(li?'\n\n'+li:'')+'\n\nLANGUAGE: Write ALL block content - voiceover words, visual descriptions, everything after the timecode - in the SAME LANGUAGE the user wrote the topic in. Keep the [TYPE] tags in English.\n\nReturn ONLY plain text. Each block is EXACTLY ONE line - never split a block across two lines, never repeat the timecode on its own line:\n[TYPE] 00:00-00:00 - content';
 }
 
 var pcChoice='ai';
@@ -2157,33 +2157,50 @@ function genScript(){
 function parseBlocks(text){
   var btypes=(PT_BLOCKS[projectType]||PT_BLOCKS.youtube).join('|');
   var typeRe=new RegExp('\\[?('+btypes+')\\]?','i');
-  return text.split('\n').map(function(line){
-    line=line.trim();if(!line||line.charAt(0)==='#')return null;
-    var tm=line.match(typeRe);if(!tm)return null;
+  function ts(t){var p=t.split(':');return (+p[0])*60+(+p[1]);}
+  function sec2tc(s){var m=Math.floor(s/60);var r=Math.round(s%60);return (m<10?'0':'')+m+':'+(r<10?'0':'')+r;}
+  var out=[];
+  text.split('\n').forEach(function(line){
+    line=line.trim();if(!line||line.charAt(0)==='#')return;
+    var tm=line.match(typeRe);
+    if(!tm){
+      // model sometimes wraps a block onto a second line - merge it into the previous block
+      if(out.length){
+        var cont=line.replace(/^(\d{1,2}:\d{2})\s*[-]?\s*/,'').replace(/^[:\s\-]+/,'').trim();
+        if(cont){var prev=out[out.length-1];prev.content=prev.content?(prev.content+' '+cont).trim():cont;}
+      }
+      return;
+    }
     var tcm=line.match(/(\d{1,2}:\d{2})\s*[-]\s*(\d{1,2}:\d{2})/);
-    var cm=line.match(/[|\-]\s*(.+)$/);
-    var content='';
-    if(cm){content=cm[1].trim();}
-    else{content=line.replace(typeRe,'').replace(/(\d{1,2}:\d{2})\s*[-]\s*(\d{1,2}:\d{2})/,'').replace(/^[:\s\-]+/,'').trim();}
-    if(!content)return null;
-    return{type:tm[1].toLowerCase(),tcStart:tcm?tcm[1]:'00:00',tcEnd:tcm?tcm[2]:'00:05',content:content,shots:[]};
-  }).filter(Boolean);
+    var content=line.replace(typeRe,'').replace(/(\d{1,2}:\d{2})\s*[-]\s*(\d{1,2}:\d{2})/,'').replace(/^[:\s\-]+/,'').trim();
+    var tcStart=tcm?tcm[1]:'00:00',tcEnd=tcm?tcm[2]:'00:05';
+    // model typos like "01:14 - 00:16": end before start - repair with a 2s cut
+    if(ts(tcEnd)<ts(tcStart))tcEnd=sec2tc(ts(tcStart)+2);
+    out.push({type:tm[1].toLowerCase(),tcStart:tcStart,tcEnd:tcEnd,content:content,shots:[]});
+  });
+  return out.filter(function(b){return b.content;});
 }
 
 /* API responses can hit the token cap and truncate long cut-by-cut plans -
    keep requesting continuations until the plan reaches the target duration */
-function ensureFullPlan(planSys,text,tries){
+function ensureFullPlan(planSys,text,tries,prevEnd){
   tries=tries||0;
   var target=durMin*60;
   var end=0;
   parseBlocks(text).forEach(function(b){var e=tcToSec(b.tcEnd);if(e>end)end=e;});
-  if(end>=target-15||tries>=3)return Promise.resolve(text);
+  var maxTries=Math.max(3,Math.ceil(target/60)); // long videos need many continuation rounds
+  var stalled=prevEnd!=null&&end<=prevEnd;       // no progress last round - stop, don't loop forever
+  if(end>=target-15||tries>=maxTries||stalled)return Promise.resolve(text);
   var lines=text.trim().split('\n').filter(function(l){return l.trim();});
   if(lines.length&&!/\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}/.test(lines[lines.length-1]))lines.pop();
   var tail=lines.slice(-6).join('\n');
   var contMsg='The shot plan below is INCOMPLETE - it stops at '+fmtTime(end)+' but the video must reach at least '+fmtTime(target)+'. Continue the SAME plan from '+fmtTime(end)+' onward. Do not repeat existing blocks. Keep the same style, layers and cutting math.\n\nLast blocks for context:\n'+tail+'\n\nWrite in the SAME LANGUAGE as the existing blocks. Return ONLY the new blocks, same plain text format, nothing else.';
   return api(planSys,contMsg).then(function(more){
-    return ensureFullPlan(planSys,lines.join('\n')+'\n'+more.trim(),tries+1);
+    // drop lines the continuation repeated from the existing plan
+    var seen={};
+    lines.forEach(function(l){seen[l.trim()]=1;});
+    var fresh=more.trim().split('\n').filter(function(l){l=l.trim();return l&&!seen[l];});
+    return ensureFullPlan(planSys,lines.join('\n')+'\n'+fresh.join('\n'),tries+1,end);
   });
 }
 
@@ -2298,7 +2315,7 @@ function surpriseMe(){
   var totalSec=(durMin+durMax)/2*60;
   var li=langInstr(inputLang,'shot plan content');
   var blocks=(PT_BLOCKS[projectType]||PT_BLOCKS.youtube).join(', ');
-  var sys=(li?li+'\n\n':'')+'You are a filmmaker. Create a DIFFERENT, UNEXPECTED shot plan for the same topic. Try a completely different narrative approach, different structure, different emotional arc.\n\nUse these block types: '+blocks+(projectType==='youtube'?ytCutRules(totalSec):'')+stylePack('script')+'\n\nLANGUAGE: write all block content in the same language the topic is written in. Keep the [TYPE] tags in English.\n\nReturn ONLY plain text:\n[TYPE] 00:00-00:00 - content'+(li?'\n\n'+li:'');
+  var sys=(li?li+'\n\n':'')+'You are a filmmaker. Create a DIFFERENT, UNEXPECTED shot plan for the same topic. Try a completely different narrative approach, different structure, different emotional arc.\n\nUse these block types: '+blocks+(projectType==='youtube'?ytCutRules(totalSec):'')+stylePack('script')+'\n\nLANGUAGE: write all block content in the same language the topic is written in. Keep the [TYPE] tags in English.\n\nReturn ONLY plain text. Each block is EXACTLY ONE line:\n[TYPE] 00:00-00:00 - content'+(li?'\n\n'+li:'');
   api(sys,'Create a surprising, different shot plan for: '+topic+'. Duration: '+durMin+'-'+durMax+' minutes (~'+Math.round(totalSec)+' sec). Tone: '+tone).then(function(raw){return ensureFullPlan(sys,raw);}).then(function(raw){
     stopLoad();
     document.getElementById('scriptTa').value=raw.trim();
