@@ -2125,7 +2125,7 @@ function genScript(){
   var briefMsg='Project type: '+projectType+'\nDuration: '+durMin+'-'+durMax+' min\n\nProject description:\n'+topic+extra;
   Promise.all([
     api(briefSys,buildUserContent(briefMsg)),
-    api(planSys,buildUserContent(planMsg))
+    api(planSys,buildUserContent(planMsg)).then(function(t){return ensureFullPlan(planSys,t);})
   ]).then(function(results){
     stopLoad();
     projectBrief=results[0].trim();
@@ -2151,6 +2151,23 @@ function parseBlocks(text){
     if(!content)return null;
     return{type:tm[1].toLowerCase(),tcStart:tcm?tcm[1]:'00:00',tcEnd:tcm?tcm[2]:'00:05',content:content,shots:[]};
   }).filter(Boolean);
+}
+
+/* API responses can hit the token cap and truncate long cut-by-cut plans -
+   keep requesting continuations until the plan reaches the target duration */
+function ensureFullPlan(planSys,text,tries){
+  tries=tries||0;
+  var target=durMin*60;
+  var end=0;
+  parseBlocks(text).forEach(function(b){var e=tcToSec(b.tcEnd);if(e>end)end=e;});
+  if(end>=target-15||tries>=3)return Promise.resolve(text);
+  var lines=text.trim().split('\n').filter(function(l){return l.trim();});
+  if(lines.length&&!/\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}/.test(lines[lines.length-1]))lines.pop();
+  var tail=lines.slice(-6).join('\n');
+  var contMsg='The shot plan below is INCOMPLETE - it stops at '+fmtTime(end)+' but the video must reach at least '+fmtTime(target)+'. Continue the SAME plan from '+fmtTime(end)+' onward. Do not repeat existing blocks. Keep the same style, layers and cutting math.\n\nLast blocks for context:\n'+tail+'\n\nReturn ONLY the new blocks, same plain text format, nothing else.';
+  return api(planSys,contMsg).then(function(more){
+    return ensureFullPlan(planSys,lines.join('\n')+'\n'+more.trim(),tries+1);
+  });
 }
 
 function buildCanvasSys(li){
@@ -2264,7 +2281,7 @@ function surpriseMe(){
   var li=langInstr(inputLang,'shot plan content');
   var blocks=(PT_BLOCKS[projectType]||PT_BLOCKS.youtube).join(', ');
   var sys=(li?li+'\n\n':'')+'You are a filmmaker. Create a DIFFERENT, UNEXPECTED shot plan for the same topic. Try a completely different narrative approach, different structure, different emotional arc.\n\nUse these block types: '+blocks+(projectType==='youtube'?ytCutRules(totalSec):'')+stylePack('script')+'\n\nReturn ONLY plain text:\n[TYPE] 00:00-00:00 - content'+(li?'\n\n'+li:'');
-  api(sys,'Create a surprising, different shot plan for: '+topic+'. Duration: '+durMin+'-'+durMax+' minutes (~'+Math.round(totalSec)+' sec). Tone: '+tone).then(function(raw){
+  api(sys,'Create a surprising, different shot plan for: '+topic+'. Duration: '+durMin+'-'+durMax+' minutes (~'+Math.round(totalSec)+' sec). Tone: '+tone).then(function(raw){return ensureFullPlan(sys,raw);}).then(function(raw){
     stopLoad();
     document.getElementById('scriptTa').value=raw.trim();
     document.getElementById('wc').textContent=raw.trim().split('\n').filter(function(l){return l.trim();}).length+' blocks';
