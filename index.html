@@ -246,7 +246,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 .sb-edit-inp::placeholder{color:rgba(255,255,255,.18);}
 .sb-edit-send{background:none;border:none;cursor:pointer;color:rgba(255,255,255,.25);font-family:var(--mono);font-size:9px;letter-spacing:.08em;padding:3px 6px;border-radius:3px;transition:color .12s,background .1s;white-space:nowrap;}
 .sb-edit-send:hover{color:rgba(255,255,255,.8);background:rgba(255,255,255,.08);}
-.att-body{padding:2px 10px 10px;font-family:var(--sans);font-size:12px;font-weight:400;line-height:1.5;color:rgba(255,255,255,.6);overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;}
+.att-body{padding:2px 10px 10px;font-family:var(--sans);font-size:12px;font-weight:400;line-height:1.5;color:rgba(255,255,255,.6);}
 /* PRODUCTION BRIEF */
 .brief-label{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:10px;display:block;}
 .brief-ta{width:100%;height:170px;resize:none;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:rgba(255,255,255,.8);font-family:var(--sans);font-size:13px;line-height:1.65;padding:14px 16px;outline:none;transition:border-color .15s;box-sizing:border-box;}
@@ -336,6 +336,11 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 .tb-menu button:hover{background:rgba(255,255,255,.08);color:#fff;}
 .tb-btn.busy{opacity:.35;pointer-events:none;animation:tb-pulse 1s ease infinite;}
 @keyframes tb-pulse{50%{opacity:.7;}}
+.translate-bar{position:fixed;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.06);z-index:10002;opacity:0;pointer-events:none;transition:opacity .2s ease;}
+.translate-bar.show{opacity:1;}
+.translate-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,#5a8acc,#8a5acc);transition:width .3s ease;}
+.translate-toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(8px);background:rgba(18,18,18,.97);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:9px 16px;font-family:var(--sans);font-size:12px;color:#fff;z-index:10002;opacity:0;pointer-events:none;transition:all .25s ease;box-shadow:0 8px 30px rgba(0,0,0,.5);backdrop-filter:blur(16px);}
+.translate-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 /* when music strip is visible, lift the floating toolbar + legend above it */
 #s5.has-music .toolbar{bottom:200px;}
 #s5.has-music .guide{bottom:190px;}
@@ -1019,6 +1024,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
       </div>
     </div>
   </div>
+  <div class="translate-bar" id="translateBar"><div class="translate-bar-fill" id="translateBarFill"></div></div>
+  <div class="translate-toast" id="translateToast">Successfully translated</div>
   <div class="guide">
     <div class="guide-title">legend</div>
     <div class="guide-sec">block types</div>
@@ -1027,7 +1034,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
     <div class="gi"><div class="gd" style="background:var(--c-mu)"></div>music</div>
     <div class="gi"><div class="gd" style="background:var(--c-tr)"></div>transition</div>
     <div class="guide-sec">controls</div>
-    <div class="gi">scroll / 2-finger = pan</div>
+    <div class="gi">mouse wheel = zoom</div>
+    <div class="gi">2-finger scroll = pan</div>
     <div class="gi">pinch / ctrl+scroll = zoom</div>
     <div class="gi">space+drag = pan</div>
     <div class="gi">hover node = connect dots</div>
@@ -1242,7 +1250,7 @@ var nodes=[],attShots=[],imgNodes=[],noteNodes=[],conns=[],nid=1;
 var selId=null,selImgId=null,selNoteId=null;
 var scale=1,px=60,py=80;
 var isPan=false,lmx=0,lmy=0;
-var dragN=null,dragAtt=null,dragImg=null,dragNote=null,dox=0,doy=0;
+var dragN=null,dragAtt=null,dragImg=null,dragNote=null,dragSb=null,dox=0,doy=0;
 var spaceDown=false;
 var canvasMode='select';
 var connFrom=null;
@@ -2228,13 +2236,27 @@ function parseBlocks(text){
    beat outline, then every segment is drafted in PARALLEL against that shared
    outline (so segments stay consistent without having seen each other's text),
    and results are stitched back together in order. */
+// a failed parallel segment used to be swallowed into an empty string,
+// silently shrinking a 10min request down to whatever the surviving
+// segments covered (e.g. "only segment 1 succeeded" looked like a normal
+// 3min result, no error, no warning). Retry once before giving up, and if
+// it still fails, let it throw so the real error reaches the user instead
+// of a mysteriously short plan.
+function apiRetry(sys,usr,retries){
+  retries=retries==null?1:retries;
+  return api(sys,usr).catch(function(err){
+    if(retries<=0)throw err;
+    return new Promise(function(res){setTimeout(res,800);}).then(function(){return apiRetry(sys,usr,retries-1);});
+  });
+}
+
 function genPlanChunked(planSys,planMsg,totalSec,li){
   var segLen=180;
   var numSegments=Math.min(6,Math.max(2,Math.round(totalSec/segLen)));
   var outlineSys=(li?li+'\n\n':'')+'You are a story editor breaking a video into sequential segments so multiple writers can draft them in parallel while staying consistent with one overall arc.\n\nBreak this into exactly '+numSegments+' contiguous segments covering the full 00:00-'+fmtTime(totalSec)+' runtime, each about '+fmtTime(totalSec/numSegments)+' long.'+stylePack('script')+'\n\nFor each segment write a specific 2-3 sentence beat: what happens narratively and visually, detailed enough that a writer can draft that segment alone without seeing the others and still land on-arc.\n\nReturn ONLY JSON: [{"start":"mm:ss","end":"mm:ss","beat":"..."}]'+(li?'\n\n'+li:'');
   var outlineMsg='Topic: '+topic+'. Tone: '+tone+'.';
 
-  return api(outlineSys,outlineMsg).then(function(raw){
+  return apiRetry(outlineSys,outlineMsg).then(function(raw){
     var segs=[];
     try{var m=raw.match(/\[[\s\S]*\]/);if(m)segs=JSON.parse(m[0]);}catch(e){}
     if(segs.length<2){
@@ -2244,7 +2266,7 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
     var outlineText=segs.map(function(s,i){return (i+1)+'. '+s.start+'-'+s.end+': '+(s.beat||'');}).join('\n');
     var segPromises=segs.map(function(seg,idx){
       var segSys=planSys+'\n\nSEGMENT WRITING TASK: You are writing ONLY the part of this video from '+seg.start+' to '+seg.end+' (segment '+(idx+1)+' of '+segs.length+').\n\nFull outline for context - do NOT repeat other segments, just stay consistent with this arc:\n'+outlineText+'\n\nTHIS SEGMENT\'S BEAT: '+(seg.beat||'continue the story')+'\n\nStart your first block at exactly '+seg.start+'. Do not write any blocks before '+seg.start+' or after '+seg.end+'.';
-      return api(segSys,buildUserContent(planMsg)).then(function(t){return t.trim();}).catch(function(){return '';});
+      return apiRetry(segSys,buildUserContent(planMsg)).then(function(t){return t.trim();});
     });
     return Promise.all(segPromises).then(function(texts){
       return ensureFullPlan(planSys,texts.join('\n'));
@@ -2608,16 +2630,6 @@ function renderAttShots(){
   attShots.forEach(function(att){
     // skip if parent drawer is closed
     if(nodeDrawerClosed[att.parentId])return;
-    var pnode=null;for(var i=0;i<nodes.length;i++){if(nodes[i].id===att.parentId){pnode=nodes[i];break;}}
-    if(pnode){
-      var line=document.createElement('div');line.className='att-line';
-      var x1=pnode.x+NC_W/2,y1=pnode.y+140;
-      var x2=att.x+NC_W/2,y2=att.y;
-      var len=Math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));
-      var angle=Math.atan2(y2-y1,x2-x1)*180/Math.PI;
-      line.style.cssText='position:absolute;left:'+x1+'px;top:'+y1+'px;width:'+len+'px;height:1px;background:rgba(201,168,76,.3);transform-origin:0 50%;transform:rotate('+angle+'deg);pointer-events:none;z-index:0;';
-      cw.appendChild(line);
-    }
     var el=document.createElement('div');
     el.className='att-shot'+(att.collapsed?' collapsed':'');
     el.setAttribute('data-k',att.k);el.id='att-'+att.id;
@@ -2638,7 +2650,7 @@ function renderAttShots(){
     var body=document.createElement('div');body.className='att-body';body.textContent=att.t||'(empty)';
     el.appendChild(stripe);el.appendChild(head);el.appendChild(body);
     el.addEventListener('mousedown',function(e){
-      if(e.target===delbtn||e.target===colBtn)return;
+      if(e.target===delbtn)return;
       if(e.button!==0)return;
       e.preventDefault();e.stopPropagation();
       dragAtt=att;
@@ -2655,6 +2667,28 @@ function renderAttShots(){
       }
     });
     cw.appendChild(el);
+  });
+  // shot text no longer clips to 3 lines, so card height now varies with
+  // content length - stack each parent's cards using their REAL measured
+  // DOM height (not a fixed guess) now that they're all in the DOM
+  var seenParents={};
+  attShots.forEach(function(att){
+    if(nodeDrawerClosed[att.parentId]||seenParents[att.parentId])return;
+    seenParents[att.parentId]=1;
+    reflowAttShots(att.parentId);
+  });
+  // connector lines drawn last, using each shot's now-final stacked position
+  attShots.forEach(function(att){
+    if(nodeDrawerClosed[att.parentId])return;
+    var pnode=null;for(var i=0;i<nodes.length;i++){if(nodes[i].id===att.parentId){pnode=nodes[i];break;}}
+    if(!pnode)return;
+    var line=document.createElement('div');line.className='att-line';
+    var x1=pnode.x+NC_W/2,y1=pnode.y+140;
+    var x2=att.x+NC_W/2,y2=att.y;
+    var len=Math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));
+    var angle=Math.atan2(y2-y1,x2-x1)*180/Math.PI;
+    line.style.cssText='position:absolute;left:'+x1+'px;top:'+y1+'px;width:'+len+'px;height:1px;background:rgba(201,168,76,.3);transform-origin:0 50%;transform:rotate('+angle+'deg);pointer-events:none;z-index:0;';
+    cw.appendChild(line);
   });
 }
 
@@ -2685,12 +2719,16 @@ function renderCanvas(){
     }
     inner.appendChild(txt);inner.appendChild(tc);inner.appendChild(footer);
     el.appendChild(stripe);el.appendChild(tag);el.appendChild(inner);
-    // Storyboard panel above node
+    // Storyboard panel above node - belongs to the node (moves with it when
+    // the node is dragged) but can also be dragged on its own via sbDX/sbDY,
+    // an offset from its default attached position
     if(node.sbUrl||node.sbLoading){
+      var sbDX=node.sbDX||0,sbDY=node.sbDY||0;
       var sbEditH=node.sbLoading?0:30;
       var panelTotalH=SB_PANEL_H+sbEditH;
-      var panel=document.createElement('div');panel.className='sb-panel';
-      panel.style.cssText='left:'+node.x+'px;top:'+(node.y-panelTotalH-8)+'px;width:'+NC_W+'px;height:'+panelTotalH+'px;';
+      var panelX=node.x+sbDX,panelY=node.y-panelTotalH-8+sbDY;
+      var panel=document.createElement('div');panel.className='sb-panel';panel.id='sbp-'+node.id;
+      panel.style.cssText='left:'+panelX+'px;top:'+panelY+'px;width:'+NC_W+'px;height:'+panelTotalH+'px;';
       if(node.sbLoading){
         var pldr=document.createElement('div');pldr.className='sb-panel-pldr';pldr.textContent='generating...';
         panel.appendChild(pldr);
@@ -2699,10 +2737,10 @@ function renderCanvas(){
         img.style.cssText='display:block;width:100%;height:'+SB_PANEL_H+'px;object-fit:cover;';
         var closeBtn=document.createElement('button');closeBtn.className='sb-panel-close';closeBtn.textContent='x';
         (function(n){closeBtn.addEventListener('click',function(e){e.stopPropagation();n.sbUrl=null;n.sbLoading=false;renderCanvas();});})(node);
-        var regenBtn=document.createElement('button');regenBtn.className='sb-regen';
+        var regenBtn=document.createElement('button');regenBtn.className='sb-regen';regenBtn.id='sbr-'+node.id;
         regenBtn.title='Regenerate storyboard';
         regenBtn.innerHTML='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 8a5.5 5.5 0 1 1-1.1-3.3"/><polyline points="13.5,2 13.5,5 10.5,5"/></svg>';
-        regenBtn.style.cssText='left:'+(node.x+NC_W-27)+'px;top:'+(node.y-sbEditH-35)+'px;';
+        regenBtn.style.cssText='left:'+(panelX+NC_W-27)+'px;top:'+(panelY-35+panelTotalH-SB_PANEL_H)+'px;';
         (function(n){regenBtn.addEventListener('click',function(e){e.stopPropagation();genNodeStoryboard(n.id);});})(node);
         var editBar=document.createElement('div');editBar.className='sb-edit-bar';
         var editInp=document.createElement('input');editInp.className='sb-edit-inp';editInp.type='text';editInp.placeholder='edit image...';
@@ -2718,6 +2756,20 @@ function renderCanvas(){
         panel.appendChild(img);panel.appendChild(closeBtn);panel.appendChild(editBar);
         cw.appendChild(regenBtn);
       }
+      // drag the storyboard card on its own, independent of the parent node -
+      // clicking the image/panel background moves just this card
+      (function(n,panelEl){
+        panelEl.addEventListener('mousedown',function(e){
+          if(e.target.closest('.sb-panel-close,.sb-edit-bar'))return;
+          if(e.button!==0)return;
+          e.preventDefault();e.stopPropagation();
+          dragSb=n;
+          var r=vp.getBoundingClientRect();
+          dox=(e.clientX-r.left-px)/scale-(n.sbDX||0);
+          doy=(e.clientY-r.top-py)/scale-(n.sbDY||0);
+          panelEl.style.zIndex=500;
+        });
+      })(node,panel);
       cw.appendChild(panel);
     }
     // Recce location reference, placed above the storyboard (or above the node)
@@ -3036,15 +3088,18 @@ function renderTL(){
 function reflowAttShots(parentId){
   var pnode=null;for(var i=0;i<nodes.length;i++){if(nodes[i].id===parentId){pnode=nodes[i];break;}}
   if(!pnode)return;
-  var FULL_H=90,COL_H=28,GAP=8;
+  var GAP=8,FALLBACK_H=90;
   var nodeAtts=attShots.filter(function(a){return a.parentId===parentId;});
   nodeAtts.sort(function(a,b){return a.y-b.y;});
   var curY=pnode.y+190;
   nodeAtts.forEach(function(a){
     a.y=curY;
     var el=document.getElementById('att-'+a.id);
-    if(el){el.style.top=a.y+'px';}
-    curY+=(a.collapsed?COL_H:FULL_H)+GAP;
+    if(el)el.style.top=a.y+'px';
+    // real measured height (collapsed cards shrink to header height via CSS
+    // automatically) instead of a fixed guess - text is no longer clamped
+    // so length varies a lot from card to card
+    curY+=(el?el.offsetHeight:FALLBACK_H)+GAP;
   });
 }
 
@@ -3061,8 +3116,22 @@ document.addEventListener('click',function(e){
   var m=document.getElementById('langMenu');
   if(m&&m.classList.contains('open')&&!e.target.closest('#btnTranslate')&&!e.target.closest('#langMenu'))m.classList.remove('open');
 });
+function setTranslateProgress(frac){
+  var bar=document.getElementById('translateBar'),fill=document.getElementById('translateBarFill');
+  if(!bar)return;
+  if(frac==null){bar.classList.remove('show');fill.style.width='0%';return;}
+  bar.classList.add('show');fill.style.width=Math.round(frac*100)+'%';
+}
+function showTranslateToast(){
+  var t=document.getElementById('translateToast');
+  if(!t)return;
+  t.classList.add('show');
+  clearTimeout(t._hideTimer);
+  t._hideTimer=setTimeout(function(){t.classList.remove('show');},2600);
+}
 function translateBoard(lang){
   document.getElementById('langMenu').classList.remove('open');
+  if(lang===inputLang)return; // already showing this language
   var items=[];
   nodes.forEach(function(n){if(n.content)items.push({ref:n,field:'content'});});
   attShots.forEach(function(a){if(a.t)items.push({ref:a,field:'t'});});
@@ -3070,24 +3139,46 @@ function translateBoard(lang){
   if(!items.length)return;
   saveHistory();
   var btn=document.getElementById('btnTranslate');btn.classList.add('busy');
-  var name=LANG_NAMES[lang]||lang;
-  var CH=40,chunks=[];
-  for(var i=0;i<items.length;i+=CH)chunks.push(items.slice(i,i+CH));
-  var sys='You are a professional translator for film production documents. Translate every "t" value into '+name+'. Keep cinematography terms natural in the target language (lens sizes like 85mm, camera moves, framing terms). Do not add or remove information. Return ONLY a JSON array of {"i":number,"t":"translated text"} using the exact same "i" values, nothing else.';
-  var chunkPromises=chunks.map(function(chunk){
-    var payload=chunk.map(function(it,j){return {i:j,t:it.ref[it.field]};});
-    return api(sys,JSON.stringify(payload)).then(function(raw){
-      var arr=[];try{var mm=raw.match(/\[[\s\S]*\]/);if(mm)arr=JSON.parse(mm[0]);}catch(e){}
-      arr.forEach(function(o){var it=chunk[o.i];if(it&&typeof o.t==='string'&&o.t.trim())it.ref[it.field]=o.t.trim();});
-    });
+  // snapshot every item's current text under the language it's currently in,
+  // so switching back to it later is instant instead of re-translating
+  items.forEach(function(it){
+    if(!it.ref.i18n)it.ref.i18n={};
+    if(!it.ref.i18n[inputLang])it.ref.i18n[inputLang]=it.ref[it.field];
   });
-  Promise.all(chunkPromises).then(function(){
+  // items already translated into `lang` before (from an earlier round trip)
+  // switch instantly with no API call; only the rest need a fresh translation
+  var cached=items.filter(function(it){return it.ref.i18n[lang];});
+  var needsApi=items.filter(function(it){return !it.ref.i18n[lang];});
+  cached.forEach(function(it){it.ref[it.field]=it.ref.i18n[lang];});
+  function finish(){
     inputLang=lang; // later AI actions (revise, plan block) answer in the new language
     renderAll();
     btn.classList.remove('busy');
-  }).catch(function(e){
+    setTranslateProgress(null);
+    showTranslateToast();
+  }
+  if(!needsApi.length){finish();return;}
+  var name=LANG_NAMES[lang]||lang;
+  var CH=40,chunks=[];
+  for(var i=0;i<needsApi.length;i+=CH)chunks.push(needsApi.slice(i,i+CH));
+  var sys='You are a professional translator for film production documents. Translate every "t" value into '+name+'. Keep cinematography terms natural in the target language (lens sizes like 85mm, camera moves, framing terms). Do not add or remove information. Return ONLY a JSON array of {"i":number,"t":"translated text"} using the exact same "i" values, nothing else.';
+  var done=0;
+  setTranslateProgress(0);
+  var chunkPromises=chunks.map(function(chunk){
+    var payload=chunk.map(function(it,j){return {i:j,t:it.ref[it.field]};});
+    return apiRetry(sys,JSON.stringify(payload)).then(function(raw){
+      var arr=[];try{var mm=raw.match(/\[[\s\S]*\]/);if(mm)arr=JSON.parse(mm[0]);}catch(e){}
+      arr.forEach(function(o){
+        var it=chunk[o.i];
+        if(it&&typeof o.t==='string'&&o.t.trim()){it.ref[it.field]=o.t.trim();it.ref.i18n[lang]=it.ref[it.field];}
+      });
+      done++;setTranslateProgress(done/chunks.length);
+    });
+  });
+  Promise.all(chunkPromises).then(finish).catch(function(e){
     btn.classList.remove('busy');
     renderAll();
+    setTranslateProgress(null);
     alert('Translate error: '+e.message);
   });
 }
@@ -3278,10 +3369,18 @@ function zoomAt(cx,cy,factor){
 vp.addEventListener('wheel',function(e){
   e.preventDefault();
   if(e.ctrlKey||e.metaKey){
-    // touchpad pinch (browsers report it as ctrl+wheel) or ctrl+scroll on a mouse -> zoom
+    // touchpad pinch (browsers report it as ctrl+wheel) or ctrl+scroll on a mouse -> smooth zoom
     zoomAt(e.clientX,e.clientY,Math.exp(-e.deltaY*0.012));
+    return;
+  }
+  // Distinguish a real mouse wheel (Firefox reports it in "line" deltaMode;
+  // elsewhere it's a big vertical jump with no horizontal component per
+  // notch) from a touchpad's smooth two-finger scroll (small deltas, almost
+  // always some deltaX) - wheel zooms like it always did, touchpad pans.
+  var isWheelNotch=e.deltaMode===1||(e.deltaX===0&&Math.abs(e.deltaY)>=40);
+  if(isWheelNotch){
+    zoomAt(e.clientX,e.clientY,e.deltaY<0?1.08:0.93);
   }else{
-    // two-finger touchpad scroll (or mouse wheel) -> pan
     px-=e.deltaX;py-=e.deltaY;updateT();
   }
 },{passive:false});
@@ -3328,7 +3427,31 @@ document.addEventListener('mousemove',function(e){
         if(ael){ael.style.left=a.x+'px';ael.style.top=a.y+'px';}
       }
     });
+    // the storyboard image card belongs to this node - it follows along too
+    // (its own sbDX/sbDY offset from the node is untouched, only the node's
+    // own position changed, so just nudge the live DOM by the same delta)
+    var sbp=document.getElementById('sbp-'+dragN.id);
+    if(sbp){sbp.style.left=(parseFloat(sbp.style.left)+dx2)+'px';sbp.style.top=(parseFloat(sbp.style.top)+dy2)+'px';}
+    var sbr=document.getElementById('sbr-'+dragN.id);
+    if(sbr){sbr.style.left=(parseFloat(sbr.style.left)+dx2)+'px';sbr.style.top=(parseFloat(sbr.style.top)+dy2)+'px';}
     updateAttLines();renderConns();
+  }
+  if(dragSb){
+    var rSb=vp.getBoundingClientRect();
+    dragSb.sbDX=(e.clientX-rSb.left-px)/scale-dox;
+    dragSb.sbDY=(e.clientY-rSb.top-py)/scale-doy;
+    var panelEl=document.getElementById('sbp-'+dragSb.id);
+    var regenEl=document.getElementById('sbr-'+dragSb.id);
+    if(panelEl){
+      var sbEditH2=dragSb.sbLoading?0:30;
+      var panelTotalH2=SB_PANEL_H+sbEditH2;
+      panelEl.style.left=(dragSb.x+dragSb.sbDX)+'px';
+      panelEl.style.top=(dragSb.y-panelTotalH2-8+dragSb.sbDY)+'px';
+      if(regenEl){
+        regenEl.style.left=(dragSb.x+dragSb.sbDX+NC_W-27)+'px';
+        regenEl.style.top=(dragSb.y-panelTotalH2-8+dragSb.sbDY+panelTotalH2-SB_PANEL_H-35)+'px';
+      }
+    }
   }
   if(dragAtt){
     var r2=vp.getBoundingClientRect();
@@ -3378,7 +3501,12 @@ document.addEventListener('mouseup',function(e){
   if(e.button===0&&dragN){
     var el=document.getElementById('nc-'+dragN.id);
     if(el){el.classList.remove('drag');el.style.zIndex='';}
-    dragN=null;saveHistory();renderTL();renderBlockList();renderAttShots();renderConns();
+    dragN=null;saveHistory();renderCanvas();renderTL();renderBlockList();renderAttShots();renderConns();
+  }
+  if(e.button===0&&dragSb){
+    var sbpEl=document.getElementById('sbp-'+dragSb.id);
+    if(sbpEl)sbpEl.style.zIndex='';
+    dragSb=null;saveHistory();
   }
   if(e.button===0&&dragAtt){
     var el2=document.getElementById('att-'+dragAtt.id);
