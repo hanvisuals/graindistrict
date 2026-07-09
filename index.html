@@ -2259,28 +2259,48 @@ function apiRetry(sys,usr,retries){
     return new Promise(function(res){setTimeout(res,800);}).then(function(){return apiRetry(sys,usr,retries-1);});
   });
 }
+// some backend responses can hang far longer than a user will ever wait (one
+// bad request stalling a "quick outline" call for 25s+ makes the whole
+// screen feel frozen). Races a promise against a hard deadline and resolves
+// with `fallback` if it isn't ready in time - the slow request is left to
+// finish in the background and quietly discarded, never blocking the UI.
+function withTimeout(promise,ms,fallback){
+  return new Promise(function(resolve){
+    var done=false;
+    var t=setTimeout(function(){if(!done){done=true;resolve(fallback);}},ms);
+    promise.then(function(v){if(!done){done=true;clearTimeout(t);resolve(v);}},function(){if(!done){done=true;clearTimeout(t);resolve(fallback);}});
+  });
+}
 
 function genPlanChunked(planSys,planMsg,totalSec,li){
   var segLen=180;
   var numSegments=Math.min(6,Math.max(2,Math.round(totalSec/segLen)));
-  var outlineSys=(li?li+'\n\n':'')+'You are a story editor breaking a video into sequential segments so multiple writers can draft them in parallel while staying consistent with one overall arc.\n\nBreak this into exactly '+numSegments+' contiguous segments covering the full 00:00-'+fmtTime(totalSec)+' runtime, each about '+fmtTime(totalSec/numSegments)+' long.'+stylePack('script')+'\n\nFor each segment write a specific 2-3 sentence beat: what happens narratively and visually, detailed enough that a writer can draft that segment alone without seeing the others and still land on-arc.\n\nReturn ONLY JSON: [{"start":"mm:ss","end":"mm:ss","beat":"..."}]'+(li?'\n\n'+li:'');
+  // keep the beat short - this is a quick outline, not the script itself.
+  // asking for "2-3 sentences" per segment used to make even this "fast"
+  // structuring step take 20-30s+ on its own
+  var outlineSys=(li?li+'\n\n':'')+'You are a story editor breaking a video into sequential segments so multiple writers can draft them in parallel while staying consistent with one overall arc.\n\nBreak this into exactly '+numSegments+' contiguous segments covering the full 00:00-'+fmtTime(totalSec)+' runtime, each about '+fmtTime(totalSec/numSegments)+' long.'+stylePack('script')+'\n\nFor each segment write ONE short, specific sentence: what happens narratively and visually - just enough for a writer to draft that segment alone and stay on-arc. Keep it brief, this is a quick outline.\n\nReturn ONLY JSON: [{"start":"mm:ss","end":"mm:ss","beat":"..."}]'+(li?'\n\n'+li:'');
   var outlineMsg='Topic: '+topic+'. Tone: '+tone+'.';
+  var evenSplit=[];
+  for(var esi=0;esi<numSegments;esi++)evenSplit.push({start:fmtTime(esi*totalSec/numSegments),end:fmtTime((esi+1)*totalSec/numSegments),beat:''});
 
   setGenStage('structuring outline');
-  return apiRetry(outlineSys,outlineMsg).then(function(raw){
+  // never let the "quick outline" step alone stall the whole screen - if it
+  // isn't back in 8s, just split the runtime evenly and move on
+  return withTimeout(apiRetry(outlineSys,outlineMsg),8000,null).then(function(raw){
     var segs=[];
-    try{var m=raw.match(/\[[\s\S]*\]/);if(m)segs=JSON.parse(m[0]);}catch(e){}
-    if(segs.length<2){
-      segs=[];
-      for(var i=0;i<numSegments;i++)segs.push({start:fmtTime(i*totalSec/numSegments),end:fmtTime((i+1)*totalSec/numSegments),beat:''});
-    }
+    if(raw){try{var m=raw.match(/\[[\s\S]*\]/);if(m)segs=JSON.parse(m[0]);}catch(e){}}
+    if(segs.length<2)segs=evenSplit;
     var outlineText=segs.map(function(s,i){return (i+1)+'. '+s.start+'-'+s.end+': '+(s.beat||'');}).join('\n');
     function buildSegSys(seg,idx){
       return planSys+'\n\nSEGMENT WRITING TASK: You are writing ONLY the part of this video from '+seg.start+' to '+seg.end+' (segment '+(idx+1)+' of '+segs.length+').\n\nFull outline for context - do NOT repeat other segments, just stay consistent with this arc:\n'+outlineText+'\n\nTHIS SEGMENT\'S BEAT: '+(seg.beat||'continue the story')+'\n\nStart your first block at exactly '+seg.start+'. Do not write any blocks before '+seg.start+' or after '+seg.end+'.';
     }
+    // every real API call below is capped at 30s (see withTimeout) - a
+    // segment that doesn't answer in time contributes an empty string
+    // instead of hanging the whole screen; it just reads as a "shortfall"
+    // and gets one redraft attempt like any other short segment
     setGenStage('writing '+segs.length+' segments in parallel');
     var segPromises=segs.map(function(seg,idx){
-      return apiRetry(buildSegSys(seg,idx),buildUserContent(planMsg)).then(function(t){return t.trim();});
+      return withTimeout(apiRetry(buildSegSys(seg,idx),buildUserContent(planMsg)).then(function(t){return t.trim();}),30000,'');
     });
     return Promise.all(segPromises).then(function(texts){
       // a segment can under-deliver (model stops early within its own
@@ -2299,10 +2319,10 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
       }
       setGenStage('redrafting '+shortfalls.length+' short segment'+(shortfalls.length>1?'s':''));
       var repairPromises=shortfalls.map(function(idx){
-        return apiRetry(buildSegSys(segs[idx],idx),buildUserContent(planMsg)).then(function(t){return t.trim();});
+        return withTimeout(apiRetry(buildSegSys(segs[idx],idx),buildUserContent(planMsg)).then(function(t){return t.trim();}),30000,texts[idx]);
       });
       return Promise.all(repairPromises).then(function(repaired){
-        repaired.forEach(function(t,i){texts[shortfalls[i]]=t;});
+        repaired.forEach(function(t,i){if(t)texts[shortfalls[i]]=t;});
         setGenStage('finishing up');
         return ensureFullPlan(planSys,texts.join('\n'));
       });
@@ -2312,25 +2332,29 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
 
 /* API responses can hit the token cap and truncate long cut-by-cut plans -
    keep requesting continuations until the plan reaches the target duration */
-function ensureFullPlan(planSys,text,tries,prevEnd){
+function ensureFullPlan(planSys,text,tries,prevEnd,startTs){
   tries=tries||0;
+  startTs=startTs||Date.now();
   var target=durMin*60;
   var end=0;
   parseBlocks(text).forEach(function(b){var e=tcToSec(b.tcEnd);if(e>end)end=e;});
   var maxTries=Math.max(3,Math.ceil(target/60)); // long videos need many continuation rounds
   var stalled=prevEnd!=null&&end<=prevEnd;       // no progress last round - stop, don't loop forever
-  if(end>=target-15||tries>=maxTries||stalled)return Promise.resolve(text);
+  // tries alone doesn't bound wall-clock time (each round can itself be
+  // slow) - also give up once this loop alone has run 25s, whatever we have
+  var outOfTime=Date.now()-startTs>25000;
+  if(end>=target-15||tries>=maxTries||stalled||outOfTime)return Promise.resolve(text);
   setGenStage('continuing from '+fmtTime(end)+' of '+fmtTime(target));
   var lines=text.trim().split('\n').filter(function(l){return l.trim();});
   if(lines.length&&!/\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}/.test(lines[lines.length-1]))lines.pop();
   var tail=lines.slice(-6).join('\n');
   var contMsg='The shot plan below is INCOMPLETE - it stops at '+fmtTime(end)+' but the video must reach at least '+fmtTime(target)+'. Continue the SAME plan from '+fmtTime(end)+' onward. Do not repeat existing blocks. Keep the same style, layers and cutting math.\n\nLast blocks for context:\n'+tail+'\n\nWrite in the SAME LANGUAGE as the existing blocks. Return ONLY the new blocks, same plain text format, nothing else.';
-  return api(planSys,contMsg).then(function(more){
+  return withTimeout(api(planSys,contMsg),25000,'').then(function(more){
     // drop lines the continuation repeated from the existing plan
     var seen={};
     lines.forEach(function(l){seen[l.trim()]=1;});
     var fresh=more.trim().split('\n').filter(function(l){l=l.trim();return l&&!seen[l];});
-    return ensureFullPlan(planSys,lines.join('\n')+'\n'+fresh.join('\n'),tries+1,end);
+    return ensureFullPlan(planSys,lines.join('\n')+'\n'+fresh.join('\n'),tries+1,end,startTs);
   });
 }
 
