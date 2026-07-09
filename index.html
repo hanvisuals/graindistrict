@@ -1251,7 +1251,7 @@ var nodes=[],attShots=[],imgNodes=[],noteNodes=[],conns=[],nid=1;
 var selId=null,selImgId=null,selNoteId=null;
 var scale=1,px=60,py=80;
 var isPan=false,lmx=0,lmy=0;
-var dragN=null,dragAtt=null,dragImg=null,dragNote=null,dragSb=null,dox=0,doy=0;
+var dragN=null,dragAtt=null,dragImg=null,dragNote=null,dragSb=null,dox=0,doy=0,dragNMoved=false;
 var spaceDown=false;
 var canvasMode='select';
 var connFrom=null;
@@ -2919,7 +2919,7 @@ function renderCanvas(){
       // own click event gets to fire, silently swallowing every click
       if(e.target.closest('button'))return;
       e.preventDefault();
-      dragN=node;
+      dragN=node;dragNMoved=false;
       var r=document.getElementById('vp').getBoundingClientRect();
       dox=(e.clientX-r.left-px)/scale-node.x;
       doy=(e.clientY-r.top-py)/scale-node.y;
@@ -2938,6 +2938,9 @@ function renderCanvas(){
       renderBlockList();renderBlockDetail();
       document.querySelectorAll('.nc').forEach(function(c){c.classList.remove('sel');});
       el.classList.add('sel');
+      // keep the bottom timeline in sync with canvas selection too
+      document.querySelectorAll('.tl-block').forEach(function(b){b.classList.remove('sel');});
+      var tlb=document.getElementById('tlb-'+node.id);if(tlb)tlb.classList.add('sel');
       setTimeout(function(){var s=document.querySelector('.bl-item.sel');if(s)s.scrollIntoView({behavior:'smooth',block:'nearest'});},30);
     });
     el.addEventListener('dblclick',function(e){
@@ -3113,7 +3116,7 @@ function renderTL(){
   var totalSecs=0;
   nodes.forEach(function(n){var e=tcToSec(n.tcEnd);if(e>totalSecs)totalSecs=e;});
   if(!totalSecs)return;
-  var pxPerSec=Math.max(14,(tl.parentElement.offsetWidth-40)/totalSecs);
+  var pxPerSec=tlPxPerSec();
   var ABBR={verse:'VS',chorus:'CH',hook:'HK',lip_sync:'LS',bridge:'BR',intro:'IN',outro:'OT',transition:'—',voiceover:'VO',broll:'BR',music:'MU',scene:'SC',dialogue:'DL',action:'AC',montage:'MT',main:'MN',segment:'SG'};
   var AUDIO_TYPES={voiceover:1,music:1};
   var hasAudio=false,hasVisual=false;
@@ -3422,7 +3425,38 @@ function scheduleConns(){
   // every connection line's SVG path on each one causes visible lag with lots of
   // cards, so coalesce into a single renderConns() per animation frame instead
   if(connsRAF)return;
-  connsRAF=requestAnimationFrame(function(){connsRAF=null;renderConns();});
+  connsRAF=requestAnimationFrame(function(){connsRAF=null;renderConns();syncTimelineScroll();});
+}
+function tlPxPerSec(){
+  var tlEl=document.getElementById('tl');
+  var totalSecs=0;
+  nodes.forEach(function(n){var e=tcToSec(n.tcEnd);if(e>totalSecs)totalSecs=e;});
+  if(!totalSecs||!tlEl.parentElement)return 0;
+  return Math.max(14,(tlEl.parentElement.offsetWidth-40)/totalSecs);
+}
+// the timeline strip has its own independent horizontal scroll, never tied
+// to the canvas - panning the canvas to a later part of a long plan left the
+// timeline showing an unrelated earlier time range, looking like cards were
+// "missing" from it even though every block is actually in the DOM. Keep the
+// timeline scrolled to whatever time range is currently visible on canvas.
+function syncTimelineScroll(){
+  if(tlScroll)return; // user is actively dragging the timeline themselves - don't fight them
+  var tlEl=document.getElementById('tl');
+  if(!tlEl||!nodes.length)return;
+  var pxPerSec=tlPxPerSec();
+  if(!pxPerSec)return;
+  var vpEl=document.getElementById('vp');
+  var vw=vpEl.clientWidth;
+  var leftCanvas=(-px)/scale,rightCanvas=(vw-px)/scale;
+  var minT=Infinity;
+  nodes.forEach(function(n){
+    if(n.x+NC_W>=leftCanvas&&n.x<=rightCanvas){
+      var s=tcToSec(n.tcStart);
+      if(s<minT)minT=s;
+    }
+  });
+  if(minT===Infinity)return;
+  tlEl.scrollLeft=Math.max(0,minT*pxPerSec-40);
 }
 function updateT(){
   document.getElementById('cw').style.transform='translate('+px+'px,'+py+'px) scale('+scale+')';
@@ -3493,6 +3527,7 @@ tl.addEventListener('mousedown',function(e){
 document.addEventListener('mousemove',function(e){
   if(isPan){px+=e.clientX-lmx;py+=e.clientY-lmy;lmx=e.clientX;lmy=e.clientY;updateT();}
   if(dragN){
+    dragNMoved=true;
     var r=vp.getBoundingClientRect();
     var oldX=dragN.x,oldY=dragN.y;
     dragN.x=(e.clientX-r.left-px)/scale-dox;dragN.y=(e.clientY-r.top-py)/scale-doy;
@@ -3582,7 +3617,16 @@ document.addEventListener('mouseup',function(e){
   if(e.button===0&&dragN){
     var el=document.getElementById('nc-'+dragN.id);
     if(el){el.classList.remove('drag');el.style.zIndex='';}
-    dragN=null;saveHistory();renderCanvas();renderTL();renderBlockList();renderAttShots();renderConns();
+    // a plain click (mousedown+mouseup with no movement in between) also
+    // sets dragN, since the card itself starts the drag on mousedown - only
+    // rebuild the canvas (and push undo history) if the card actually moved.
+    // Rebuilding on every click destroyed the very card element the browser
+    // was about to dispatch its native 'click' event to, silently breaking
+    // card selection (and any button click bubbling through it) entirely
+    if(dragNMoved){
+      saveHistory();renderCanvas();renderTL();renderBlockList();renderAttShots();renderConns();
+    }
+    dragN=null;dragNMoved=false;
   }
   if(e.button===0&&dragSb){
     var sbpEl=document.getElementById('sbp-'+dragSb.id);
