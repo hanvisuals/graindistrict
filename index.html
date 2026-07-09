@@ -1262,9 +1262,16 @@ var S4=[' analyzing each block',' imagining the shots',' choosing the lenses',' 
 var loadInt=null;
 
 var loadTimerInt=null;
+var genStage='';
+// long chunked generations move through real phases (outline, parallel
+// segments, gap repair) - a bare stopwatch doesn't tell the user which one
+// they're waiting on, so genPlanChunked reports its current phase here and
+// the loading screen shows it next to the elapsed time
+function setGenStage(s){genStage=s;}
 function startLoad(scr){
   if(loadInt)clearInterval(loadInt);
   if(loadTimerInt)clearInterval(loadTimerInt);
+  genStage='';
   var msgs=scr==='s2'?S2:S4;
   var el=document.getElementById(scr+'msg');
   if(!el)return;
@@ -1276,19 +1283,21 @@ function startLoad(scr){
     setTimeout(function(){if(el){el.textContent=msgs[i];el.style.opacity='1';}},350);
   },2200);
   // a live elapsed counter beats a static "about 15 seconds..." that goes stale
-  // the moment a long plan takes 30-40s - the screen should never look frozen
+  // the moment a long plan takes 30-90s - the screen should never look frozen
   var sub=document.getElementById(scr+'sub');
   if(sub){
     var t0=Date.now();
     sub.textContent='0s';
     loadTimerInt=setInterval(function(){
-      sub.textContent=Math.round((Date.now()-t0)/1000)+'s';
+      var secs=Math.round((Date.now()-t0)/1000)+'s';
+      sub.textContent=genStage?genStage+' · '+secs:secs;
     },1000);
   }
 }
 function stopLoad(){
   if(loadInt){clearInterval(loadInt);loadInt=null;}
   if(loadTimerInt){clearInterval(loadTimerInt);loadTimerInt=null;}
+  genStage='';
 }
 
 // Undo
@@ -2256,6 +2265,7 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
   var outlineSys=(li?li+'\n\n':'')+'You are a story editor breaking a video into sequential segments so multiple writers can draft them in parallel while staying consistent with one overall arc.\n\nBreak this into exactly '+numSegments+' contiguous segments covering the full 00:00-'+fmtTime(totalSec)+' runtime, each about '+fmtTime(totalSec/numSegments)+' long.'+stylePack('script')+'\n\nFor each segment write a specific 2-3 sentence beat: what happens narratively and visually, detailed enough that a writer can draft that segment alone without seeing the others and still land on-arc.\n\nReturn ONLY JSON: [{"start":"mm:ss","end":"mm:ss","beat":"..."}]'+(li?'\n\n'+li:'');
   var outlineMsg='Topic: '+topic+'. Tone: '+tone+'.';
 
+  setGenStage('structuring outline');
   return apiRetry(outlineSys,outlineMsg).then(function(raw){
     var segs=[];
     try{var m=raw.match(/\[[\s\S]*\]/);if(m)segs=JSON.parse(m[0]);}catch(e){}
@@ -2264,12 +2274,37 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
       for(var i=0;i<numSegments;i++)segs.push({start:fmtTime(i*totalSec/numSegments),end:fmtTime((i+1)*totalSec/numSegments),beat:''});
     }
     var outlineText=segs.map(function(s,i){return (i+1)+'. '+s.start+'-'+s.end+': '+(s.beat||'');}).join('\n');
+    function buildSegSys(seg,idx){
+      return planSys+'\n\nSEGMENT WRITING TASK: You are writing ONLY the part of this video from '+seg.start+' to '+seg.end+' (segment '+(idx+1)+' of '+segs.length+').\n\nFull outline for context - do NOT repeat other segments, just stay consistent with this arc:\n'+outlineText+'\n\nTHIS SEGMENT\'S BEAT: '+(seg.beat||'continue the story')+'\n\nStart your first block at exactly '+seg.start+'. Do not write any blocks before '+seg.start+' or after '+seg.end+'.';
+    }
+    setGenStage('writing '+segs.length+' segments in parallel');
     var segPromises=segs.map(function(seg,idx){
-      var segSys=planSys+'\n\nSEGMENT WRITING TASK: You are writing ONLY the part of this video from '+seg.start+' to '+seg.end+' (segment '+(idx+1)+' of '+segs.length+').\n\nFull outline for context - do NOT repeat other segments, just stay consistent with this arc:\n'+outlineText+'\n\nTHIS SEGMENT\'S BEAT: '+(seg.beat||'continue the story')+'\n\nStart your first block at exactly '+seg.start+'. Do not write any blocks before '+seg.start+' or after '+seg.end+'.';
-      return apiRetry(segSys,buildUserContent(planMsg)).then(function(t){return t.trim();});
+      return apiRetry(buildSegSys(seg,idx),buildUserContent(planMsg)).then(function(t){return t.trim();});
     });
     return Promise.all(segPromises).then(function(texts){
-      return ensureFullPlan(planSys,texts.join('\n'));
+      // a segment can under-deliver (model stops early within its own
+      // window) - instead of falling back to the slow one-request-at-a-time
+      // "continue from wherever it stopped" loop for the whole video, redraft
+      // ONLY the short segments, still in parallel, before that safety net
+      var shortfalls=[];
+      texts.forEach(function(t,idx){
+        var segEnd=0;
+        parseBlocks(t).forEach(function(b){var e=tcToSec(b.tcEnd);if(e>segEnd)segEnd=e;});
+        if(tcToSec(segs[idx].end)-segEnd>20)shortfalls.push(idx);
+      });
+      if(!shortfalls.length){
+        setGenStage('finishing up');
+        return ensureFullPlan(planSys,texts.join('\n'));
+      }
+      setGenStage('redrafting '+shortfalls.length+' short segment'+(shortfalls.length>1?'s':''));
+      var repairPromises=shortfalls.map(function(idx){
+        return apiRetry(buildSegSys(segs[idx],idx),buildUserContent(planMsg)).then(function(t){return t.trim();});
+      });
+      return Promise.all(repairPromises).then(function(repaired){
+        repaired.forEach(function(t,i){texts[shortfalls[i]]=t;});
+        setGenStage('finishing up');
+        return ensureFullPlan(planSys,texts.join('\n'));
+      });
     });
   });
 }
@@ -2284,6 +2319,7 @@ function ensureFullPlan(planSys,text,tries,prevEnd){
   var maxTries=Math.max(3,Math.ceil(target/60)); // long videos need many continuation rounds
   var stalled=prevEnd!=null&&end<=prevEnd;       // no progress last round - stop, don't loop forever
   if(end>=target-15||tries>=maxTries||stalled)return Promise.resolve(text);
+  setGenStage('continuing from '+fmtTime(end)+' of '+fmtTime(target));
   var lines=text.trim().split('\n').filter(function(l){return l.trim();});
   if(lines.length&&!/\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}/.test(lines[lines.length-1]))lines.pop();
   var tail=lines.slice(-6).join('\n');
