@@ -864,7 +864,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 <div id="s2" class="screen">
   <div class="load-logo" data-text="HVNVSLS">HVNVSLS</div>
   <div class="lstep" id="s2msg">reading your idea</div>
-  <div class="lsub">about 15 seconds...</div>
+  <div class="lsub" id="s2sub">0s</div>
 </div>
 
 <div id="s3" class="screen s3-split-screen">
@@ -891,7 +891,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 <div id="s4" class="screen">
   <div class="load-logo" data-text="HVNVSLS">HVNVSLS</div>
   <div class="lstep" id="s4msg">analyzing each block</div>
-  <div class="lsub">imagining the shots...</div>
+  <div class="lsub" id="s4sub">0s</div>
 </div>
 
 <div id="s5" class="screen">
@@ -1253,8 +1253,10 @@ var S2=[' reading your idea',' shaping the story',' writing the script',' buildi
 var S4=[' analyzing each block',' imagining the shots',' choosing the lenses',' thinking about light',' planning movement',' finishing up'];
 var loadInt=null;
 
+var loadTimerInt=null;
 function startLoad(scr){
   if(loadInt)clearInterval(loadInt);
+  if(loadTimerInt)clearInterval(loadTimerInt);
   var msgs=scr==='s2'?S2:S4;
   var el=document.getElementById(scr+'msg');
   if(!el)return;
@@ -1265,8 +1267,21 @@ function startLoad(scr){
     el.style.opacity='0';
     setTimeout(function(){if(el){el.textContent=msgs[i];el.style.opacity='1';}},350);
   },2200);
+  // a live elapsed counter beats a static "about 15 seconds..." that goes stale
+  // the moment a long plan takes 30-40s - the screen should never look frozen
+  var sub=document.getElementById(scr+'sub');
+  if(sub){
+    var t0=Date.now();
+    sub.textContent='0s';
+    loadTimerInt=setInterval(function(){
+      sub.textContent=Math.round((Date.now()-t0)/1000)+'s';
+    },1000);
+  }
 }
-function stopLoad(){if(loadInt){clearInterval(loadInt);loadInt=null;}}
+function stopLoad(){
+  if(loadInt){clearInterval(loadInt);loadInt=null;}
+  if(loadTimerInt){clearInterval(loadTimerInt);loadTimerInt=null;}
+}
 
 // Undo
 function saveHistory(){
