@@ -2160,9 +2160,15 @@ function genScript(){
   var planMsg='Create shot plan for: '+topic+'. Duration: '+durMin+'-'+durMax+' minutes. Tone: '+tone+extra;
   var briefSys='You are a professional film director and creative producer. Based on this project description, write a concise creative brief with these sections:\n\n1. CONCEPT: A catchy concept name and 2-3 sentence visual theme\n2. VISUAL APPROACH: Color palette, lens/camera plan, mood, key aesthetic decisions\n3. SCENE BREAKDOWN: Each location with costume suggestion, key actions, lighting notes\n4. SHOOTING SCHEDULE: Suggested time blocks for each scene\n\nBe creative but strictly within the constraints described. If real location photos are attached, base the visual approach and scene breakdown on what is actually visible in them. Write in the same language the user used. Keep it tight and actionable.'+stylePack('shots');
   var briefMsg='Project type: '+projectType+'\nDuration: '+durMin+'-'+durMax+' min\n\nProject description:\n'+topic+extra;
+  // long plans: draft a beat outline then write segments in parallel instead
+  // of one request at a time (much faster for 10+ min cut-by-cut videos)
+  var planPromise=totalSec>240
+    ? genPlanChunked(planSys,planMsg,totalSec,li)
+    : api(planSys,buildUserContent(planMsg)).then(function(t){return ensureFullPlan(planSys,t);});
+
   Promise.all([
     api(briefSys,buildUserContent(briefMsg)),
-    api(planSys,buildUserContent(planMsg)).then(function(t){return ensureFullPlan(planSys,t);})
+    planPromise
   ]).then(function(results){
     stopLoad();
     projectBrief=results[0].trim();
@@ -2199,6 +2205,36 @@ function parseBlocks(text){
     out.push({type:tm[1].toLowerCase(),tcStart:tcStart,tcEnd:tcEnd,content:content,shots:[]});
   });
   return out.filter(function(b){return b.content;});
+}
+
+/* Long plans (>4min) used to be built by repeatedly asking for "the next chunk"
+   one request at a time - for a 10-12min video that's ~10 sequential API calls,
+   each waiting for the last. Instead: one fast call breaks the video into a
+   beat outline, then every segment is drafted in PARALLEL against that shared
+   outline (so segments stay consistent without having seen each other's text),
+   and results are stitched back together in order. */
+function genPlanChunked(planSys,planMsg,totalSec,li){
+  var segLen=180;
+  var numSegments=Math.min(6,Math.max(2,Math.round(totalSec/segLen)));
+  var outlineSys=(li?li+'\n\n':'')+'You are a story editor breaking a video into sequential segments so multiple writers can draft them in parallel while staying consistent with one overall arc.\n\nBreak this into exactly '+numSegments+' contiguous segments covering the full 00:00-'+fmtTime(totalSec)+' runtime, each about '+fmtTime(totalSec/numSegments)+' long.'+stylePack('script')+'\n\nFor each segment write a specific 2-3 sentence beat: what happens narratively and visually, detailed enough that a writer can draft that segment alone without seeing the others and still land on-arc.\n\nReturn ONLY JSON: [{"start":"mm:ss","end":"mm:ss","beat":"..."}]'+(li?'\n\n'+li:'');
+  var outlineMsg='Topic: '+topic+'. Tone: '+tone+'.';
+
+  return api(outlineSys,outlineMsg).then(function(raw){
+    var segs=[];
+    try{var m=raw.match(/\[[\s\S]*\]/);if(m)segs=JSON.parse(m[0]);}catch(e){}
+    if(segs.length<2){
+      segs=[];
+      for(var i=0;i<numSegments;i++)segs.push({start:fmtTime(i*totalSec/numSegments),end:fmtTime((i+1)*totalSec/numSegments),beat:''});
+    }
+    var outlineText=segs.map(function(s,i){return (i+1)+'. '+s.start+'-'+s.end+': '+(s.beat||'');}).join('\n');
+    var segPromises=segs.map(function(seg,idx){
+      var segSys=planSys+'\n\nSEGMENT WRITING TASK: You are writing ONLY the part of this video from '+seg.start+' to '+seg.end+' (segment '+(idx+1)+' of '+segs.length+').\n\nFull outline for context - do NOT repeat other segments, just stay consistent with this arc:\n'+outlineText+'\n\nTHIS SEGMENT\'S BEAT: '+(seg.beat||'continue the story')+'\n\nStart your first block at exactly '+seg.start+'. Do not write any blocks before '+seg.start+' or after '+seg.end+'.';
+      return api(segSys,buildUserContent(planMsg)).then(function(t){return t.trim();}).catch(function(){return '';});
+    });
+    return Promise.all(segPromises).then(function(texts){
+      return ensureFullPlan(planSys,texts.join('\n'));
+    });
+  });
 }
 
 /* API responses can hit the token cap and truncate long cut-by-cut plans -
@@ -2318,12 +2354,21 @@ function buildCanvas(){
     var idxBlocks=blocks.map(function(b,i){return{b:b,i:i};});
     if(projectType==='youtube')idxBlocks=idxBlocks.filter(function(o){return !AUDIO_BLOCKS[o.b.type];});
     if(!idxBlocks.length)idxBlocks=blocks.map(function(b,i){return{b:b,i:i};});
-    var usr='Blocks:\n'+idxBlocks.map(function(o){return o.i+': ['+o.b.type.toUpperCase()+'] '+o.b.tcStart+'-'+o.b.tcEnd+' - '+o.b.content;}).join('\n')+'\n\nReturn shot ideas for each block, using the same "i" indexes as given.';
+    // large plans can hit the token cap and time out in one shot - split into
+    // parallel batches instead of one giant sequential request
+    var CH=25,chunks=[];
+    for(var ci=0;ci<idxBlocks.length;ci+=CH)chunks.push(idxBlocks.slice(ci,ci+CH));
+    var chunkPromises=chunks.map(function(chunk){
+      var usr='Blocks:\n'+chunk.map(function(o){return o.i+': ['+o.b.type.toUpperCase()+'] '+o.b.tcStart+'-'+o.b.tcEnd+' - '+o.b.content;}).join('\n')+'\n\nReturn shot ideas for each block, using the same "i" indexes as given.';
+      return api(sys,usr).then(function(raw){
+        try{var m=raw.match(/\[[\s\S]*\]/);if(m)return JSON.parse(m[0]);}catch(e){console.warn('Shot parse:',e);}
+        return [];
+      });
+    });
 
-    api(sys,usr).then(function(raw){
+    Promise.all(chunkPromises).then(function(chunkResults){
       clearInterval(clInt);
-      var sd=[];
-      try{var m=raw.match(/\[[\s\S]*\]/);if(m)sd=JSON.parse(m[0]);}catch(e){console.warn('Shot parse:',e);}
+      var sd=[].concat.apply([],chunkResults);
       var posArr=layoutBlocks(blocks);
       nodes=blocks.map(function(b,i){
         return{id:nid++,type:b.type,tcStart:b.tcStart,tcEnd:b.tcEnd,content:b.content,shots:[],x:posArr[i].x,y:posArr[i].y};
@@ -2366,7 +2411,11 @@ function surpriseMe(){
   var li=langInstr(inputLang,'shot plan content');
   var blocks=(PT_BLOCKS[projectType]||PT_BLOCKS.youtube).join(', ');
   var sys=(li?li+'\n\n':'')+'You are a filmmaker. Create a DIFFERENT, UNEXPECTED shot plan for the same topic. Try a completely different narrative approach, different structure, different emotional arc.\n\nUse these block types: '+blocks+(projectType==='youtube'?ytCutRules(totalSec):'')+stylePack('script')+'\n\nLANGUAGE: write all block content in the same language the topic is written in. Keep the [TYPE] tags in English.\n\nReturn ONLY plain text. Each block is EXACTLY ONE line:\n[TYPE] 00:00-00:00 - content'+(li?'\n\n'+li:'');
-  api(sys,'Create a surprising, different shot plan for: '+topic+'. Duration: '+durMin+'-'+durMax+' minutes (~'+Math.round(totalSec)+' sec). Tone: '+tone).then(function(raw){return ensureFullPlan(sys,raw);}).then(function(raw){
+  var surpriseMsg='Create a surprising, different shot plan for: '+topic+'. Duration: '+durMin+'-'+durMax+' minutes (~'+Math.round(totalSec)+' sec). Tone: '+tone;
+  var surprisePromise=totalSec>240
+    ? genPlanChunked(sys,surpriseMsg,totalSec,li)
+    : api(sys,surpriseMsg).then(function(raw){return ensureFullPlan(sys,raw);});
+  surprisePromise.then(function(raw){
     stopLoad();
     document.getElementById('scriptTa').value=raw.trim();
     document.getElementById('wc').textContent=raw.trim().split('\n').filter(function(l){return l.trim();}).length+' blocks';
@@ -3009,18 +3058,15 @@ function translateBoard(lang){
   var name=LANG_NAMES[lang]||lang;
   var CH=40,chunks=[];
   for(var i=0;i<items.length;i+=CH)chunks.push(items.slice(i,i+CH));
-  var p=Promise.resolve();
-  chunks.forEach(function(chunk){
-    p=p.then(function(){
-      var payload=chunk.map(function(it,j){return {i:j,t:it.ref[it.field]};});
-      var sys='You are a professional translator for film production documents. Translate every "t" value into '+name+'. Keep cinematography terms natural in the target language (lens sizes like 85mm, camera moves, framing terms). Do not add or remove information. Return ONLY a JSON array of {"i":number,"t":"translated text"} using the exact same "i" values, nothing else.';
-      return api(sys,JSON.stringify(payload)).then(function(raw){
-        var arr=[];try{var mm=raw.match(/\[[\s\S]*\]/);if(mm)arr=JSON.parse(mm[0]);}catch(e){}
-        arr.forEach(function(o){var it=chunk[o.i];if(it&&typeof o.t==='string'&&o.t.trim())it.ref[it.field]=o.t.trim();});
-      });
+  var sys='You are a professional translator for film production documents. Translate every "t" value into '+name+'. Keep cinematography terms natural in the target language (lens sizes like 85mm, camera moves, framing terms). Do not add or remove information. Return ONLY a JSON array of {"i":number,"t":"translated text"} using the exact same "i" values, nothing else.';
+  var chunkPromises=chunks.map(function(chunk){
+    var payload=chunk.map(function(it,j){return {i:j,t:it.ref[it.field]};});
+    return api(sys,JSON.stringify(payload)).then(function(raw){
+      var arr=[];try{var mm=raw.match(/\[[\s\S]*\]/);if(mm)arr=JSON.parse(mm[0]);}catch(e){}
+      arr.forEach(function(o){var it=chunk[o.i];if(it&&typeof o.t==='string'&&o.t.trim())it.ref[it.field]=o.t.trim();});
     });
   });
-  p.then(function(){
+  Promise.all(chunkPromises).then(function(){
     inputLang=lang; // later AI actions (revise, plan block) answer in the new language
     renderAll();
     btn.classList.remove('busy');
@@ -3184,6 +3230,14 @@ function doExport(){
 }
 
 
+var connsRAF=null;
+function scheduleConns(){
+  // pan/zoom fire many updateT() calls per second (wheel, mousemove) - rebuilding
+  // every connection line's SVG path on each one causes visible lag with lots of
+  // cards, so coalesce into a single renderConns() per animation frame instead
+  if(connsRAF)return;
+  connsRAF=requestAnimationFrame(function(){connsRAF=null;renderConns();});
+}
 function updateT(){
   document.getElementById('cw').style.transform='translate('+px+'px,'+py+'px) scale('+scale+')';
   document.getElementById('zind').textContent=Math.round(scale*100)+'%';
@@ -3191,7 +3245,7 @@ function updateT(){
   var vp=document.getElementById('vp');
   vp.style.backgroundSize=gs+'px '+gs+'px';
   vp.style.backgroundPosition=gx+'px '+gy+'px';
-  renderConns();
+  scheduleConns();
 }
 
 var vp=document.getElementById('vp');
