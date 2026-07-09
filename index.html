@@ -1115,6 +1115,7 @@ var NC_W=200,NC_GAP=36;
 var TC_BG={voiceover:'#3a2e10',broll:'#0e1e30',music:'#20103a',transition:'#141e14',intro:'#1a0812',verse:'#0a1020',chorus:'#20140a',bridge:'#081820',hook:'#14082a',lip_sync:'#200818',outro:'#1a0808',scene:'#0a1810',dialogue:'#1a0a0a',action:'#201408',montage:'#10081a',main:'#141414',segment:'#0e1414'};
 var TL={voiceover:'voiceover',broll:'b-roll',music:'music',transition:'transition',intro:'intro',verse:'verse',chorus:'chorus',bridge:'bridge',hook:'hook',lip_sync:'lip sync',outro:'outro',scene:'scene',dialogue:'dialogue',action:'action',montage:'montage',main:'main',segment:'segment'};
 var SK={shot:'var(--c-shot)',action:'var(--c-action)',emotion:'var(--c-emotion)',tech:'var(--c-tech)',location:'#cc8844',acting:'#5aaa7a',lighting:'#5a8acc',props:'#777'};
+var SK_LABEL={props:'prop list'};
 var nodeDrawerClosed={};
 var sbSeed=null;
 var SB_PANEL_H=150;
@@ -2374,8 +2375,8 @@ function buildCanvasSys(li){
   }
   return briefCtx+(li?li+'\n':'')+
     'You are a cinematographer. Return ONLY a valid JSON array. No explanation, no markdown.\n'+
-    'Format: [{"i":0,"shots":[{"k":"shot","t":"..."},{"k":"action","t":"..."},{"k":"emotion","t":"..."},{"k":"tech","t":"..."}]}]\n'+
-    'k must be: shot, action, emotion, or tech. Include lens, lighting, movement. Grain, analog.\n'+
+    'Format: [{"i":0,"shots":[{"k":"props","t":"..."},{"k":"action","t":"..."},{"k":"emotion","t":"..."},{"k":"tech","t":"..."}]}]\n'+
+    'k must be: props, action, emotion, or tech. props = a concrete list of key props/objects needed in this scene (the block itself already covers lens, framing and camera movement, do not repeat that here). tech = lens, lighting, movement, grain, analog film stock.\n'+
     'Write all "t" values in the same language as the script blocks.'+stylePack('shots')+(li?'\n'+li:'');
 }
 
@@ -2646,19 +2647,42 @@ function addShotToCanvas(nodeId,shotId){
   }
 }
 
+function drawAttLine(cw,x1,y1,x2,y2){
+  var line=document.createElement('div');line.className='att-line';
+  var len=Math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));
+  var angle=Math.atan2(y2-y1,x2-x1)*180/Math.PI;
+  line.style.cssText='position:absolute;left:'+x1+'px;top:'+y1+'px;width:'+len+'px;height:1px;background:rgba(201,168,76,.3);transform-origin:0 50%;transform:rotate('+angle+'deg);pointer-events:none;z-index:0;';
+  cw.appendChild(line);
+}
+// connector lines used to run from the PARENT card all the way to every
+// single shot card - once cards are stacked directly under each other, that
+// meant the line to the 2nd/3rd/4th card visibly cut straight through the
+// text of every card in between. Instead, chain short segments through the
+// GAPS only: parent -> card1, card1 -> card2, card2 -> card3... each segment
+// only ever occupies the empty space between two adjacent cards.
+function drawAttChain(){
+  var cw=document.getElementById('cw');
+  var byParent={};
+  attShots.forEach(function(att){
+    if(nodeDrawerClosed[att.parentId])return;
+    (byParent[att.parentId]=byParent[att.parentId]||[]).push(att);
+  });
+  Object.keys(byParent).forEach(function(pid){
+    var pnode=null;for(var i=0;i<nodes.length;i++){if(nodes[i].id===Number(pid)){pnode=nodes[i];break;}}
+    if(!pnode)return;
+    var list=byParent[pid].slice().sort(function(a,b){return a.y-b.y;});
+    var fromX=pnode.x+NC_W/2,fromY=pnode.y+140;
+    list.forEach(function(att){
+      var toX=att.x+NC_W/2,toY=att.y;
+      drawAttLine(cw,fromX,fromY,toX,toY);
+      var el=document.getElementById('att-'+att.id);
+      fromX=att.x+NC_W/2;fromY=att.y+(el?el.offsetHeight:0);
+    });
+  });
+}
 function updateAttLines(){
   document.querySelectorAll('.att-line').forEach(function(el){el.remove();});
-  var cw=document.getElementById('cw');
-  attShots.forEach(function(att){
-    var pnode=null;for(var i=0;i<nodes.length;i++){if(nodes[i].id===att.parentId){pnode=nodes[i];break;}}
-    if(!pnode)return;
-    var line=document.createElement('div');line.className='att-line';
-    var x1=pnode.x+NC_W/2,y1=pnode.y+140,x2=att.x+NC_W/2,y2=att.y;
-    var len=Math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));
-    var angle=Math.atan2(y2-y1,x2-x1)*180/Math.PI;
-    line.style.cssText='position:absolute;left:'+x1+'px;top:'+y1+'px;width:'+len+'px;height:1px;background:rgba(201,168,76,.3);transform-origin:0 50%;transform:rotate('+angle+'deg);pointer-events:none;z-index:0;';
-    cw.appendChild(line);
-  });
+  drawAttChain();
 }
 function renderAttShots(){
   document.querySelectorAll('.att-shot,.att-line').forEach(function(el){el.remove();});
@@ -2672,7 +2696,7 @@ function renderAttShots(){
     el.style.cssText='left:'+att.x+'px;top:'+att.y+'px;width:'+NC_W+'px;z-index:1;';
     var stripe=document.createElement('div');stripe.className='att-stripe';
     var head=document.createElement('div');head.className='att-head';
-    var klbl=document.createElement('span');klbl.className='att-k';klbl.textContent=att.k;
+    var klbl=document.createElement('span');klbl.className='att-k';klbl.textContent=SK_LABEL[att.k]||att.k;
     var delbtn=document.createElement('button');delbtn.className='att-del';delbtn.textContent='x';
     (function(aid){delbtn.onclick=function(e){e.stopPropagation();saveHistory();attShots=attShots.filter(function(a){return a.id!==aid;});renderAttShots();renderConns();renderCanvas();};})(att.id);
     head.appendChild(klbl);head.appendChild(delbtn);
@@ -2686,7 +2710,7 @@ function renderAttShots(){
     var body=document.createElement('div');body.className='att-body';body.textContent=att.t||'(empty)';
     el.appendChild(stripe);el.appendChild(head);el.appendChild(body);
     el.addEventListener('mousedown',function(e){
-      if(e.target===delbtn)return;
+      if(e.target.closest('button'))return;
       if(e.button!==0)return;
       e.preventDefault();e.stopPropagation();
       dragAtt=att;
@@ -2713,19 +2737,9 @@ function renderAttShots(){
     seenParents[att.parentId]=1;
     reflowAttShots(att.parentId);
   });
-  // connector lines drawn last, using each shot's now-final stacked position
-  attShots.forEach(function(att){
-    if(nodeDrawerClosed[att.parentId])return;
-    var pnode=null;for(var i=0;i<nodes.length;i++){if(nodes[i].id===att.parentId){pnode=nodes[i];break;}}
-    if(!pnode)return;
-    var line=document.createElement('div');line.className='att-line';
-    var x1=pnode.x+NC_W/2,y1=pnode.y+140;
-    var x2=att.x+NC_W/2,y2=att.y;
-    var len=Math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));
-    var angle=Math.atan2(y2-y1,x2-x1)*180/Math.PI;
-    line.style.cssText='position:absolute;left:'+x1+'px;top:'+y1+'px;width:'+len+'px;height:1px;background:rgba(201,168,76,.3);transform-origin:0 50%;transform:rotate('+angle+'deg);pointer-events:none;z-index:0;';
-    cw.appendChild(line);
-  });
+  // connector lines drawn last, using each shot's now-final stacked position -
+  // chained through the gaps only, never crossing over a card's own text
+  drawAttChain();
 }
 
 function renderCanvas(){
@@ -2776,7 +2790,7 @@ function renderCanvas(){
         var regenBtn=document.createElement('button');regenBtn.className='sb-regen';regenBtn.id='sbr-'+node.id;
         regenBtn.title='Regenerate storyboard';
         regenBtn.innerHTML='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 8a5.5 5.5 0 1 1-1.1-3.3"/><polyline points="13.5,2 13.5,5 10.5,5"/></svg>';
-        regenBtn.style.cssText='left:'+(panelX+NC_W-27)+'px;top:'+(panelY-35+panelTotalH-SB_PANEL_H)+'px;';
+        regenBtn.style.cssText='left:'+(panelX+NC_W-27)+'px;top:'+(panelY+SB_PANEL_H-27)+'px;';
         (function(n){regenBtn.addEventListener('click',function(e){e.stopPropagation();genNodeStoryboard(n.id);});})(node);
         var editBar=document.createElement('div');editBar.className='sb-edit-bar';
         var editInp=document.createElement('input');editInp.className='sb-edit-inp';editInp.type='text';editInp.placeholder='edit image...';
@@ -2874,6 +2888,12 @@ function renderCanvas(){
     el.addEventListener('mousedown',function(e){
       if(e.button!==0)return;
       if(e.target.classList.contains('port-dot'))return;
+      // any button inside the card (drawer, storyboard-gen, etc) handles its
+      // own click - starting a drag here would set dragN on every mousedown,
+      // and since mouseup now rebuilds the canvas (so the storyboard panel
+      // stays attached), that rebuild would destroy the button before its
+      // own click event gets to fire, silently swallowing every click
+      if(e.target.closest('button'))return;
       e.preventDefault();
       dragN=node;
       var r=document.getElementById('vp').getBoundingClientRect();
@@ -3307,7 +3327,7 @@ function planNode(id){
   if(projectType==='music'){
     sys=(li?li+' ':'')+' You are a music video director. Give 5 shot ideas for this music section. Return ONLY JSON: [{"k":"location","t":"..."},{"k":"acting","t":"..."},{"k":"shot","t":"..."},{"k":"lighting","t":"..."},{"k":"props","t":"..."}]. k must be exactly: location, acting, shot, lighting, props. Write all "t" values in the same language as the script blocks.'+(li?' '+li:'');
   }else{
-    sys=(li?li+' ':'')+' You are a cinematographer. Give 4 shot ideas for this block. Include lens, lighting, movement. Grain, analog. Write all "t" values in the same language as the block content.'+stylePack('shots')+' Return ONLY JSON: [{"k":"shot","t":"..."},{"k":"action","t":"..."},{"k":"emotion","t":"..."},{"k":"tech","t":"..."}]'+(li?' '+li:'');
+    sys=(li?li+' ':'')+' You are a cinematographer. Give 4 ideas for this block: a prop list, an action beat, an emotional note, and a technical note. Grain, analog. Write all "t" values in the same language as the block content.'+stylePack('shots')+' Return ONLY JSON: [{"k":"props","t":"..."},{"k":"action","t":"..."},{"k":"emotion","t":"..."},{"k":"tech","t":"..."}]. props = concrete key props/objects needed in the scene (the block itself already covers lens, framing, camera movement - do not repeat that here). tech = lens, lighting, movement, grain, analog film stock.'+(li?' '+li:'');
   }
   usr='Block: ['+n.type.toUpperCase()+'] '+n.tcStart+'-'+n.tcEnd+' - '+n.content;
   var userContent=usr;
@@ -3484,8 +3504,9 @@ document.addEventListener('mousemove',function(e){
       panelEl.style.left=(dragSb.x+dragSb.sbDX)+'px';
       panelEl.style.top=(dragSb.y-panelTotalH2-8+dragSb.sbDY)+'px';
       if(regenEl){
+        var panelTop2=dragSb.y-panelTotalH2-8+dragSb.sbDY;
         regenEl.style.left=(dragSb.x+dragSb.sbDX+NC_W-27)+'px';
-        regenEl.style.top=(dragSb.y-panelTotalH2-8+dragSb.sbDY+panelTotalH2-SB_PANEL_H-35)+'px';
+        regenEl.style.top=(panelTop2+SB_PANEL_H-27)+'px';
       }
     }
   }
