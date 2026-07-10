@@ -2342,8 +2342,10 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
 
   setGenStage('structuring outline');
   // never let the "quick outline" step alone stall the whole screen - if it
-  // isn't back in 8s, just split the runtime evenly and move on
-  return withTimeout(apiRetry(outlineSys,outlineMsg),8000,null).then(function(raw){
+  // isn't back in time, just split the runtime evenly and move on. 8s used
+  // to be enough but proved too tight once max_tokens grew (see below) -
+  // give it real room before giving up on it entirely
+  return withTimeout(apiRetry(outlineSys,outlineMsg),15000,null).then(function(raw){
     var segs=[];
     if(raw){try{var m=raw.match(/\[[\s\S]*\]/);if(m)segs=JSON.parse(m[0]);}catch(e){}}
     if(segs.length<2)segs=evenSplit;
@@ -2351,15 +2353,19 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
     function buildSegSys(seg,idx){
       return planSys+'\n\nSEGMENT WRITING TASK: You are writing ONLY the part of this video from '+seg.start+' to '+seg.end+' (segment '+(idx+1)+' of '+segs.length+').\n\nFull outline for context - do NOT repeat other segments, just stay consistent with this arc:\n'+outlineText+'\n\nTHIS SEGMENT\'S BEAT: '+(seg.beat||'continue the story')+'\n\nStart your first block at exactly '+seg.start+'. Do not write any blocks before '+seg.start+' or after '+seg.end+'.';
     }
-    // every real API call below is capped at 30s (see withTimeout) - a
-    // segment that doesn't answer in time contributes an empty string
-    // instead of hanging the whole screen; it just reads as a "shortfall"
-    // and gets one redraft attempt like any other short segment
-    setGenStage('writing '+segs.length+' segments (up to 3 at a time)');
+    // every real API call below is capped (see withTimeout) - a segment that
+    // doesn't answer in time contributes an empty string instead of hanging
+    // the whole screen; it just reads as a "shortfall" and gets one redraft
+    // attempt like any other short segment. 30s used to be the cap but a
+    // segment asking for near-max_tokens of content can legitimately take
+    // longer than that to generate, especially with a few requests sharing
+    // the connection at once - that showed up as every segment "timing out"
+    // with literally no response, not as a real content/format error
+    setGenStage('writing '+segs.length+' segments (up to 2 at a time)');
     var segTasks=segs.map(function(seg,idx){
-      return function(){return withTimeout(apiRetry(buildSegSys(seg,idx),buildUserContent(planMsg)).then(function(t){return t.trim();}),30000,'','segment '+(idx+1));};
+      return function(){return withTimeout(apiRetry(buildSegSys(seg,idx),buildUserContent(planMsg)).then(function(t){return t.trim();}),45000,'','segment '+(idx+1));};
     });
-    return runLimited(segTasks,3).then(function(texts){
+    return runLimited(segTasks,2).then(function(texts){
       // a segment can under-deliver (model stops early within its own
       // window) - instead of falling back to the slow one-request-at-a-time
       // "continue from wherever it stopped" loop for the whole video, redraft
@@ -2376,9 +2382,9 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
       }
       setGenStage('redrafting '+shortfalls.length+' short segment'+(shortfalls.length>1?'s':''));
       var repairTasks=shortfalls.map(function(idx){
-        return function(){return withTimeout(apiRetry(buildSegSys(segs[idx],idx),buildUserContent(planMsg)).then(function(t){return t.trim();}),30000,texts[idx],'redraft '+(idx+1));};
+        return function(){return withTimeout(apiRetry(buildSegSys(segs[idx],idx),buildUserContent(planMsg)).then(function(t){return t.trim();}),45000,texts[idx],'redraft '+(idx+1));};
       });
-      return runLimited(repairTasks,3).then(function(repaired){
+      return runLimited(repairTasks,2).then(function(repaired){
         repaired.forEach(function(t,i){if(t)texts[shortfalls[i]]=t;});
         setGenStage('finishing up');
         return ensureFullPlan(planSys,texts.join('\n'));
