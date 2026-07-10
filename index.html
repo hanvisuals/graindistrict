@@ -2442,12 +2442,15 @@ function layoutBlocks(blocks){
     else{if(!cur){cur={audio:null,visuals:[]};groups.push(cur);}cur.visuals.push(i);}
   });
   var pos=new Array(blocks.length);
-  var gx=60,GROUP_GAP=110,AUDIO_Y=80,VISUAL_Y=330;
-  groups.forEach(function(g){
+  // enough room for a few collapsed shot-cards below the audio block before
+  // its group's visual row - reflowAttShots pushes the visual row further
+  // down dynamically if the audio block's stack grows past this anyway
+  var gx=60,GROUP_GAP=110,AUDIO_Y=80,VISUAL_Y=420;
+  groups.forEach(function(g,gi){
     var cols=Math.max(g.visuals.length,1);
     var w=cols*NC_W+(cols-1)*NC_GAP;
-    if(g.audio!=null)pos[g.audio]={x:Math.round(gx+(w-NC_W)/2),y:AUDIO_Y};
-    g.visuals.forEach(function(bi,j){pos[bi]={x:gx+j*(NC_W+NC_GAP),y:VISUAL_Y};});
+    if(g.audio!=null)pos[g.audio]={x:Math.round(gx+(w-NC_W)/2),y:AUDIO_Y,grp:gi};
+    g.visuals.forEach(function(bi,j){pos[bi]={x:gx+j*(NC_W+NC_GAP),y:VISUAL_Y,grp:gi};});
     gx+=w+GROUP_GAP;
   });
   return pos;
@@ -2538,7 +2541,7 @@ function buildCanvas(){
       var sd=[].concat.apply([],chunkResults);
       var posArr=layoutBlocks(blocks);
       nodes=blocks.map(function(b,i){
-        return{id:nid++,type:b.type,tcStart:b.tcStart,tcEnd:b.tcEnd,content:b.content,shots:[],x:posArr[i].x,y:posArr[i].y};
+        return{id:nid++,type:b.type,tcStart:b.tcStart,tcEnd:b.tcEnd,content:b.content,shots:[],x:posArr[i].x,y:posArr[i].y,grp:posArr[i].grp};
       });
       attShots=[];imgNodes=[];noteNodes=[];conns=[];undoStack=[];undoIdx=-1;
       nodeDrawerClosed={};sbSeed=Math.floor(Math.random()*99999)+1;
@@ -3258,6 +3261,25 @@ function reflowAttShots(parentId){
     // so length varies a lot from card to card
     curY+=(el?el.offsetHeight:FALLBACK_H)+GAP;
   });
+  // an audio block's own shot-card stack can grow tall enough to run into
+  // the visual-cut row laid out underneath it - layoutBlocks only leaves
+  // room for a handful of collapsed cards, and expanding a card (or
+  // replanning with longer text) can push past that. Reported as "planning
+  // again just piles new cards on the old ones" - it wasn't; the audio
+  // block's stack and the next row's own cards were overlapping on screen.
+  // Push just that group's visual nodes further down to stay clear instead.
+  if(nodeAtts.length&&AUDIO_BLOCKS[pnode.type]&&pnode.grp!=null){
+    var needed=curY+GAP,pushed=false;
+    nodes.forEach(function(sib){
+      if(sib.grp===pnode.grp&&!AUDIO_BLOCKS[sib.type]&&sib.y<needed){
+        sib.y=needed;pushed=true;
+        var sEl=document.getElementById('nc-'+sib.id);
+        if(sEl)sEl.style.top=sib.y+'px';
+        reflowAttShots(sib.id);
+      }
+    });
+    if(pushed)renderCanvas();
+  }
 }
 
 function tcToSec(tc){
