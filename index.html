@@ -2046,6 +2046,32 @@ function api(sys,usr){
     });
 }
 
+// the model doesn't always respect the "MUSIC sections stay under 20s"
+// instruction in the prompt - enforce it in code too, splitting any
+// oversized MUSIC block into several shorter ones covering the same span
+// so no single silent stretch dominates the video regardless of what the
+// model actually wrote
+function splitLongMusicBlocks(text){
+  var MAX_MUSIC_SEC=20;
+  return text.split('\n').map(function(line){
+    var trimmed=line.trim();
+    var m=trimmed.match(/^\[?(music)\]?\s*(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})\s*[-:]?\s*(.*)$/i);
+    if(!m)return line;
+    var s=tcToSec(m[2]),e=tcToSec(m[3]);
+    var dur=e-s;
+    if(dur<=MAX_MUSIC_SEC)return line;
+    var n=Math.ceil(dur/MAX_MUSIC_SEC);
+    var step=dur/n;
+    var subLines=[];
+    for(var i=0;i<n;i++){
+      var subS=Math.round(s+i*step);
+      var subE=(i===n-1)?e:Math.round(s+(i+1)*step);
+      subLines.push('[MUSIC] '+fmtTime(subS)+'-'+fmtTime(subE)+' - '+m[4]);
+    }
+    return subLines.join('\n');
+  }).join('\n');
+}
+
 function ytCutRules(totalSec){
   var approxCuts=Math.round(totalSec/3);
   return '\n\nTWO LAYERS:\nAUDIO LAYER = VOICEOVER (one block per sentence or breath-group; its timecode spans the time the line takes to say, ~2.3 words per second) and MUSIC (montage section, no talking).\nVISUAL LAYER = BROLL (one camera cut) and TRANSITION.\n\nCUTTING MATH:\n- One sentence is NEVER one image. While a VOICEOVER line plays, cover its timespan with 2-5 BROLL cuts. Write the VOICEOVER line first, then immediately the BROLL cuts that play under it - their timecodes OVERLAP the voiceover timecode.\n- Every BROLL block is ONE cut, 1-4 seconds, never longer. A detail moment (e.g. making an espresso) is never one 10-second shot - it is 3-4 different angles cut together.\n- Generate approximately '+approxCuts+' BROLL cuts in total across the video.\n- Vary shot sizes every cut. No two consecutive cuts with the same framing.\n- MUSIC sections still get full cut-by-cut BROLL coverage.\n- MUSIC sections are SHORT breathing-room interludes, max 15-20 seconds each. Never let a music-only stretch run longer than that or dominate the video - the viewer should not go a long stretch without a voice. If a montage needs to cover more time, break it into a MUSIC block plus VOICEOVER lines resuming partway through, not one long unbroken music section.';
@@ -2210,6 +2236,7 @@ function genScript(){
     // "please share the last blocks and topic...") instead of real blocks -
     // that text used to get shown to the user as if it were the plan
     if(!parseBlocks(planText).length)throw new Error('The AI could not produce a usable plan this time - please try again.');
+    if(projectType==='youtube')planText=splitLongMusicBlocks(planText);
     projectBrief=results[0].trim();
     document.getElementById('briefContent').innerHTML=renderMarkdown(projectBrief);
     document.getElementById('scriptTa').value=planText;
@@ -2510,11 +2537,13 @@ function buildCanvas(){
       attShots=[];imgNodes=[];noteNodes=[];conns=[];undoStack=[];undoIdx=-1;
       nodeDrawerClosed={};sbSeed=Math.floor(Math.random()*99999)+1;
       scale=1;px=60;py=180;selId=null;selImgId=null;selNoteId=null;
-      // auto-place att-shots directly on canvas
+      // auto-place att-shots directly on canvas - collapsed by default, a
+      // freshly generated board with every PROP LIST/ACTION/EMOTION/TECH
+      // card already expanded is an overwhelming wall of text to land on
       sd.forEach(function(entry){
         var node=nodes[entry.i];if(!node)return;
         (entry.shots||[]).forEach(function(sh,si){
-          attShots.push({id:nid++,parentId:node.id,k:sh.k||'shot',t:sh.t||'',x:node.x,y:node.y+190+si*(NC_GAP+120)});
+          attShots.push({id:nid++,parentId:node.id,k:sh.k||'shot',t:sh.t||'',x:node.x,y:node.y+190+si*(NC_GAP+120),collapsed:true});
         });
       });
       saveHistory();
@@ -2553,6 +2582,7 @@ function surpriseMe(){
     stopLoad();
     var planText=raw.trim();
     if(!parseBlocks(planText).length)throw new Error('The AI could not produce a usable plan this time - please try again.');
+    if(projectType==='youtube')planText=splitLongMusicBlocks(planText);
     document.getElementById('scriptTa').value=planText;
     document.getElementById('wc').textContent=planText.split('\n').filter(function(l){return l.trim();}).length+' blocks';
     show('s3');
@@ -3406,7 +3436,7 @@ function planNode(id){
     attShots=attShots.filter(function(a){return a.parentId!==n.id;});
     delete nodeDrawerClosed[n.id];
     shots.forEach(function(s,si){
-      attShots.push({id:nid++,parentId:n.id,k:s.k||'shot',t:s.t||'',x:n.x,y:n.y+190+si*(NC_GAP+120)});
+      attShots.push({id:nid++,parentId:n.id,k:s.k||'shot',t:s.t||'',x:n.x,y:n.y+190+si*(NC_GAP+120),collapsed:true});
     });
     n.shots=[];
     renderAll();renderBlockDetail();
