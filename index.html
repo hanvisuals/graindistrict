@@ -904,6 +904,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
     <div class="ctopic" id="ctopic"></div>
     <div class="tbar-r">
       <button class="btn" onclick="undoAction()" title="Ctrl+Z">undo</button>
+      <button class="btn" onclick="redoAction()" title="Ctrl+Shift+Z / Ctrl+Y">redo</button>
       <button class="btn" onclick="fitScreen()">fit</button>
       <button class="btn on" id="scriptBtn" onclick="toggleScript()">script</button>
       <button class="btn" id="recceBtn" onclick="toggleReccePanel()" style="display:none">recce</button>
@@ -1302,17 +1303,41 @@ function stopLoad(){
 }
 
 // Undo
+var undoLiveCaptured=false;
 function saveHistory(){
-  var state={nodes:JSON.stringify(nodes),attShots:JSON.stringify(attShots),imgNodes:JSON.stringify(imgNodes),noteNodes:JSON.stringify(noteNodes),conns:JSON.stringify(conns)};
   undoStack=undoStack.slice(0,undoIdx+1);
-  undoStack.push(state);
+  undoStack.push(captureState());
   if(undoStack.length>30)undoStack.shift();
   undoIdx=undoStack.length-1;
+  undoLiveCaptured=false;
 }
 function undoAction(){
   if(undoIdx<=0)return;
+  // undoStack only ever holds the state captured right BEFORE each action -
+  // the live state (after the most recent action) was never itself on the
+  // stack. The first undo in a chain stashes it as the new top entry so
+  // redo has somewhere to land back on; undoLiveCaptured tracks whether
+  // that's already been done so redoing back to the edge and undoing again
+  // doesn't push a duplicate (which would silently eat an undo press).
+  if(!undoLiveCaptured){
+    undoStack.push(captureState());
+    undoIdx=undoStack.length-1;
+    undoLiveCaptured=true;
+  }
   undoIdx--;
-  var state=undoStack[undoIdx];
+  applyHistoryState(undoStack[undoIdx]);
+  showUndoHint('undone');
+}
+function redoAction(){
+  if(undoIdx>=undoStack.length-1)return;
+  undoIdx++;
+  applyHistoryState(undoStack[undoIdx]);
+  showUndoHint('redone');
+}
+function captureState(){
+  return {nodes:JSON.stringify(nodes),attShots:JSON.stringify(attShots),imgNodes:JSON.stringify(imgNodes),noteNodes:JSON.stringify(noteNodes),conns:JSON.stringify(conns)};
+}
+function applyHistoryState(state){
   nodes=JSON.parse(state.nodes);
   attShots=JSON.parse(state.attShots);
   imgNodes=JSON.parse(state.imgNodes);
@@ -1320,7 +1345,10 @@ function undoAction(){
   conns=JSON.parse(state.conns);
   selId=null;selImgId=null;selNoteId=null;
   renderAll();
+}
+function showUndoHint(text){
   var hint=document.getElementById('undoHint');
+  hint.textContent=text;
   hint.classList.add('show');
   setTimeout(function(){hint.classList.remove('show');},1200);
 }
@@ -1373,10 +1401,12 @@ document.addEventListener('keydown',function(e){
   if(e.code==='Space'&&!e.target.isContentEditable&&e.target.tagName!=='TEXTAREA'&&e.target.tagName!=='INPUT'){e.preventDefault();spaceDown=true;}
   if(e.code==='Escape'){closeModal();cancelConn();}
   if((e.code==='Delete'||e.code==='Backspace')&&!e.target.isContentEditable&&e.target.tagName!=='TEXTAREA'&&e.target.tagName!=='INPUT'){
-    if(selImgId!==null){saveHistory();delImgNode(selImgId);selImgId=null;}
-    else if(selNoteId!==null){saveHistory();delNoteNode(selNoteId);selNoteId=null;}
+    if(selImgId!==null){e.preventDefault();saveHistory();delImgNode(selImgId);selImgId=null;}
+    else if(selNoteId!==null){e.preventDefault();saveHistory();delNoteNode(selNoteId);selNoteId=null;}
+    else if(selId!==null){e.preventDefault();saveHistory();delNode(selId);}
   }
-  if((e.ctrlKey||e.metaKey)&&e.code==='KeyZ'){e.preventDefault();undoAction();}
+  if((e.ctrlKey||e.metaKey)&&e.code==='KeyZ'&&!e.shiftKey){e.preventDefault();undoAction();}
+  if((e.ctrlKey||e.metaKey)&&(e.code==='KeyY'||(e.code==='KeyZ'&&e.shiftKey))){e.preventDefault();redoAction();}
 });
 document.addEventListener('keyup',function(e){
   if(e.code==='Space'){spaceDown=false;if(isPan){isPan=false;document.getElementById('vp').classList.remove('panning');}}
