@@ -2260,8 +2260,9 @@ function parseBlocks(text){
 function apiRetry(sys,usr,retries){
   retries=retries==null?1:retries;
   return api(sys,usr).catch(function(err){
+    console.warn('[api] request failed'+(retries>0?', retrying in 1.2s':', giving up')+':',err&&err.message?err.message:err);
     if(retries<=0)throw err;
-    return new Promise(function(res){setTimeout(res,800);}).then(function(){return apiRetry(sys,usr,retries-1);});
+    return new Promise(function(res){setTimeout(res,1200);}).then(function(){return apiRetry(sys,usr,retries-1);});
   });
 }
 // some backend responses can hang far longer than a user will ever wait (one
@@ -2269,11 +2270,35 @@ function apiRetry(sys,usr,retries){
 // screen feel frozen). Races a promise against a hard deadline and resolves
 // with `fallback` if it isn't ready in time - the slow request is left to
 // finish in the background and quietly discarded, never blocking the UI.
-function withTimeout(promise,ms,fallback){
+function withTimeout(promise,ms,fallback,label){
   return new Promise(function(resolve){
     var done=false;
-    var t=setTimeout(function(){if(!done){done=true;resolve(fallback);}},ms);
-    promise.then(function(v){if(!done){done=true;clearTimeout(t);resolve(v);}},function(){if(!done){done=true;clearTimeout(t);resolve(fallback);}});
+    var t=setTimeout(function(){if(!done){done=true;console.warn('[api] timed out after '+ms+'ms'+(label?' ('+label+')':'')+' - using fallback');resolve(fallback);}},ms);
+    promise.then(function(v){if(!done){done=true;clearTimeout(t);resolve(v);}},function(err){if(!done){done=true;clearTimeout(t);console.warn('[api] failed'+(label?' ('+label+')':'')+':',err&&err.message?err.message:err);resolve(fallback);}});
+  });
+}
+// firing every segment of a long plan at once (Promise.all over N calls,
+// N up to 6, doubled again on redraft) likely trips the backend's own
+// rate/concurrency limit, which is a very plausible reason a whole batch can
+// come back empty at once. Cap how many requests are actually in flight at
+// the same time - still much faster than one-at-a-time, but gentler on
+// whatever's on the other end of WORKER.
+function runLimited(taskFns,limit){
+  return new Promise(function(resolve){
+    var results=new Array(taskFns.length);
+    var next=0,remaining=taskFns.length;
+    if(!remaining){resolve(results);return;}
+    function launch(){
+      if(next>=taskFns.length)return;
+      var i=next++;
+      taskFns[i]().then(function(v){results[i]=v;},function(){results[i]=undefined;}).then(function(){
+        remaining--;
+        if(remaining===0)resolve(results);
+        else launch();
+      });
+    }
+    var workers=Math.min(limit,taskFns.length);
+    for(var w=0;w<workers;w++)launch();
   });
 }
 
@@ -2303,11 +2328,11 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
     // segment that doesn't answer in time contributes an empty string
     // instead of hanging the whole screen; it just reads as a "shortfall"
     // and gets one redraft attempt like any other short segment
-    setGenStage('writing '+segs.length+' segments in parallel');
-    var segPromises=segs.map(function(seg,idx){
-      return withTimeout(apiRetry(buildSegSys(seg,idx),buildUserContent(planMsg)).then(function(t){return t.trim();}),30000,'');
+    setGenStage('writing '+segs.length+' segments (up to 3 at a time)');
+    var segTasks=segs.map(function(seg,idx){
+      return function(){return withTimeout(apiRetry(buildSegSys(seg,idx),buildUserContent(planMsg)).then(function(t){return t.trim();}),30000,'','segment '+(idx+1));};
     });
-    return Promise.all(segPromises).then(function(texts){
+    return runLimited(segTasks,3).then(function(texts){
       // a segment can under-deliver (model stops early within its own
       // window) - instead of falling back to the slow one-request-at-a-time
       // "continue from wherever it stopped" loop for the whole video, redraft
@@ -2323,10 +2348,10 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
         return ensureFullPlan(planSys,texts.join('\n'));
       }
       setGenStage('redrafting '+shortfalls.length+' short segment'+(shortfalls.length>1?'s':''));
-      var repairPromises=shortfalls.map(function(idx){
-        return withTimeout(apiRetry(buildSegSys(segs[idx],idx),buildUserContent(planMsg)).then(function(t){return t.trim();}),30000,texts[idx]);
+      var repairTasks=shortfalls.map(function(idx){
+        return function(){return withTimeout(apiRetry(buildSegSys(segs[idx],idx),buildUserContent(planMsg)).then(function(t){return t.trim();}),30000,texts[idx],'redraft '+(idx+1));};
       });
-      return Promise.all(repairPromises).then(function(repaired){
+      return runLimited(repairTasks,3).then(function(repaired){
         repaired.forEach(function(t,i){if(t)texts[shortfalls[i]]=t;});
         setGenStage('finishing up');
         return ensureFullPlan(planSys,texts.join('\n'));
