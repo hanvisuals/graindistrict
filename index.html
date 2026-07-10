@@ -2204,9 +2204,14 @@ function genScript(){
     planPromise
   ]).then(function(results){
     stopLoad();
+    var planText=results[1].trim();
+    // if every segment/continuation attempt failed or timed out, what comes
+    // back can be the model's own confused reply to an empty prompt (e.g.
+    // "please share the last blocks and topic...") instead of real blocks -
+    // that text used to get shown to the user as if it were the plan
+    if(!parseBlocks(planText).length)throw new Error('The AI could not produce a usable plan this time - please try again.');
     projectBrief=results[0].trim();
     document.getElementById('briefContent').innerHTML=renderMarkdown(projectBrief);
-    var planText=results[1].trim();
     document.getElementById('scriptTa').value=planText;
     document.getElementById('wc').textContent=planText.split('\n').filter(function(l){return l.trim();}).length+' blocks';
     show('s3');
@@ -2343,9 +2348,15 @@ function ensureFullPlan(planSys,text,tries,prevEnd,startTs){
   // tries alone doesn't bound wall-clock time (each round can itself be
   // slow) - also give up once this loop alone has run 25s, whatever we have
   var outOfTime=Date.now()-startTs>25000;
-  if(end>=target-15||tries>=maxTries||stalled||outOfTime)return Promise.resolve(text);
-  setGenStage('continuing from '+fmtTime(end)+' of '+fmtTime(target));
   var lines=text.trim().split('\n').filter(function(l){return l.trim();});
+  // nothing to continue FROM (every earlier segment/redraft failed or timed
+  // out) - asking the model to "continue the plan below" with an empty
+  // "last blocks" section just gets a confused reply back ("please share
+  // the last blocks and topic..."), which used to get treated as if it were
+  // real plan text and shown to the user verbatim. Bail out here instead;
+  // the caller checks for zero parsed blocks and shows a real error.
+  if(end>=target-15||tries>=maxTries||stalled||outOfTime||!lines.length)return Promise.resolve(text);
+  setGenStage('continuing from '+fmtTime(end)+' of '+fmtTime(target));
   if(lines.length&&!/\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}/.test(lines[lines.length-1]))lines.pop();
   var tail=lines.slice(-6).join('\n');
   var contMsg='The shot plan below is INCOMPLETE - it stops at '+fmtTime(end)+' but the video must reach at least '+fmtTime(target)+'. Continue the SAME plan from '+fmtTime(end)+' onward. Do not repeat existing blocks. Keep the same style, layers and cutting math.\n\nLast blocks for context:\n'+tail+'\n\nWrite in the SAME LANGUAGE as the existing blocks. Return ONLY the new blocks, same plain text format, nothing else.';
@@ -2515,8 +2526,10 @@ function surpriseMe(){
     : api(sys,surpriseMsg).then(function(raw){return ensureFullPlan(sys,raw);});
   surprisePromise.then(function(raw){
     stopLoad();
-    document.getElementById('scriptTa').value=raw.trim();
-    document.getElementById('wc').textContent=raw.trim().split('\n').filter(function(l){return l.trim();}).length+' blocks';
+    var planText=raw.trim();
+    if(!parseBlocks(planText).length)throw new Error('The AI could not produce a usable plan this time - please try again.');
+    document.getElementById('scriptTa').value=planText;
+    document.getElementById('wc').textContent=planText.split('\n').filter(function(l){return l.trim();}).length+' blocks';
     show('s3');
   }).catch(function(e){stopLoad();alert('Error: '+e.message);show('s5');});
 }
