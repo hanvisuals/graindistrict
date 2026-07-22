@@ -7,6 +7,18 @@
       "runtimeArgs": ["serve", "."],
       "autoPort": true,
       "port": 4173
+    },
+    {
+      "name": "HVNVSLS (npx serve)",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", ".", "--listen", "3000", "--no-clipboard"],
+      "port": 3000
+    },
+    {
+      "name": "Han Visuals v9",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["C:/Users/seyit/Downloads/files/dev-server.js"],
+      "port": 8123
     }
   ]
 }
