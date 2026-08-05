@@ -185,6 +185,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 /* ATTACHED SHOTS */
 @keyframes att-in{from{opacity:0;transform:translateY(-10px) scale(.95);}to{opacity:1;transform:translateY(0) scale(1);}}
 @keyframes att-out{from{opacity:1;transform:scale(1) translateY(0);}to{opacity:0;transform:scale(.88) translateY(-28px);}}
+.gd-dragging{animation:none!important;}
 .att-shot{position:absolute;background:#131313;border:1px solid rgba(255,255,255,.09);border-radius:7px;cursor:grab;box-shadow:0 2px 14px rgba(0,0,0,.55);overflow:hidden;animation:att-in .16s ease;}
 .att-shot:hover{box-shadow:0 4px 20px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.1);}
 .att-shot.drag{cursor:grabbing;}
@@ -1272,7 +1273,7 @@ var nodes=[],attShots=[],imgNodes=[],noteNodes=[],conns=[],nid=1;
 var selId=null,selImgId=null,selNoteId=null;
 var scale=1,px=60,py=80;
 var isPan=false,lmx=0,lmy=0;
-var dragN=null,dragAtt=null,dragImg=null,dragNote=null,dragSb=null,dox=0,doy=0,dragNMoved=false;
+var dragN=null,dragAtt=null,dragImg=null,dragNote=null,dragSb=null,dox=0,doy=0,dragNMoved=false,dragNStartX=0,dragNStartY=0;
 var spaceDown=false;
 var canvasMode='select';
 var connFrom=null;
@@ -2907,8 +2908,52 @@ function addShotToCanvas(nodeId,shotId){
   }
 }
 
-function drawAttLine(cw,x1,y1,x2,y2){
+/* Writing left/top on a card makes the browser re-run layout for the whole
+   canvas subtree - the cost scales with how many elements are on the board,
+   not with how many moved, so a big plan dragged at single-digit fps.
+   A transform is handled by the compositor and skips layout entirely, so a
+   drag moves its group that way and only commits real positions at the end. */
+var dragEls=null,dragAttStart=null;
+function beginDragGroup(node){
+  dragEls=[];
+  // shot-card positions are derived from the block's absolute delta rather
+  // than accumulated per mouse move: adding each small delta in turn lets
+  // rounding drift build up, and the cards end up a few pixels off the block
+  dragAttStart=attShots.filter(function(a){return a.parentId===node.id;})
+                       .map(function(a){return {a:a,x:a.x,y:a.y};});
+  function add(el){ if(el) dragEls.push({el:el, base:el.style.transform||''}); }
+  add(document.getElementById('nc-'+node.id));
+  attShots.forEach(function(a){ if(a.parentId===node.id) add(document.getElementById('att-'+a.id)); });
+  // the chain lines carry their own rotate(), so their base transform is kept
+  // and the translation composed in front of it
+  document.querySelectorAll('.att-line[data-p="'+node.id+'"]').forEach(add);
+  add(document.getElementById('sbp-'+node.id));
+  add(document.getElementById('sbr-'+node.id));
+  dragEls.forEach(function(d){
+    d.el.style.willChange='transform';
+    // the entry animation on shot cards animates transform, and a running
+    // animation wins over an inline style - so it has to stand down while
+    // the group is being moved
+    d.el.classList.add('gd-dragging');
+  });
+}
+function moveDragGroup(dx,dy){
+  if(!dragEls)return;
+  var t='translate3d('+dx+'px,'+dy+'px,0)';
+  dragEls.forEach(function(d){ d.el.style.transform=d.base?(t+' '+d.base):t; });
+}
+function endDragGroup(){
+  if(!dragEls)return;
+  dragEls.forEach(function(d){
+    d.el.style.transform=d.base;
+    d.el.style.willChange='';
+    d.el.classList.remove('gd-dragging');
+  });
+  dragEls=null;dragAttStart=null;
+}
+function drawAttLine(cw,x1,y1,x2,y2,pid){
   var line=document.createElement('div');line.className='att-line';
+  if(pid!=null)line.setAttribute('data-p',pid);
   var len=Math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));
   var angle=Math.atan2(y2-y1,x2-x1)*180/Math.PI;
   line.style.cssText='position:absolute;left:'+x1+'px;top:'+y1+'px;width:'+len+'px;height:1px;background:rgba(201,168,76,.3);transform-origin:0 50%;transform:rotate('+angle+'deg);pointer-events:none;z-index:0;';
@@ -2920,11 +2965,28 @@ function drawAttLine(cw,x1,y1,x2,y2){
 // text of every card in between. Instead, chain short segments through the
 // GAPS only: parent -> card1, card1 -> card2, card2 -> card3... each segment
 // only ever occupies the empty space between two adjacent cards.
-function drawAttChain(){
+/* Reading offsetHeight right after writing to the DOM forces the browser to
+   re-run layout there and then. Doing that once per shot card - as both the
+   chain drawing and the stacking used to - turns a few dozen cards into a few
+   dozen full layout passes, which measured ~96ms each on a 40-block board and
+   dragged the canvas down to 12fps. Measure everything up front instead: one
+   layout, then pure writes. */
+function measureAttHeights(onlyParentId){
+  var h={};
+  attShots.forEach(function(a){
+    if(nodeDrawerClosed[a.parentId])return;
+    if(onlyParentId!=null&&a.parentId!==onlyParentId)return;
+    var el=document.getElementById('att-'+a.id);
+    if(el)h[a.id]=el.offsetHeight;
+  });
+  return h;
+}
+function drawAttChain(heights,onlyParentId){
   var cw=document.getElementById('cw');
   var byParent={};
   attShots.forEach(function(att){
     if(nodeDrawerClosed[att.parentId])return;
+    if(onlyParentId!=null&&att.parentId!==onlyParentId)return;
     (byParent[att.parentId]=byParent[att.parentId]||[]).push(att);
   });
   Object.keys(byParent).forEach(function(pid){
@@ -2934,15 +2996,16 @@ function drawAttChain(){
     var fromX=pnode.x+NC_W/2,fromY=pnode.y+140;
     list.forEach(function(att){
       var toX=att.x+NC_W/2,toY=att.y;
-      drawAttLine(cw,fromX,fromY,toX,toY);
-      var el=document.getElementById('att-'+att.id);
-      fromX=att.x+NC_W/2;fromY=att.y+(el?el.offsetHeight:0);
+      drawAttLine(cw,fromX,fromY,toX,toY,pid);
+      fromX=att.x+NC_W/2;fromY=att.y+(heights[att.id]||0);
     });
   });
 }
-function updateAttLines(){
-  document.querySelectorAll('.att-line').forEach(function(el){el.remove();});
-  drawAttChain();
+function updateAttLines(onlyParentId){
+  var heights=measureAttHeights(onlyParentId);
+  var sel=(onlyParentId!=null)?'.att-line[data-p="'+onlyParentId+'"]':'.att-line';
+  document.querySelectorAll(sel).forEach(function(el){el.remove();});
+  drawAttChain(heights,onlyParentId);
 }
 function renderAttShots(){
   document.querySelectorAll('.att-shot,.att-line').forEach(function(el){el.remove();});
@@ -2991,15 +3054,15 @@ function renderAttShots(){
   // shot text no longer clips to 3 lines, so card height now varies with
   // content length - stack each parent's cards using their REAL measured
   // DOM height (not a fixed guess) now that they're all in the DOM
-  var seenParents={};
+  var seenParents={},heights=measureAttHeights();
   attShots.forEach(function(att){
     if(nodeDrawerClosed[att.parentId]||seenParents[att.parentId])return;
     seenParents[att.parentId]=1;
-    reflowAttShots(att.parentId);
+    reflowAttShots(att.parentId,heights);
   });
   // connector lines drawn last, using each shot's now-final stacked position -
   // chained through the gaps only, never crossing over a card's own text
-  drawAttChain();
+  drawAttChain(heights);
 }
 
 function renderCanvas(){
@@ -3159,6 +3222,8 @@ function renderCanvas(){
       var r=document.getElementById('vp').getBoundingClientRect();
       dox=(e.clientX-r.left-px)/scale-node.x;
       doy=(e.clientY-r.top-py)/scale-node.y;
+      dragNStartX=node.x;dragNStartY=node.y;
+      beginDragGroup(node);
       el.style.zIndex=500;el.classList.add('drag');
     });
     el.addEventListener('mouseup',function(e){
@@ -3404,12 +3469,16 @@ function renderTL(){
   var tot=document.createElement('div');tot.className='tl-total';tot.textContent=nodes.length+' cuts  '+durMin+'-'+durMax+'min';tl.appendChild(tot);
 }
 
-function reflowAttShots(parentId){
+function reflowAttShots(parentId,heights){
   var pnode=null;for(var i=0;i<nodes.length;i++){if(nodes[i].id===parentId){pnode=nodes[i];break;}}
   if(!pnode)return;
   var GAP=8,FALLBACK_H=90;
   var nodeAtts=attShots.filter(function(a){return a.parentId===parentId;});
   nodeAtts.sort(function(a,b){return a.y-b.y;});
+  // heights come from one batched read (see measureAttHeights) whenever the
+  // caller has one; measuring here per card would force a layout every
+  // iteration, because each iteration also writes style.top
+  var own=heights||measureAttHeights();
   var curY=pnode.y+190;
   nodeAtts.forEach(function(a){
     a.y=curY;
@@ -3418,7 +3487,7 @@ function reflowAttShots(parentId){
     // real measured height (collapsed cards shrink to header height via CSS
     // automatically) instead of a fixed guess - text is no longer clamped
     // so length varies a lot from card to card
-    curY+=(el?el.offsetHeight:FALLBACK_H)+GAP;
+    curY+=(own[a.id]!=null?own[a.id]:FALLBACK_H)+GAP;
   });
   // an audio block's own shot-card stack can grow tall enough to run into
   // the visual-cut row laid out underneath it - layoutBlocks only leaves
@@ -3434,7 +3503,7 @@ function reflowAttShots(parentId){
         sib.y=needed;pushed=true;
         var sEl=document.getElementById('nc-'+sib.id);
         if(sEl)sEl.style.top=sib.y+'px';
-        reflowAttShots(sib.id);
+        reflowAttShots(sib.id,own);
       }
     });
     if(pushed)renderCanvas();
@@ -3675,18 +3744,24 @@ function doExport(){
 
 
 var connsRAF=null;
-var connsWantAtt=false;
+var connsWantAtt=null;   // null = none, true = all lines, a number = one block
 function scheduleConns(withAtt){
   // pan/zoom and dragging fire many events per second - a mouse can emit well
   // over a hundred - and rebuilding every connection path (plus the shot-card
   // chain lines) on each one costs far more than a frame, which is what made
   // dragging a block feel like it was wading through treacle. Coalesce into a
   // single redraw per animation frame instead.
-  if(withAtt)connsWantAtt=true;
+  if(withAtt!=null&&withAtt!==false){
+    // asking for two different blocks in one frame means redrawing everything
+    connsWantAtt=(connsWantAtt==null||connsWantAtt===withAtt)?withAtt:true;
+  }
   if(connsRAF)return;
   connsRAF=requestAnimationFrame(function(){
     connsRAF=null;
-    if(connsWantAtt){connsWantAtt=false;updateAttLines();}
+    if(connsWantAtt!=null){
+      var which=connsWantAtt; connsWantAtt=null;
+      updateAttLines(which===true?undefined:which);
+    }
     renderConns();
     syncTimelineScroll();
   });
@@ -3796,24 +3871,14 @@ document.addEventListener('mousemove',function(e){
     var oldX=dragN.x,oldY=dragN.y;
     dragN.x=(e.clientX-r.left-px)/scale-dox;dragN.y=(e.clientY-r.top-py)/scale-doy;
     var dx2=dragN.x-oldX,dy2=dragN.y-oldY;
-    var el=document.getElementById('nc-'+dragN.id);
-    if(el){el.style.left=dragN.x+'px';el.style.top=dragN.y+'px';}
-    // Move attached shots with card
-    attShots.forEach(function(a){
-      if(a.parentId===dragN.id){
-        a.x+=dx2;a.y+=dy2;
-        var ael=document.getElementById('att-'+a.id);
-        if(ael){ael.style.left=a.x+'px';ael.style.top=a.y+'px';}
-      }
-    });
-    // the storyboard image card belongs to this node - it follows along too
-    // (its own sbDX/sbDY offset from the node is untouched, only the node's
-    // own position changed, so just nudge the live DOM by the same delta)
-    var sbp=document.getElementById('sbp-'+dragN.id);
-    if(sbp){sbp.style.left=(parseFloat(sbp.style.left)+dx2)+'px';sbp.style.top=(parseFloat(sbp.style.top)+dy2)+'px';}
-    var sbr=document.getElementById('sbr-'+dragN.id);
-    if(sbr){sbr.style.left=(parseFloat(sbr.style.left)+dx2)+'px';sbr.style.top=(parseFloat(sbr.style.top)+dy2)+'px';}
-    scheduleConns(true);
+    // the model moves now; the DOM is only translated, and the real left/top
+    // are written once on mouseup by the normal re-render
+    var mdx=dragN.x-dragNStartX,mdy=dragN.y-dragNStartY;
+    if(dragAttStart)dragAttStart.forEach(function(st){ st.a.x=st.x+mdx; st.a.y=st.y+mdy; });
+    moveDragGroup(mdx,mdy);
+    // the shot-card chain travels with the group, so only the connections
+    // between blocks actually need redrawing
+    scheduleConns();
   }
   if(dragSb){
     var rSb=vp.getBoundingClientRect();
@@ -3838,7 +3903,7 @@ document.addEventListener('mousemove',function(e){
     dragAtt.x=(e.clientX-r2.left-px)/scale-dox;dragAtt.y=(e.clientY-r2.top-py)/scale-doy;
     var el2=document.getElementById('att-'+dragAtt.id);
     if(el2){el2.style.left=dragAtt.x+'px';el2.style.top=dragAtt.y+'px';}
-    scheduleConns(true);
+    scheduleConns(dragAtt.parentId);
   }
   if(dragImg){
     var r3=vp.getBoundingClientRect();
@@ -3879,6 +3944,7 @@ document.addEventListener('mousemove',function(e){
 document.addEventListener('mouseup',function(e){
   if(e.button===1||(e.button===0&&isPan)){isPan=false;vp.classList.remove('panning');}
   if(e.button===0&&dragN){
+    endDragGroup();
     var el=document.getElementById('nc-'+dragN.id);
     if(el){el.classList.remove('drag');el.style.zIndex='';}
     // a plain click (mousedown+mouseup with no movement in between) also
