@@ -731,10 +731,59 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
   .glow::after{transition:none;}
   .btn:active,.gd-pill:active,.cf-act:active,.gd-btn:active,.kb-cont:active{transform:none;}
 }
+
+/* ===== PRINTABLE SHOT LIST =====
+   Hidden on screen; on paper it is the only thing there. Light ground and
+   black text because this is meant to be printed and carried, not looked at
+   in a dark room. */
+#printView{display:none;}
+@media print{
+  @page{margin:14mm;}
+  html,body{background:#fff!important;height:auto!important;overflow:visible!important;}
+  body::after{display:none!important;}          /* the film grain overlay */
+  body>*{display:none!important;}
+  #printView{display:block!important;color:#111;font-family:var(--sans);}
+  #printView h1{font-size:22pt;font-weight:600;letter-spacing:-.01em;margin:2mm 0 1mm;}
+  #printView h2{font-size:9pt;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+                color:#666;margin:0 0 4mm;padding-bottom:1.5mm;border-bottom:1px solid #ddd;}
+  .pv-head{margin-bottom:9mm;}
+  .pv-brand{font-family:var(--mono);font-size:8pt;letter-spacing:.4em;color:#888;}
+  .pv-meta{font-family:var(--mono);font-size:8pt;color:#777;letter-spacing:.04em;text-transform:uppercase;}
+  .pv-brief{margin-bottom:9mm;}
+  .pv-brief-body{font-size:10pt;line-height:1.55;color:#333;max-width:150mm;}
+  /* the brief is rendered with the app's own markdown classes, which are
+     coloured for a dark screen - on white paper that is white text on white.
+     Recolour them for print rather than teaching renderMarkdown about media. */
+  .pv-brief-body .bd-h1,.pv-brief-body .bd-h2,.pv-brief-body .bd-h3{
+                font-family:var(--mono)!important;font-size:8pt!important;font-weight:700!important;
+                letter-spacing:.14em!important;text-transform:uppercase!important;
+                color:#777!important;margin:4mm 0 1.2mm!important;display:block;}
+  .pv-brief-body .bd-h3{font-family:var(--sans)!important;font-size:10pt!important;
+                letter-spacing:0!important;text-transform:none!important;color:#111!important;}
+  .pv-brief-body .bd-p{color:#333!important;display:block;margin:0 0 1.5mm!important;}
+  .pv-brief-body .bd-li{color:#333!important;display:block;padding-left:5mm!important;margin:.6mm 0!important;}
+  .pv-brief-body .bd-li::before{content:'—';position:absolute;left:0;color:#aaa;}
+  .pv-brief-body .bd-bold{color:#111!important;font-weight:700!important;}
+  .pv-brief-body .bd-hr{border:none!important;border-top:1px solid #ddd!important;margin:3mm 0!important;display:block;}
+  /* a row must not be split across a page - half a shot on each side of a
+     page break is useless to whoever is holding it */
+  .pv-row{display:grid;grid-template-columns:16mm 1fr auto;gap:5mm;
+          padding:3.5mm 0;border-bottom:1px solid #e6e6e6;break-inside:avoid;page-break-inside:avoid;}
+  .pv-num{font-family:var(--mono);font-size:12pt;font-weight:700;color:#111;line-height:1;}
+  .pv-tc{font-family:var(--mono);font-size:7.5pt;color:#777;margin-top:1.5mm;line-height:1.5;}
+  .pv-type{font-family:var(--mono);font-size:7.5pt;font-weight:700;letter-spacing:.12em;color:#555;margin-bottom:1mm;}
+  .pv-content{font-size:10.5pt;line-height:1.45;color:#111;}
+  .pv-shots{margin:2.5mm 0 0;display:grid;grid-template-columns:22mm 1fr;gap:.8mm 3mm;}
+  .pv-shots dt{font-family:var(--mono);font-size:7pt;font-weight:700;letter-spacing:.1em;color:#888;padding-top:.4mm;}
+  .pv-shots dd{margin:0;font-size:9pt;line-height:1.4;color:#333;}
+  .pv-frame{width:34mm;}
+  .pv-frame img{width:100%;border:1px solid #ddd;display:block;}
+}
 </style>
 </head>
 <body>
 
+<div id="printView" aria-hidden="true"></div>
 <div id="s0" class="screen active">
   <div class="topbar"><span class="logo">HVNVSLS</span></div>
   <div class="iw">
@@ -2098,7 +2147,8 @@ function toggleScript(){
     var txt='';
     nodes.forEach(function(n){
       txt+='['+n.type.toUpperCase()+'] '+n.tcStart+' - '+n.tcEnd+'\n'+n.content+'\n\n';
-      if(n.shots&&n.shots.length){n.shots.forEach(function(s){txt+='  ['+s.k.toUpperCase()+'] '+s.t+'\n';});txt+='\n';}
+      var sh=shotsFor(n.id);
+      if(sh.length){sh.forEach(function(s){txt+='  ['+(SK_LABEL[s.k]||s.k).toUpperCase()+'] '+s.t+'\n';});txt+='\n';}
     });
     document.getElementById('soContent').textContent=txt||'(no blocks yet)';
   }
@@ -3836,17 +3886,72 @@ function fitScreen(){
   updateT();
 }
 
-function doExport(){
-  var out='GRAIN DISTRICT - '+topic.toUpperCase()+'\nDuration: '+durMin+'-'+durMax+' min\n'+'='.repeat(50)+'\n\n';
-  nodes.forEach(function(n){
-    out+='['+n.type.toUpperCase()+'] '+n.tcStart+' - '+n.tcEnd+'\n'+n.content+'\n\n';
-    (n.shots||[]).forEach(function(s){out+='  ['+s.k.toUpperCase()+'] '+s.t+'\n';});
-    out+='\n';
+/* Shot details used to hang off node.shots. They moved to attShots when shot
+   cards became draggable, and these two readers were never updated - so every
+   export and the script panel had been silently dropping the whole prop /
+   action / emotion / tech layer. */
+function shotsFor(nodeId){
+  return attShots.filter(function(a){return a.parentId===nodeId;});
+}
+/* Built as a document and handed to the browser's own print engine rather
+   than generated with a PDF library: no dependency to ship, the browser
+   handles pagination and font rendering, and "Save as PDF" is one step in a
+   dialog that also offers paper size and margins. */
+function pesc(t){ return String(t==null?'':t).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];}); }
+
+function buildPrintView(){
+  var v=document.getElementById('printView');
+  var when=new Date().toLocaleDateString(undefined,{day:'numeric',month:'long',year:'numeric'});
+  var total=0; nodes.forEach(function(n){var e=tcToSec(n.tcEnd);if(e>total)total=e;});
+
+  var h='<div class="pv-head">'
+    +'<div class="pv-brand">HVNVSLS</div>'
+    +'<h1>'+pesc(topic||'Untitled project')+'</h1>'
+    +'<div class="pv-meta">'+pesc(projectType)+' &middot; '+nodes.length+' blocks &middot; '
+    +fmtTime(total)+' &middot; '+pesc(when)+'</div>'
+    +'</div>';
+
+  if(projectBrief){
+    h+='<section class="pv-brief"><h2>Production brief</h2>'
+      +'<div class="pv-brief-body">'+renderMarkdown(projectBrief)+'</div></section>';
+  }
+
+  h+='<section><h2>Shot list</h2>';
+  nodes.forEach(function(n,i){
+    var sh=shotsFor(n.id);
+    h+='<article class="pv-row">'
+      +'<div class="pv-idx"><div class="pv-num">'+String(i+1).padStart(2,'0')+'</div>'
+      +'<div class="pv-tc">'+pesc(n.tcStart)+'<br>'+pesc(n.tcEnd)+'</div></div>'
+      +'<div class="pv-body">'
+      +'<div class="pv-type">'+pesc(n.type.toUpperCase())+'</div>'
+      +'<div class="pv-content">'+pesc(n.content)+'</div>';
+    if(sh.length){
+      h+='<dl class="pv-shots">';
+      sh.forEach(function(a){
+        h+='<dt>'+pesc((SK_LABEL[a.k]||a.k).toUpperCase())+'</dt><dd>'+pesc(a.t)+'</dd>';
+      });
+      h+='</dl>';
+    }
+    h+='</div>';
+    // a frame next to the row is worth a paragraph of description on set;
+    // if the image can't be fetched the cell simply collapses
+    if(n.sbUrl) h+='<div class="pv-frame"><img src="'+pesc(n.sbUrl)+'" alt="" onerror="this.parentNode.style.display=\'none\'"></div>';
+    h+='</article>';
   });
-  var blob=new Blob([out],{type:'text/plain'});
-  var url=URL.createObjectURL(blob);
-  var a=document.createElement('a');a.href=url;a.download='grain-district.txt';a.click();
-  URL.revokeObjectURL(url);
+  h+='</section>';
+  v.innerHTML=h;
+}
+
+function doExport(){
+  if(!nodes.length){ gdAsk({title:'Nothing to export',message:'Build a board first.',ok:'OK'}); return; }
+  buildPrintView();
+  // browsers name the PDF after the document title
+  var prev=document.title;
+  document.title=(topic||'shot-list').replace(/[\\/:*?"<>|]/g,'').slice(0,80)+' - shot list';
+  var restore=function(){ document.title=prev; window.removeEventListener('afterprint',restore); };
+  window.addEventListener('afterprint',restore);
+  window.print();
+  setTimeout(restore,1000);   // Safari doesn't always fire afterprint
 }
 
 
