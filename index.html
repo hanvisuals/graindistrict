@@ -3957,7 +3957,8 @@ document.addEventListener('mouseup',function(e){
   +'.gd-btn.ghost:hover{color:#fff;background:rgba(255,255,255,.06);opacity:1;}'
   +'.gd-btn.danger{background:#e0686a;color:#fff;}'
   +'.gd-row{display:flex;gap:8px;margin-bottom:6px;}'
-  +'.gd-link{background:none;border:none;color:var(--text-2);font-family:var(--sans);font-size:12px;cursor:pointer;text-decoration:underline;margin-top:14px;}'
+  +'.gd-link{background:none;border:none;color:var(--text-2);font-family:var(--sans);font-size:12px;cursor:pointer;text-decoration:underline;}'
+  +'.gd-authlinks{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;}'
   +'.gd-err{font-size:12px;margin-top:10px;min-height:16px;color:#e0686a;line-height:1.45;}'
   +'.gd-x{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--text-3);font-size:20px;cursor:pointer;line-height:1;}'
   +'.gd-x:hover{color:#fff;}'
@@ -4036,7 +4037,8 @@ document.addEventListener('mouseup',function(e){
   +'  <label class="gd-check"><input type="checkbox" id="gdRemember" checked><span>Keep me signed in</span></label>'
   +'  <button class="gd-btn" id="gdAuthBtn">Sign in</button>'
   +'  <div class="gd-err" id="gdAuthErr"></div>'
-  +'  <button class="gd-link" id="gdAuthToggle">Create an account</button>'
+  +'  <div class="gd-authlinks"><button class="gd-link" id="gdAuthToggle">Create an account</button>'
+  +'  <button class="gd-link" id="gdForgot">Forgot password?</button></div>'
   +'  <div class="gd-note">Your projects are saved to your account, so they are there from any computer you sign in from.</div>'
   +'</div></div>'
   +'<div class="gd-ov" id="gdProjOv"><div class="gd-modal wide">'
@@ -4295,6 +4297,65 @@ document.addEventListener('mouseup',function(e){
     })();
   }
   byId('gdAuthToggle').onclick=function(){ setAuthMode(authMode==='signin'?'signup':'signin'); byId('gdAuthErr').textContent=''; };
+
+  /* ---------- forgot password ---------- */
+  byId('gdForgot').onclick=function(){
+    gdAsk({title:'Reset your password',
+           message:'Enter your email and we will send you a link to set a new one.',
+           value:byId('gdEmail').value.trim(), ok:'Send link'}).then(function(email){
+      if(email===null) return;
+      email=String(email).trim();
+      if(!email) return;
+      var err=byId('gdAuthErr'); err.style.color='#e0686a'; err.textContent='';
+      fetch(API+'/forgot',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({email:email})})
+        .then(function(r){ return r.text().then(function(t){
+          var d={}; try{ d=JSON.parse(t); }catch(e){}
+          if(!r.ok) throw new Error(d.error||('Sunucu hatası '+r.status));
+          return d;
+        });})
+        .then(function(){
+          // deliberately says the same thing whether or not that address has
+          // an account, matching what the server does
+          err.style.color='#7aa37a';
+          err.textContent='If that address has an account, a reset link is on its way.';
+        },function(e){ err.textContent=e.message||'Gönderilemedi.'; });
+    });
+  };
+
+  /* ---------- arriving from a reset link ---------- */
+  function consumeResetLink(){
+    var m=/[?&]reset=([^&#]+)/.exec(location.search||'');
+    if(!m) return;
+    var tok=decodeURIComponent(m[1]);
+    // drop it from the address bar straight away, so the link isn't left
+    // sitting in history or copied out of the URL later
+    try{ history.replaceState(null,'',location.pathname+location.hash); }catch(e){}
+    (function askNew(msg){
+      gdAsk({title:'Set a new password',
+             message:msg||'Choose a new password for your account (at least 6 characters).',
+             value:'', ok:'Save'}).then(function(pw){
+        if(pw===null) return;
+        pw=String(pw);
+        if(pw.length<6){ askNew('That is too short — use at least 6 characters.'); return; }
+        fetch(API+'/reset',{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({token:tok,password:pw})})
+          .then(function(r){ return r.text().then(function(t){
+            var d={}; try{ d=JSON.parse(t); }catch(e){}
+            if(!r.ok) throw new Error(d.error||('Sunucu hatası '+r.status));
+            return d;
+          });})
+          .then(function(d){
+            token=d.token; userEmail=d.email;
+            writeStoredSession(token,userEmail,true);
+            renderAccount(); applyAuthGate(); updateHomePanel();
+            gdAsk({title:'Password changed',message:'You are signed in again.',ok:'OK'});
+          },function(e){
+            gdAsk({title:'Could not reset',message:e.message||'Failed.',ok:'OK'});
+          });
+      });
+    })();
+  }
   byId('gdAuthBtn').onclick=doAuth;
   byId('gdPass').addEventListener('keydown',function(e){ if(e.key==='Enter') doAuth(); });
   byId('gdEmail').addEventListener('keydown',function(e){ if(e.key==='Enter') doAuth(); });
@@ -4723,6 +4784,7 @@ document.addEventListener('mouseup',function(e){
   renderAccount();
   updateHomePanel();
   applyAuthGate();
+  consumeResetLink();
 })();
 </script>
 </body>
