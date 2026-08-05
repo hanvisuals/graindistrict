@@ -186,6 +186,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 @keyframes att-in{from{opacity:0;transform:translateY(-10px) scale(.95);}to{opacity:1;transform:translateY(0) scale(1);}}
 @keyframes att-out{from{opacity:1;transform:scale(1) translateY(0);}to{opacity:0;transform:scale(.88) translateY(-28px);}}
 .gd-dragging{animation:none!important;}
+.att-noanim{animation:none!important;}
 .att-shot{position:absolute;background:#131313;border:1px solid rgba(255,255,255,.09);border-radius:7px;cursor:grab;box-shadow:0 2px 14px rgba(0,0,0,.55);overflow:hidden;animation:att-in .16s ease;}
 .att-shot:hover{box-shadow:0 4px 20px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.1);}
 .att-shot.drag{cursor:grabbing;}
@@ -2759,7 +2760,7 @@ function surpriseMe(){
 }
 
 function renderAll(){
-  renderBlockList();renderBlockDetail();renderCanvas();renderAttShots();renderImgNodes();renderNoteNodes();renderConns();renderTL();renderMusicStrip();updateRecceBtn();updateT();
+  renderBlockList();renderBlockDetail();renderCanvas();renderImgNodes();renderNoteNodes();renderConns();renderTL();renderMusicStrip();updateRecceBtn();updateT();
 }
 
 function renderBlockList(){
@@ -3008,20 +3009,32 @@ function updateAttLines(onlyParentId){
   drawAttChain(heights,onlyParentId);
 }
 function renderAttShots(){
+  // Every re-render tears these cards down and builds them again, so the
+  // entry animation replayed each time - dropping a dragged card made the
+  // whole row of shot cards under it blink out and fade back in. Only cards
+  // that weren't already on screen should animate. Reading it from the DOM
+  // needs no bookkeeping elsewhere, so nothing can fall out of sync.
+  var wasPresent=attPresentBeforeWipe;
+  attPresentBeforeWipe=null;
+  if(!wasPresent){
+    // called on its own, so the cards are still in the DOM to look at
+    wasPresent={};
+    document.querySelectorAll('.att-shot').forEach(function(el){wasPresent[el.id]=1;});
+  }
   document.querySelectorAll('.att-shot,.att-line').forEach(function(el){el.remove();});
   var cw=document.getElementById('cw');
   attShots.forEach(function(att){
     // skip if parent drawer is closed
     if(nodeDrawerClosed[att.parentId])return;
     var el=document.createElement('div');
-    el.className='att-shot'+(att.collapsed?' collapsed':'');
+    el.className='att-shot'+(att.collapsed?' collapsed':'')+(wasPresent['att-'+att.id]?' att-noanim':'');
     el.setAttribute('data-k',att.k);el.id='att-'+att.id;
     el.style.cssText='left:'+att.x+'px;top:'+att.y+'px;width:'+NC_W+'px;z-index:1;';
     var stripe=document.createElement('div');stripe.className='att-stripe';
     var head=document.createElement('div');head.className='att-head';
     var klbl=document.createElement('span');klbl.className='att-k';klbl.textContent=SK_LABEL[att.k]||att.k;
     var delbtn=document.createElement('button');delbtn.className='att-del';delbtn.textContent='x';
-    (function(aid){delbtn.onclick=function(e){e.stopPropagation();saveHistory();attShots=attShots.filter(function(a){return a.id!==aid;});renderAttShots();renderConns();renderCanvas();};})(att.id);
+    (function(aid){delbtn.onclick=function(e){e.stopPropagation();saveHistory();attShots=attShots.filter(function(a){return a.id!==aid;});renderCanvas();renderConns();};})(att.id);
     head.appendChild(klbl);head.appendChild(delbtn);
     (function(a,elRef){head.addEventListener('click',function(e){
       if(e.target===delbtn)return;
@@ -3065,8 +3078,14 @@ function renderAttShots(){
   drawAttChain(heights);
 }
 
+var attPresentBeforeWipe=null;
 function renderCanvas(){
   var cw=document.getElementById('cw');
+  // note which shot cards are on screen before this wipes them, so
+  // renderAttShots can tell a genuinely new card from one that was already
+  // there and shouldn't replay its entry animation
+  attPresentBeforeWipe={};
+  document.querySelectorAll('.att-shot').forEach(function(el){attPresentBeforeWipe[el.id]=1;});
   cw.innerHTML='';
   nodes.forEach(function(node,idx){
     var el=document.createElement('div');
@@ -3184,9 +3203,9 @@ function renderCanvas(){
           var a=attShots.filter(function(x){return x.id===aid;})[0];
           if(a&&a.parentId===n.id){el.classList.add('att-closing');}
         });
-        setTimeout(function(){nodeDrawerClosed[n.id]=true;renderCanvas();renderAttShots();},200);
+        setTimeout(function(){nodeDrawerClosed[n.id]=true;renderCanvas();},200);
       }else{
-        nodeDrawerClosed[n.id]=false;renderCanvas();renderAttShots();
+        nodeDrawerClosed[n.id]=false;renderCanvas();
       }
     });})(node,drawerBtn);
     el.appendChild(drawerBtn);
@@ -3954,7 +3973,7 @@ document.addEventListener('mouseup',function(e){
     // was about to dispatch its native 'click' event to, silently breaking
     // card selection (and any button click bubbling through it) entirely
     if(dragNMoved){
-      saveHistory();renderCanvas();renderTL();renderBlockList();renderAttShots();renderConns();
+      saveHistory();renderCanvas();renderTL();renderBlockList();renderConns();
     }
     dragN=null;dragNMoved=false;
   }
