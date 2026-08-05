@@ -2360,8 +2360,16 @@ function runLimited(taskFns,limit){
 }
 
 function genPlanChunked(planSys,planMsg,totalSec,li){
-  var segLen=180;
-  var numSegments=Math.min(6,Math.max(2,Math.round(totalSec/segLen)));
+  // segment length drives how much text ONE request has to generate, which
+  // is the thing that actually decides whether it finishes in time. The cut
+  // rules ask for roughly one BROLL cut every 3s plus voiceover lines, so a
+  // 180s segment meant ~90 blocks (~2500-3000 tokens) from a single
+  // non-streamed call - 45-60s of generation, right at the timeout cliff.
+  // That's why long videos failed while short ones (a single untimed call)
+  // always worked. Smaller segments = each call finishes well inside its
+  // window, and more of them run in parallel, so total time still drops.
+  var segLen=110;
+  var numSegments=Math.min(9,Math.max(2,Math.round(totalSec/segLen)));
   // keep the beat short - this is a quick outline, not the script itself.
   // asking for "2-3 sentences" per segment used to make even this "fast"
   // structuring step take 20-30s+ on its own
@@ -2372,10 +2380,10 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
 
   setGenStage('structuring outline');
   // never let the "quick outline" step alone stall the whole screen - if it
-  // isn't back in time, just split the runtime evenly and move on. 8s used
-  // to be enough but proved too tight once max_tokens grew (see below) -
-  // give it real room before giving up on it entirely
-  return withTimeout(apiRetry(outlineSys,outlineMsg),15000,null).then(function(raw){
+  // isn't back in time, just split the runtime evenly and move on. This one
+  // really is small (a few sentences of JSON) so it stays comparatively
+  // tight, but 8s was cutting off a call that simply hadn't started yet
+  return withTimeout(apiRetry(outlineSys,outlineMsg),25000,null).then(function(raw){
     var segs=[];
     if(raw){try{var m=raw.match(/\[[\s\S]*\]/);if(m)segs=JSON.parse(m[0]);}catch(e){}}
     if(segs.length<2)segs=evenSplit;
@@ -2386,16 +2394,17 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
     // every real API call below is capped (see withTimeout) - a segment that
     // doesn't answer in time contributes an empty string instead of hanging
     // the whole screen; it just reads as a "shortfall" and gets one redraft
-    // attempt like any other short segment. 30s used to be the cap but a
-    // segment asking for near-max_tokens of content can legitimately take
-    // longer than that to generate, especially with a few requests sharing
-    // the connection at once - that showed up as every segment "timing out"
-    // with literally no response, not as a real content/format error
-    setGenStage('writing '+segs.length+' segments (up to 2 at a time)');
+    // attempt like any other short segment. The cap has to comfortably clear
+    // how long the model actually spends generating a segment's worth of
+    // blocks, not just how long a user is willing to stare at a spinner -
+    // too tight and EVERY call reports "timed out" with no response at all,
+    // which is exactly the failure that made long videos unusable while
+    // short ones (one untimed call) kept working fine.
+    setGenStage('writing '+segs.length+' segments (up to 3 at a time)');
     var segTasks=segs.map(function(seg,idx){
-      return function(){return withTimeout(apiRetry(buildSegSys(seg,idx),buildUserContent(planMsg)).then(function(t){return t.trim();}),45000,'','segment '+(idx+1));};
+      return function(){return withTimeout(apiRetry(buildSegSys(seg,idx),buildUserContent(planMsg)).then(function(t){return t.trim();}),90000,'','segment '+(idx+1));};
     });
-    return runLimited(segTasks,2).then(function(texts){
+    return runLimited(segTasks,3).then(function(texts){
       // a segment can under-deliver (model stops early within its own
       // window) - instead of falling back to the slow one-request-at-a-time
       // "continue from wherever it stopped" loop for the whole video, redraft
@@ -2412,14 +2421,25 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
       }
       setGenStage('redrafting '+shortfalls.length+' short segment'+(shortfalls.length>1?'s':''));
       var repairTasks=shortfalls.map(function(idx){
-        return function(){return withTimeout(apiRetry(buildSegSys(segs[idx],idx),buildUserContent(planMsg)).then(function(t){return t.trim();}),45000,texts[idx],'redraft '+(idx+1));};
+        return function(){return withTimeout(apiRetry(buildSegSys(segs[idx],idx),buildUserContent(planMsg)).then(function(t){return t.trim();}),90000,texts[idx],'redraft '+(idx+1));};
       });
-      return runLimited(repairTasks,2).then(function(repaired){
+      return runLimited(repairTasks,3).then(function(repaired){
         repaired.forEach(function(t,i){if(t)texts[shortfalls[i]]=t;});
         setGenStage('finishing up');
         return ensureFullPlan(planSys,texts.join('\n'));
       });
     });
+  }).then(function(text){
+    // last-resort safety net: if the whole parallel pipeline came back with
+    // nothing usable, don't hand the caller an empty string (which surfaces
+    // as "The AI could not produce a usable plan this time"). Fall back to
+    // the plain single-request path - the same one short videos use, which
+    // has been reliable throughout - and give it a long, patient window.
+    if(parseBlocks(text||'').length)return text;
+    console.warn('[plan] chunked pipeline produced no usable blocks - falling back to a single-pass request');
+    setGenStage('retrying in one pass');
+    return withTimeout(apiRetry(planSys,buildUserContent(planMsg)),150000,'','single-pass fallback')
+      .then(function(t){return ensureFullPlan(planSys,(t||'').trim());});
   });
 }
 
