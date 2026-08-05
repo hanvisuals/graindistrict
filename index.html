@@ -3675,12 +3675,21 @@ function doExport(){
 
 
 var connsRAF=null;
-function scheduleConns(){
-  // pan/zoom fire many updateT() calls per second (wheel, mousemove) - rebuilding
-  // every connection line's SVG path on each one causes visible lag with lots of
-  // cards, so coalesce into a single renderConns() per animation frame instead
+var connsWantAtt=false;
+function scheduleConns(withAtt){
+  // pan/zoom and dragging fire many events per second - a mouse can emit well
+  // over a hundred - and rebuilding every connection path (plus the shot-card
+  // chain lines) on each one costs far more than a frame, which is what made
+  // dragging a block feel like it was wading through treacle. Coalesce into a
+  // single redraw per animation frame instead.
+  if(withAtt)connsWantAtt=true;
   if(connsRAF)return;
-  connsRAF=requestAnimationFrame(function(){connsRAF=null;renderConns();syncTimelineScroll();});
+  connsRAF=requestAnimationFrame(function(){
+    connsRAF=null;
+    if(connsWantAtt){connsWantAtt=false;updateAttLines();}
+    renderConns();
+    syncTimelineScroll();
+  });
 }
 function tlPxPerSec(){
   var tlEl=document.getElementById('tl');
@@ -3804,7 +3813,7 @@ document.addEventListener('mousemove',function(e){
     if(sbp){sbp.style.left=(parseFloat(sbp.style.left)+dx2)+'px';sbp.style.top=(parseFloat(sbp.style.top)+dy2)+'px';}
     var sbr=document.getElementById('sbr-'+dragN.id);
     if(sbr){sbr.style.left=(parseFloat(sbr.style.left)+dx2)+'px';sbr.style.top=(parseFloat(sbr.style.top)+dy2)+'px';}
-    updateAttLines();renderConns();
+    scheduleConns(true);
   }
   if(dragSb){
     var rSb=vp.getBoundingClientRect();
@@ -3829,21 +3838,21 @@ document.addEventListener('mousemove',function(e){
     dragAtt.x=(e.clientX-r2.left-px)/scale-dox;dragAtt.y=(e.clientY-r2.top-py)/scale-doy;
     var el2=document.getElementById('att-'+dragAtt.id);
     if(el2){el2.style.left=dragAtt.x+'px';el2.style.top=dragAtt.y+'px';}
-    renderConns();
+    scheduleConns(true);
   }
   if(dragImg){
     var r3=vp.getBoundingClientRect();
     dragImg.x=(e.clientX-r3.left-px)/scale-dox;dragImg.y=(e.clientY-r3.top-py)/scale-doy;
     var el3=document.getElementById('img-'+dragImg.id);
     if(el3){el3.style.left=dragImg.x+'px';el3.style.top=dragImg.y+'px';}
-    renderConns();
+    scheduleConns();
   }
   if(dragNote){
     var r4=vp.getBoundingClientRect();
     dragNote.x=(e.clientX-r4.left-px)/scale-dox;dragNote.y=(e.clientY-r4.top-py)/scale-doy;
     var el4=document.getElementById('note-'+dragNote.id);
     if(el4){el4.style.left=dragNote.x+'px';el4.style.top=dragNote.y+'px';}
-    renderConns();
+    scheduleConns();
   }
   if(resizing){
     var dx=(e.clientX-rsX)/scale,dy=(e.clientY-rsY)/scale;
@@ -3854,7 +3863,7 @@ document.addEventListener('mousemove',function(e){
     else if(rsCorner==='nw'){nw=Math.max(80,rsW-dx);nh=nw/rsAspect;resizing.w=nw;resizing.h=nh;resizing.x=rsOX+(rsW-nw);resizing.y=rsOY+(rsH-nh);}
     var rs2=document.getElementById('img-'+resizing.id);
     if(rs2){rs2.style.width=resizing.w+'px';rs2.style.height=resizing.h+'px';rs2.style.left=resizing.x+'px';rs2.style.top=resizing.y+'px';}
-    renderConns();
+    scheduleConns();
   }
   if(connFrom){
     var r5=vp.getBoundingClientRect();
