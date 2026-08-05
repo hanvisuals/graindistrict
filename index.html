@@ -3955,6 +3955,7 @@ document.addEventListener('mouseup',function(e){
   +'.gd-btn:disabled{opacity:.5;cursor:default;}'
   +'.gd-btn.ghost{background:transparent;color:var(--text-2);border:1px solid var(--border-hi);}'
   +'.gd-btn.ghost:hover{color:#fff;background:rgba(255,255,255,.06);opacity:1;}'
+  +'.gd-btn.danger{background:#e0686a;color:#fff;}'
   +'.gd-row{display:flex;gap:8px;margin-bottom:6px;}'
   +'.gd-link{background:none;border:none;color:var(--text-2);font-family:var(--sans);font-size:12px;cursor:pointer;text-decoration:underline;margin-top:14px;}'
   +'.gd-err{font-size:12px;margin-top:10px;min-height:16px;color:#e0686a;line-height:1.45;}'
@@ -4046,6 +4047,15 @@ document.addEventListener('mouseup',function(e){
   +'  <div class="gd-row" style="margin-top:18px">'
   +'    <button class="gd-btn" id="gdNewBtn">+ New project</button>'
   +'    <button class="gd-btn ghost" id="gdImportBtn" style="max-width:130px">Import</button>'
+  +'  </div>'
+  +'</div></div>'
+  +'<div class="gd-ov" id="gdAskOv"><div class="gd-modal" style="max-width:400px">'
+  +'  <h2 id="gdAskTitle"></h2>'
+  +'  <p class="sub" id="gdAskMsg"></p>'
+  +'  <div class="gd-field" id="gdAskField"><input class="gd-input" id="gdAskInput" type="text"></div>'
+  +'  <div class="gd-row" style="margin-top:14px">'
+  +'    <button class="gd-btn ghost" id="gdAskNo">Cancel</button>'
+  +'    <button class="gd-btn" id="gdAskYes">OK</button>'
   +'  </div>'
   +'</div></div>'
   +'<input type="file" id="gdImportFile" accept="application/json,.json" style="display:none">';
@@ -4266,15 +4276,23 @@ document.addEventListener('mouseup',function(e){
   function offerUpload(){
     dbAll().then(function(list){
       if(!list.length) return;
-      if(!confirm('Bu tarayıcıda kayıtlı '+list.length+' proje var.\n\nHesabına yüklensin mi? (Yerel kopyalar silinmez.)')) return;
-      var i=0;
-      (function next(){
-        if(i>=list.length){ renderHomePanel(); alert(list.length+' proje hesabına yüklendi.'); return; }
-        var p=list[i++];
-        cloud('PUT','/projects/new',{name:p.name,nameManual:true,data:p.data,created_at:p.created_at})
-          .then(next,function(e){ alert('Yükleme yarıda kaldı: '+(e.message||e)); });
-      })();
+      gdAsk({title:'Upload local projects?',
+             message:list.length+' project(s) saved in this browser. Copy them into your account? The local copies are kept.',
+             ok:'Upload'}).then(function(yes){ if(yes) uploadLocal(list); });
     });
+  }
+  function uploadLocal(list){
+    var i=0;
+    (function next(){
+      if(i>=list.length){
+        renderHomePanel();
+        gdAsk({title:'Done',message:list.length+' project(s) copied into your account.',ok:'OK'});
+        return;
+      }
+      var p=list[i++];
+      cloud('PUT','/projects/new',{name:p.name,nameManual:true,data:p.data,created_at:p.created_at})
+        .then(next,function(e){ gdAsk({title:'Upload stopped',message:(e.message||String(e)),ok:'OK'}); });
+    })();
   }
   byId('gdAuthToggle').onclick=function(){ setAuthMode(authMode==='signin'?'signup':'signin'); byId('gdAuthErr').textContent=''; };
   byId('gdAuthBtn').onclick=doAuth;
@@ -4287,6 +4305,48 @@ document.addEventListener('mouseup',function(e){
     try{ return new Date(ts).toLocaleDateString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }
     catch(e){ return ''; }
   }
+  /* ---------- in-app prompt / confirm ----------
+     Not window.prompt/confirm: once a browser has been told to block further
+     dialogs from this page (Chrome offers that checkbox after a couple of
+     alerts) those calls return silently, and renaming or deleting looks
+     simply broken with nothing on screen to explain it. */
+  var askDone=null;
+  function gdAsk(opts){
+    opts=opts||{};
+    return new Promise(function(resolve){
+      askDone=resolve;
+      var ov=byId('gdAskOv');
+      byId('gdAskTitle').textContent=opts.title||'';
+      var msg=byId('gdAskMsg');
+      msg.textContent=opts.message||'';
+      msg.style.display=opts.message?'':'none';
+      var field=byId('gdAskField'), input=byId('gdAskInput');
+      var wantsText=typeof opts.value==='string';
+      field.style.display=wantsText?'':'none';
+      input.value=wantsText?opts.value:'';
+      var yes=byId('gdAskYes');
+      yes.textContent=opts.ok||'OK';
+      yes.classList.toggle('danger',!!opts.danger);
+      ov.classList.add('show');
+      if(wantsText) setTimeout(function(){ input.focus(); input.select(); },40);
+      else setTimeout(function(){ yes.focus(); },40);
+    });
+  }
+  function closeAsk(value){
+    byId('gdAskOv').classList.remove('show');
+    var done=askDone; askDone=null;
+    if(done) done(value);
+  }
+  byId('gdAskYes').onclick=function(){
+    var wantsText=byId('gdAskField').style.display!=='none';
+    closeAsk(wantsText?byId('gdAskInput').value:true);
+  };
+  byId('gdAskNo').onclick=function(){ closeAsk(byId('gdAskField').style.display!=='none'?null:false); };
+  byId('gdAskInput').addEventListener('keydown',function(e){
+    if(e.key==='Enter'){ e.preventDefault(); closeAsk(this.value); }
+    else if(e.key==='Escape'){ e.preventDefault(); closeAsk(null); }
+  });
+
   /* ---------- coverflow project picker ----------
      A vanilla port of the coverflow interaction: one fractional index is the
      single source of truth, transforms are painted straight to the DOM (sixty
@@ -4507,7 +4567,12 @@ document.addEventListener('mouseup',function(e){
     },function(e){ alert('Proje açılamadı: '+(e.message||e)); });
   }
   function delProject(id){
-    if(!confirm('Bu proje kalıcı olarak silinsin mi?')) return;
+    gdAsk({title:'Delete this project?',message:'This cannot be undone.',ok:'Delete',danger:true}).then(function(yes){
+      if(!yes) return;
+      doDelProject(id);
+    });
+  }
+  function doDelProject(id){
     store.del(id).then(function(){
       if(currentProjectId===id) window.gdNewProject();
       if(byId('gdProjOv').classList.contains('show')) openProjects();
@@ -4517,15 +4582,16 @@ document.addEventListener('mouseup',function(e){
   function renameProject(id){
     store.get(id).then(function(p){
       if(!p) return;
-      var n=prompt('Proje adı:',p.name||'Untitled');
-      if(n===null) return;
-      n=n.trim(); if(!n) return;
-      p.name=n; p.nameManual=true;
-      store.put(p).then(function(){
-        if(currentProjectId===id){ currentName=n; currentNameManual=true; }
-        if(byId('gdProjOv').classList.contains('show')) openProjects();
-        renderHomePanel();
-      },function(e){ alert('Ad değiştirilemedi: '+(e.message||e)); });
+      gdAsk({title:'Rename project',value:p.name||'Untitled',ok:'Save'}).then(function(n){
+        if(n===null) return;
+        n=String(n).trim(); if(!n) return;
+        p.name=n; p.nameManual=true;
+        store.put(p).then(function(){
+          if(currentProjectId===id){ currentName=n; currentNameManual=true; }
+          if(byId('gdProjOv').classList.contains('show')) openProjects();
+          renderHomePanel();
+        },function(e){ alert('Ad değiştirilemedi: '+(e.message||e)); });
+      });
     });
   }
 
