@@ -325,10 +325,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 .timeline{flex-shrink:0;height:52px;background:#070707;border-top:1px solid rgba(255,255,255,.07);overflow-x:auto;overflow-y:hidden;display:flex;align-items:center;padding:0 10px;gap:2px;}
 .timeline::-webkit-scrollbar{height:3px;}
 .timeline::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);}
-.tl-block{flex-shrink:0;height:34px;border-radius:3px;cursor:pointer;display:flex;align-items:center;justify-content:center;overflow:hidden;opacity:.72;transition:opacity .1s,height .1s;}
-.tl-block:hover{opacity:1;height:40px;}
-.tl-block.sel{opacity:1;outline:1.5px solid rgba(255,255,255,.65);outline-offset:-1px;height:40px;}
-.tl-block.tl-playing{opacity:1;height:42px;box-shadow:0 0 0 1.5px rgba(255,255,255,.9),0 0 12px rgba(255,255,255,.4);}
+.tl-block{flex-shrink:0;height:34px;border-radius:3px;cursor:pointer;display:flex;align-items:center;justify-content:center;overflow:hidden;opacity:.42;filter:saturate(.5) brightness(.82);transition:opacity .12s,height .12s,filter .12s;}
+.tl-block:hover{opacity:.92;height:40px;filter:saturate(.9) brightness(1);}
+.tl-block.sel{opacity:1;filter:none;outline:1.5px solid rgba(255,255,255,.65);outline-offset:-1px;height:40px;}
+.tl-block.tl-playing{opacity:1;filter:none;height:42px;box-shadow:0 0 0 1.5px rgba(255,255,255,.9),0 0 12px rgba(255,255,255,.4);}
 .tb-menu{position:absolute;bottom:44px;left:50%;transform:translateX(-50%);background:rgba(18,18,18,.97);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:4px;display:none;flex-direction:column;min-width:110px;box-shadow:0 8px 30px rgba(0,0,0,.6);backdrop-filter:blur(20px);}
 .tb-menu.open{display:flex;}
 .tb-menu button{background:none;border:none;color:var(--text-2);font-family:var(--sans);font-size:12px;text-align:left;padding:7px 10px;border-radius:6px;cursor:pointer;transition:all .12s;white-space:nowrap;}
@@ -504,6 +504,12 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 /* GUIDE */
 .guide{position:fixed;bottom:80px;right:1rem;background:rgba(10,10,10,.97);border:1px solid var(--border);border-radius:8px;padding:12px 14px;z-index:50;backdrop-filter:blur(20px);pointer-events:none;min-width:185px;}
 .guide-title{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--text-3);text-transform:uppercase;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border);pointer-events:auto;cursor:grab;display:flex;align-items:center;gap:6px;}
+.guide-x{margin-left:auto;background:none;border:none;color:var(--text-3);font-size:15px;line-height:1;cursor:pointer;padding:0 2px;pointer-events:auto;}
+.guide-x:hover{color:#fff;}
+.guide.hidden{display:none;}
+.guide-show{position:fixed;bottom:80px;right:1rem;z-index:50;display:none;width:26px;height:26px;border-radius:50%;border:1px solid var(--border-hi);background:rgba(10,10,10,.9);color:var(--text-3);font-family:var(--sans);font-size:12px;cursor:pointer;backdrop-filter:blur(12px);}
+.guide-show:hover{color:#fff;}
+.guide-show.show{display:block;}
 .guide-title::before{content:'⠿';font-size:12px;color:rgba(255,255,255,.25);letter-spacing:-2px;}
 .guide-title.dragging{cursor:grabbing;}
 .guide-sec{font-family:var(--sans);font-size:10px;font-weight:600;letter-spacing:.06em;color:var(--text-3);text-transform:uppercase;margin:10px 0 5px;}
@@ -596,13 +602,25 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 .s3-topbar-labels{position:absolute;left:50%;transform:translateX(-50%);display:flex;gap:60px;}
 .s3-col-label{font-family:var(--mono);font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.18);}
 .s3-body{display:flex;flex:1;overflow:hidden;min-height:0;}
-.s3-col-left{flex:0 0 44%;overflow-y:auto;padding:36px 40px;scroll-behavior:smooth;}
+.s3-col-left{flex:0 0 44%;overflow-y:auto;padding:44px 48px;scroll-behavior:smooth;}
+.s3-col-left>*{max-width:62ch;}
 .s3-col-left::-webkit-scrollbar{width:3px;}
 .s3-col-left::-webkit-scrollbar-track{background:transparent;}
 .s3-col-left::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px;}
 .s3-col-divider{width:1px;background:rgba(255,255,255,.06);flex-shrink:0;}
-.s3-col-right{flex:1;overflow:hidden;display:flex;flex-direction:column;padding:36px 40px;}
-.s3-plan-ta{flex:1;width:100%;background:none;border:none;outline:none;color:rgba(255,255,255,.6);font-family:var(--mono);font-size:12.5px;font-weight:400;line-height:1.95;resize:none;user-select:text;overflow-y:auto;}
+.s3-col-right{flex:1;overflow:hidden;display:flex;flex-direction:column;padding:44px 48px;}
+.s3-plan-wrap{position:relative;flex:1;min-height:0;}
+.s3-plan-hl,.s3-plan-ta{position:absolute;inset:0;margin:0;padding:0;border:none;font-family:var(--mono);font-size:12.5px;font-weight:400;line-height:1.95;white-space:pre-wrap;overflow-wrap:break-word;word-break:normal;tab-size:4;overflow-y:auto;}
+.s3-plan-hl{pointer-events:none;color:rgba(255,255,255,.62);}
+.s3-plan-ta{background:none;outline:none;resize:none;user-select:text;color:transparent;caret-color:#fff;}
+.s3-plan-ta::selection{background:rgba(255,255,255,.22);}
+.p-tag{font-weight:700;letter-spacing:.02em;}
+.p-voiceover{color:var(--c-vo);}
+.p-broll{color:var(--c-br);}
+.p-music{color:var(--c-mu);}
+.p-transition{color:var(--c-tr);}
+.p-other{color:rgba(255,255,255,.5);}
+.p-tc{color:rgba(255,255,255,.3);}
 .s3-plan-ta::placeholder{color:rgba(255,255,255,.13);}
 .s3-plan-ta::-webkit-scrollbar{width:3px;}
 .s3-plan-ta::-webkit-scrollbar-track{background:transparent;}
@@ -676,6 +694,14 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 .song-up-col{flex:1;min-width:0;}
 .song-len-col{flex-shrink:0;width:92px;}
 .song-len-in{width:100%;text-align:center;}
+
+/* canvas top bar: hierarchy instead of eight identical pills */
+.cbar .tbar-r .btn{background:transparent;border-color:rgba(255,255,255,.09);color:var(--text-3);font-weight:400;}
+.cbar .tbar-r .btn:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.18);color:#fff;}
+.cbar .tbar-r .btn.on{background:rgba(255,255,255,.11);border-color:rgba(255,255,255,.2);color:#fff;}
+.cbar .tbar-r #previewBtn{background:#fff;border-color:#fff;color:#000;font-weight:600;margin-left:8px;}
+.cbar .tbar-r #previewBtn:hover{background:rgba(255,255,255,.86);border-color:rgba(255,255,255,.86);color:#000;}
+.cbar .tbar-r #btnExport,.cbar .tbar-r #btnExport:hover{color:#fff;border-color:rgba(255,255,255,.22);}
 </style>
 </head>
 <body>
@@ -887,7 +913,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
     <div class="s3-col-left" id="briefContent"></div>
     <div class="s3-col-divider"></div>
     <div class="s3-col-right">
-      <textarea class="s3-plan-ta" id="scriptTa" spellcheck="false" placeholder="[VOICEOVER] 00:00-00:30 - ..."></textarea>
+      <div class="s3-plan-wrap">
+        <pre class="s3-plan-hl" id="planHl" aria-hidden="true"></pre>
+        <textarea class="s3-plan-ta" id="scriptTa" spellcheck="false" placeholder="[VOICEOVER] 00:00-00:30 - ..."></textarea>
+      </div>
     </div>
   </div>
 </div>
@@ -909,7 +938,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
       <button class="btn" id="recceBtn" onclick="toggleReccePanel()" style="display:none">recce</button>
       <button class="btn" id="previewBtn" onclick="openPlayback()">▶ preview</button>
       <button class="btn" onclick="surpriseMe()">surprise me</button>
-      <button class="btn" onclick="doExport()">export</button>
+      <button class="btn" id="btnExport" onclick="doExport()">export</button>
       <button class="btn" onclick="if(window.gdNewProject)gdNewProject();projectBrief='';projectConstraints='';clearRecce();var rp=document.getElementById('reccePanel');if(rp)rp.classList.remove('open');show('s1')">new</button>
     </div>
   </div>
@@ -1026,8 +1055,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
   </div>
   <div class="translate-bar" id="translateBar"><div class="translate-bar-fill" id="translateBarFill"></div></div>
   <div class="translate-toast" id="translateToast">Successfully translated</div>
-  <div class="guide">
-    <div class="guide-title">legend</div>
+  <button class="guide-show" id="guideShow" title="Show legend">?</button>
+  <div class="guide" id="guidePanel">
+    <div class="guide-title">legend<button class="guide-x" id="guideHide" title="Hide">&times;</button></div>
     <div class="guide-sec">block types</div>
     <div class="gi"><div class="gd" style="background:var(--c-vo)"></div>voiceover</div>
     <div class="gi"><div class="gd" style="background:var(--c-br)"></div>b-roll</div>
@@ -1688,6 +1718,19 @@ function msTick(t,dur){
 
 /* ===== DRAGGABLE LEGEND ===== */
 (function(){
+  // the legend earns its place the first few times and then just covers cards;
+  // dismissing it is remembered
+  var panel=document.getElementById('guidePanel'), hideBtn=document.getElementById('guideHide'), showBtn=document.getElementById('guideShow');
+  function applyGuide(){
+    var hidden=false;
+    try{ hidden=localStorage.getItem('gd_guide_hidden')==='1'; }catch(e){}
+    if(panel) panel.classList.toggle('hidden',hidden);
+    if(showBtn) showBtn.classList.toggle('show',hidden);
+  }
+  if(hideBtn) hideBtn.onclick=function(e){ e.stopPropagation(); try{localStorage.setItem('gd_guide_hidden','1');}catch(err){} applyGuide(); };
+  if(showBtn) showBtn.onclick=function(){ try{localStorage.removeItem('gd_guide_hidden');}catch(err){} applyGuide(); };
+  applyGuide();
+
   var dragging=false,ox=0,oy=0;
   document.addEventListener('mousedown',function(e){
     var t=e.target.closest&&e.target.closest('.guide-title');
@@ -2231,7 +2274,7 @@ function goToChoice(){
     setTimeout(function(){el.classList.remove('screen-blur-out');genScript();},270);
   }else{
     document.getElementById('briefContent').innerHTML='';
-    document.getElementById('scriptTa').value='';
+    document.getElementById('scriptTa').value='';planHighlight();
     document.getElementById('wc').textContent='0 blocks';
     show('s3');
   }
@@ -2252,7 +2295,7 @@ function pcContinue(){
     genScript();
   }else{
     document.getElementById('briefContent').innerHTML='';
-    document.getElementById('scriptTa').value='';
+    document.getElementById('scriptTa').value='';planHighlight();
     document.getElementById('wc').textContent='0 blocks';
     show('s3');
   }
@@ -2294,6 +2337,49 @@ function genScript(){
     show('s3');
   }).catch(function(e){stopLoad();alert('Error: '+e.message);show('s1');});
 }
+
+/* The plan is edited as plain text but reads far better with its block types
+   coloured. A textarea can't style its own contents, so a matching layer is
+   painted behind it and the textarea's own text is made transparent. */
+var P_TYPES={voiceover:1,broll:1,music:1,transition:1};
+function planHighlight(){
+  var ta=document.getElementById('scriptTa'), hl=document.getElementById('planHl');
+  if(!ta||!hl) return;
+  var html=ta.value
+    .replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];})
+    .replace(/^([ \t]*)\[([A-Za-z_]+)\]/gm,function(m,sp,t){
+      var k=t.toLowerCase();
+      return sp+'<span class="p-tag '+(P_TYPES[k]?'p-'+k:'p-other')+'">['+t+']</span>';
+    })
+    .replace(/(\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2})/g,'<span class="p-tc">$1</span>');
+  // the trailing newline keeps the last line scrollable in step with the textarea
+  hl.innerHTML=html+'\n';
+  hl.scrollTop=ta.scrollTop;
+}
+(function(){
+  var ta=document.getElementById('scriptTa');
+  if(!ta) return;
+  ta.addEventListener('input',planHighlight);
+  ta.addEventListener('scroll',function(){
+    var hl=document.getElementById('planHl');
+    if(hl) hl.scrollTop=ta.scrollTop;
+  });
+  // The plan text gets replaced from several places (generate, surprise me,
+  // opening a project, clearing the board) and assigning .value fires no
+  // event. Rather than remember a repaint at every one of those call sites -
+  // where a single miss leaves the plan looking blank, since the textarea's
+  // own text is transparent - the assignment itself repaints.
+  try{
+    var desc=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value');
+    if(desc&&desc.get&&desc.set){
+      Object.defineProperty(ta,'value',{
+        configurable:true,
+        get:function(){ return desc.get.call(this); },
+        set:function(v){ desc.set.call(this,v); planHighlight(); }
+      });
+    }
+  }catch(e){ /* if this isn't allowed, 'input' still covers typing */ }
+})();
 
 function parseBlocks(text){
   var btypes=(PT_BLOCKS[projectType]||PT_BLOCKS.youtube).join('|');
@@ -3970,6 +4056,17 @@ document.addEventListener('mouseup',function(e){
   // no close button, and clicking the backdrop must not dismiss it
   +'.gd-ov.gate{background:rgba(0,0,0,.92);}'
   +'.gd-ov.gate .gd-x{display:none;}'
+  +'#gdAuthOv{flex-direction:column;gap:30px;}'
+  +'#gdAuthOv>*{position:relative;z-index:1;}'
+  +'.gd-brand{text-align:center;}'
+  +'.gd-brand-mark{font-family:var(--mono);font-size:16px;letter-spacing:.44em;text-indent:.44em;text-transform:uppercase;color:#fff;}'
+  +'.gd-brand-rule{width:34px;height:1px;background:rgba(255,255,255,.2);margin:14px auto 12px;}'
+  +'.gd-brand-sub{font-family:var(--sans);font-size:10px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:var(--text-3);}'
+  +'.gd-ov.gate{background:radial-gradient(ellipse 70% 55% at 50% 42%,#151515 0%,#0a0a0a 55%,#040404 100%);}'
+  +'.gd-ov.gate::after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.05;background-image:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.85%27 numOctaves=%273%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E");}'
+  +'.gd-ov.gate .gd-modal{padding:30px 30px 26px;}'
+  +'.gd-ov.gate .gd-modal h2{font-size:21px;letter-spacing:-.01em;}'
+  +'body.gd-gated .gd-acct{display:none;}'
   +'.cf-wrap{--cf-card:clamp(150px,20vw,240px);width:100%;}'
   +'.cf-wrap{position:relative;}'
   +'.cf-frame{position:relative;overflow:hidden;padding:34px 0 22px;outline:none;cursor:grab;touch-action:pan-y;}'
@@ -4028,7 +4125,13 @@ document.addEventListener('mouseup',function(e){
   var root=document.createElement('div');
   root.innerHTML=''
   +'<div class="gd-acct" id="gdAcct"></div>'
-  +'<div class="gd-ov" id="gdAuthOv"><div class="gd-modal">'
+  +'<div class="gd-ov" id="gdAuthOv">'
+  +'  <div class="gd-brand">'
+  +'    <div class="gd-brand-mark">HVNVSLS</div>'
+  +'    <div class="gd-brand-rule"></div>'
+  +'    <div class="gd-brand-sub">cut-by-cut shot plans</div>'
+  +'  </div>'
+  +'  <div class="gd-modal">'
   +'  <button class="gd-x" data-close>&times;</button>'
   +'  <h2 id="gdAuthTitle">Sign in</h2>'
   +'  <p class="sub" id="gdAuthSub">Sign in and your projects follow you to any computer.</p>'
@@ -4221,7 +4324,8 @@ document.addEventListener('mouseup',function(e){
   // until you sign in, rather than a dialog you can dismiss to look around.
   function applyAuthGate(){
     var ov=byId('gdAuthOv');
-    if(token){ ov.classList.remove('gate'); ov.classList.remove('show'); return; }
+    if(token){ ov.classList.remove('gate'); ov.classList.remove('show'); document.body.classList.remove('gd-gated'); return; }
+    document.body.classList.add('gd-gated');
     byId('gdAuthErr').textContent='';
     setAuthMode('signin');
     ov.classList.add('show','gate');
@@ -4266,7 +4370,9 @@ document.addEventListener('mouseup',function(e){
       // than carrying on over a board that belongs to the signed-out session
       clearBoard();
       show('s0');
-      renderAccount(); updateHomePanel();
+      renderAccount();
+      applyAuthGate();   // also drops the body class that hides the account pills
+      updateHomePanel();
       offerUpload();
     },function(e){
       btn.disabled=false;
