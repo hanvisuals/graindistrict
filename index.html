@@ -3846,7 +3846,29 @@ document.addEventListener('mouseup',function(e){
   var currentProjectId=null, currentCreated=null, currentName=null, currentNameManual=false;
   var saveTimer=null;
 
-  try{ token=localStorage.getItem('gd_token')||null; userEmail=localStorage.getItem('gd_email')||null; }catch(e){}
+  // "keep me signed in" decides WHERE the session lives: localStorage survives
+  // closing the browser, sessionStorage deliberately does not. Reads check
+  // both, so either choice is picked up on load.
+  function readStoredSession(){
+    try{
+      return {t: localStorage.getItem('gd_token')||sessionStorage.getItem('gd_token')||null,
+              e: localStorage.getItem('gd_email')||sessionStorage.getItem('gd_email')||null};
+    }catch(e){ return {t:null,e:null}; }
+  }
+  function writeStoredSession(t,e,remember){
+    try{
+      var keep=remember?localStorage:sessionStorage, drop=remember?sessionStorage:localStorage;
+      drop.removeItem('gd_token'); drop.removeItem('gd_email');
+      keep.setItem('gd_token',t); keep.setItem('gd_email',e);
+    }catch(err){}
+  }
+  function clearStoredSession(){
+    try{
+      localStorage.removeItem('gd_token'); localStorage.removeItem('gd_email');
+      sessionStorage.removeItem('gd_token'); sessionStorage.removeItem('gd_email');
+    }catch(e){}
+  }
+  (function(){ var s=readStoredSession(); token=s.t; userEmail=s.e; })();
 
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function uid(){ return 'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
@@ -3959,6 +3981,12 @@ document.addEventListener('mouseup',function(e){
   +'.gd-pact.del:hover{color:#e0686a;}'
   +'.gd-empty{text-align:center;color:var(--text-3);font-size:12px;padding:26px 0;line-height:1.6;}'
   +'.gd-note{font-size:11px;color:var(--text-3);line-height:1.5;margin-top:14px;padding-top:13px;border-top:1px solid var(--border);}'
+  +'.gd-check{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-2);cursor:pointer;margin:2px 0 14px;user-select:none;}'
+  +'.gd-check input{width:15px;height:15px;accent-color:#fff;cursor:pointer;margin:0;}'
+  // when there is no session the sign-in overlay is a gate, not a dialog:
+  // no close button, and clicking the backdrop must not dismiss it
+  +'.gd-ov.gate{background:rgba(0,0,0,.92);}'
+  +'.gd-ov.gate .gd-x{display:none;}'
   +'.gd-home{position:fixed;top:48px;left:0;bottom:0;width:252px;background:var(--surface);border-right:1px solid var(--border);z-index:9000;display:none;flex-direction:column;padding:16px 14px;}'
   +'.gd-home.show{display:flex;}'
   +'.gd-home-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}'
@@ -3968,7 +3996,13 @@ document.addEventListener('mouseup',function(e){
   +'.gd-home-list{flex:1;overflow:auto;display:flex;flex-direction:column;gap:7px;margin-top:12px;}'
   +'.gd-home-tab{position:fixed;top:58px;left:0;z-index:9000;display:none;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-left:none;border-radius:0 9px 9px 0;color:var(--text-2);cursor:pointer;padding:9px 10px 9px 8px;font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;}'
   +'.gd-home-tab.show{display:flex;}'
-  +'.gd-home-tab:hover{color:#fff;}';
+  +'.gd-home-tab:hover{color:#fff;}'
+  // the account widget is fixed on top of the page, so the app's own top bars
+  // have to reserve room for it or their right-hand buttons end up sitting
+  // underneath it. --gd-acct-w is measured from the widget itself, because its
+  // width changes with the signed-in email.
+  +'.cbar{padding-right:calc(1.2rem + var(--gd-acct-w,0px));}'
+  +'.s3-topbar{padding-right:calc(24px + var(--gd-acct-w,0px));}';
   var st=document.createElement('style'); st.textContent=css; document.head.appendChild(st);
 
   /* ---------- DOM ---------- */
@@ -3981,10 +4015,11 @@ document.addEventListener('mouseup',function(e){
   +'  <p class="sub" id="gdAuthSub">Sign in and your projects follow you to any computer.</p>'
   +'  <div class="gd-field"><label>Email</label><input class="gd-input" id="gdEmail" type="email" autocomplete="email" placeholder="you@email.com"></div>'
   +'  <div class="gd-field"><label>Password</label><input class="gd-input" id="gdPass" type="password" autocomplete="current-password" placeholder="••••••••"></div>'
+  +'  <label class="gd-check"><input type="checkbox" id="gdRemember" checked><span>Keep me signed in</span></label>'
   +'  <button class="gd-btn" id="gdAuthBtn">Sign in</button>'
   +'  <div class="gd-err" id="gdAuthErr"></div>'
   +'  <button class="gd-link" id="gdAuthToggle">Create an account</button>'
-  +'  <div class="gd-note">Without an account everything still works — projects just stay in this browser.</div>'
+  +'  <div class="gd-note">Your projects are saved to your account, so they are there from any computer you sign in from.</div>'
   +'</div></div>'
   +'<div class="gd-ov" id="gdProjOv"><div class="gd-modal">'
   +'  <button class="gd-x" data-close>&times;</button>'
@@ -4008,7 +4043,17 @@ document.addEventListener('mouseup',function(e){
   function setSaveState(s){
     var el=byId('gdSaveState'); if(!el) return;
     el.textContent=(s==='saving'?'saving…':s==='saved'?(token?'✓ saved to cloud':'✓ saved'):s==='error'?'⚠ save failed':'');
+    syncAcctSpace(); // the text width changes, so the reserved space must too
   }
+  // publish the widget's real width so the top bars can keep clear of it
+  function syncAcctSpace(){
+    var a=byId('gdAcct'); if(!a) return;
+    requestAnimationFrame(function(){
+      var w=Math.ceil(a.getBoundingClientRect().width);
+      document.documentElement.style.setProperty('--gd-acct-w', (w?(w+16):0)+'px');
+    });
+  }
+  window.addEventListener('resize',syncAcctSpace);
 
   /* ---------- serialize / restore full board state ---------- */
   function serialize(){
@@ -4113,18 +4158,51 @@ document.addEventListener('mouseup',function(e){
       byId('gdSignIn').onclick=openAuth;
     }
     byId('gdProjBtn').onclick=openProjects;
+    syncAcctSpace();
+  }
+  // wipe the board back to a blank slate. Signing out has to do this: leaving
+  // the previous account's work on screen doesn't just feel wrong, it means a
+  // pending autosave would land that project in local storage after the
+  // session ended.
+  function clearBoard(){
+    nodes=[]; attShots=[]; imgNodes=[]; noteNodes=[]; conns=[]; nid=1;
+    nodeDrawerClosed={};
+    topic=''; projectBrief=''; projectConstraints='';
+    recceImages=[];
+    songName=''; songDuration=0; songAnalysis=null; songURL=null;
+    var sta=byId('scriptTa'); if(sta) sta.value='';
+    undoStack=[]; undoIdx=-1;
+    scale=1; px=60; py=180;
+    selId=null; selImgId=null; selNoteId=null;
+    if(typeof renderAll==='function') renderAll();
   }
   function signOut(expired){
+    // drop any queued save first, or it fires after the token is gone and
+    // quietly writes this account's project into local storage
+    if(saveTimer){ clearTimeout(saveTimer); saveTimer=null; }
     token=null; userEmail=null;
-    try{ localStorage.removeItem('gd_token'); localStorage.removeItem('gd_email'); }catch(e){}
+    clearStoredSession();
     window.gdNewProject();
+    clearBoard();
+    show('s0');
     renderAccount(); updateHomePanel();
     if(expired) alert('Oturumun sona erdi. Tekrar giriş yapman gerekiyor.');
+    applyAuthGate();
   }
 
   /* ---------- auth ---------- */
   var authMode='signin';
   function openAuth(){ byId('gdAuthErr').textContent=''; setAuthMode('signin'); byId('gdAuthOv').classList.add('show'); setTimeout(function(){ byId('gdEmail').focus(); },40); }
+  // No session means no app: the overlay becomes a gate covering everything
+  // until you sign in, rather than a dialog you can dismiss to look around.
+  function applyAuthGate(){
+    var ov=byId('gdAuthOv');
+    if(token){ ov.classList.remove('gate'); ov.classList.remove('show'); return; }
+    byId('gdAuthErr').textContent='';
+    setAuthMode('signin');
+    ov.classList.add('show','gate');
+    setTimeout(function(){ var el=byId('gdEmail'); if(el) el.focus(); },60);
+  }
   function setAuthMode(m){
     authMode=m;
     byId('gdAuthTitle').textContent=(m==='signin'?'Sign in':'Create account');
@@ -4149,11 +4227,21 @@ document.addEventListener('mouseup',function(e){
       });
     }).then(function(d){
       btn.disabled=false;
+      // flush any queued save while still signed out, so it lands locally and
+      // offerUpload below can carry it into the account - otherwise a board
+      // built in the last second before signing in would be dropped by the
+      // clearBoard() that follows
+      if(saveTimer) doSave();
       token=d.token; userEmail=d.email;
-      try{ localStorage.setItem('gd_token',token); localStorage.setItem('gd_email',userEmail); }catch(e){}
+      var remember=byId('gdRemember'); remember=!remember||remember.checked;
+      writeStoredSession(token,userEmail,remember);
       byId('gdAuthOv').classList.remove('show');
       byId('gdPass').value='';
       window.gdNewProject();
+      // land on the home screen with the account's own project list, rather
+      // than carrying on over a board that belongs to the signed-out session
+      clearBoard();
+      show('s0');
       renderAccount(); updateHomePanel();
       offerUpload();
     },function(e){
@@ -4313,6 +4401,7 @@ document.addEventListener('mouseup',function(e){
   function updateHomePanel(){
     var panel=byId('gdHome'), tab=byId('gdHomeTab');
     if(!panel||!tab) return;
+    if(!token){ panel.classList.remove('show'); tab.classList.remove('show'); return; }
     var onHome=byId('s0')&&byId('s0').classList.contains('active');
     var hidden=false;
     try{ hidden=localStorage.getItem('gd_home_hidden')==='1'; }catch(e){}
@@ -4331,8 +4420,8 @@ document.addEventListener('mouseup',function(e){
 
   /* ---------- overlay close ---------- */
   [].forEach.call(document.querySelectorAll('.gd-ov'),function(ov){
-    ov.addEventListener('click',function(e){ if(e.target===ov) ov.classList.remove('show'); });
-    [].forEach.call(ov.querySelectorAll('[data-close]'),function(b){ b.onclick=function(){ ov.classList.remove('show'); }; });
+    ov.addEventListener('click',function(e){ if(e.target===ov&&!ov.classList.contains('gate')) ov.classList.remove('show'); });
+    [].forEach.call(ov.querySelectorAll('[data-close]'),function(b){ b.onclick=function(){ if(!ov.classList.contains('gate')) ov.classList.remove('show'); }; });
   });
 
   /* ---------- wrap saveHistory for autosave ---------- */
@@ -4355,6 +4444,7 @@ document.addEventListener('mouseup',function(e){
 
   renderAccount();
   updateHomePanel();
+  applyAuthGate();
 })();
 </script>
 </body>
