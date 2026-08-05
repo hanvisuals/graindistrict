@@ -720,8 +720,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 }
 .glow:hover::after{opacity:1;}
 /* cards get a wider, fainter pool - a button-strength glow on something this
-   big reads as a highlight rather than a sheen */
-.nc.glow::after{background:radial-gradient(260px circle at var(--gx,50%) var(--gy,50%),rgba(201,168,76,.10),transparent 66%);}
+   big reads as a highlight rather than a sheen. Plain white rather than the
+   accent gold, which tinted the card instead of just lighting it. */
+.nc.glow::after{background:radial-gradient(260px circle at var(--gx,50%) var(--gy,50%),rgba(255,255,255,.065),transparent 66%);}
 .cf-card.glow::after{background:radial-gradient(220px circle at var(--gx,50%) var(--gy,50%),rgba(255,255,255,.12),transparent 64%);}
 /* a small give on press, so a click feels answered */
 .btn:active,.gd-pill:active,.cf-act:active,.gd-btn:active,.kb-cont:active{transform:scale(.97);}
