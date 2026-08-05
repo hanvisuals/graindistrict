@@ -2943,12 +2943,35 @@ function moveDragGroup(dx,dy){
   var t='translate3d('+dx+'px,'+dy+'px,0)';
   dragEls.forEach(function(d){ d.el.style.transform=d.base?(t+' '+d.base):t; });
 }
+// Writes the group's new positions straight onto the elements it already has.
+// The alternative - renderCanvas() - throws the whole canvas away and builds
+// it again, which recreates the storyboard <img> and makes the browser fetch
+// and decode it afresh, blanking the frame for a few hundred milliseconds
+// after every single drop. It also costs 100ms+ on a big board, for a move
+// that only needs two numbers written.
+function commitDragGroup(mdx,mdy){
+  if(!dragEls)return;
+  dragEls.forEach(function(d){
+    var el=d.el;
+    if(el.classList.contains('att-line'))return;   // redrawn from scratch below
+    var l=parseFloat(el.style.left)||0, t=parseFloat(el.style.top)||0;
+    el.style.left=(l+mdx)+'px';
+    el.style.top=(t+mdy)+'px';
+  });
+}
 function endDragGroup(){
   if(!dragEls)return;
   dragEls.forEach(function(d){
     d.el.style.transform=d.base;
     d.el.style.willChange='';
+    // Simply removing the suppression would re-apply animation:att-in to an
+    // element that has been on screen the whole time, and the browser plays a
+    // newly applied animation from the start - which is a fade-in from
+    // transparent, i.e. the card blinking the moment you let go. It has
+    // already made its entrance, so keep it suppressed for good; a genuine
+    // re-render builds a fresh element and decides again.
     d.el.classList.remove('gd-dragging');
+    d.el.classList.add('att-noanim');
   });
   dragEls=null;dragAttStart=null;
 }
@@ -3963,6 +3986,9 @@ document.addEventListener('mousemove',function(e){
 document.addEventListener('mouseup',function(e){
   if(e.button===1||(e.button===0&&isPan)){isPan=false;vp.classList.remove('panning');}
   if(e.button===0&&dragN){
+    // commit before the transforms are dropped, so there is no frame where
+    // the card sits at its old position
+    if(dragNMoved)commitDragGroup(dragN.x-dragNStartX,dragN.y-dragNStartY);
     endDragGroup();
     var el=document.getElementById('nc-'+dragN.id);
     if(el){el.classList.remove('drag');el.style.zIndex='';}
@@ -3973,7 +3999,11 @@ document.addEventListener('mouseup',function(e){
     // was about to dispatch its native 'click' event to, silently breaking
     // card selection (and any button click bubbling through it) entirely
     if(dragNMoved){
-      saveHistory();renderCanvas();renderTL();renderBlockList();renderConns();
+      // positions are already written; only this block's chain lines and the
+      // connections between blocks actually depend on where it ended up
+      saveHistory();
+      updateAttLines(dragN.id);
+      renderConns();
     }
     dragN=null;dragNMoved=false;
   }
