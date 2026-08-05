@@ -904,6 +904,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
     <div class="ctopic" id="ctopic"></div>
     <div class="tbar-r">
       <button class="btn" onclick="undoAction()" title="Ctrl+Z">undo</button>
+      <button class="btn" onclick="redoAction()" title="Ctrl+Shift+Z / Ctrl+Y">redo</button>
       <button class="btn" onclick="fitScreen()">fit</button>
       <button class="btn on" id="scriptBtn" onclick="toggleScript()">script</button>
       <button class="btn" id="recceBtn" onclick="toggleReccePanel()" style="display:none">recce</button>
@@ -1302,17 +1303,41 @@ function stopLoad(){
 }
 
 // Undo
+var undoLiveCaptured=false;
 function saveHistory(){
-  var state={nodes:JSON.stringify(nodes),attShots:JSON.stringify(attShots),imgNodes:JSON.stringify(imgNodes),noteNodes:JSON.stringify(noteNodes),conns:JSON.stringify(conns)};
   undoStack=undoStack.slice(0,undoIdx+1);
-  undoStack.push(state);
+  undoStack.push(captureState());
   if(undoStack.length>30)undoStack.shift();
   undoIdx=undoStack.length-1;
+  undoLiveCaptured=false;
 }
 function undoAction(){
   if(undoIdx<=0)return;
+  // undoStack only ever holds the state captured right BEFORE each action -
+  // the live state (after the most recent action) was never itself on the
+  // stack. The first undo in a chain stashes it as the new top entry so
+  // redo has somewhere to land back on; undoLiveCaptured tracks whether
+  // that's already been done so redoing back to the edge and undoing again
+  // doesn't push a duplicate (which would silently eat an undo press).
+  if(!undoLiveCaptured){
+    undoStack.push(captureState());
+    undoIdx=undoStack.length-1;
+    undoLiveCaptured=true;
+  }
   undoIdx--;
-  var state=undoStack[undoIdx];
+  applyHistoryState(undoStack[undoIdx]);
+  showUndoHint('undone');
+}
+function redoAction(){
+  if(undoIdx>=undoStack.length-1)return;
+  undoIdx++;
+  applyHistoryState(undoStack[undoIdx]);
+  showUndoHint('redone');
+}
+function captureState(){
+  return {nodes:JSON.stringify(nodes),attShots:JSON.stringify(attShots),imgNodes:JSON.stringify(imgNodes),noteNodes:JSON.stringify(noteNodes),conns:JSON.stringify(conns)};
+}
+function applyHistoryState(state){
   nodes=JSON.parse(state.nodes);
   attShots=JSON.parse(state.attShots);
   imgNodes=JSON.parse(state.imgNodes);
@@ -1320,7 +1345,10 @@ function undoAction(){
   conns=JSON.parse(state.conns);
   selId=null;selImgId=null;selNoteId=null;
   renderAll();
+}
+function showUndoHint(text){
   var hint=document.getElementById('undoHint');
+  hint.textContent=text;
   hint.classList.add('show');
   setTimeout(function(){hint.classList.remove('show');},1200);
 }
@@ -1373,10 +1401,12 @@ document.addEventListener('keydown',function(e){
   if(e.code==='Space'&&!e.target.isContentEditable&&e.target.tagName!=='TEXTAREA'&&e.target.tagName!=='INPUT'){e.preventDefault();spaceDown=true;}
   if(e.code==='Escape'){closeModal();cancelConn();}
   if((e.code==='Delete'||e.code==='Backspace')&&!e.target.isContentEditable&&e.target.tagName!=='TEXTAREA'&&e.target.tagName!=='INPUT'){
-    if(selImgId!==null){saveHistory();delImgNode(selImgId);selImgId=null;}
-    else if(selNoteId!==null){saveHistory();delNoteNode(selNoteId);selNoteId=null;}
+    if(selImgId!==null){e.preventDefault();saveHistory();delImgNode(selImgId);selImgId=null;}
+    else if(selNoteId!==null){e.preventDefault();saveHistory();delNoteNode(selNoteId);selNoteId=null;}
+    else if(selId!==null){e.preventDefault();saveHistory();delNode(selId);}
   }
-  if((e.ctrlKey||e.metaKey)&&e.code==='KeyZ'){e.preventDefault();undoAction();}
+  if((e.ctrlKey||e.metaKey)&&e.code==='KeyZ'&&!e.shiftKey){e.preventDefault();undoAction();}
+  if((e.ctrlKey||e.metaKey)&&(e.code==='KeyY'||(e.code==='KeyZ'&&e.shiftKey))){e.preventDefault();redoAction();}
 });
 document.addEventListener('keyup',function(e){
   if(e.code==='Space'){spaceDown=false;if(isPan){isPan=false;document.getElementById('vp').classList.remove('panning');}}
@@ -2330,8 +2360,16 @@ function runLimited(taskFns,limit){
 }
 
 function genPlanChunked(planSys,planMsg,totalSec,li){
-  var segLen=180;
-  var numSegments=Math.min(6,Math.max(2,Math.round(totalSec/segLen)));
+  // segment length drives how much text ONE request has to generate, which
+  // is the thing that actually decides whether it finishes in time. The cut
+  // rules ask for roughly one BROLL cut every 3s plus voiceover lines, so a
+  // 180s segment meant ~90 blocks (~2500-3000 tokens) from a single
+  // non-streamed call - 45-60s of generation, right at the timeout cliff.
+  // That's why long videos failed while short ones (a single untimed call)
+  // always worked. Smaller segments = each call finishes well inside its
+  // window, and more of them run in parallel, so total time still drops.
+  var segLen=110;
+  var numSegments=Math.min(9,Math.max(2,Math.round(totalSec/segLen)));
   // keep the beat short - this is a quick outline, not the script itself.
   // asking for "2-3 sentences" per segment used to make even this "fast"
   // structuring step take 20-30s+ on its own
@@ -2342,8 +2380,10 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
 
   setGenStage('structuring outline');
   // never let the "quick outline" step alone stall the whole screen - if it
-  // isn't back in 8s, just split the runtime evenly and move on
-  return withTimeout(apiRetry(outlineSys,outlineMsg),8000,null).then(function(raw){
+  // isn't back in time, just split the runtime evenly and move on. This one
+  // really is small (a few sentences of JSON) so it stays comparatively
+  // tight, but 8s was cutting off a call that simply hadn't started yet
+  return withTimeout(apiRetry(outlineSys,outlineMsg),25000,null).then(function(raw){
     var segs=[];
     if(raw){try{var m=raw.match(/\[[\s\S]*\]/);if(m)segs=JSON.parse(m[0]);}catch(e){}}
     if(segs.length<2)segs=evenSplit;
@@ -2351,13 +2391,18 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
     function buildSegSys(seg,idx){
       return planSys+'\n\nSEGMENT WRITING TASK: You are writing ONLY the part of this video from '+seg.start+' to '+seg.end+' (segment '+(idx+1)+' of '+segs.length+').\n\nFull outline for context - do NOT repeat other segments, just stay consistent with this arc:\n'+outlineText+'\n\nTHIS SEGMENT\'S BEAT: '+(seg.beat||'continue the story')+'\n\nStart your first block at exactly '+seg.start+'. Do not write any blocks before '+seg.start+' or after '+seg.end+'.';
     }
-    // every real API call below is capped at 30s (see withTimeout) - a
-    // segment that doesn't answer in time contributes an empty string
-    // instead of hanging the whole screen; it just reads as a "shortfall"
-    // and gets one redraft attempt like any other short segment
+    // every real API call below is capped (see withTimeout) - a segment that
+    // doesn't answer in time contributes an empty string instead of hanging
+    // the whole screen; it just reads as a "shortfall" and gets one redraft
+    // attempt like any other short segment. The cap has to comfortably clear
+    // how long the model actually spends generating a segment's worth of
+    // blocks, not just how long a user is willing to stare at a spinner -
+    // too tight and EVERY call reports "timed out" with no response at all,
+    // which is exactly the failure that made long videos unusable while
+    // short ones (one untimed call) kept working fine.
     setGenStage('writing '+segs.length+' segments (up to 3 at a time)');
     var segTasks=segs.map(function(seg,idx){
-      return function(){return withTimeout(apiRetry(buildSegSys(seg,idx),buildUserContent(planMsg)).then(function(t){return t.trim();}),30000,'','segment '+(idx+1));};
+      return function(){return withTimeout(apiRetry(buildSegSys(seg,idx),buildUserContent(planMsg)).then(function(t){return t.trim();}),90000,'','segment '+(idx+1));};
     });
     return runLimited(segTasks,3).then(function(texts){
       // a segment can under-deliver (model stops early within its own
@@ -2376,7 +2421,7 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
       }
       setGenStage('redrafting '+shortfalls.length+' short segment'+(shortfalls.length>1?'s':''));
       var repairTasks=shortfalls.map(function(idx){
-        return function(){return withTimeout(apiRetry(buildSegSys(segs[idx],idx),buildUserContent(planMsg)).then(function(t){return t.trim();}),30000,texts[idx],'redraft '+(idx+1));};
+        return function(){return withTimeout(apiRetry(buildSegSys(segs[idx],idx),buildUserContent(planMsg)).then(function(t){return t.trim();}),90000,texts[idx],'redraft '+(idx+1));};
       });
       return runLimited(repairTasks,3).then(function(repaired){
         repaired.forEach(function(t,i){if(t)texts[shortfalls[i]]=t;});
@@ -2384,6 +2429,17 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
         return ensureFullPlan(planSys,texts.join('\n'));
       });
     });
+  }).then(function(text){
+    // last-resort safety net: if the whole parallel pipeline came back with
+    // nothing usable, don't hand the caller an empty string (which surfaces
+    // as "The AI could not produce a usable plan this time"). Fall back to
+    // the plain single-request path - the same one short videos use, which
+    // has been reliable throughout - and give it a long, patient window.
+    if(parseBlocks(text||'').length)return text;
+    console.warn('[plan] chunked pipeline produced no usable blocks - falling back to a single-pass request');
+    setGenStage('retrying in one pass');
+    return withTimeout(apiRetry(planSys,buildUserContent(planMsg)),150000,'','single-pass fallback')
+      .then(function(t){return ensureFullPlan(planSys,(t||'').trim());});
   });
 }
 
@@ -2436,12 +2492,15 @@ function layoutBlocks(blocks){
     else{if(!cur){cur={audio:null,visuals:[]};groups.push(cur);}cur.visuals.push(i);}
   });
   var pos=new Array(blocks.length);
-  var gx=60,GROUP_GAP=110,AUDIO_Y=80,VISUAL_Y=330;
-  groups.forEach(function(g){
+  // enough room for a few collapsed shot-cards below the audio block before
+  // its group's visual row - reflowAttShots pushes the visual row further
+  // down dynamically if the audio block's stack grows past this anyway
+  var gx=60,GROUP_GAP=110,AUDIO_Y=80,VISUAL_Y=420;
+  groups.forEach(function(g,gi){
     var cols=Math.max(g.visuals.length,1);
     var w=cols*NC_W+(cols-1)*NC_GAP;
-    if(g.audio!=null)pos[g.audio]={x:Math.round(gx+(w-NC_W)/2),y:AUDIO_Y};
-    g.visuals.forEach(function(bi,j){pos[bi]={x:gx+j*(NC_W+NC_GAP),y:VISUAL_Y};});
+    if(g.audio!=null)pos[g.audio]={x:Math.round(gx+(w-NC_W)/2),y:AUDIO_Y,grp:gi};
+    g.visuals.forEach(function(bi,j){pos[bi]={x:gx+j*(NC_W+NC_GAP),y:VISUAL_Y,grp:gi};});
     gx+=w+GROUP_GAP;
   });
   return pos;
@@ -2532,7 +2591,7 @@ function buildCanvas(){
       var sd=[].concat.apply([],chunkResults);
       var posArr=layoutBlocks(blocks);
       nodes=blocks.map(function(b,i){
-        return{id:nid++,type:b.type,tcStart:b.tcStart,tcEnd:b.tcEnd,content:b.content,shots:[],x:posArr[i].x,y:posArr[i].y};
+        return{id:nid++,type:b.type,tcStart:b.tcStart,tcEnd:b.tcEnd,content:b.content,shots:[],x:posArr[i].x,y:posArr[i].y,grp:posArr[i].grp};
       });
       attShots=[];imgNodes=[];noteNodes=[];conns=[];undoStack=[];undoIdx=-1;
       nodeDrawerClosed={};sbSeed=Math.floor(Math.random()*99999)+1;
@@ -3252,6 +3311,25 @@ function reflowAttShots(parentId){
     // so length varies a lot from card to card
     curY+=(el?el.offsetHeight:FALLBACK_H)+GAP;
   });
+  // an audio block's own shot-card stack can grow tall enough to run into
+  // the visual-cut row laid out underneath it - layoutBlocks only leaves
+  // room for a handful of collapsed cards, and expanding a card (or
+  // replanning with longer text) can push past that. Reported as "planning
+  // again just piles new cards on the old ones" - it wasn't; the audio
+  // block's stack and the next row's own cards were overlapping on screen.
+  // Push just that group's visual nodes further down to stay clear instead.
+  if(nodeAtts.length&&AUDIO_BLOCKS[pnode.type]&&pnode.grp!=null){
+    var needed=curY+GAP,pushed=false;
+    nodes.forEach(function(sib){
+      if(sib.grp===pnode.grp&&!AUDIO_BLOCKS[sib.type]&&sib.y<needed){
+        sib.y=needed;pushed=true;
+        var sEl=document.getElementById('nc-'+sib.id);
+        if(sEl)sEl.style.top=sib.y+'px';
+        reflowAttShots(sib.id);
+      }
+    });
+    if(pushed)renderCanvas();
+  }
 }
 
 function tcToSec(tc){
