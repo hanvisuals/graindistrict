@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HVNVSLS</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -3832,56 +3831,84 @@ document.addEventListener('mouseup',function(e){
   tlScroll=false;
 });
 
-/* ===================== GRAINDISTRICT CLOUD — auth + projects + autosave ===================== */
+/* ===================== GRAINDISTRICT — projects + autosave ===================== */
 (function(){
-  var SUPA_URL='https://ajpjgkkqitgtomefjpng.supabase.co';
-  var SUPA_KEY='sb_publishable_sbN0reZyuPuqsO7S86vgaw_hdwAl5jJ';
-  if(!window.supabase||!window.supabase.createClient){ console.error('[gd] Supabase library failed to load'); return; }
-  var sb=window.supabase.createClient(SUPA_URL,SUPA_KEY);
-  window.gdSB=sb;
+  /* Projects live in this browser, in IndexedDB. No account, no third-party
+     service, nothing to configure - it works the moment the page loads.
+     IndexedDB rather than localStorage because a board carries base64
+     storyboard and recce images, which blow past localStorage's ~5MB ceiling
+     almost immediately. Export/import covers moving work between machines. */
+  var DB_NAME='graindistrict', STORE='projects', DB_V=1;
 
-  var me=null;                 // {id,email}
   var currentProjectId=null;
-  var currentRole='owner';
+  var currentCreated=null;
+  var currentNameManual=false;
   var saveTimer=null;
 
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function uid(){ return 'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+
+  /* ---------- storage ---------- */
+  var dbp=null;
+  function db(){
+    if(dbp) return dbp;
+    dbp=new Promise(function(res,rej){
+      var rq=indexedDB.open(DB_NAME,DB_V);
+      rq.onupgradeneeded=function(){
+        var d=rq.result;
+        if(!d.objectStoreNames.contains(STORE)) d.createObjectStore(STORE,{keyPath:'id'});
+      };
+      rq.onsuccess=function(){ res(rq.result); };
+      rq.onerror=function(){ rej(rq.error); };
+    });
+    return dbp;
+  }
+  function tx(mode,fn){
+    return db().then(function(d){
+      return new Promise(function(res,rej){
+        var t=d.transaction(STORE,mode), rq=fn(t.objectStore(STORE));
+        t.oncomplete=function(){ res(rq?rq.result:undefined); };
+        t.onerror=function(){ rej(t.error); };
+        t.onabort=function(){ rej(t.error); };
+      });
+    });
+  }
+  function dbPut(p){ return tx('readwrite',function(s){ return s.put(p); }); }
+  function dbGet(id){ return tx('readonly',function(s){ return s.get(id); }); }
+  function dbAll(){ return tx('readonly',function(s){ return s.getAll(); }).then(function(list){
+    return (list||[]).sort(function(a,b){ return (b.updated_at||0)-(a.updated_at||0); });
+  }); }
+  function dbDel(id){ return tx('readwrite',function(s){ return s.delete(id); }); }
 
   /* ---------- styles ---------- */
   var css=''
   +'.gd-acct{position:fixed;top:9px;right:14px;z-index:10000;display:flex;align-items:center;gap:8px;font-family:var(--sans);}'
   +'.gd-pill{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:500;padding:6px 13px;border-radius:999px;border:1px solid var(--border-hi);background:rgba(255,255,255,.05);color:var(--text-2);cursor:pointer;transition:all .15s;backdrop-filter:blur(8px);}'
   +'.gd-pill:hover{background:rgba(255,255,255,.1);color:#fff;}'
-  +'.gd-pill.primary{background:#fff;color:#000;border-color:#fff;}'
-  +'.gd-pill.primary:hover{background:rgba(255,255,255,.85);}'
-  +'.gd-email{font-family:var(--mono);font-size:10px;color:var(--text-3);letter-spacing:.02em;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'
   +'.gd-save-state{font-family:var(--mono);font-size:9px;letter-spacing:.04em;color:var(--text-3);text-transform:uppercase;}'
   +'.gd-ov{position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:20px;}'
   +'.gd-ov.show{display:flex;}'
-  +'.gd-modal{position:relative;width:100%;max-width:430px;background:var(--surface);border:1px solid var(--border-hi);border-radius:16px;padding:26px;box-shadow:0 30px 80px rgba(0,0,0,.6);}'
+  +'.gd-modal{position:relative;width:100%;max-width:460px;background:var(--surface);border:1px solid var(--border-hi);border-radius:16px;padding:26px;box-shadow:0 30px 80px rgba(0,0,0,.6);}'
   +'.gd-modal h2{font-family:var(--sans);font-size:19px;font-weight:600;margin-bottom:4px;}'
   +'.gd-modal p.sub{font-size:12px;color:var(--text-3);margin-bottom:18px;}'
-  +'.gd-field{margin-bottom:12px;}'
-  +'.gd-field label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3);margin-bottom:5px;font-weight:600;}'
-  +'.gd-input{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:var(--sans);font-size:14px;padding:11px 13px;outline:none;transition:border-color .15s;}'
-  +'.gd-input:focus{border-color:var(--border-hi);}'
-  +'.gd-btn{width:100%;background:#fff;color:#000;border:none;border-radius:10px;font-family:var(--sans);font-size:14px;font-weight:600;padding:12px;cursor:pointer;transition:opacity .15s;margin-top:6px;}'
+  +'.gd-btn{width:100%;background:#fff;color:#000;border:none;border-radius:10px;font-family:var(--sans);font-size:14px;font-weight:600;padding:12px;cursor:pointer;transition:opacity .15s;}'
   +'.gd-btn:hover{opacity:.85;}'
-  +'.gd-btn:disabled{opacity:.5;cursor:default;}'
-  +'.gd-link{background:none;border:none;color:var(--text-2);font-family:var(--sans);font-size:12px;cursor:pointer;text-decoration:underline;margin-top:14px;}'
-  +'.gd-err{font-size:12px;margin-top:10px;min-height:16px;color:#e0686a;}'
+  +'.gd-btn.ghost{background:transparent;color:var(--text-2);border:1px solid var(--border-hi);}'
+  +'.gd-btn.ghost:hover{color:#fff;background:rgba(255,255,255,.06);opacity:1;}'
+  +'.gd-row{display:flex;gap:8px;margin-bottom:6px;}'
   +'.gd-x{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--text-3);font-size:20px;cursor:pointer;line-height:1;}'
   +'.gd-x:hover{color:#fff;}'
   +'.gd-plist{display:flex;flex-direction:column;gap:7px;}'
   +'.gd-pbody{max-height:46vh;overflow:auto;margin:0 -6px;padding:0 6px;}'
   +'.gd-pcard{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border:1px solid var(--border);border-radius:11px;background:rgba(255,255,255,.02);cursor:pointer;transition:all .14s;}'
   +'.gd-pcard:hover{border-color:var(--border-hi);background:rgba(255,255,255,.05);}'
+  +'.gd-pcard.cur{border-color:var(--accent,#d8c47a);}'
   +'.gd-pcard .nm{font-size:13px;font-weight:500;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
   +'.gd-pcard .mt{font-family:var(--mono);font-size:9px;color:var(--text-3);margin-top:3px;letter-spacing:.02em;}'
-  +'.gd-prole{font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.05em;padding:3px 7px;border-radius:6px;border:1px solid var(--border);color:var(--text-2);flex-shrink:0;}'
-  +'.gd-pdel{background:none;border:none;color:var(--text-3);cursor:pointer;font-size:13px;padding:4px;flex-shrink:0;}'
-  +'.gd-pdel:hover{color:#e0686a;}'
-  +'.gd-empty{text-align:center;color:var(--text-3);font-size:12px;padding:26px 0;}'
+  +'.gd-pact{background:none;border:none;color:var(--text-3);cursor:pointer;font-size:12px;padding:4px;flex-shrink:0;}'
+  +'.gd-pact:hover{color:#fff;}'
+  +'.gd-pact.del:hover{color:#e0686a;}'
+  +'.gd-empty{text-align:center;color:var(--text-3);font-size:12px;padding:26px 0;line-height:1.6;}'
   +'.gd-sec{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);font-weight:700;margin:16px 0 6px;}'
   +'.gd-home{position:fixed;top:48px;left:0;bottom:0;width:252px;background:var(--surface);border-right:1px solid var(--border);z-index:9000;display:none;flex-direction:column;padding:16px 14px;}'
   +'.gd-home.show{display:flex;}'
@@ -3898,33 +3925,33 @@ document.addEventListener('mouseup',function(e){
   /* ---------- DOM ---------- */
   var root=document.createElement('div');
   root.innerHTML=''
-  +'<div class="gd-acct" id="gdAcct"></div>'
-  +'<div class="gd-ov" id="gdAuthOv"><div class="gd-modal">'
-  +'  <button class="gd-x" data-close>&times;</button>'
-  +'  <h2 id="gdAuthTitle">Sign in</h2>'
-  +'  <p class="sub">Save your projects to the cloud and share them.</p>'
-  +'  <div class="gd-field"><label>Email</label><input class="gd-input" id="gdEmail" type="email" autocomplete="email" placeholder="you@email.com"></div>'
-  +'  <div class="gd-field"><label>Password</label><input class="gd-input" id="gdPass" type="password" autocomplete="current-password" placeholder="••••••••"></div>'
-  +'  <button class="gd-btn" id="gdAuthBtn">Sign in</button>'
-  +'  <div class="gd-err" id="gdAuthErr"></div>'
-  +'  <button class="gd-link" id="gdAuthToggle">Create an account</button>'
-  +'</div></div>'
+  +'<div class="gd-acct" id="gdAcct">'
+  +'  <span class="gd-save-state" id="gdSaveState"></span>'
+  +'  <button class="gd-pill" id="gdProjBtn">&#9636; Projects</button>'
+  +'</div>'
   +'<div class="gd-ov" id="gdProjOv"><div class="gd-modal">'
   +'  <button class="gd-x" data-close>&times;</button>'
   +'  <h2>Your projects</h2>'
-  +'  <p class="sub">Open a saved project, or start a new one.</p>'
-  +'  <button class="gd-btn" id="gdNewBtn" style="margin-bottom:6px;">+ New project</button>'
+  +'  <p class="sub">Saved in this browser, automatically. Export to move them to another computer.</p>'
+  +'  <div class="gd-row">'
+  +'    <button class="gd-btn" id="gdNewBtn">+ New project</button>'
+  +'    <button class="gd-btn ghost" id="gdImportBtn" style="max-width:130px">Import</button>'
+  +'  </div>'
   +'  <div class="gd-pbody" id="gdProjBody"></div>'
   +'</div></div>'
   +'<div class="gd-home" id="gdHome">'
   +'  <div class="gd-home-head"><span class="gd-home-title">Projects</span><button class="gd-home-hide" id="gdHomeHide" title="Hide panel">&laquo;</button></div>'
   +'  <div class="gd-home-list" id="gdHomeList"></div>'
   +'</div>'
-  +'<button class="gd-home-tab" id="gdHomeTab" title="Show projects">&raquo; <span>projects</span></button>';
+  +'<button class="gd-home-tab" id="gdHomeTab" title="Show projects">&raquo; <span>projects</span></button>'
+  +'<input type="file" id="gdImportFile" accept="application/json,.json" style="display:none">';
   document.body.appendChild(root);
 
   function byId(id){ return document.getElementById(id); }
-  function setSaveState(s){ var el=byId('gdSaveState'); if(!el)return; el.textContent=(s==='saving'?'saving…':s==='saved'?'✓ saved':s==='error'?'⚠ save failed':''); }
+  function setSaveState(s){
+    var el=byId('gdSaveState'); if(!el) return;
+    el.textContent=(s==='saving'?'saving…':s==='saved'?'✓ saved':s==='error'?'⚠ save failed':'');
+  }
 
   /* ---------- serialize / restore full board state ---------- */
   function serialize(){
@@ -3959,153 +3986,222 @@ document.addEventListener('mouseup',function(e){
 
   /* ---------- autosave ---------- */
   function onBoard(){ var s=byId('s5'); return s&&s.classList.contains('active'); }
+  function hasContent(){
+    return (nodes&&nodes.length)||(noteNodes&&noteNodes.length)||(imgNodes&&imgNodes.length);
+  }
   function scheduleSave(){
-    if(!me||!onBoard()) return;
-    if(currentRole==='viewer') return;
-    if((nodes&&nodes.length)||(noteNodes&&noteNodes.length)||(imgNodes&&imgNodes.length)){
-      if(saveTimer) clearTimeout(saveTimer);
-      saveTimer=setTimeout(doSave,1400);
-    }
+    if(!onBoard()||!hasContent()) return;
+    if(saveTimer) clearTimeout(saveTimer);
+    saveTimer=setTimeout(doSave,1200);
+  }
+  function autoName(){
+    return ((topic||projectBrief||'Untitled')+'').replace(/\s+/g,' ').trim().slice(0,80)||'Untitled';
   }
   function doSave(){
-    if(!me||!onBoard()||currentRole==='viewer') return;
-    var data=serialize();
-    var name=((topic||projectBrief||'Untitled')+'').replace(/\s+/g,' ').trim().slice(0,80)||'Untitled';
+    // clearing this marks "nothing pending" - the beforeunload handler uses it
+    // to decide whether there's genuinely unsaved work, and without this a
+    // spent timer id kept looking like a pending save forever
+    if(saveTimer){ clearTimeout(saveTimer); saveTimer=null; }
+    if(!onBoard()||!hasContent()) return;
+    var now=Date.now();
+    if(!currentProjectId){ currentProjectId=uid(); currentCreated=now; currentNameManual=false; }
+    var rec={
+      id:currentProjectId,
+      name:currentNameManual?(currentName||autoName()):autoName(),
+      nameManual:currentNameManual,
+      data:serialize(),
+      created_at:currentCreated||now,
+      updated_at:now
+    };
+    currentName=rec.name;
     setSaveState('saving');
-    if(!currentProjectId){
-      sb.from('projects').insert({name:name,data:data}).select('id').single().then(function(r){
-        if(r.error){ setSaveState('error'); console.error('[gd] create',r.error); return; }
-        currentProjectId=r.data.id; currentRole='owner'; setSaveState('saved');
-      });
-    } else {
-      sb.from('projects').update({name:name,data:data}).eq('id',currentProjectId).then(function(r){
-        if(r.error){ setSaveState('error'); console.error('[gd] update',r.error); return; }
-        setSaveState('saved');
-      });
-    }
-  }
-  window.gdNewProject=function(){ currentProjectId=null; currentRole='owner'; setSaveState(''); };
-
-  /* ---------- account widget ---------- */
-  function renderAccount(){
-    var a=byId('gdAcct'); if(!a) return;
-    if(me){
-      a.innerHTML='<span class="gd-save-state" id="gdSaveState"></span>'
-        +'<button class="gd-pill" id="gdProjBtn">&#9729; Projects</button>'
-        +'<span class="gd-email">'+esc(me.email)+'</span>'
-        +'<button class="gd-pill" id="gdSignOut">Sign out</button>';
-      byId('gdProjBtn').onclick=openProjects;
-      byId('gdSignOut').onclick=function(){ sb.auth.signOut(); currentProjectId=null; };
-    } else {
-      a.innerHTML='<button class="gd-pill primary" id="gdSignIn">Sign in</button>';
-      byId('gdSignIn').onclick=openAuth;
-    }
-  }
-
-  /* ---------- auth modal ---------- */
-  var authMode='signin';
-  function openAuth(){ byId('gdAuthErr').textContent=''; byId('gdAuthOv').classList.add('show'); setTimeout(function(){byId('gdEmail').focus();},40); }
-  function setAuthMode(m){
-    authMode=m;
-    byId('gdAuthTitle').textContent=(m==='signin'?'Sign in':'Create account');
-    byId('gdAuthBtn').textContent=(m==='signin'?'Sign in':'Create account');
-    byId('gdAuthToggle').textContent=(m==='signin'?'Create an account':'I already have an account');
-  }
-  function doAuth(){
-    var email=byId('gdEmail').value.trim(), pass=byId('gdPass').value, err=byId('gdAuthErr'), btn=byId('gdAuthBtn');
-    err.style.color='#e0686a'; err.textContent='';
-    if(!email||!pass){ err.textContent='Enter your email and password.'; return; }
-    btn.disabled=true;
-    var p=(authMode==='signup')?sb.auth.signUp({email:email,password:pass}):sb.auth.signInWithPassword({email:email,password:pass});
-    p.then(function(r){
-      btn.disabled=false;
-      if(r.error){ err.textContent=r.error.message||'Failed.'; return; }
-      if(authMode==='signup'&&!(r.data&&r.data.session)){
-        err.style.color='#7aa37a'; err.textContent='Account created. Check your email to confirm, then sign in.'; setAuthMode('signin'); return;
+    dbPut(rec).then(function(){
+      setSaveState('saved');
+      renderHomePanel();
+    },function(e){
+      setSaveState('error');
+      console.error('[gd] save failed',e);
+      // the usual cause is the browser refusing more storage - say so plainly
+      // rather than leaving a silent "save failed" with no explanation
+      if(e&&(e.name==='QuotaExceededError'||/quota/i.test(e.message||''))){
+        alert('This browser is out of storage space for saved projects.\n\nOpen Projects and export or delete older ones to free space.');
       }
-      byId('gdAuthOv').classList.remove('show'); byId('gdPass').value='';
     });
   }
-  byId('gdAuthToggle').onclick=function(){ setAuthMode(authMode==='signin'?'signup':'signin'); byId('gdAuthErr').textContent=''; };
-  byId('gdAuthBtn').onclick=doAuth;
-  byId('gdPass').addEventListener('keydown',function(e){ if(e.key==='Enter') doAuth(); });
+  var currentName=null;
+  window.gdNewProject=function(){
+    currentProjectId=null; currentCreated=null; currentName=null; currentNameManual=false;
+    setSaveState('');
+  };
 
-  /* ---------- projects modal ---------- */
-  function pcard(p,role){
-    var dt=p.updated_at?new Date(p.updated_at).toLocaleDateString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';
-    return '<div class="gd-pcard" data-open="'+p.id+'">'
-      +'<div style="min-width:0"><div class="nm">'+esc(p.name||'Untitled')+'</div><div class="mt">'+dt+'</div></div>'
-      +'<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">'
-      +'<span class="gd-prole">'+esc(role)+'</span>'
-      +(role==='owner'?'<button class="gd-pdel" data-del="'+p.id+'" title="Delete">✕</button>':'')
+  /* ---------- project cards ---------- */
+  function fmtDate(ts){
+    if(!ts) return '';
+    try{ return new Date(ts).toLocaleDateString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }
+    catch(e){ return ''; }
+  }
+  function pcard(p){
+    return '<div class="gd-pcard'+(p.id===currentProjectId?' cur':'')+'" data-open="'+esc(p.id)+'">'
+      +'<div style="min-width:0"><div class="nm">'+esc(p.name||'Untitled')+'</div><div class="mt">'+fmtDate(p.updated_at)+'</div></div>'
+      +'<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">'
+      +'<button class="gd-pact" data-rename="'+esc(p.id)+'" title="Rename">✎</button>'
+      +'<button class="gd-pact" data-export="'+esc(p.id)+'" title="Export to file">↓</button>'
+      +'<button class="gd-pact del" data-del="'+esc(p.id)+'" title="Delete">✕</button>'
       +'</div></div>';
   }
+  function wireCards(container){
+    [].forEach.call(container.querySelectorAll('[data-open]'),function(el){
+      el.onclick=function(e){
+        if(e.target.closest('[data-del],[data-rename],[data-export]')) return;
+        openProject(el.getAttribute('data-open'));
+      };
+    });
+    [].forEach.call(container.querySelectorAll('[data-del]'),function(el){
+      el.onclick=function(e){ e.stopPropagation(); delProject(el.getAttribute('data-del')); };
+    });
+    [].forEach.call(container.querySelectorAll('[data-rename]'),function(el){
+      el.onclick=function(e){ e.stopPropagation(); renameProject(el.getAttribute('data-rename')); };
+    });
+    [].forEach.call(container.querySelectorAll('[data-export]'),function(el){
+      el.onclick=function(e){ e.stopPropagation(); exportProject(el.getAttribute('data-export')); };
+    });
+  }
+
+  /* ---------- projects modal ---------- */
   function openProjects(){
-    var body=byId('gdProjBody'); body.innerHTML='<div class="gd-empty">Loading…</div>';
+    var body=byId('gdProjBody');
+    body.innerHTML='<div class="gd-empty">Loading…</div>';
     byId('gdProjOv').classList.add('show');
-    var mineP=sb.from('projects').select('id,name,updated_at').eq('owner_id',me.id).order('updated_at',{ascending:false});
-    var sharedP=sb.from('project_members').select('role,project:projects(id,name,updated_at)').ilike('email',me.email);
-    Promise.all([mineP,sharedP]).then(function(res){
-      var mine=res[0], shared=res[1], html='';
-      html+='<div class="gd-sec">Owned by me</div>';
-      if(mine.data&&mine.data.length){ html+='<div class="gd-plist">'; mine.data.forEach(function(p){ html+=pcard(p,'owner'); }); html+='</div>'; }
-      else html+='<div class="gd-empty">No projects yet — build a board and it saves here automatically.</div>';
-      var sh=(shared.data||[]).filter(function(r){return r.project;});
-      if(sh.length){ html+='<div class="gd-sec">Shared with me</div><div class="gd-plist">'; sh.forEach(function(r){ html+=pcard(r.project,r.role); }); html+='</div>'; }
+    dbAll().then(function(list){
+      if(!list.length){
+        body.innerHTML='<div class="gd-empty">No projects yet.<br>Build a board — it saves here automatically.</div>';
+        return;
+      }
+      var html='<div class="gd-plist">';
+      list.forEach(function(p){ html+=pcard(p); });
+      html+='</div>';
       body.innerHTML=html;
-      body.querySelectorAll('[data-open]').forEach(function(el){ el.onclick=function(e){ if(e.target.closest('[data-del]'))return; openProject(el.getAttribute('data-open')); }; });
-      body.querySelectorAll('[data-del]').forEach(function(el){ el.onclick=function(e){ e.stopPropagation(); delProject(el.getAttribute('data-del')); }; });
-    },function(e){ body.innerHTML='<div class="gd-empty">Could not load projects.</div>'; console.error('[gd] list',e); });
+      wireCards(body);
+    },function(e){
+      body.innerHTML='<div class="gd-empty">Could not read saved projects.</div>';
+      console.error('[gd] list',e);
+    });
   }
   function openProject(id){
-    sb.from('projects').select('*').eq('id',id).single().then(function(r){
-      if(r.error){ alert('Could not open project.'); console.error(r.error); return; }
-      currentProjectId=r.data.id;
-      sb.rpc('project_role',{pid:id}).then(function(rr){
-        currentRole=(rr&&rr.data)||(r.data.owner_id===me.id?'owner':'viewer');
-        restore(r.data.data);
-        byId('gdProjOv').classList.remove('show');
-        setSaveState('saved');
-      });
-    });
+    dbGet(id).then(function(p){
+      if(!p){ alert('That project could not be found.'); return; }
+      currentProjectId=p.id;
+      currentCreated=p.created_at||Date.now();
+      currentName=p.name||null;
+      currentNameManual=!!p.nameManual;
+      restore(p.data);
+      byId('gdProjOv').classList.remove('show');
+      setSaveState('saved');
+    },function(e){ alert('Could not open that project.'); console.error(e); });
   }
   function delProject(id){
     if(!confirm('Delete this project permanently?')) return;
-    sb.from('projects').delete().eq('id',id).then(function(r){
-      if(r.error){ alert('Delete failed.'); return; }
-      if(currentProjectId===id) currentProjectId=null;
+    dbDel(id).then(function(){
+      if(currentProjectId===id) window.gdNewProject();
       if(byId('gdProjOv').classList.contains('show')) openProjects();
-      updateHomePanel();
+      renderHomePanel();
+    },function(e){ alert('Delete failed.'); console.error(e); });
+  }
+  function renameProject(id){
+    dbGet(id).then(function(p){
+      if(!p) return;
+      var n=prompt('Project name:', p.name||'Untitled');
+      if(n===null) return;
+      n=n.trim(); if(!n) return;
+      p.name=n; p.nameManual=true;
+      dbPut(p).then(function(){
+        if(currentProjectId===id){ currentName=n; currentNameManual=true; }
+        if(byId('gdProjOv').classList.contains('show')) openProjects();
+        renderHomePanel();
+      });
     });
   }
-  byId('gdNewBtn').onclick=function(){ window.gdNewProject(); byId('gdProjOv').classList.remove('show'); show('s0'); };
 
-  /* ---------- home projects panel (one-click, hideable) ---------- */
-  function wireCards(container){
-    [].forEach.call(container.querySelectorAll('[data-open]'),function(el){ el.onclick=function(e){ if(e.target.closest('[data-del]'))return; openProject(el.getAttribute('data-open')); }; });
-    [].forEach.call(container.querySelectorAll('[data-del]'),function(el){ el.onclick=function(e){ e.stopPropagation(); delProject(el.getAttribute('data-del')); }; });
+  /* ---------- export / import ----------
+     Without an account there's no cloud copy, so this is how work moves
+     between machines - and the backup if this browser's data is ever
+     cleared. A project file is just the same JSON that gets stored. */
+  function download(filename,text){
+    var b=new Blob([text],{type:'application/json'});
+    var u=URL.createObjectURL(b);
+    var a=document.createElement('a');
+    a.href=u; a.download=filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(u); },1000);
   }
+  function safeName(s){ return String(s||'project').replace(/[^\w\-]+/g,'_').slice(0,50); }
+  function exportProject(id){
+    dbGet(id).then(function(p){
+      if(!p) return;
+      download('graindistrict_'+safeName(p.name)+'.json', JSON.stringify({gd:1,project:p},null,2));
+    });
+  }
+  function importFile(file){
+    var fr=new FileReader();
+    fr.onload=function(){
+      var parsed;
+      try{ parsed=JSON.parse(fr.result); }
+      catch(e){ alert('That file is not a valid project file.'); return; }
+      var p=parsed&&parsed.project?parsed.project:parsed;
+      if(!p||!p.data){ alert('That file is not a valid project file.'); return; }
+      // always a NEW id, so importing never silently overwrites something
+      var rec={
+        id:uid(),
+        name:(p.name||'Imported project'),
+        nameManual:true,
+        data:p.data,
+        created_at:p.created_at||Date.now(),
+        updated_at:Date.now()
+      };
+      dbPut(rec).then(function(){
+        if(byId('gdProjOv').classList.contains('show')) openProjects();
+        renderHomePanel();
+      },function(e){ alert('Import failed.'); console.error(e); });
+    };
+    fr.readAsText(file);
+  }
+
+  byId('gdProjBtn').onclick=openProjects;
+  byId('gdNewBtn').onclick=function(){
+    window.gdNewProject();
+    byId('gdProjOv').classList.remove('show');
+    show('s0');
+  };
+  byId('gdImportBtn').onclick=function(){ byId('gdImportFile').click(); };
+  byId('gdImportFile').onchange=function(){
+    if(this.files&&this.files[0]) importFile(this.files[0]);
+    this.value='';
+  };
+
+  /* ---------- home projects panel ---------- */
   function renderHomePanel(){
-    var list=byId('gdHomeList'); if(!list||!me) return;
-    var mineP=sb.from('projects').select('id,name,updated_at').eq('owner_id',me.id).order('updated_at',{ascending:false});
-    var sharedP=sb.from('project_members').select('role,project:projects(id,name,updated_at)').ilike('email',me.email);
-    Promise.all([mineP,sharedP]).then(function(res){
-      var mine=res[0].data||[], shared=(res[1].data||[]).filter(function(r){return r.project;});
+    var list=byId('gdHomeList'); if(!list) return;
+    dbAll().then(function(all){
+      if(!all.length){
+        list.innerHTML='<div class="gd-empty">No projects yet.<br>Build a board — it saves here automatically.</div>';
+        return;
+      }
       var html='';
-      mine.forEach(function(p){ html+=pcard(p,'owner'); });
-      if(shared.length){ html+='<div class="gd-sec">Shared with me</div>'; shared.forEach(function(r){ html+=pcard(r.project,r.role); }); }
-      if(!html) html='<div class="gd-empty">No projects yet.<br>Build a board — it saves here automatically.</div>';
+      all.forEach(function(p){ html+=pcard(p); });
       list.innerHTML=html;
       wireCards(list);
-    },function(e){ list.innerHTML='<div class="gd-empty">Could not load.</div>'; console.error('[gd] home',e); });
+    },function(e){
+      list.innerHTML='<div class="gd-empty">Could not read saved projects.</div>';
+      console.error('[gd] home',e);
+    });
   }
   function updateHomePanel(){
     var panel=byId('gdHome'), tab=byId('gdHomeTab');
     if(!panel||!tab) return;
     var onHome=byId('s0')&&byId('s0').classList.contains('active');
     var hidden=localStorage.getItem('gd_home_hidden')==='1';
-    if(me&&onHome&&!hidden){ panel.classList.add('show'); tab.classList.remove('show'); renderHomePanel(); }
-    else if(me&&onHome&&hidden){ panel.classList.remove('show'); tab.classList.add('show'); }
+    if(onHome&&!hidden){ panel.classList.add('show'); tab.classList.remove('show'); renderHomePanel(); }
+    else if(onHome&&hidden){ panel.classList.remove('show'); tab.classList.add('show'); }
     else { panel.classList.remove('show'); tab.classList.remove('show'); }
   }
   byId('gdHomeHide').onclick=function(){ localStorage.setItem('gd_home_hidden','1'); updateHomePanel(); };
@@ -4114,7 +4210,11 @@ document.addEventListener('mouseup',function(e){
   /* ---------- wrap show(): reset project context on home + refresh panel ---------- */
   if(typeof show==='function'){
     var _origShow=show;
-    show=function(id){ _origShow.apply(this,arguments); if(id==='s0'){ currentProjectId=null; currentRole='owner'; setSaveState(''); } updateHomePanel(); };
+    show=function(id){
+      _origShow.apply(this,arguments);
+      if(id==='s0'){ window.gdNewProject(); }
+      updateHomePanel();
+    };
   }
 
   /* ---------- overlay close ---------- */
@@ -4129,9 +4229,19 @@ document.addEventListener('mouseup',function(e){
     saveHistory=function(){ _origSave.apply(this,arguments); scheduleSave(); };
   }
 
-  /* ---------- session bootstrap ---------- */
-  sb.auth.onAuthStateChange(function(_e,s){ me=s?{id:s.user.id,email:s.user.email}:null; renderAccount(); updateHomePanel(); });
-  sb.auth.getSession().then(function(r){ var s=r.data.session; me=s?{id:s.user.id,email:s.user.email}:null; renderAccount(); updateHomePanel(); });
+  /* one last save on the way out, so the final edit before closing the tab
+     isn't lost inside the debounce window */
+  window.addEventListener('beforeunload',function(){
+    if(saveTimer&&onBoard()&&hasContent()){ clearTimeout(saveTimer); doSave(); }
+  });
+
+  window.gdExportAll=function(){
+    dbAll().then(function(list){
+      download('graindistrict_all_'+new Date().toISOString().slice(0,10)+'.json', JSON.stringify({gd:1,projects:list},null,2));
+    });
+  };
+
+  updateHomePanel();
 })();
 </script>
 </body>
