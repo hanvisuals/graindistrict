@@ -1130,16 +1130,12 @@ function genNodeStoryboard(nodeId){
   var nodeAtts=attShots.filter(function(a){return a.parentId===node.id;});
   nodeAtts.forEach(function(a){if(a.t)parts.push(a.k+': '+a.t);});
   var rawDesc=parts.join('. ');
-  fetch(WORKER,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      system:'You are a storyboard artist. Convert this shot description into a short English visual description for a single rough storyboard frame. Rules: 1) If the shot is a montage or sequence of cuts, pick ONLY the single strongest visual moment to draw. 2) Always specify interior OR exterior. 3) Include the main human subject and their action. 4) If the text mentions a "gorsel", "fotograf", "photo" or "image" of someone as a prop, describe it as "a photograph of a woman" held by someone — NOT as a real person in the scene. 5) Keep it under 20 words. 6) Be literal and spatial — describe what is physically in the frame. Output ONLY the description.',
-      user:rawDesc
-    })
-  }).then(function(r){return r.json();})
-  .then(function(data){
-    var eng=((data.content&&data.content[0]&&data.content[0].text)||rawDesc).trim().replace(/\n/g,' ');
+  // goes through api() rather than fetching the Worker directly: the Worker
+  // streams text now, so a bare r.json() here threw on every storyboard
+  api('You are a storyboard artist. Convert this shot description into a short English visual description for a single rough storyboard frame. Rules: 1) If the shot is a montage or sequence of cuts, pick ONLY the single strongest visual moment to draw. 2) Always specify interior OR exterior. 3) Include the main human subject and their action. 4) If the text mentions a "gorsel", "fotograf", "photo" or "image" of someone as a prop, describe it as "a photograph of a woman" held by someone — NOT as a real person in the scene. 5) Keep it under 20 words. 6) Be literal and spatial — describe what is physically in the frame. Output ONLY the description.',
+      rawDesc)
+  .then(function(text){
+    var eng=(text||rawDesc).trim().replace(/\n/g,' ');
     node.sbDesc=eng;
     return callFal(eng);
   }).then(function(url){
@@ -1172,16 +1168,11 @@ function editNodeStoryboard(nodeId,instruction){
   var currentDesc=node.sbDesc||node.content||'';
   node.sbLoading=true;node.sbUrl=null;
   renderCanvas();
-  fetch(WORKER,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      system:'You are a storyboard artist. You have an existing storyboard frame description and the director wants to modify it. Apply ONLY the requested change and output the new short English visual description (under 20 words). Keep everything else from the original the same. Output ONLY the description.',
-      user:'Current description: '+currentDesc+'\n\nDirector instruction: '+instruction
-    })
-  }).then(function(r){return r.json();})
-  .then(function(data){
-    var newDesc=((data.content&&data.content[0]&&data.content[0].text)||currentDesc).trim().replace(/\n/g,' ');
+  // same reason as genNodeStoryboard: api() understands the streamed response
+  api('You are a storyboard artist. You have an existing storyboard frame description and the director wants to modify it. Apply ONLY the requested change and output the new short English visual description (under 20 words). Keep everything else from the original the same. Output ONLY the description.',
+      'Current description: '+currentDesc+'\n\nDirector instruction: '+instruction)
+  .then(function(text){
+    var newDesc=(text||currentDesc).trim().replace(/\n/g,' ');
     node.sbDesc=newDesc;
     return callFal(newDesc);
   }).then(function(url){
