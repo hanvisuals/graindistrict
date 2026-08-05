@@ -704,6 +704,32 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 .cbar .tbar-r #previewBtn{background:#fff;border-color:#fff;color:#000;font-weight:600;margin-left:8px;}
 .cbar .tbar-r #previewBtn:hover{background:rgba(255,255,255,.86);border-color:rgba(255,255,255,.86);color:#000;}
 .cbar .tbar-r #btnExport,.cbar .tbar-r #btnExport:hover{color:#fff;border-color:rgba(255,255,255,.22);}
+
+/* ===== CURSOR GLOW =====
+   A soft light that follows the pointer across buttons and cards. The
+   position arrives as two custom properties set from one delegated listener
+   (see below) - per-element listeners and per-move style writes are exactly
+   how this kind of effect ends up costing more than the drag it sits next to.
+   Painted on a pseudo-element so nothing existing has to give up a
+   background, and pointer-events:none so it never eats a click. */
+.glow{position:relative;}
+.glow::after{
+  content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  opacity:0;transition:opacity .22s ease;
+  background:radial-gradient(120px circle at var(--gx,50%) var(--gy,50%),rgba(255,255,255,.13),transparent 62%);
+}
+.glow:hover::after{opacity:1;}
+/* cards get a wider, fainter pool - a button-strength glow on something this
+   big reads as a highlight rather than a sheen */
+.nc.glow::after{background:radial-gradient(260px circle at var(--gx,50%) var(--gy,50%),rgba(201,168,76,.10),transparent 66%);}
+.cf-card.glow::after{background:radial-gradient(220px circle at var(--gx,50%) var(--gy,50%),rgba(255,255,255,.12),transparent 64%);}
+/* a small give on press, so a click feels answered */
+.btn:active,.gd-pill:active,.cf-act:active,.gd-btn:active,.kb-cont:active{transform:scale(.97);}
+.btn,.gd-pill,.cf-act,.gd-btn,.kb-cont{transition:all .15s,transform .08s;}
+@media (prefers-reduced-motion:reduce){
+  .glow::after{transition:none;}
+  .btn:active,.gd-pill:active,.cf-act:active,.gd-btn:active,.kb-cont:active{transform:none;}
+}
 </style>
 </head>
 <body>
@@ -1717,6 +1743,44 @@ function msTick(t,dur){
     nodes.forEach(function(n){var b=document.getElementById('tlb-'+n.id);if(b)b.classList.toggle('tl-playing',n.id===curId);});
   }
 }
+
+
+/* ---------- cursor glow ----------
+   One listener for the whole document, and at most one element updated per
+   animation frame. Attaching a mousemove handler to every button, or writing
+   styles straight from the event, would put work back into exactly the path
+   that was just made cheap - and this runs while dragging too, so it stays
+   out of the way entirely then. */
+(function(){
+  var GLOW_SEL='.btn,.gd-pill,.gd-btn,.cf-act,.kb-cont,.nc,.cf-card,.pt-btn';
+  var pending=null,raf=null,current=null;
+
+  function paint(){
+    raf=null;
+    if(!pending)return;
+    var el=pending.el,r=el.getBoundingClientRect();
+    el.style.setProperty('--gx',(pending.x-r.left)+'px');
+    el.style.setProperty('--gy',(pending.y-r.top)+'px');
+    pending=null;
+  }
+  document.addEventListener('pointermove',function(e){
+    // dragging already owns the frame; a glow update is not worth a millisecond of it
+    if(typeof dragN!=='undefined'&&(dragN||dragAtt||dragImg||dragNote||dragSb))return;
+    var el=e.target&&e.target.closest?e.target.closest(GLOW_SEL):null;
+    if(el!==current){
+      if(current)current.classList.remove('glow');
+      current=el;
+      if(current)current.classList.add('glow');
+    }
+    if(!el)return;
+    pending={el:el,x:e.clientX,y:e.clientY};
+    if(!raf)raf=requestAnimationFrame(paint);
+  },{passive:true});
+  // a rebuilt canvas can leave the class on a detached element
+  document.addEventListener('pointerleave',function(){
+    if(current){current.classList.remove('glow');current=null;}
+  },true);
+})();
 
 /* ===== DRAGGABLE LEGEND ===== */
 (function(){
