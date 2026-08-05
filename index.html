@@ -2066,13 +2066,43 @@ function langInstr(lang,type){
   return 'CRITICAL LANGUAGE RULE: You MUST write ALL '+type+' in '+name+' ONLY. Do NOT use any English words whatsoever. Every single word, sentence, and phrase must be in '+name+'. Responding in English is not acceptable under any circumstances.';
 }
 
+// Generating a long shot plan in ONE non-streamed call can take well over
+// 100 seconds, and Cloudflare hard-kills any request still silent at that
+// point, replying with a raw "error code: 524" body - not JSON, so it
+// surfaced as a baffling parse error and, upstream, as "every segment timed
+// out". No client-side timeout can fix that: the connection is gone at 100s
+// no matter what value we pick. Asking the Worker to STREAM makes bytes
+// start flowing immediately, so Cloudflare never sees a silent connection
+// and the response may take as long as it needs.
+// Still understands the old single-JSON shape, so a Worker that hasn't been
+// updated yet keeps working exactly as before.
 function api(sys,usr){
-  return fetch(WORKER,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:sys,user:usr})})
-    .then(function(r){return r.text().then(function(t){if(!r.ok)throw new Error('API '+r.status+': '+t);return t;});})
-    .then(function(t){
-      var d;try{d=JSON.parse(t);}catch(e){throw new Error('Parse: '+t.slice(0,2000));}
-      if(d.content&&d.content[0]&&d.content[0].text)return d.content[0].text;
-      throw new Error('Bad response');
+  return fetch(WORKER,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:sys,user:usr,stream:true})})
+    .then(function(r){
+      if(!r.ok)return r.text().then(function(t){throw new Error('API '+r.status+': '+t);});
+      var ct=r.headers.get('content-type')||'';
+      if(ct.indexOf('text/plain')>=0&&r.body&&r.body.getReader){
+        var reader=r.body.getReader(),dec=new TextDecoder(),out='';
+        return (function pump(){
+          return reader.read().then(function(res){
+            if(res.done){out+=dec.decode();return out;}
+            out+=dec.decode(res.value,{stream:true});
+            return pump();
+          });
+        })();
+      }
+      return r.text().then(function(t){
+        var d;try{d=JSON.parse(t);}catch(e){throw new Error('Parse: '+t.slice(0,2000));}
+        if(d.content&&d.content[0]&&d.content[0].text)return d.content[0].text;
+        if(d.error)throw new Error(typeof d.error==='string'?d.error:JSON.stringify(d.error));
+        throw new Error('Bad response');
+      });
+    })
+    .then(function(text){
+      // an empty body is a failure, not a valid answer - let apiRetry see it
+      // as one instead of quietly passing '' along as if it were a plan
+      if(!text||!text.trim())throw new Error('Empty response from the model');
+      return text;
     });
 }
 
@@ -2438,7 +2468,10 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
     if(parseBlocks(text||'').length)return text;
     console.warn('[plan] chunked pipeline produced no usable blocks - falling back to a single-pass request');
     setGenStage('retrying in one pass');
-    return withTimeout(apiRetry(planSys,buildUserContent(planMsg)),150000,'','single-pass fallback')
+    // one request writing the WHOLE video is by far the biggest generation
+    // we ever ask for - with a streaming Worker there's no 100s ceiling to
+    // trip over any more, so give it a genuinely patient window
+    return withTimeout(apiRetry(planSys,buildUserContent(planMsg)),240000,'','single-pass fallback')
       .then(function(t){return ensureFullPlan(planSys,(t||'').trim());});
   });
 }
