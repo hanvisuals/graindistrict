@@ -3831,33 +3831,36 @@ document.addEventListener('mouseup',function(e){
   tlScroll=false;
 });
 
-/* ===================== GRAINDISTRICT — projects + autosave ===================== */
+/* ===================== GRAINDISTRICT — accounts + projects + autosave ===================== */
 (function(){
-  /* Projects live in this browser, in IndexedDB. No account, no third-party
-     service, nothing to configure - it works the moment the page loads.
-     IndexedDB rather than localStorage because a board carries base64
-     storyboard and recce images, which blow past localStorage's ~5MB ceiling
-     almost immediately. Export/import covers moving work between machines. */
+  /* Two modes, one interface:
+       signed in  -> projects live on the Worker (KV), so they follow you to
+                     any machine you sign in from
+       signed out -> projects live in this browser (IndexedDB), no setup, no
+                     account, still fully usable
+     The store object below hides which one is active from everything else. */
+  var API=String(WORKER||'').replace(/\/+$/,'')+'/api';
   var DB_NAME='graindistrict', STORE='projects', DB_V=1;
 
-  var currentProjectId=null;
-  var currentCreated=null;
-  var currentNameManual=false;
+  var token=null, userEmail=null;
+  var currentProjectId=null, currentCreated=null, currentName=null, currentNameManual=false;
   var saveTimer=null;
+
+  try{ token=localStorage.getItem('gd_token')||null; userEmail=localStorage.getItem('gd_email')||null; }catch(e){}
 
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function uid(){ return 'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
 
-  /* ---------- storage ---------- */
+  /* ---------- local storage (IndexedDB) ----------
+     IndexedDB rather than localStorage because a board carries base64
+     storyboard and recce images, which blow past localStorage's ~5MB ceiling
+     almost immediately. */
   var dbp=null;
   function db(){
     if(dbp) return dbp;
     dbp=new Promise(function(res,rej){
       var rq=indexedDB.open(DB_NAME,DB_V);
-      rq.onupgradeneeded=function(){
-        var d=rq.result;
-        if(!d.objectStoreNames.contains(STORE)) d.createObjectStore(STORE,{keyPath:'id'});
-      };
+      rq.onupgradeneeded=function(){ var d=rq.result; if(!d.objectStoreNames.contains(STORE)) d.createObjectStore(STORE,{keyPath:'id'}); };
       rq.onsuccess=function(){ res(rq.result); };
       rq.onerror=function(){ rej(rq.error); };
     });
@@ -3875,41 +3878,87 @@ document.addEventListener('mouseup',function(e){
   }
   function dbPut(p){ return tx('readwrite',function(s){ return s.put(p); }); }
   function dbGet(id){ return tx('readonly',function(s){ return s.get(id); }); }
-  function dbAll(){ return tx('readonly',function(s){ return s.getAll(); }).then(function(list){
-    return (list||[]).sort(function(a,b){ return (b.updated_at||0)-(a.updated_at||0); });
+  function dbAll(){ return tx('readonly',function(s){ return s.getAll(); }).then(function(l){
+    return (l||[]).sort(function(a,b){ return (b.updated_at||0)-(a.updated_at||0); });
   }); }
   function dbDel(id){ return tx('readwrite',function(s){ return s.delete(id); }); }
+
+  /* ---------- cloud ---------- */
+  function cloud(method,path,body){
+    var h={'Content-Type':'application/json'};
+    if(token) h['Authorization']='Bearer '+token;
+    return fetch(API+path,{method:method,headers:h,body:body?JSON.stringify(body):undefined})
+      .then(function(r){
+        return r.text().then(function(t){
+          var d={}; try{ d=JSON.parse(t); }catch(e){}
+          // an expired or revoked session shouldn't look like a save bug -
+          // drop straight back to signed-out and say so
+          if(r.status===401){ signOut(true); throw new Error(d.error||'Oturumun sona erdi, tekrar giriş yap.'); }
+          if(!r.ok) throw new Error(d.error||('Sunucu hatası '+r.status));
+          return d;
+        });
+      });
+  }
+
+  /* ---------- one interface over both ---------- */
+  var store={
+    all:function(){
+      return token ? cloud('GET','/projects').then(function(d){ return d.projects||[]; }) : dbAll();
+    },
+    get:function(id){
+      return token ? cloud('GET','/projects/'+encodeURIComponent(id)).then(function(d){ return d.project; }) : dbGet(id);
+    },
+    put:function(rec){
+      if(!token) return dbPut(rec).then(function(){ return rec.id; });
+      return cloud('PUT','/projects/'+encodeURIComponent(rec.id||'new'),
+        {name:rec.name,nameManual:rec.nameManual,data:rec.data,created_at:rec.created_at})
+        .then(function(d){ return d.id; });
+    },
+    del:function(id){
+      return token ? cloud('DELETE','/projects/'+encodeURIComponent(id)).then(function(){}) : dbDel(id);
+    }
+  };
 
   /* ---------- styles ---------- */
   var css=''
   +'.gd-acct{position:fixed;top:9px;right:14px;z-index:10000;display:flex;align-items:center;gap:8px;font-family:var(--sans);}'
   +'.gd-pill{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:500;padding:6px 13px;border-radius:999px;border:1px solid var(--border-hi);background:rgba(255,255,255,.05);color:var(--text-2);cursor:pointer;transition:all .15s;backdrop-filter:blur(8px);}'
   +'.gd-pill:hover{background:rgba(255,255,255,.1);color:#fff;}'
+  +'.gd-pill.primary{background:#fff;color:#000;border-color:#fff;}'
+  +'.gd-pill.primary:hover{background:rgba(255,255,255,.85);}'
+  +'.gd-email{font-family:var(--mono);font-size:10px;color:var(--text-3);letter-spacing:.02em;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'
   +'.gd-save-state{font-family:var(--mono);font-size:9px;letter-spacing:.04em;color:var(--text-3);text-transform:uppercase;}'
   +'.gd-ov{position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:20px;}'
   +'.gd-ov.show{display:flex;}'
   +'.gd-modal{position:relative;width:100%;max-width:460px;background:var(--surface);border:1px solid var(--border-hi);border-radius:16px;padding:26px;box-shadow:0 30px 80px rgba(0,0,0,.6);}'
   +'.gd-modal h2{font-family:var(--sans);font-size:19px;font-weight:600;margin-bottom:4px;}'
-  +'.gd-modal p.sub{font-size:12px;color:var(--text-3);margin-bottom:18px;}'
+  +'.gd-modal p.sub{font-size:12px;color:var(--text-3);margin-bottom:18px;line-height:1.5;}'
+  +'.gd-field{margin-bottom:12px;}'
+  +'.gd-field label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3);margin-bottom:5px;font-weight:600;}'
+  +'.gd-input{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:var(--sans);font-size:14px;padding:11px 13px;outline:none;transition:border-color .15s;}'
+  +'.gd-input:focus{border-color:var(--border-hi);}'
   +'.gd-btn{width:100%;background:#fff;color:#000;border:none;border-radius:10px;font-family:var(--sans);font-size:14px;font-weight:600;padding:12px;cursor:pointer;transition:opacity .15s;}'
   +'.gd-btn:hover{opacity:.85;}'
+  +'.gd-btn:disabled{opacity:.5;cursor:default;}'
   +'.gd-btn.ghost{background:transparent;color:var(--text-2);border:1px solid var(--border-hi);}'
   +'.gd-btn.ghost:hover{color:#fff;background:rgba(255,255,255,.06);opacity:1;}'
   +'.gd-row{display:flex;gap:8px;margin-bottom:6px;}'
+  +'.gd-link{background:none;border:none;color:var(--text-2);font-family:var(--sans);font-size:12px;cursor:pointer;text-decoration:underline;margin-top:14px;}'
+  +'.gd-err{font-size:12px;margin-top:10px;min-height:16px;color:#e0686a;line-height:1.45;}'
   +'.gd-x{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--text-3);font-size:20px;cursor:pointer;line-height:1;}'
   +'.gd-x:hover{color:#fff;}'
   +'.gd-plist{display:flex;flex-direction:column;gap:7px;}'
-  +'.gd-pbody{max-height:46vh;overflow:auto;margin:0 -6px;padding:0 6px;}'
+  +'.gd-pbody{max-height:44vh;overflow:auto;margin:0 -6px;padding:0 6px;}'
   +'.gd-pcard{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border:1px solid var(--border);border-radius:11px;background:rgba(255,255,255,.02);cursor:pointer;transition:all .14s;}'
   +'.gd-pcard:hover{border-color:var(--border-hi);background:rgba(255,255,255,.05);}'
-  +'.gd-pcard.cur{border-color:var(--accent,#d8c47a);}'
+  +'.gd-pcard.cur{border-color:#d8c47a;}'
   +'.gd-pcard .nm{font-size:13px;font-weight:500;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
   +'.gd-pcard .mt{font-family:var(--mono);font-size:9px;color:var(--text-3);margin-top:3px;letter-spacing:.02em;}'
   +'.gd-pact{background:none;border:none;color:var(--text-3);cursor:pointer;font-size:12px;padding:4px;flex-shrink:0;}'
   +'.gd-pact:hover{color:#fff;}'
   +'.gd-pact.del:hover{color:#e0686a;}'
   +'.gd-empty{text-align:center;color:var(--text-3);font-size:12px;padding:26px 0;line-height:1.6;}'
-  +'.gd-sec{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);font-weight:700;margin:16px 0 6px;}'
+  +'.gd-note{font-size:11px;color:var(--text-3);line-height:1.5;margin-top:14px;padding-top:13px;border-top:1px solid var(--border);}'
   +'.gd-home{position:fixed;top:48px;left:0;bottom:0;width:252px;background:var(--surface);border-right:1px solid var(--border);z-index:9000;display:none;flex-direction:column;padding:16px 14px;}'
   +'.gd-home.show{display:flex;}'
   +'.gd-home-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}'
@@ -3925,14 +3974,22 @@ document.addEventListener('mouseup',function(e){
   /* ---------- DOM ---------- */
   var root=document.createElement('div');
   root.innerHTML=''
-  +'<div class="gd-acct" id="gdAcct">'
-  +'  <span class="gd-save-state" id="gdSaveState"></span>'
-  +'  <button class="gd-pill" id="gdProjBtn">&#9636; Projects</button>'
-  +'</div>'
+  +'<div class="gd-acct" id="gdAcct"></div>'
+  +'<div class="gd-ov" id="gdAuthOv"><div class="gd-modal">'
+  +'  <button class="gd-x" data-close>&times;</button>'
+  +'  <h2 id="gdAuthTitle">Sign in</h2>'
+  +'  <p class="sub" id="gdAuthSub">Sign in and your projects follow you to any computer.</p>'
+  +'  <div class="gd-field"><label>Email</label><input class="gd-input" id="gdEmail" type="email" autocomplete="email" placeholder="you@email.com"></div>'
+  +'  <div class="gd-field"><label>Password</label><input class="gd-input" id="gdPass" type="password" autocomplete="current-password" placeholder="••••••••"></div>'
+  +'  <button class="gd-btn" id="gdAuthBtn">Sign in</button>'
+  +'  <div class="gd-err" id="gdAuthErr"></div>'
+  +'  <button class="gd-link" id="gdAuthToggle">Create an account</button>'
+  +'  <div class="gd-note">Without an account everything still works — projects just stay in this browser.</div>'
+  +'</div></div>'
   +'<div class="gd-ov" id="gdProjOv"><div class="gd-modal">'
   +'  <button class="gd-x" data-close>&times;</button>'
   +'  <h2>Your projects</h2>'
-  +'  <p class="sub">Saved in this browser, automatically. Export to move them to another computer.</p>'
+  +'  <p class="sub" id="gdProjSub"></p>'
   +'  <div class="gd-row">'
   +'    <button class="gd-btn" id="gdNewBtn">+ New project</button>'
   +'    <button class="gd-btn ghost" id="gdImportBtn" style="max-width:130px">Import</button>'
@@ -3950,7 +4007,7 @@ document.addEventListener('mouseup',function(e){
   function byId(id){ return document.getElementById(id); }
   function setSaveState(s){
     var el=byId('gdSaveState'); if(!el) return;
-    el.textContent=(s==='saving'?'saving…':s==='saved'?'✓ saved':s==='error'?'⚠ save failed':'');
+    el.textContent=(s==='saving'?'saving…':s==='saved'?(token?'✓ saved to cloud':'✓ saved'):s==='error'?'⚠ save failed':'');
   }
 
   /* ---------- serialize / restore full board state ---------- */
@@ -3986,16 +4043,12 @@ document.addEventListener('mouseup',function(e){
 
   /* ---------- autosave ---------- */
   function onBoard(){ var s=byId('s5'); return s&&s.classList.contains('active'); }
-  function hasContent(){
-    return (nodes&&nodes.length)||(noteNodes&&noteNodes.length)||(imgNodes&&imgNodes.length);
-  }
+  function hasContent(){ return (nodes&&nodes.length)||(noteNodes&&noteNodes.length)||(imgNodes&&imgNodes.length); }
+  function autoName(){ return ((topic||projectBrief||'Untitled')+'').replace(/\s+/g,' ').trim().slice(0,80)||'Untitled'; }
   function scheduleSave(){
     if(!onBoard()||!hasContent()) return;
     if(saveTimer) clearTimeout(saveTimer);
     saveTimer=setTimeout(doSave,1200);
-  }
-  function autoName(){
-    return ((topic||projectBrief||'Untitled')+'').replace(/\s+/g,' ').trim().slice(0,80)||'Untitled';
   }
   function doSave(){
     // clearing this marks "nothing pending" - the beforeunload handler uses it
@@ -4004,35 +4057,129 @@ document.addEventListener('mouseup',function(e){
     if(saveTimer){ clearTimeout(saveTimer); saveTimer=null; }
     if(!onBoard()||!hasContent()) return;
     var now=Date.now();
-    if(!currentProjectId){ currentProjectId=uid(); currentCreated=now; currentNameManual=false; }
+    // signed out we mint the id ourselves; signed in the server hands one back
+    if(!currentProjectId&&!token) currentProjectId=uid();
+    if(!currentCreated) currentCreated=now;
     var rec={
       id:currentProjectId,
-      name:currentNameManual?(currentName||autoName()):autoName(),
+      name:(currentNameManual&&currentName)?currentName:autoName(),
       nameManual:currentNameManual,
       data:serialize(),
-      created_at:currentCreated||now,
+      created_at:currentCreated,
       updated_at:now
     };
-    currentName=rec.name;
     setSaveState('saving');
-    dbPut(rec).then(function(){
+    store.put(rec).then(function(id){
+      if(id) currentProjectId=id;
+      currentName=rec.name;
       setSaveState('saved');
       renderHomePanel();
     },function(e){
       setSaveState('error');
       console.error('[gd] save failed',e);
-      // the usual cause is the browser refusing more storage - say so plainly
-      // rather than leaving a silent "save failed" with no explanation
       if(e&&(e.name==='QuotaExceededError'||/quota/i.test(e.message||''))){
-        alert('This browser is out of storage space for saved projects.\n\nOpen Projects and export or delete older ones to free space.');
+        alert('Bu tarayıcıda kayıt için yer kalmadı.\n\nProjects panelinden eski projeleri dışa aktarıp silebilirsin.');
+        return;
+      }
+      // signed in but the save didn't reach the server (offline, worker down):
+      // keep a local copy so the work isn't simply lost
+      if(token){
+        if(!rec.id) rec.id=uid();
+        dbPut(rec).then(function(){
+          setSaveState('error');
+          console.warn('[gd] cloud save failed - kept a local copy instead');
+        },function(){});
       }
     });
   }
-  var currentName=null;
   window.gdNewProject=function(){
     currentProjectId=null; currentCreated=null; currentName=null; currentNameManual=false;
     setSaveState('');
   };
+
+  /* ---------- account widget ---------- */
+  function renderAccount(){
+    var a=byId('gdAcct'); if(!a) return;
+    if(token){
+      a.innerHTML='<span class="gd-save-state" id="gdSaveState"></span>'
+        +'<button class="gd-pill" id="gdProjBtn">&#9636; Projects</button>'
+        +'<span class="gd-email">'+esc(userEmail||'')+'</span>'
+        +'<button class="gd-pill" id="gdSignOut">Sign out</button>';
+      byId('gdSignOut').onclick=function(){ signOut(false); };
+    } else {
+      a.innerHTML='<span class="gd-save-state" id="gdSaveState"></span>'
+        +'<button class="gd-pill" id="gdProjBtn">&#9636; Projects</button>'
+        +'<button class="gd-pill primary" id="gdSignIn">Sign in</button>';
+      byId('gdSignIn').onclick=openAuth;
+    }
+    byId('gdProjBtn').onclick=openProjects;
+  }
+  function signOut(expired){
+    token=null; userEmail=null;
+    try{ localStorage.removeItem('gd_token'); localStorage.removeItem('gd_email'); }catch(e){}
+    window.gdNewProject();
+    renderAccount(); updateHomePanel();
+    if(expired) alert('Oturumun sona erdi. Tekrar giriş yapman gerekiyor.');
+  }
+
+  /* ---------- auth ---------- */
+  var authMode='signin';
+  function openAuth(){ byId('gdAuthErr').textContent=''; setAuthMode('signin'); byId('gdAuthOv').classList.add('show'); setTimeout(function(){ byId('gdEmail').focus(); },40); }
+  function setAuthMode(m){
+    authMode=m;
+    byId('gdAuthTitle').textContent=(m==='signin'?'Sign in':'Create account');
+    byId('gdAuthBtn').textContent=(m==='signin'?'Sign in':'Create account');
+    byId('gdAuthToggle').textContent=(m==='signin'?'Create an account':'I already have an account');
+    byId('gdPass').setAttribute('autocomplete',m==='signin'?'current-password':'new-password');
+  }
+  function doAuth(){
+    var email=byId('gdEmail').value.trim(), pass=byId('gdPass').value;
+    var err=byId('gdAuthErr'), btn=byId('gdAuthBtn');
+    err.style.color='#e0686a'; err.textContent='';
+    if(!email||!pass){ err.textContent='E-posta ve şifre gir.'; return; }
+    btn.disabled=true;
+    fetch(API+(authMode==='signup'?'/signup':'/login'),{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email:email,password:pass})
+    }).then(function(r){
+      return r.text().then(function(t){
+        var d={}; try{ d=JSON.parse(t); }catch(e){}
+        if(!r.ok) throw new Error(d.error||('Sunucu hatası '+r.status));
+        return d;
+      });
+    }).then(function(d){
+      btn.disabled=false;
+      token=d.token; userEmail=d.email;
+      try{ localStorage.setItem('gd_token',token); localStorage.setItem('gd_email',userEmail); }catch(e){}
+      byId('gdAuthOv').classList.remove('show');
+      byId('gdPass').value='';
+      window.gdNewProject();
+      renderAccount(); updateHomePanel();
+      offerUpload();
+    },function(e){
+      btn.disabled=false;
+      err.textContent=e.message||'Giriş yapılamadı.';
+    });
+  }
+  // projects made before signing up would otherwise be stranded in this
+  // browser while the account starts empty - offer to carry them over once
+  function offerUpload(){
+    dbAll().then(function(list){
+      if(!list.length) return;
+      if(!confirm('Bu tarayıcıda kayıtlı '+list.length+' proje var.\n\nHesabına yüklensin mi? (Yerel kopyalar silinmez.)')) return;
+      var i=0;
+      (function next(){
+        if(i>=list.length){ renderHomePanel(); alert(list.length+' proje hesabına yüklendi.'); return; }
+        var p=list[i++];
+        cloud('PUT','/projects/new',{name:p.name,nameManual:true,data:p.data,created_at:p.created_at})
+          .then(next,function(e){ alert('Yükleme yarıda kaldı: '+(e.message||e)); });
+      })();
+    });
+  }
+  byId('gdAuthToggle').onclick=function(){ setAuthMode(authMode==='signin'?'signup':'signin'); byId('gdAuthErr').textContent=''; };
+  byId('gdAuthBtn').onclick=doAuth;
+  byId('gdPass').addEventListener('keydown',function(e){ if(e.key==='Enter') doAuth(); });
+  byId('gdEmail').addEventListener('keydown',function(e){ if(e.key==='Enter') doAuth(); });
 
   /* ---------- project cards ---------- */
   function fmtDate(ts){
@@ -4049,47 +4196,37 @@ document.addEventListener('mouseup',function(e){
       +'<button class="gd-pact del" data-del="'+esc(p.id)+'" title="Delete">✕</button>'
       +'</div></div>';
   }
-  function wireCards(container){
-    [].forEach.call(container.querySelectorAll('[data-open]'),function(el){
-      el.onclick=function(e){
-        if(e.target.closest('[data-del],[data-rename],[data-export]')) return;
-        openProject(el.getAttribute('data-open'));
-      };
+  function wireCards(c){
+    [].forEach.call(c.querySelectorAll('[data-open]'),function(el){
+      el.onclick=function(e){ if(e.target.closest('[data-del],[data-rename],[data-export]')) return; openProject(el.getAttribute('data-open')); };
     });
-    [].forEach.call(container.querySelectorAll('[data-del]'),function(el){
-      el.onclick=function(e){ e.stopPropagation(); delProject(el.getAttribute('data-del')); };
-    });
-    [].forEach.call(container.querySelectorAll('[data-rename]'),function(el){
-      el.onclick=function(e){ e.stopPropagation(); renameProject(el.getAttribute('data-rename')); };
-    });
-    [].forEach.call(container.querySelectorAll('[data-export]'),function(el){
-      el.onclick=function(e){ e.stopPropagation(); exportProject(el.getAttribute('data-export')); };
-    });
+    [].forEach.call(c.querySelectorAll('[data-del]'),function(el){ el.onclick=function(e){ e.stopPropagation(); delProject(el.getAttribute('data-del')); }; });
+    [].forEach.call(c.querySelectorAll('[data-rename]'),function(el){ el.onclick=function(e){ e.stopPropagation(); renameProject(el.getAttribute('data-rename')); }; });
+    [].forEach.call(c.querySelectorAll('[data-export]'),function(el){ el.onclick=function(e){ e.stopPropagation(); exportProject(el.getAttribute('data-export')); }; });
   }
 
   /* ---------- projects modal ---------- */
   function openProjects(){
     var body=byId('gdProjBody');
+    byId('gdProjSub').textContent=token
+      ? 'Saved to your account — they follow you to any computer.'
+      : 'Saved in this browser. Sign in to reach them from anywhere.';
     body.innerHTML='<div class="gd-empty">Loading…</div>';
     byId('gdProjOv').classList.add('show');
-    dbAll().then(function(list){
-      if(!list.length){
-        body.innerHTML='<div class="gd-empty">No projects yet.<br>Build a board — it saves here automatically.</div>';
-        return;
-      }
+    store.all().then(function(list){
+      if(!list.length){ body.innerHTML='<div class="gd-empty">No projects yet.<br>Build a board — it saves here automatically.</div>'; return; }
       var html='<div class="gd-plist">';
       list.forEach(function(p){ html+=pcard(p); });
-      html+='</div>';
-      body.innerHTML=html;
+      body.innerHTML=html+'</div>';
       wireCards(body);
     },function(e){
-      body.innerHTML='<div class="gd-empty">Could not read saved projects.</div>';
+      body.innerHTML='<div class="gd-empty">'+esc(e.message||'Could not load projects.')+'</div>';
       console.error('[gd] list',e);
     });
   }
   function openProject(id){
-    dbGet(id).then(function(p){
-      if(!p){ alert('That project could not be found.'); return; }
+    store.get(id).then(function(p){
+      if(!p){ alert('Proje bulunamadı.'); return; }
       currentProjectId=p.id;
       currentCreated=p.created_at||Date.now();
       currentName=p.name||null;
@@ -4097,35 +4234,34 @@ document.addEventListener('mouseup',function(e){
       restore(p.data);
       byId('gdProjOv').classList.remove('show');
       setSaveState('saved');
-    },function(e){ alert('Could not open that project.'); console.error(e); });
+    },function(e){ alert('Proje açılamadı: '+(e.message||e)); });
   }
   function delProject(id){
-    if(!confirm('Delete this project permanently?')) return;
-    dbDel(id).then(function(){
+    if(!confirm('Bu proje kalıcı olarak silinsin mi?')) return;
+    store.del(id).then(function(){
       if(currentProjectId===id) window.gdNewProject();
       if(byId('gdProjOv').classList.contains('show')) openProjects();
       renderHomePanel();
-    },function(e){ alert('Delete failed.'); console.error(e); });
+    },function(e){ alert('Silinemedi: '+(e.message||e)); });
   }
   function renameProject(id){
-    dbGet(id).then(function(p){
+    store.get(id).then(function(p){
       if(!p) return;
-      var n=prompt('Project name:', p.name||'Untitled');
+      var n=prompt('Proje adı:',p.name||'Untitled');
       if(n===null) return;
       n=n.trim(); if(!n) return;
       p.name=n; p.nameManual=true;
-      dbPut(p).then(function(){
+      store.put(p).then(function(){
         if(currentProjectId===id){ currentName=n; currentNameManual=true; }
         if(byId('gdProjOv').classList.contains('show')) openProjects();
         renderHomePanel();
-      });
+      },function(e){ alert('Ad değiştirilemedi: '+(e.message||e)); });
     });
   }
 
   /* ---------- export / import ----------
-     Without an account there's no cloud copy, so this is how work moves
-     between machines - and the backup if this browser's data is ever
-     cleared. A project file is just the same JSON that gets stored. */
+     Works in both modes: the backup if this browser's data is cleared, and
+     the way to hand a project to someone else. */
   function download(filename,text){
     var b=new Blob([text],{type:'application/json'});
     var u=URL.createObjectURL(b);
@@ -4136,85 +4272,61 @@ document.addEventListener('mouseup',function(e){
   }
   function safeName(s){ return String(s||'project').replace(/[^\w\-]+/g,'_').slice(0,50); }
   function exportProject(id){
-    dbGet(id).then(function(p){
+    store.get(id).then(function(p){
       if(!p) return;
-      download('graindistrict_'+safeName(p.name)+'.json', JSON.stringify({gd:1,project:p},null,2));
-    });
+      download('graindistrict_'+safeName(p.name)+'.json',JSON.stringify({gd:1,project:p},null,2));
+    },function(e){ alert('Dışa aktarılamadı: '+(e.message||e)); });
   }
   function importFile(file){
     var fr=new FileReader();
     fr.onload=function(){
       var parsed;
-      try{ parsed=JSON.parse(fr.result); }
-      catch(e){ alert('That file is not a valid project file.'); return; }
+      try{ parsed=JSON.parse(fr.result); }catch(e){ alert('Bu dosya geçerli bir proje dosyası değil.'); return; }
       var p=parsed&&parsed.project?parsed.project:parsed;
-      if(!p||!p.data){ alert('That file is not a valid project file.'); return; }
-      // always a NEW id, so importing never silently overwrites something
-      var rec={
-        id:uid(),
-        name:(p.name||'Imported project'),
-        nameManual:true,
-        data:p.data,
-        created_at:p.created_at||Date.now(),
-        updated_at:Date.now()
-      };
-      dbPut(rec).then(function(){
+      if(!p||!p.data){ alert('Bu dosya geçerli bir proje dosyası değil.'); return; }
+      // always a NEW id, so importing can never silently overwrite something
+      var rec={id:(token?null:uid()),name:(p.name||'Imported project'),nameManual:true,
+               data:p.data,created_at:p.created_at||Date.now(),updated_at:Date.now()};
+      store.put(rec).then(function(){
         if(byId('gdProjOv').classList.contains('show')) openProjects();
         renderHomePanel();
-      },function(e){ alert('Import failed.'); console.error(e); });
+      },function(e){ alert('İçe aktarılamadı: '+(e.message||e)); });
     };
     fr.readAsText(file);
   }
 
-  byId('gdProjBtn').onclick=openProjects;
-  byId('gdNewBtn').onclick=function(){
-    window.gdNewProject();
-    byId('gdProjOv').classList.remove('show');
-    show('s0');
-  };
+  byId('gdNewBtn').onclick=function(){ window.gdNewProject(); byId('gdProjOv').classList.remove('show'); show('s0'); };
   byId('gdImportBtn').onclick=function(){ byId('gdImportFile').click(); };
-  byId('gdImportFile').onchange=function(){
-    if(this.files&&this.files[0]) importFile(this.files[0]);
-    this.value='';
-  };
+  byId('gdImportFile').onchange=function(){ if(this.files&&this.files[0]) importFile(this.files[0]); this.value=''; };
 
   /* ---------- home projects panel ---------- */
   function renderHomePanel(){
     var list=byId('gdHomeList'); if(!list) return;
-    dbAll().then(function(all){
-      if(!all.length){
-        list.innerHTML='<div class="gd-empty">No projects yet.<br>Build a board — it saves here automatically.</div>';
-        return;
-      }
+    store.all().then(function(all){
+      if(!all.length){ list.innerHTML='<div class="gd-empty">No projects yet.<br>Build a board — it saves here automatically.</div>'; return; }
       var html='';
       all.forEach(function(p){ html+=pcard(p); });
       list.innerHTML=html;
       wireCards(list);
-    },function(e){
-      list.innerHTML='<div class="gd-empty">Could not read saved projects.</div>';
-      console.error('[gd] home',e);
-    });
+    },function(e){ list.innerHTML='<div class="gd-empty">'+esc(e.message||'Could not load.')+'</div>'; });
   }
   function updateHomePanel(){
     var panel=byId('gdHome'), tab=byId('gdHomeTab');
     if(!panel||!tab) return;
     var onHome=byId('s0')&&byId('s0').classList.contains('active');
-    var hidden=localStorage.getItem('gd_home_hidden')==='1';
+    var hidden=false;
+    try{ hidden=localStorage.getItem('gd_home_hidden')==='1'; }catch(e){}
     if(onHome&&!hidden){ panel.classList.add('show'); tab.classList.remove('show'); renderHomePanel(); }
     else if(onHome&&hidden){ panel.classList.remove('show'); tab.classList.add('show'); }
     else { panel.classList.remove('show'); tab.classList.remove('show'); }
   }
-  byId('gdHomeHide').onclick=function(){ localStorage.setItem('gd_home_hidden','1'); updateHomePanel(); };
-  byId('gdHomeTab').onclick=function(){ localStorage.removeItem('gd_home_hidden'); updateHomePanel(); };
+  byId('gdHomeHide').onclick=function(){ try{localStorage.setItem('gd_home_hidden','1');}catch(e){} updateHomePanel(); };
+  byId('gdHomeTab').onclick=function(){ try{localStorage.removeItem('gd_home_hidden');}catch(e){} updateHomePanel(); };
 
   /* ---------- wrap show(): reset project context on home + refresh panel ---------- */
   if(typeof show==='function'){
     var _origShow=show;
-    show=function(id){
-      _origShow.apply(this,arguments);
-      if(id==='s0'){ window.gdNewProject(); }
-      updateHomePanel();
-    };
+    show=function(id){ _origShow.apply(this,arguments); if(id==='s0'){ window.gdNewProject(); } updateHomePanel(); };
   }
 
   /* ---------- overlay close ---------- */
@@ -4229,18 +4341,19 @@ document.addEventListener('mouseup',function(e){
     saveHistory=function(){ _origSave.apply(this,arguments); scheduleSave(); };
   }
 
-  /* one last save on the way out, so the final edit before closing the tab
-     isn't lost inside the debounce window */
+  /* a pending save is flushed on the way out, so the last edit before the tab
+     closes isn't lost inside the debounce window */
   window.addEventListener('beforeunload',function(){
     if(saveTimer&&onBoard()&&hasContent()){ clearTimeout(saveTimer); doSave(); }
   });
 
   window.gdExportAll=function(){
-    dbAll().then(function(list){
-      download('graindistrict_all_'+new Date().toISOString().slice(0,10)+'.json', JSON.stringify({gd:1,projects:list},null,2));
+    store.all().then(function(list){
+      download('graindistrict_all_'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify({gd:1,projects:list},null,2));
     });
   };
 
+  renderAccount();
   updateHomePanel();
 })();
 </script>
