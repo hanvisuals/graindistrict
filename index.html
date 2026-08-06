@@ -744,12 +744,12 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
   body>*{display:none!important;}
   #printView{display:block!important;color:#111;font-family:var(--sans);}
   #printView h1{font-size:22pt;font-weight:600;letter-spacing:-.01em;margin:2mm 0 1mm;}
-  #printView h2{font-size:9pt;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
-                color:#666;margin:0 0 4mm;padding-bottom:1.5mm;border-bottom:1px solid #ddd;}
-  .pv-head{margin-bottom:9mm;}
+  #printView h2{font-size:8pt;font-weight:700;letter-spacing:.2em;text-transform:uppercase;
+                color:#999;margin:0 0 5mm;padding-bottom:2mm;border-bottom:1px solid #e6e6e6;}
+  .pv-head{margin-bottom:11mm;}
   .pv-brand{font-family:var(--mono);font-size:8pt;letter-spacing:.4em;color:#888;}
   .pv-meta{font-family:var(--mono);font-size:8pt;color:#777;letter-spacing:.04em;text-transform:uppercase;}
-  .pv-brief{margin-bottom:9mm;}
+  .pv-brief{margin-bottom:11mm;}
   .pv-brief-body{font-size:10pt;line-height:1.55;color:#333;max-width:150mm;}
   /* the brief is rendered with the app's own markdown classes, which are
      coloured for a dark screen - on white paper that is white text on white.
@@ -767,17 +767,22 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
   .pv-brief-body .bd-hr{border:none!important;border-top:1px solid #ddd!important;margin:3mm 0!important;display:block;}
   /* a row must not be split across a page - half a shot on each side of a
      page break is useless to whoever is holding it */
-  .pv-row{display:grid;grid-template-columns:16mm 1fr auto;gap:5mm;
-          padding:3.5mm 0;border-bottom:1px solid #e6e6e6;break-inside:avoid;page-break-inside:avoid;}
-  .pv-num{font-family:var(--mono);font-size:12pt;font-weight:700;color:#111;line-height:1;}
-  .pv-tc{font-family:var(--mono);font-size:7.5pt;color:#777;margin-top:1.5mm;line-height:1.5;}
-  .pv-type{font-family:var(--mono);font-size:7.5pt;font-weight:700;letter-spacing:.12em;color:#555;margin-bottom:1mm;}
-  .pv-content{font-size:10.5pt;line-height:1.45;color:#111;}
-  .pv-shots{margin:2.5mm 0 0;display:grid;grid-template-columns:22mm 1fr;gap:.8mm 3mm;}
-  .pv-shots dt{font-family:var(--mono);font-size:7pt;font-weight:700;letter-spacing:.1em;color:#888;padding-top:.4mm;}
-  .pv-shots dd{margin:0;font-size:9pt;line-height:1.4;color:#333;}
-  .pv-frame{width:34mm;}
-  .pv-frame img{width:100%;border:1px solid #ddd;display:block;}
+  .pv-row{display:grid;grid-template-columns:26mm 1fr auto;gap:6mm;
+          padding:4mm 0;border-top:1px solid #ececec;break-inside:avoid;page-break-inside:avoid;}
+  .pv-row:first-of-type{border-top:none;padding-top:1mm;}
+  .pv-idx{line-height:1.35;}
+  .pv-num{font-family:var(--mono);font-size:14pt;font-weight:700;color:#111;line-height:1;letter-spacing:-.02em;}
+  .pv-tc{font-family:var(--mono);font-size:7.5pt;color:#666;margin-top:1.6mm;white-space:nowrap;}
+  .pv-type{font-family:var(--mono);font-size:6.5pt;font-weight:700;letter-spacing:.14em;color:#999;margin-top:.8mm;}
+  .pv-content{font-size:10.5pt;line-height:1.5;color:#111;max-width:120mm;}
+  /* details sit in a quiet block under the shot rather than competing with it */
+  .pv-shots{margin:2.5mm 0 0;display:grid;grid-template-columns:19mm 1fr;gap:1mm 4mm;
+            padding-left:3mm;border-left:1px solid #eee;max-width:120mm;}
+  .pv-shots dt{font-family:var(--mono);font-size:6.5pt;font-weight:700;letter-spacing:.12em;
+               color:#aaa;padding-top:.5mm;text-align:right;}
+  .pv-shots dd{margin:0;font-size:9pt;line-height:1.45;color:#444;}
+  .pv-frame{width:32mm;}
+  .pv-frame img{width:100%;border:1px solid #e0e0e0;display:block;}
 }
 </style>
 </head>
@@ -1015,7 +1020,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
       <button class="btn on" id="scriptBtn" onclick="toggleScript()">script</button>
       <button class="btn" id="recceBtn" onclick="toggleReccePanel()" style="display:none">recce</button>
       <button class="btn" id="previewBtn" onclick="openPlayback()">▶ preview</button>
-      <button class="btn" onclick="surpriseMe()">surprise me</button>
       <button class="btn" id="btnExport" onclick="doExport()">export</button>
       <button class="btn" onclick="if(window.gdNewProject)gdNewProject();projectBrief='';projectConstraints='';clearRecce();var rp=document.getElementById('reccePanel');if(rp)rp.classList.remove('open');show('s1')">new</button>
     </div>
@@ -2852,27 +2856,6 @@ function buildCanvas(){
   },460);
 }
 
-function surpriseMe(){
-  if(!topic)return;
-  show('s2');startLoad('s2');
-  var totalSec=(durMin+durMax)/2*60;
-  var li=langInstr(inputLang,'shot plan content');
-  var blocks=(PT_BLOCKS[projectType]||PT_BLOCKS.youtube).join(', ');
-  var sys=(li?li+'\n\n':'')+'You are a filmmaker. Create a DIFFERENT, UNEXPECTED shot plan for the same topic. Try a completely different narrative approach, different structure, different emotional arc.\n\nUse these block types: '+blocks+(projectType==='youtube'?ytCutRules(totalSec):'')+stylePack('script')+'\n\nLANGUAGE: write all block content in the same language the topic is written in. Keep the [TYPE] tags in English.\n\nReturn ONLY plain text. Each block is EXACTLY ONE line:\n[TYPE] 00:00-00:00 - content'+(li?'\n\n'+li:'');
-  var surpriseMsg='Create a surprising, different shot plan for: '+topic+'. Duration: '+durMin+'-'+durMax+' minutes (~'+Math.round(totalSec)+' sec). Tone: '+tone;
-  var surprisePromise=totalSec>240
-    ? genPlanChunked(sys,surpriseMsg,totalSec,li)
-    : api(sys,surpriseMsg).then(function(raw){return ensureFullPlan(sys,raw);});
-  surprisePromise.then(function(raw){
-    stopLoad();
-    var planText=raw.trim();
-    if(!parseBlocks(planText).length)throw new Error('The AI could not produce a usable plan this time - please try again.');
-    if(projectType==='youtube')planText=splitLongMusicBlocks(planText);
-    document.getElementById('scriptTa').value=planText;
-    document.getElementById('wc').textContent=planText.split('\n').filter(function(l){return l.trim();}).length+' blocks';
-    show('s3');
-  }).catch(function(e){stopLoad();alert('Error: '+e.message);show('s5');});
-}
 
 function renderAll(){
   renderBlockList();renderBlockDetail();renderCanvas();renderImgNodes();renderNoteNodes();renderConns();renderTL();renderMusicStrip();updateRecceBtn();updateT();
@@ -3920,10 +3903,15 @@ function buildPrintView(){
   nodes.forEach(function(n,i){
     var sh=shotsFor(n.id);
     h+='<article class="pv-row">'
-      +'<div class="pv-idx"><div class="pv-num">'+String(i+1).padStart(2,'0')+'</div>'
-      +'<div class="pv-tc">'+pesc(n.tcStart)+'<br>'+pesc(n.tcEnd)+'</div></div>'
-      +'<div class="pv-body">'
+      // number, timing and type read as one label instead of being scattered
+      // across the row - the eye should find a shot by its number, then know
+      // when and what it is without moving
+      +'<div class="pv-idx">'
+      +'<div class="pv-num">'+String(i+1).padStart(2,'0')+'</div>'
+      +'<div class="pv-tc">'+pesc(n.tcStart)+'&ndash;'+pesc(n.tcEnd)+'</div>'
       +'<div class="pv-type">'+pesc(n.type.toUpperCase())+'</div>'
+      +'</div>'
+      +'<div class="pv-body">'
       +'<div class="pv-content">'+pesc(n.content)+'</div>';
     if(sh.length){
       h+='<dl class="pv-shots">';
