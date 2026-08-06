@@ -2367,7 +2367,7 @@ var projectBreakdown=null;   // location-by-location shooting breakdown
    version of the code that made it, and either one changing throws it out.
    Bump the version whenever the breakdown prompt or its handling changes -
    that is what retires the copies already saved in people's projects. */
-var BREAKDOWN_V=2;
+var BREAKDOWN_V=3;
 var projectBreakdownKey=null;
 function breakdownKey(){
   var t=BREAKDOWN_V+'|'+planAsText(),h=5381;
@@ -4054,10 +4054,16 @@ function planAsText(){
   return lines.join('\n');
 }
 
-function genBreakdown(){
-  if(!nodes.length)return Promise.resolve(null);
-  var li=langInstr(inputLang,'the breakdown');
-  var sys=(li?li+'\n\n':'')
+/* Asking for the whole film in one reply does not work past a couple of
+   hundred shots. A 243-shot plan came back covering the first thirty-four
+   beats and stopping mid-sentence: half the film unplaced, one shot given a
+   location of its own, and the same four shots filed twice - all the marks of
+   a model running out of room and losing its place. The plan is already
+   drafted in parallel pieces; the breakdown is drafted the same way, and the
+   pieces are merged on the location's name afterwards. */
+var BREAKDOWN_CHUNK=45;
+function breakdownSys(li,part){
+  return (li?li+'\n\n':'')
     +'You are a first assistant director turning a shot plan into a shooting breakdown.\n\n'
     +'Group the shots by LOCATION - the real place a crew has to travel to and set up in. Shots that '
     +'happen in the same place belong together even if they are far apart in the plan, because that is '
@@ -4067,22 +4073,91 @@ function genBreakdown(){
     +'Add one short practical note: access, permission, light, noise, whatever would actually catch '
     +'someone out on the day.\n\n'
     +'Shot labels look like 01, 01a, 02b. Copy them exactly as they appear in the plan.\n\n'
-    +'EVERY shot in the plan belongs to exactly one location. None may be left out, none may appear '
-    +'twice. Before you answer, count the shots in the plan and count the shots across your locations; '
-    +'they must be the same number.\n\n'
-    +'No location may take more than about a dozen shots. A place collecting more than that is not one '
-    +'location, it is a bin - split it by what actually changes on the shooting day: a different room, a '
-    +'different time, a different lighting setup. "The house" is not a location; "the kitchen, morning" '
-    +'is. Merge places that are genuinely the same, but never merge to save yourself work.\n\n'
+    +'EVERY shot listed below belongs to exactly one location, including the VOICEOVER and MUSIC ones. '
+    +'A voiceover is still recorded somewhere - a quiet room, a booth - and that is its location. None '
+    +'may be left out, none may appear twice. Before you answer, count the shots you were given and '
+    +'count the shots across your locations; they must be the same number.\n\n'
+    +'A location is a place, not a shot. Do not give one shot a location of its own when it plainly '
+    +'happens in the same room as its neighbours, and do not let one location swallow everything either '
+    +'- if a place is collecting more than a dozen shots, split it by what actually changes on the day: '
+    +'a different room, a different time, a different lighting setup. "The house" is not a location; '
+    +'"the kitchen, morning" is.\n\n'
+    +(part?'These shots are one stretch of a longer film, and other people are breaking down the rest at '
+      +'the same time. Name each location plainly and by itself - "kitchen, morning", not "the kitchen '
+      +'where the notebook scene happens" - so that a place appearing in someone else\'s stretch comes '
+      +'back with the same name and the two can be joined.\n\n':'')
     +'Do not invent shots that are not in the plan. Keep every list short and concrete - these are '
     +'things somebody has to pack.\n\n'
     +'Return ONLY JSON: [{"name":"...","timeOfDay":"...","shots":["01","01a"],"props":["..."],'
     +'"wardrobe":["..."],"cast":["..."],"note":"..."}]'
     +(li?'\n\n'+li:'');
-  return api(sys,'Shot plan:\n'+planAsText()).then(function(raw){
-    var arr=parseLocations(raw);
-    return arr?accountForEveryShot(arr):null;
+}
+function genBreakdown(){
+  if(!nodes.length)return Promise.resolve(null);
+  var li=langInstr(inputLang,'the breakdown');
+  var lines=planAsText().split('\n');
+  if(lines.length<=BREAKDOWN_CHUNK){
+    return api(breakdownSys(li,false),'Shot plan:\n'+lines.join('\n')).then(function(raw){
+      var arr=parseLocations(raw);
+      return arr?accountForEveryShot(arr):null;
+    });
+  }
+  var chunks=[];
+  for(var i=0;i<lines.length;i+=BREAKDOWN_CHUNK)chunks.push(lines.slice(i,i+BREAKDOWN_CHUNK));
+  var sys=breakdownSys(li,true);
+  var tasks=chunks.map(function(c,idx){
+    return function(){
+      return withTimeout(apiRetry(sys,'Shots '+(idx+1)+' of '+chunks.length+' in this film:\n'+c.join('\n'))
+        .then(parseLocations),60000,null,'breakdown '+(idx+1));
+    };
   });
+  return runLimited(tasks,3).then(function(parts){
+    var got=parts.filter(function(p){return p&&p.length;});
+    if(!got.length)return null;
+    return accountForEveryShot(mergeLocations(got));
+  });
+}
+
+/* Two writers looking at different stretches of the same film both find the
+   kitchen. Joining them on the name keeps one kitchen with all its shots
+   rather than two half-packed ones - and a shot that somehow came back in two
+   places is kept once, because you only pack for it once. */
+function mergeLocations(parts){
+  var byName={},order=[];
+  function key(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9çğıöşü]+/gi,' ').trim(); }
+  parts.forEach(function(list){
+    list.forEach(function(loc){
+      if(!loc||!loc.name)return;
+      var k=key(loc.name);
+      if(!byName[k]){
+        byName[k]={name:loc.name,timeOfDay:loc.timeOfDay||'',shots:[],props:[],wardrobe:[],cast:[],
+                   note:loc.note||''};
+        order.push(k);
+      }
+      var t=byName[k];
+      if(!t.timeOfDay&&loc.timeOfDay)t.timeOfDay=loc.timeOfDay;
+      if(!t.note&&loc.note)t.note=loc.note;
+      ['shots','props','wardrobe','cast'].forEach(function(f){
+        (loc[f]||[]).forEach(function(v){
+          v=String(v).trim();
+          if(!v)return;
+          for(var i=0;i<t[f].length;i++)if(t[f][i].toLowerCase()===v.toLowerCase())return;
+          t[f].push(v);
+        });
+      });
+    });
+  });
+  var out=order.map(function(k){return byName[k];});
+  // a shot can only be packed for once, so the first location claiming it wins
+  var claimed={};
+  out.forEach(function(l){
+    l.shots=l.shots.filter(function(s){
+      var k=s.toLowerCase();
+      if(claimed[k])return false;
+      claimed[k]=1; return true;
+    });
+  });
+  return out.filter(function(l){return l.shots.length;});
 }
 
 /* A 243-shot plan needs around twenty locations, and that answer can run past
