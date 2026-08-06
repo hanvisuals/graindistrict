@@ -775,28 +775,42 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
   .pv-loc-n{font-family:var(--mono);font-size:11pt;font-weight:700;color:#111;}
   .pv-loc-name{font-size:12pt;font-weight:600;color:#111;}
   .pv-loc-tod{font-family:var(--mono);font-size:7pt;letter-spacing:.12em;text-transform:uppercase;color:#888;}
-  .pv-loc-shots{font-family:var(--mono);font-size:7pt;letter-spacing:.08em;text-transform:uppercase;color:#aaa;margin-left:auto;}
+  /* not uppercased - these are shot labels and 01A is not the same thing as 01a */
+  .pv-loc-shots{font-family:var(--mono);font-size:7pt;letter-spacing:.08em;color:#aaa;margin-left:auto;}
   .pv-loc-dl{display:grid;grid-template-columns:19mm 1fr;gap:1mm 4mm;margin:0 0 0 6mm;
              padding-left:3mm;border-left:1px solid #eee;max-width:140mm;}
   .pv-loc-dl dt{font-family:var(--mono);font-size:6.5pt;font-weight:700;letter-spacing:.12em;
                 color:#aaa;text-align:right;padding-top:.5mm;}
   .pv-loc-dl dd{margin:0;font-size:9pt;line-height:1.45;color:#333;}
   .pv-loc-note{margin:2mm 0 0 9mm;font-size:8.5pt;line-height:1.45;color:#666;font-style:italic;max-width:140mm;}
-  .pv-row{display:grid;grid-template-columns:26mm 1fr auto;gap:6mm;
-          padding:4mm 0;border-top:1px solid #ececec;break-inside:avoid;page-break-inside:avoid;}
-  .pv-row:first-of-type{border-top:none;padding-top:1mm;}
-  .pv-idx{line-height:1.35;}
-  .pv-num{font-family:var(--mono);font-size:14pt;font-weight:700;color:#111;line-height:1;letter-spacing:-.02em;}
-  .pv-tc{font-family:var(--mono);font-size:7.5pt;color:#666;margin-top:1.6mm;white-space:nowrap;}
-  .pv-type{font-family:var(--mono);font-size:6.5pt;font-weight:700;letter-spacing:.14em;color:#999;margin-top:.8mm;}
-  .pv-content{font-size:10.5pt;line-height:1.5;color:#111;max-width:120mm;}
-  /* details sit in a quiet block under the shot rather than competing with it */
-  .pv-shots{margin:2.5mm 0 0;display:grid;grid-template-columns:19mm 1fr;gap:1mm 4mm;
-            padding-left:3mm;border-left:1px solid #eee;max-width:120mm;}
-  .pv-shots dt{font-family:var(--mono);font-size:6.5pt;font-weight:700;letter-spacing:.12em;
-               color:#aaa;padding-top:.5mm;text-align:right;}
-  .pv-shots dd{margin:0;font-size:9pt;line-height:1.45;color:#444;}
-  .pv-frame{width:32mm;}
+  /* a beat and its cuts are one thing, so the rule goes round the whole beat
+     and the cuts inside carry no rules of their own. A beat may run past a
+     page break - some have a dozen cuts - but a single row never splits, and
+     a beat's heading never gets left stranded at the foot of a page. */
+  .pv-sc{border-top:1px solid #e2e2e2;padding:3mm 0 3.5mm;}
+  .pv-sc:first-of-type{border-top:none;padding-top:1mm;}
+  .pv-row{display:grid;grid-template-columns:24mm 1fr auto;gap:5mm;
+          break-inside:avoid;page-break-inside:avoid;break-after:avoid;page-break-after:avoid;}
+  .pv-idx{line-height:1.3;}
+  .pv-num{font-family:var(--mono);font-size:13pt;font-weight:700;color:#111;line-height:1;letter-spacing:-.02em;}
+  .pv-tc{font-family:var(--mono);font-size:7.5pt;color:#666;margin-top:1.4mm;white-space:nowrap;}
+  .pv-type{font-family:var(--mono);font-size:6.5pt;font-weight:700;letter-spacing:.14em;color:#999;margin-top:.7mm;}
+  .pv-content{font-size:10.5pt;line-height:1.45;color:#111;max-width:118mm;}
+  /* the cuts are indented under their beat and set a size down - they read as
+     coverage of the line above, not as more items competing with it */
+  .pv-kids{margin:2.5mm 0 0 24mm;padding-left:4mm;border-left:1px solid #e6e6e6;}
+  .pv-kid{display:grid;grid-template-columns:9mm 16mm 1fr auto;gap:3mm;padding:1.4mm 0;
+          break-inside:avoid;page-break-inside:avoid;}
+  .pv-kid-n{font-family:var(--mono);font-size:8pt;font-weight:700;color:#888;padding-top:.4mm;}
+  .pv-kid-tc{font-family:var(--mono);font-size:7pt;color:#aaa;padding-top:.8mm;white-space:nowrap;}
+  .pv-kid-content{font-size:9.5pt;line-height:1.4;color:#222;max-width:100mm;}
+  /* prop, action, emotion and tech ran together on one line instead of four
+     labelled rows - same words, a fifth of the paper */
+  .pv-det{margin-top:.8mm;font-size:8pt;line-height:1.45;color:#666;max-width:110mm;}
+  .pv-det-k{font-family:var(--mono);font-size:6.5pt;font-weight:700;letter-spacing:.1em;
+            text-transform:uppercase;color:#b0b0b0;}
+  .pv-det-sep{color:#ccc;padding:0 1.4mm;}
+  .pv-frame{width:28mm;}
   .pv-frame img{width:100%;border:1px solid #e0e0e0;display:block;}
 }
 </style>
@@ -3902,11 +3916,41 @@ function shotsFor(nodeId){
    you actually take out of the house has to be organised by location, with
    everything needed at each one gathered in one place. The plan already knows
    the shots and their props; this asks for them to be regrouped that way. */
+/* A plan is not a flat list either. A voiceover line runs for seven seconds
+   and the four b-roll cuts underneath it are that line - they are not four
+   more items of equal weight. Printing them all as 01, 02, 03 loses the one
+   thing you need to see at a glance: what belongs to what. So the spine
+   blocks (the ones that carry time - voice, music, a scene) become the
+   numbered beats, and every cut that plays inside a beat's span nests under
+   it as 01a, 01b. Music videos, where every block genuinely is its own cut,
+   simply have no spine and stay flat. */
+var SPINE={voiceover:1,music:1,scene:1,main:1,segment:1};
+function subLabel(n,j){ return j<26 ? n+String.fromCharCode(97+j) : n+'.'+(j+1); }
+function planScenes(){
+  var out=[],cur=null;
+  nodes.forEach(function(n){
+    if(SPINE[n.type]){ cur={head:n,kids:[]}; out.push(cur); return; }
+    if(cur&&tcToSec(n.tcStart)<tcToSec(cur.head.tcEnd)){ cur.kids.push(n); return; }
+    out.push({head:n,kids:[]});          // nothing to belong to, so it is its own beat
+  });
+  out.forEach(function(s,i){
+    s.label=String(i+1).padStart(2,'0');
+    s.kids.forEach(function(k,j){ k.__label=subLabel(s.label,j); });
+    s.head.__label=s.label;
+  });
+  return out;
+}
 function planAsText(){
-  return nodes.map(function(n,i){
-    var sh=shotsFor(n.id).map(function(a){return (SK_LABEL[a.k]||a.k)+': '+a.t;}).join('; ');
-    return (i+1)+'. ['+n.type.toUpperCase()+'] '+n.tcStart+'-'+n.tcEnd+' - '+n.content+(sh?'  ('+sh+')':'');
-  }).join('\n');
+  var lines=[];
+  planScenes().forEach(function(s){
+    function one(n,label){
+      var sh=shotsFor(n.id).map(function(a){return (SK_LABEL[a.k]||a.k)+': '+a.t;}).join('; ');
+      lines.push(label+'. ['+n.type.toUpperCase()+'] '+n.tcStart+'-'+n.tcEnd+' - '+n.content+(sh?'  ('+sh+')':''));
+    }
+    one(s.head,s.label);
+    s.kids.forEach(function(k){ one(k,k.__label); });
+  });
+  return lines.join('\n');
 }
 
 function genBreakdown(){
@@ -3917,14 +3961,15 @@ function genBreakdown(){
     +'Group the shots by LOCATION - the real place a crew has to travel to and set up in. Shots that '
     +'happen in the same place belong together even if they are far apart in the plan, because that is '
     +'the order they will actually be shot in.\n\n'
-    +'For each location give: a short specific name, the time of day it needs, which shot numbers happen '
-    +'there, and everything that must be brought or arranged - props, wardrobe, who is needed on camera, '
-    +'and any equipment worth calling out. Add one short practical note: access, permission, light, noise, '
-    +'whatever would actually catch someone out on the day.\n\n'
+    +'For each location give: a short specific name, the time of day it needs, which shots happen there, '
+    +'and everything that must be brought or arranged - props, wardrobe, and who is needed on camera. '
+    +'Add one short practical note: access, permission, light, noise, whatever would actually catch '
+    +'someone out on the day.\n\n'
+    +'Shot labels look like 01, 01a, 02b. Copy them exactly as they appear in the plan.\n\n'
     +'Merge near-identical places into one location rather than splitting hairs. Do not invent shots that '
     +'are not in the plan. Keep every list short and concrete - these are things somebody has to pack.\n\n'
-    +'Return ONLY JSON: [{"name":"...","timeOfDay":"...","shots":[1,2],"props":["..."],"wardrobe":["..."],'
-    +'"cast":["..."],"equipment":["..."],"note":"..."}]'
+    +'Return ONLY JSON: [{"name":"...","timeOfDay":"...","shots":["01","01a"],"props":["..."],'
+    +'"wardrobe":["..."],"cast":["..."],"note":"..."}]'
     +(li?'\n\n'+li:'');
   return api(sys,'Shot plan:\n'+planAsText()).then(function(raw){
     try{
@@ -3963,7 +4008,7 @@ function buildPrintView(){
         if(!arr||!arr.length)return '';
         return '<dt>'+label+'</dt><dd>'+pesc(arr.join(' &middot; ')).replace(/&amp;middot;/g,'&middot;')+'</dd>';
       }
-      var dl=list('CAST',loc.cast)+list('WARDROBE',loc.wardrobe)+list('PROPS',loc.props)+list('KIT',loc.equipment);
+      var dl=list('CAST',loc.cast)+list('WARDROBE',loc.wardrobe)+list('PROPS',loc.props);
       if(dl)h+='<dl class="pv-loc-dl">'+dl+'</dl>';
       if(loc.note)h+='<p class="pv-loc-note">'+pesc(loc.note)+'</p>';
       h+='</article>';
@@ -3971,31 +4016,50 @@ function buildPrintView(){
     h+='</section>';
   }
 
-  h+='<section><h2>Shot list</h2>';
-  nodes.forEach(function(n,i){
+  // a frame next to a shot is worth a paragraph of description on set;
+  // if the image can't be fetched the cell simply collapses
+  function frame(n){
+    return n.sbUrl?'<div class="pv-frame"><img src="'+pesc(n.sbUrl)+'" alt="" onerror="this.parentNode.style.display=\'none\'"></div>':'';
+  }
+  // four labelled rows per shot filled pages with headings nobody reads. The
+  // same words run together on one line say exactly as much and cost a line
+  // instead of five.
+  function details(n){
     var sh=shotsFor(n.id);
-    h+='<article class="pv-row">'
+    if(!sh.length)return '';
+    return '<div class="pv-det">'+sh.map(function(a){
+      return '<span class="pv-det-k">'+pesc(SK_LABEL[a.k]||a.k)+'</span> '+pesc(a.t);
+    }).join('<span class="pv-det-sep">&middot;</span>')+'</div>';
+  }
+
+  h+='<section><h2>Shot list</h2>';
+  planScenes().forEach(function(s){
+    var n=s.head;
+    h+='<article class="pv-sc">'
       // number, timing and type read as one label instead of being scattered
       // across the row - the eye should find a shot by its number, then know
       // when and what it is without moving
+      +'<div class="pv-row">'
       +'<div class="pv-idx">'
-      +'<div class="pv-num">'+String(i+1).padStart(2,'0')+'</div>'
+      +'<div class="pv-num">'+pesc(s.label)+'</div>'
       +'<div class="pv-tc">'+pesc(n.tcStart)+'&ndash;'+pesc(n.tcEnd)+'</div>'
       +'<div class="pv-type">'+pesc(n.type.toUpperCase())+'</div>'
       +'</div>'
-      +'<div class="pv-body">'
-      +'<div class="pv-content">'+pesc(n.content)+'</div>';
-    if(sh.length){
-      h+='<dl class="pv-shots">';
-      sh.forEach(function(a){
-        h+='<dt>'+pesc((SK_LABEL[a.k]||a.k).toUpperCase())+'</dt><dd>'+pesc(a.t)+'</dd>';
+      +'<div class="pv-body"><div class="pv-content">'+pesc(n.content)+'</div>'+details(n)+'</div>'
+      +frame(n)
+      +'</div>';
+    if(s.kids.length){
+      h+='<div class="pv-kids">';
+      s.kids.forEach(function(k){
+        h+='<div class="pv-kid">'
+          +'<div class="pv-kid-n">'+pesc(k.__label)+'</div>'
+          +'<div class="pv-kid-tc">'+pesc(k.tcStart)+'&ndash;'+pesc(k.tcEnd)+'</div>'
+          +'<div class="pv-kid-body"><div class="pv-kid-content">'+pesc(k.content)+'</div>'+details(k)+'</div>'
+          +frame(k)
+          +'</div>';
       });
-      h+='</dl>';
+      h+='</div>';
     }
-    h+='</div>';
-    // a frame next to the row is worth a paragraph of description on set;
-    // if the image can't be fetched the cell simply collapses
-    if(n.sbUrl) h+='<div class="pv-frame"><img src="'+pesc(n.sbUrl)+'" alt="" onerror="this.parentNode.style.display=\'none\'"></div>';
     h+='</article>';
   });
   h+='</section>';
@@ -5039,8 +5103,11 @@ document.addEventListener('mouseup',function(e){
           var card=coverCard(item);
           card.addEventListener('click',function(){
             if(moved>6) return;                 // that was a drag, not a click
+            // clicking a project means open it. Making an off-centre card
+            // only slide into place turned every open into two clicks, and
+            // nobody clicks a project card to admire it.
             if(index!==indexAt(pos)) goTo(index);
-            else onOpen(item);
+            onOpen(item);
           });
           track.appendChild(card); cards.push(card);
         });
