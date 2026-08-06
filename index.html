@@ -767,6 +767,21 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
   .pv-brief-body .bd-hr{border:none!important;border-top:1px solid #ddd!important;margin:3mm 0!important;display:block;}
   /* a row must not be split across a page - half a shot on each side of a
      page break is useless to whoever is holding it */
+
+  .pv-bd{margin-bottom:11mm;}
+  .pv-loc{break-inside:avoid;page-break-inside:avoid;padding:3.5mm 0;border-top:1px solid #ececec;}
+  .pv-loc:first-of-type{border-top:none;padding-top:1mm;}
+  .pv-loc-head{display:flex;align-items:baseline;gap:3mm;flex-wrap:wrap;margin-bottom:2mm;}
+  .pv-loc-n{font-family:var(--mono);font-size:11pt;font-weight:700;color:#111;}
+  .pv-loc-name{font-size:12pt;font-weight:600;color:#111;}
+  .pv-loc-tod{font-family:var(--mono);font-size:7pt;letter-spacing:.12em;text-transform:uppercase;color:#888;}
+  .pv-loc-shots{font-family:var(--mono);font-size:7pt;letter-spacing:.08em;text-transform:uppercase;color:#aaa;margin-left:auto;}
+  .pv-loc-dl{display:grid;grid-template-columns:19mm 1fr;gap:1mm 4mm;margin:0 0 0 6mm;
+             padding-left:3mm;border-left:1px solid #eee;max-width:140mm;}
+  .pv-loc-dl dt{font-family:var(--mono);font-size:6.5pt;font-weight:700;letter-spacing:.12em;
+                color:#aaa;text-align:right;padding-top:.5mm;}
+  .pv-loc-dl dd{margin:0;font-size:9pt;line-height:1.45;color:#333;}
+  .pv-loc-note{margin:2mm 0 0 9mm;font-size:8.5pt;line-height:1.45;color:#666;font-style:italic;max-width:140mm;}
   .pv-row{display:grid;grid-template-columns:26mm 1fr auto;gap:6mm;
           padding:4mm 0;border-top:1px solid #ececec;break-inside:avoid;page-break-inside:avoid;}
   .pv-row:first-of-type{border-top:none;padding-top:1mm;}
@@ -1021,6 +1036,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
       <button class="btn" id="recceBtn" onclick="toggleReccePanel()" style="display:none">recce</button>
       <button class="btn" id="previewBtn" onclick="openPlayback()">▶ preview</button>
       <button class="btn" id="btnExport" onclick="doExport()">export</button>
+      <button class="btn" id="btnRebreak" onclick="projectBreakdown=null;doExport()" title="Recalculate locations and export">&#8635;</button>
       <button class="btn" onclick="if(window.gdNewProject)gdNewProject();projectBrief='';projectConstraints='';clearRecce();var rp=document.getElementById('reccePanel');if(rp)rp.classList.remove('open');show('s1')">new</button>
     </div>
   </div>
@@ -2309,6 +2325,7 @@ function buildGenSys(totalSec,li){
 
 var pcChoice='ai';
 var projectBrief='';
+var projectBreakdown=null;   // location-by-location shooting breakdown
 var projectConstraints='';
 
 function goToEquipment(){
@@ -3880,6 +3897,44 @@ function shotsFor(nodeId){
    than generated with a PDF library: no dependency to ship, the browser
    handles pagination and font rendering, and "Save as PDF" is one step in a
    dialog that also offers paper size and margins. */
+/* A plan is written in story order, but nobody shoots that way - you go to a
+   location, shoot everything that happens there, and strike. So the document
+   you actually take out of the house has to be organised by location, with
+   everything needed at each one gathered in one place. The plan already knows
+   the shots and their props; this asks for them to be regrouped that way. */
+function planAsText(){
+  return nodes.map(function(n,i){
+    var sh=shotsFor(n.id).map(function(a){return (SK_LABEL[a.k]||a.k)+': '+a.t;}).join('; ');
+    return (i+1)+'. ['+n.type.toUpperCase()+'] '+n.tcStart+'-'+n.tcEnd+' - '+n.content+(sh?'  ('+sh+')':'');
+  }).join('\n');
+}
+
+function genBreakdown(){
+  if(!nodes.length)return Promise.resolve(null);
+  var li=langInstr(inputLang,'the breakdown');
+  var sys=(li?li+'\n\n':'')
+    +'You are a first assistant director turning a shot plan into a shooting breakdown.\n\n'
+    +'Group the shots by LOCATION - the real place a crew has to travel to and set up in. Shots that '
+    +'happen in the same place belong together even if they are far apart in the plan, because that is '
+    +'the order they will actually be shot in.\n\n'
+    +'For each location give: a short specific name, the time of day it needs, which shot numbers happen '
+    +'there, and everything that must be brought or arranged - props, wardrobe, who is needed on camera, '
+    +'and any equipment worth calling out. Add one short practical note: access, permission, light, noise, '
+    +'whatever would actually catch someone out on the day.\n\n'
+    +'Merge near-identical places into one location rather than splitting hairs. Do not invent shots that '
+    +'are not in the plan. Keep every list short and concrete - these are things somebody has to pack.\n\n'
+    +'Return ONLY JSON: [{"name":"...","timeOfDay":"...","shots":[1,2],"props":["..."],"wardrobe":["..."],'
+    +'"cast":["..."],"equipment":["..."],"note":"..."}]'
+    +(li?'\n\n'+li:'');
+  return api(sys,'Shot plan:\n'+planAsText()).then(function(raw){
+    try{
+      var m=raw.match(/\[[\s\S]*\]/);
+      if(!m)return null;
+      var arr=JSON.parse(m[0]);
+      return (arr&&arr.length)?arr:null;
+    }catch(e){ console.warn('[breakdown] could not parse',e); return null; }
+  });
+}
 function pesc(t){ return String(t==null?'':t).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];}); }
 
 function buildPrintView(){
@@ -3894,9 +3949,26 @@ function buildPrintView(){
     +fmtTime(total)+' &middot; '+pesc(when)+'</div>'
     +'</div>';
 
-  if(projectBrief){
-    h+='<section class="pv-brief"><h2>Production brief</h2>'
-      +'<div class="pv-brief-body">'+renderMarkdown(projectBrief)+'</div></section>';
+  if(projectBreakdown&&projectBreakdown.length){
+    h+='<section class="pv-bd"><h2>Locations &middot; '+projectBreakdown.length+'</h2>';
+    projectBreakdown.forEach(function(loc,li){
+      h+='<article class="pv-loc">'
+        +'<div class="pv-loc-head">'
+        +'<span class="pv-loc-n">'+String(li+1).padStart(2,'0')+'</span>'
+        +'<span class="pv-loc-name">'+pesc(loc.name||'Location')+'</span>'
+        +(loc.timeOfDay?'<span class="pv-loc-tod">'+pesc(loc.timeOfDay)+'</span>':'')
+        +(loc.shots&&loc.shots.length?'<span class="pv-loc-shots">shots '+loc.shots.join(', ')+'</span>':'')
+        +'</div>';
+      function list(label,arr){
+        if(!arr||!arr.length)return '';
+        return '<dt>'+label+'</dt><dd>'+pesc(arr.join(' &middot; ')).replace(/&amp;middot;/g,'&middot;')+'</dd>';
+      }
+      var dl=list('CAST',loc.cast)+list('WARDROBE',loc.wardrobe)+list('PROPS',loc.props)+list('KIT',loc.equipment);
+      if(dl)h+='<dl class="pv-loc-dl">'+dl+'</dl>';
+      if(loc.note)h+='<p class="pv-loc-note">'+pesc(loc.note)+'</p>';
+      h+='</article>';
+    });
+    h+='</section>';
   }
 
   h+='<section><h2>Shot list</h2>';
@@ -3932,6 +4004,25 @@ function buildPrintView(){
 
 function doExport(){
   if(!nodes.length){ gdAsk({title:'Nothing to export',message:'Build a board first.',ok:'OK'}); return; }
+  // the breakdown is what makes this worth printing, so export produces one
+  // rather than making it a separate thing to remember. It is kept with the
+  // project, so this only costs a wait the first time.
+  if(projectBreakdown&&projectBreakdown.length) return printNow();
+  var btn=document.getElementById('btnExport');
+  var label=btn?btn.textContent:'';
+  if(btn){ btn.textContent='working out locations...'; btn.disabled=true; }
+  genBreakdown().then(function(bd){
+    projectBreakdown=bd;
+    if(bd)saveHistory();
+  },function(e){
+    console.warn('[breakdown] failed',e);
+  }).then(function(){
+    if(btn){ btn.textContent=label; btn.disabled=false; }
+    // a failed breakdown still leaves a perfectly good shot list
+    printNow();
+  });
+}
+function printNow(){
   buildPrintView();
   // browsers name the PDF after the document title
   var prev=document.title;
@@ -4469,6 +4560,7 @@ document.addEventListener('mouseup',function(e){
     return {
       v:1, projectType:projectType, topic:topic, tone:tone, fmt:fmt, styleMode:styleMode, inputLang:inputLang,
       durMin:durMin, durMax:durMax, projectBrief:projectBrief, projectConstraints:projectConstraints,
+      projectBreakdown:projectBreakdown,
       aiMode:(typeof aiMode!=='undefined'?aiMode:true),
       songName:songName, songDuration:songDuration, songAnalysis:songAnalysis,
       recceImages:recceImages,
@@ -4482,6 +4574,7 @@ document.addEventListener('mouseup',function(e){
     projectType=d.projectType||'youtube'; topic=d.topic||''; tone=d.tone||tone; fmt=d.fmt||fmt; styleMode=d.styleMode||styleMode;
     inputLang=d.inputLang||'en'; durMin=d.durMin||durMin; durMax=d.durMax||durMax;
     projectBrief=d.projectBrief||''; projectConstraints=d.projectConstraints||'';
+    projectBreakdown=d.projectBreakdown||null;
     if(typeof d.aiMode!=='undefined'&&typeof aiMode!=='undefined') aiMode=d.aiMode;
     songName=d.songName||''; songDuration=d.songDuration||0; songAnalysis=d.songAnalysis||null; songURL=null;
     recceImages=d.recceImages||[];
@@ -4576,7 +4669,7 @@ document.addEventListener('mouseup',function(e){
   function clearBoard(){
     nodes=[]; attShots=[]; imgNodes=[]; noteNodes=[]; conns=[]; nid=1;
     nodeDrawerClosed={};
-    topic=''; projectBrief=''; projectConstraints='';
+    topic=''; projectBrief=''; projectConstraints=''; projectBreakdown=null;
     recceImages=[];
     songName=''; songDuration=0; songAnalysis=null; songURL=null;
     var sta=byId('scriptTa'); if(sta) sta.value='';
