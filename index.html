@@ -2367,7 +2367,7 @@ var projectBreakdown=null;   // location-by-location shooting breakdown
    version of the code that made it, and either one changing throws it out.
    Bump the version whenever the breakdown prompt or its handling changes -
    that is what retires the copies already saved in people's projects. */
-var BREAKDOWN_V=5;
+var BREAKDOWN_V=6;
 var projectBreakdownKey=null;
 function breakdownKey(){
   var t=BREAKDOWN_V+'|'+planAsText(),h=5381;
@@ -4194,6 +4194,13 @@ function runBreakdown(lines,sys){
 function mergeLocations(parts){
   var byName={},order=[];
   function key(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9çğıöşü]+/gi,' ').trim(); }
+  /* Handed the same agreed name, one piece writes "Baski Evi" and another
+     writes "Baski Evi (Gunduz)" - the time of day has its own field, but it
+     leaks into the name and the two stop matching. Fold a bracketed name into
+     its bare twin, but only when that twin is actually in the list: if two
+     names differ solely by their brackets and neither appears bare, the
+     bracket is the only thing telling them apart and somebody meant it. */
+  function bareKey(s){ return key(String(s).replace(/\s*\((?:[^()]|\([^()]*\))*\)\s*$/,'')); }
   parts.forEach(function(list){
     list.forEach(function(loc){
       if(!loc||!loc.name)return;
@@ -4215,6 +4222,23 @@ function mergeLocations(parts){
         });
       });
     });
+  });
+  // The bare twin can arrive after the bracketed one, so the folding waits
+  // until every piece is in and then walks the list once.
+  order.slice().forEach(function(k){
+    var bare=bareKey(byName[k]&&byName[k].name);
+    if(!bare||bare===k||!byName[bare])return;
+    var from=byName[k],to=byName[bare];
+    if(!to.timeOfDay&&from.timeOfDay)to.timeOfDay=from.timeOfDay;
+    if(!to.note&&from.note)to.note=from.note;
+    ['shots','props','wardrobe','cast'].forEach(function(f){
+      from[f].forEach(function(v){
+        for(var i=0;i<to[f].length;i++)if(to[f][i].toLowerCase()===v.toLowerCase())return;
+        to[f].push(v);
+      });
+    });
+    delete byName[k];
+    order.splice(order.indexOf(k),1);
   });
   var out=order.map(function(k){return byName[k];});
   // a shot can only be packed for once, so the first location claiming it wins
