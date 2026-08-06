@@ -2367,7 +2367,7 @@ var projectBreakdown=null;   // location-by-location shooting breakdown
    version of the code that made it, and either one changing throws it out.
    Bump the version whenever the breakdown prompt or its handling changes -
    that is what retires the copies already saved in people's projects. */
-var BREAKDOWN_V=3;
+var BREAKDOWN_V=4;
 var projectBreakdownKey=null;
 function breakdownKey(){
   var t=BREAKDOWN_V+'|'+planAsText(),h=5381;
@@ -4092,29 +4092,58 @@ function breakdownSys(li,part){
     +'"wardrobe":["..."],"cast":["..."],"note":"..."}]'
     +(li?'\n\n'+li:'');
 }
+function labelOfLine(line){ var m=String(line).match(/^([0-9a-z.]+)\./); return m?m[1]:''; }
+function allShotLabels(){
+  var out=[];
+  planScenes().forEach(function(s){ out.push(s.label); s.kids.forEach(function(k){ out.push(k.__label); }); });
+  return out;
+}
+function labelsMissingFrom(locs){
+  var seen={};
+  locs.forEach(function(l){ (l.shots||[]).forEach(function(s){ seen[String(s).trim().toLowerCase()]=1; }); });
+  return allShotLabels().filter(function(l){ return !seen[l.toLowerCase()]; });
+}
+/* Telling the model that every shot counts was not enough - it kept placing
+   the cuts and skipping the voiceover lines they play under, twenty-seven of
+   them in one export. Handing it the actual list of labels it owes back turns
+   a rule it can drift away from into a checklist it can see itself failing. */
+function breakdownPass(lines,sys){
+  if(!lines.length)return Promise.resolve([]);
+  var chunks=[];
+  for(var i=0;i<lines.length;i+=BREAKDOWN_CHUNK)chunks.push(lines.slice(i,i+BREAKDOWN_CHUNK));
+  var tasks=chunks.map(function(c,idx){
+    var want=c.map(labelOfLine).filter(Boolean);
+    return function(){
+      var usr='Shots '+(idx+1)+' of '+chunks.length+' in this film:\n'+c.join('\n')
+        +'\n\nYour answer must place every one of these '+want.length+' shots, exactly once each:\n'
+        +want.join(', ');
+      return withTimeout(apiRetry(sys,usr).then(parseLocations),75000,null,'breakdown '+(idx+1));
+    };
+  });
+  return runLimited(tasks,3).then(function(parts){
+    return parts.filter(function(p){ return p&&p.length; });
+  });
+}
 function genBreakdown(){
   if(!nodes.length)return Promise.resolve(null);
   var li=langInstr(inputLang,'the breakdown');
   var lines=planAsText().split('\n');
-  if(lines.length<=BREAKDOWN_CHUNK){
-    return api(breakdownSys(li,false),'Shot plan:\n'+lines.join('\n')).then(function(raw){
-      var arr=parseLocations(raw);
-      return arr?accountForEveryShot(arr):null;
+  var sys=breakdownSys(li,lines.length>BREAKDOWN_CHUNK);
+  return breakdownPass(lines,sys).then(function(parts){
+    if(!parts.length)return null;
+    var merged=mergeLocations(parts);
+    /* A piece that times out or comes back unusable takes its whole stretch of
+       the film with it - eighty-three shots in a row, in one export, which
+       reads as a gap rather than a shoot. Whatever is still missing gets one
+       more pass of its own; only then is it written down as unplaced. */
+    var miss={},any=false;
+    labelsMissingFrom(merged).forEach(function(l){ miss[l]=1; any=true; });
+    if(!any)return accountForEveryShot(merged);
+    var left=lines.filter(function(l){ return miss[labelOfLine(l)]; });
+    console.warn('[breakdown] '+left.length+' shots came back unplaced - going round again');
+    return breakdownPass(left,sys).then(function(more){
+      return accountForEveryShot(more.length?mergeLocations([merged].concat(more)):merged);
     });
-  }
-  var chunks=[];
-  for(var i=0;i<lines.length;i+=BREAKDOWN_CHUNK)chunks.push(lines.slice(i,i+BREAKDOWN_CHUNK));
-  var sys=breakdownSys(li,true);
-  var tasks=chunks.map(function(c,idx){
-    return function(){
-      return withTimeout(apiRetry(sys,'Shots '+(idx+1)+' of '+chunks.length+' in this film:\n'+c.join('\n'))
-        .then(parseLocations),60000,null,'breakdown '+(idx+1));
-    };
-  });
-  return runLimited(tasks,3).then(function(parts){
-    var got=parts.filter(function(p){return p&&p.length;});
-    if(!got.length)return null;
-    return accountForEveryShot(mergeLocations(got));
   });
 }
 

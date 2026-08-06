@@ -66,6 +66,14 @@ server.listen(8934, async()=>{
      seen.every(u=>u.split('\n').filter(l=>/^[0-9a-z.]+\./.test(l)).length<=45),
      seen.map(u=>u.split('\n').length));
   ok('every piece was told it is part of a longer film', seen.every(u=>/of \d+ in this film/.test(u)));
+  ok('and handed the exact labels it owes back',
+     seen.every(u=>/must place every one of these \d+ shots, exactly once each/.test(u)));
+  ok('the label list matches the shots that piece was given',
+     seen.every(u=>{
+       const given=[...u.matchAll(/^([0-9a-z.]+)\./gm)].map(m=>m[1]);
+       const owed=(u.split('exactly once each:')[1]||'').split(',').map(x=>x.trim()).filter(Boolean);
+       return owed.length===given.length && owed.every((l,i)=>l===given[i]);
+     }), seen[0].slice(-200));
 
   let t1=await shown();
   const locNames=await page.evaluate(()=>[].map.call(document.querySelectorAll('.pv-loc-name'),e=>e.textContent));
@@ -78,13 +86,30 @@ server.listen(8934, async()=>{
     return n;});
   ok('all 160 shots are accounted for exactly once', covered===160, covered);
 
-  // one piece fails outright - the rest must still land, gap surfaced
-  handler=(user,i)=>i===1?'sorry, no':JSON.stringify([loc('Mutfak',[...user.matchAll(/^([0-9a-z.]+)\./gm)].map(m=>m[1]))]);
+  // a piece that fails once is asked again before anything is called unplaced
+  let failed=0;
+  handler=(user,i)=>{
+    const mine=[...user.matchAll(/^([0-9a-z.]+)\./gm)].map(m=>m[1]);
+    if(i===1&&failed++===0)return 'sorry, no';       // only the first attempt fails
+    return JSON.stringify([loc('Mutfak',mine)]);
+  };
   seen=[]; await reset();
-  await page.click('#btnExport'); await page.waitForTimeout(2500);
+  await page.click('#btnExport'); await page.waitForTimeout(4000);
   const t2=await shown();
   ok('one failed piece does not lose the others', /Mutfak/.test(t2));
-  ok('and its shots are surfaced as unplaced', /Unplaced/.test(t2));
+  ok('its shots are asked for again rather than written off', !/Unplaced/.test(t2), t2.slice(0,220));
+  const cov2=await page.evaluate(()=>{
+    var n=0;[].forEach.call(document.querySelectorAll('.pv-loc-shots'),function(e){
+      n+=e.textContent.replace('shots ','').split(',').filter(x=>x.trim()).length;});
+    return n;});
+  ok('so the second time round every shot is placed', cov2===160, cov2);
+
+  // a piece that never comes back is written down, not hidden
+  handler=(user,i)=>i%3===1?'sorry, no':JSON.stringify([loc('Mutfak',[...user.matchAll(/^([0-9a-z.]+)\./gm)].map(m=>m[1]))]);
+  seen=[]; await reset();
+  await page.click('#btnExport'); await page.waitForTimeout(5000);
+  const t3b=await shown();
+  ok('a piece that keeps failing ends up in the unplaced list', /Unplaced/.test(t3b));
 
   // a shot claimed by two pieces is packed for once
   handler=()=>JSON.stringify([loc('Mutfak',['01','01a']),loc('Sokak',['01a','01b'])]);
