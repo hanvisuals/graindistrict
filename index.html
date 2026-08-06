@@ -1050,7 +1050,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
       <button class="btn" id="recceBtn" onclick="toggleReccePanel()" style="display:none">recce</button>
       <button class="btn" id="previewBtn" onclick="openPlayback()">▶ preview</button>
       <button class="btn" id="btnExport" onclick="doExport()">export</button>
-      <button class="btn" id="btnRebreak" onclick="projectBreakdown=null;doExport()" title="Recalculate locations and export">&#8635;</button>
+      <button class="btn" id="btnRebreak" onclick="projectBreakdown=null;projectBreakdownKey=null;doExport()" title="Throw away the locations and work them out again">&#8635;</button>
       <button class="btn" onclick="if(window.gdNewProject)gdNewProject();projectBrief='';projectConstraints='';clearRecce();var rp=document.getElementById('reccePanel');if(rp)rp.classList.remove('open');show('s1')">new</button>
     </div>
   </div>
@@ -2360,6 +2360,20 @@ function buildGenSys(totalSec,li){
 var pcChoice='ai';
 var projectBrief='';
 var projectBreakdown=null;   // location-by-location shooting breakdown
+/* The breakdown is cached so a second export doesn't pay for it again, but a
+   cache with no idea what it describes goes stale in silence: edit the plan,
+   press export, and the document confidently lists locations for a film you
+   no longer have. So it is stamped with the plan it was made from and the
+   version of the code that made it, and either one changing throws it out.
+   Bump the version whenever the breakdown prompt or its handling changes -
+   that is what retires the copies already saved in people's projects. */
+var BREAKDOWN_V=2;
+var projectBreakdownKey=null;
+function breakdownKey(){
+  var t=BREAKDOWN_V+'|'+planAsText(),h=5381;
+  for(var i=0;i<t.length;i++)h=((h*33)^t.charCodeAt(i))>>>0;
+  return h.toString(36)+'-'+t.length;
+}
 var projectConstraints='';
 
 function goToEquipment(){
@@ -4202,13 +4216,16 @@ function doExport(){
   if(!nodes.length){ gdAsk({title:'Nothing to export',message:'Build a board first.',ok:'OK'}); return; }
   // the breakdown is what makes this worth printing, so export produces one
   // rather than making it a separate thing to remember. It is kept with the
-  // project, so this only costs a wait the first time.
-  if(projectBreakdown&&projectBreakdown.length) return printNow();
+  // project, so this only costs a wait the first time - but only while it
+  // still describes the plan in front of you.
+  var key=breakdownKey();
+  if(projectBreakdown&&projectBreakdown.length&&projectBreakdownKey===key) return printNow();
   var btn=document.getElementById('btnExport');
   var label=btn?btn.textContent:'';
   if(btn){ btn.textContent='working out locations...'; btn.disabled=true; }
   genBreakdown().then(function(bd){
     projectBreakdown=bd;
+    projectBreakdownKey=bd?key:null;
     if(bd)saveHistory();
   },function(e){
     console.warn('[breakdown] failed',e);
@@ -4763,7 +4780,7 @@ document.addEventListener('mouseup',function(e){
     return {
       v:1, projectType:projectType, topic:topic, tone:tone, fmt:fmt, styleMode:styleMode, inputLang:inputLang,
       durMin:durMin, durMax:durMax, projectBrief:projectBrief, projectConstraints:projectConstraints,
-      projectBreakdown:projectBreakdown,
+      projectBreakdown:projectBreakdown, projectBreakdownKey:projectBreakdownKey,
       aiMode:(typeof aiMode!=='undefined'?aiMode:true),
       songName:songName, songDuration:songDuration, songAnalysis:songAnalysis,
       recceImages:recceImages,
@@ -4777,7 +4794,7 @@ document.addEventListener('mouseup',function(e){
     projectType=d.projectType||'youtube'; topic=d.topic||''; tone=d.tone||tone; fmt=d.fmt||fmt; styleMode=d.styleMode||styleMode;
     inputLang=d.inputLang||'en'; durMin=d.durMin||durMin; durMax=d.durMax||durMax;
     projectBrief=d.projectBrief||''; projectConstraints=d.projectConstraints||'';
-    projectBreakdown=d.projectBreakdown||null;
+    projectBreakdown=d.projectBreakdown||null; projectBreakdownKey=d.projectBreakdownKey||null;
     if(typeof d.aiMode!=='undefined'&&typeof aiMode!=='undefined') aiMode=d.aiMode;
     songName=d.songName||''; songDuration=d.songDuration||0; songAnalysis=d.songAnalysis||null; songURL=null;
     recceImages=d.recceImages||[];
@@ -4872,7 +4889,7 @@ document.addEventListener('mouseup',function(e){
   function clearBoard(){
     nodes=[]; attShots=[]; imgNodes=[]; noteNodes=[]; conns=[]; nid=1;
     nodeDrawerClosed={};
-    topic=''; projectBrief=''; projectConstraints=''; projectBreakdown=null;
+    topic=''; projectBrief=''; projectConstraints=''; projectBreakdown=null; projectBreakdownKey=null;
     recceImages=[];
     songName=''; songDuration=0; songAnalysis=null; songURL=null;
     var sta=byId('scriptTa'); if(sta) sta.value='';
