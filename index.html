@@ -2332,7 +2332,27 @@ function buildGenSys(totalSec,li){
   }else if(projectType==='other'){
     base='You are a director building a shot plan for a video project.\n\n5 block types:\nINTRO - Opening sequence. How it starts.\nMAIN - Core content. The main visual segment.\nSEGMENT - A distinct section or chapter within the video.\nOUTRO - Closing sequence. How it ends.\nTRANSITION - One line. Brief cut or pause.\n\nRULES:\n- Total duration: '+dur+'\n- Each block describes what happens visually and structurally.';
   }else{
-    base='You are a filmmaker building a cut-by-cut plan for a personal YouTube video in a '+tone+' tone.\n\n4 block types:\nVOICEOVER - Write the EXACT words spoken out loud. First person. No visual description.\nBROLL - No talking. ONE single camera cut. Describe only what the CAMERA SEES: framing, lens, movement, subject.\nMUSIC - No talking. Only music plays. Marks a montage section.\nTRANSITION - One line. Match cut, smash cut or brief pause.'+ytCutRules(totalSec)+'\n\nRULES:\n- Total duration: '+dur+'\n- NEVER follow repeating patterns. Let emotion and story rhythm decide.\n- Aesthetic: harsh flash, grain, analog, anti-polished.'+stylePack('script');
+    base='You are a filmmaker building a cut-by-cut plan for a personal YouTube video in a '+tone+' tone.\n\n4 block types:\nVOICEOVER - Write the EXACT words spoken out loud. First person. No visual description.\nBROLL - No talking. ONE single camera cut. Describe only what the CAMERA SEES: framing, lens, movement, subject.\nMUSIC - No talking. Only music plays. Marks a montage section.\nTRANSITION - One line. Match cut, smash cut or brief pause.'+ytCutRules(totalSec)+'\n\nRULES:\n- Total duration: '+dur+'\n- NEVER follow repeating patterns. Let emotion and story rhythm decide.\n- Aesthetic: harsh flash, grain, analog, anti-polished.'
+      /* Everything above tells the model how to fill a timeline. Left at that
+         it fills one very competently and says nothing: it reaches for the
+         cadence it has learned means "moving" - the three-part list, the
+         "less X, more Y" turn - and repeats it until the script is all
+         cadence and no content. These rules exist to close those specific
+         exits. They are about writing, not arithmetic, which is what the
+         prompt was missing entirely. */
+      +'\n\nHOW THE VOICEOVER IS WRITTEN:\n'
+      +'- Say concrete things. A name, an object, a number, a time, a place - something a viewer could picture or check. Abstractions ("emptiness", "possibility", "fragmented identity") are what you write when you have not decided what happened. Decide.\n'
+      +'- Specifics belong in passing, not as the subject. One line mentioning what a thing cost is texture; a paragraph accounting for it is a different video. Mention and move.\n'
+      +'- Something has to cost something. Someone is disappointed, something is thrown away, something does not work and stays not working for a while. If every problem is solved in the next sentence there is no middle.\n'
+      +'- Anyone you introduce stays in the story. If a person speaks once, they come back or their question does - do not raise a voice and drop it.\n'
+      +'- Show the thing the video is about. If it is a made object, say what it actually looks like. Nine minutes about making something without ever describing it is the most common way this fails.\n'
+      +'BANNED, because they are the sound of writing rather than the thing itself:\n'
+      +'- The "less X, more Y" construction ("less a product, more a confession"). Not once.\n'
+      +'- Three-part parallel lists as an emotional beat ("with a pen, a tablet, and ink" / "my design. my line. my hand."). At most ONE in the entire video, and only if it earns it.\n'
+      +'- Reusing any sentence shape you have already used. If two lines could be swapped without anyone noticing, cut one.\n'
+      +'- Announcing structure you then abandon. If the narrator sets rules or makes a list, it has to matter later - one gets broken, one saves them - or do not set it up.\n'
+      +'- Rhetorical questions the narrator immediately answers, and openers of the "these days" / "have you ever" family.'
+      +stylePack('script');
   }
   return (li?li+'\n\n':'')+base+(li?'\n\n'+li:'')+'\n\nLANGUAGE: Write ALL block content - voiceover words, visual descriptions, everything after the timecode - in the SAME LANGUAGE the user wrote the topic in. Keep the [TYPE] tags in English.\n\nReturn ONLY plain text. Each block is EXACTLY ONE line - never split a block across two lines, never repeat the timecode on its own line:\n[TYPE] 00:00-00:00 - content';
 }
@@ -2642,7 +2662,19 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
   // keep the beat short - this is a quick outline, not the script itself.
   // asking for "2-3 sentences" per segment used to make even this "fast"
   // structuring step take 20-30s+ on its own
-  var outlineSys=(li?li+'\n\n':'')+'You are a story editor breaking a video into sequential segments so multiple writers can draft them in parallel while staying consistent with one overall arc.\n\nBreak this into exactly '+numSegments+' contiguous segments covering the full 00:00-'+fmtTime(totalSec)+' runtime, each about '+fmtTime(totalSec/numSegments)+' long.'+stylePack('script')+'\n\nFor each segment write ONE short, specific sentence: what happens narratively and visually - just enough for a writer to draft that segment alone and stay on-arc. Keep it brief, this is a quick outline.\n\nReturn ONLY JSON: [{"start":"mm:ss","end":"mm:ss","beat":"..."}]'+(li?'\n\n'+li:'');
+  /* The outline used to be pure logistics - cut the runtime into N pieces so
+     N writers could work at once. That is why the scripts had no spine: every
+     writer was told when to write, never what the video was arguing, and
+     nobody owned the concrete facts, so each segment invented its own vague
+     version of the same thing. The outline now decides two things first - the
+     one claim the video makes, and the handful of specifics everyone must use
+     - and both are handed to every segment. */
+  var outlineSys=(li?li+'\n\n':'')+'You are a story editor. Before any of it is written you settle what the video is actually saying and what it is made of, then break it into segments so several writers can draft in parallel without drifting apart.\n\n'
+    +'THESIS: one sentence - the thing this video says that a generic video on the same topic would not. Not the subject, the claim. It has to be arguable: if nobody could disagree with it, it is a description, not a thesis.\n\n'
+    +'SPECIFICS: 4-6 concrete, checkable details the whole video will be built from and every writer must reuse verbatim - the actual object and what it looks like, a real place, a number, a named thing. Invent them if the topic does not supply them, but commit: they are facts now, not options. Concrete means somebody could photograph it or check it. "A hand-drawn design" is not a specific; "a crooked ink face, drawn in one line, on the left chest" is.\n\n'
+    +'Then break it into exactly '+numSegments+' contiguous segments covering the full 00:00-'+fmtTime(totalSec)+' runtime, each about '+fmtTime(totalSec/numSegments)+' long.'+stylePack('script')+'\n\n'
+    +'For each segment ONE short sentence: what happens narratively and visually, and what it costs - who is disappointed, what is thrown away, what does not work. A story where nothing costs anything has no middle. Keep it brief, this is an outline.\n\n'
+    +'Return ONLY JSON: {"thesis":"...","specifics":["...","..."],"segments":[{"start":"mm:ss","end":"mm:ss","beat":"..."}]}'+(li?'\n\n'+li:'');
   var outlineMsg='Topic: '+topic+'. Tone: '+tone+'.';
   var evenSplit=[];
   for(var esi=0;esi<numSegments;esi++)evenSplit.push({start:fmtTime(esi*totalSec/numSegments),end:fmtTime((esi+1)*totalSec/numSegments),beat:''});
@@ -2653,12 +2685,37 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
   // really is small (a few sentences of JSON) so it stays comparatively
   // tight, but 8s was cutting off a call that simply hadn't started yet
   return withTimeout(apiRetry(outlineSys,outlineMsg),25000,null).then(function(raw){
-    var segs=[];
-    if(raw){try{var m=raw.match(/\[[\s\S]*\]/);if(m)segs=JSON.parse(m[0]);}catch(e){}}
+    var segs=[],thesis='',specifics=[];
+    if(raw){
+      // the outline used to be a bare array; accept either shape so a model
+      // that answers the old way still produces a usable plan
+      try{
+        var mo=raw.match(/\{[\s\S]*\}/);
+        if(mo){
+          var o=JSON.parse(mo[0]);
+          segs=o.segments||[];thesis=o.thesis||'';
+          specifics=(o.specifics||[]).filter(Boolean);
+        }
+      }catch(e){}
+      if(segs.length<2){try{var m=raw.match(/\[[\s\S]*\]/);if(m)segs=JSON.parse(m[0]);}catch(e2){}}
+    }
     if(segs.length<2)segs=evenSplit;
     var outlineText=segs.map(function(s,i){return (i+1)+'. '+s.start+'-'+s.end+': '+(s.beat||'');}).join('\n');
+    // the spine every segment writes against, so three writers working at
+    // once produce one video instead of three versions of the same one
+    var spine=(thesis?'\n\nWHAT THIS VIDEO SAYS (every block serves this - do not restate it in words, earn it):\n'+thesis:'')
+      +(specifics.length?'\n\nFIXED SPECIFICS - these are settled facts. Use them exactly as written wherever they belong, never a vaguer version, never a different version:\n- '+specifics.join('\n- '):'');
     function buildSegSys(seg,idx){
-      return planSys+'\n\nSEGMENT WRITING TASK: You are writing ONLY the part of this video from '+seg.start+' to '+seg.end+' (segment '+(idx+1)+' of '+segs.length+').\n\nFull outline for context - do NOT repeat other segments, just stay consistent with this arc:\n'+outlineText+'\n\nTHIS SEGMENT\'S BEAT: '+(seg.beat||'continue the story')+'\n\nStart your first block at exactly '+seg.start+'. Do not write any blocks before '+seg.start+' or after '+seg.end+'.';
+      var prev=idx>0?segs[idx-1]:null;
+      return planSys+spine
+        +'\n\nSEGMENT WRITING TASK: You are writing ONLY the part of this video from '+seg.start+' to '+seg.end+' (segment '+(idx+1)+' of '+segs.length+').\n\nFull outline for context - do NOT repeat other segments, just stay consistent with this arc:\n'+outlineText
+        +'\n\nTHIS SEGMENT\'S BEAT: '+(seg.beat||'continue the story')
+        // segments are drafted in parallel, so a writer cannot read what came
+        // before and two of them kept establishing the same moment twice in a
+        // row. Naming the beat that is already spent stops the second one
+        // opening with "and then I opened Photoshop" after the first just did.
+        +(prev?'\n\nALREADY COVERED, immediately before you: "'+(prev.beat||'the previous beat')+'". That ground is spent. Do not set it up again, do not restate it, do not open by summarising it - begin after it.':'')
+        +'\n\nStart your first block at exactly '+seg.start+'. Do not write any blocks before '+seg.start+' or after '+seg.end+'.';
     }
     // every real API call below is capped (see withTimeout) - a segment that
     // doesn't answer in time contributes an empty string instead of hanging
@@ -3860,7 +3917,11 @@ function planNode(id){
   if(projectType==='music'){
     sys=(li?li+' ':'')+' You are a music video director. Give 5 shot ideas for this music section. Return ONLY JSON: [{"k":"location","t":"..."},{"k":"acting","t":"..."},{"k":"shot","t":"..."},{"k":"lighting","t":"..."},{"k":"props","t":"..."}]. k must be exactly: location, acting, shot, lighting, props. Write all "t" values in the same language as the script blocks.'+(li?' '+li:'');
   }else{
-    sys=(li?li+' ':'')+' You are a cinematographer. Give 4 ideas for this block: a prop list, an action beat, an emotional note, and a technical note. Grain, analog. Write all "t" values in the same language as the block content.'+stylePack('shots')+' Return ONLY JSON: [{"k":"props","t":"..."},{"k":"action","t":"..."},{"k":"emotion","t":"..."},{"k":"tech","t":"..."}]. props = concrete key props/objects needed in the scene (the block itself already covers lens, framing, camera movement - do not repeat that here). tech = lens, lighting, movement, grain, analog film stock.'+(li?' '+li:'');
+    /* "emotion" used to come back as a mood label - "the weight of absence",
+       "fragmented identity". Nobody on a set can shoot that. Asking instead
+       for the one visible thing that carries the feeling gets an instruction
+       somebody can actually follow, and the feeling arrives anyway. */
+    sys=(li?li+' ':'')+' You are a cinematographer. Give 4 ideas for this block: a prop list, an action beat, an emotional note, and a technical note. Grain, analog. Write all "t" values in the same language as the block content.'+stylePack('shots')+' Return ONLY JSON: [{"k":"props","t":"..."},{"k":"action","t":"..."},{"k":"emotion","t":"..."},{"k":"tech","t":"..."}]. props = concrete key props/objects needed in the scene (the block itself already covers lens, framing, camera movement - do not repeat that here). emotion = the ONE visible thing in frame that carries the feeling - a held breath, a hand that stops short, light going out of a face. Name what is seen, never the mood itself: "quiet resignation" and "the weight of absence" are useless on a set. tech = lens, lighting, movement, grain, analog film stock.'+(li?' '+li:'');
   }
   usr='Block: ['+n.type.toUpperCase()+'] '+n.tcStart+'-'+n.tcEnd+' - '+n.content;
   var userContent=usr;
