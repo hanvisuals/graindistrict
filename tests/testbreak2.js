@@ -1,5 +1,6 @@
 const http=require('http'), fs=require('fs');
 const { chromium } = require('./node_modules/playwright');
+const { clickBarBtn } = require('./ui.js');
 let calls=0;
 const mk=(n)=>JSON.stringify([{name:"Location "+n,timeOfDay:"day",shots:["01"],props:["P"+n],wardrobe:[],cast:[],equipment:[],note:"note "+n}]);
 const server=http.createServer((req,res)=>{
@@ -37,12 +38,12 @@ server.listen(8921, async()=>{
     projectBreakdown=null; renderAll();
     window.__printed=0; window.print=function(){window.__printed++;};
   });
-  await page.click('#btnExport'); await page.waitForTimeout(1200);
+  await clickBarBtn(page,'#btnExport'); await page.waitForTimeout(1200);
   ok('first export generates', await page.evaluate(()=>projectBreakdown&&projectBreakdown[0].name==='Location 1'),
      await page.evaluate(()=>projectBreakdown));
 
   // the recalculate button must throw the cached one away and ask again
-  await page.click('#btnRebreak'); await page.waitForTimeout(1200);
+  await clickBarBtn(page,'#btnRebreak'); await page.waitForTimeout(1200);
   const after=await page.evaluate(()=>({name:projectBreakdown[0].name,text:document.getElementById('printView').textContent}));
   ok('recalculate asks for a fresh breakdown', after.name==='Location 2', after.name);
   ok('and the document shows the new one', /Location 2/.test(after.text)&&!/Location 1/.test(after.text));
@@ -65,7 +66,7 @@ server.listen(8921, async()=>{
 
   // and asking for it again must not cost another call
   const before=await page.evaluate(()=>0);
-  await page.click('#btnExport'); await page.waitForTimeout(900);
+  await clickBarBtn(page,'#btnExport'); await page.waitForTimeout(900);
   ok('a reopened project does not pay for it again', calls===2, calls);
 
   await browser.close(); server.close();

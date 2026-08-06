@@ -1,5 +1,6 @@
 const http=require('http'), fs=require('fs');
 const { chromium } = require('./node_modules/playwright');
+const { clickBarBtn } = require('./ui.js');
 
 const BREAKDOWN = JSON.stringify([
   {name:"Diner — interior booth", timeOfDay:"day", shots:["01a","01b"],
@@ -66,7 +67,7 @@ server.listen(8920, async()=>{
 
   // stub print so the dialog doesn't block, then run the real export path
   await page.evaluate(()=>{ window.__printed=0; window.print=function(){window.__printed++;}; });
-  await page.click('#btnExport');
+  await clickBarBtn(page,'#btnExport');
   await page.waitForTimeout(1500);
 
   const r = await page.evaluate(()=>{
@@ -104,7 +105,7 @@ server.listen(8920, async()=>{
 
   // second export must not regenerate
   await page.evaluate(()=>{ window.__calls=0; var f=window.fetch; window.fetch=function(){window.__calls++;return f.apply(this,arguments);}; });
-  await page.click('#btnExport');
+  await clickBarBtn(page,'#btnExport');
   await page.waitForTimeout(900);
   const again = await page.evaluate(()=>({calls:window.__calls, printed:window.__printed}));
   ok('exporting again reuses the breakdown instead of paying for it twice', again.calls===0 && again.printed===2, again);
