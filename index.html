@@ -4053,8 +4053,15 @@ function genBreakdown(){
     +'Add one short practical note: access, permission, light, noise, whatever would actually catch '
     +'someone out on the day.\n\n'
     +'Shot labels look like 01, 01a, 02b. Copy them exactly as they appear in the plan.\n\n'
-    +'Merge near-identical places into one location rather than splitting hairs. Do not invent shots that '
-    +'are not in the plan. Keep every list short and concrete - these are things somebody has to pack.\n\n'
+    +'EVERY shot in the plan belongs to exactly one location. None may be left out, none may appear '
+    +'twice. Before you answer, count the shots in the plan and count the shots across your locations; '
+    +'they must be the same number.\n\n'
+    +'No location may take more than about a dozen shots. A place collecting more than that is not one '
+    +'location, it is a bin - split it by what actually changes on the shooting day: a different room, a '
+    +'different time, a different lighting setup. "The house" is not a location; "the kitchen, morning" '
+    +'is. Merge places that are genuinely the same, but never merge to save yourself work.\n\n'
+    +'Do not invent shots that are not in the plan. Keep every list short and concrete - these are '
+    +'things somebody has to pack.\n\n'
     +'Return ONLY JSON: [{"name":"...","timeOfDay":"...","shots":["01","01a"],"props":["..."],'
     +'"wardrobe":["..."],"cast":["..."],"note":"..."}]'
     +(li?'\n\n'+li:'');
@@ -4063,9 +4070,33 @@ function genBreakdown(){
       var m=raw.match(/\[[\s\S]*\]/);
       if(!m)return null;
       var arr=JSON.parse(m[0]);
-      return (arr&&arr.length)?arr:null;
+      return (arr&&arr.length)?accountForEveryShot(arr):null;
     }catch(e){ console.warn('[breakdown] could not parse',e); return null; }
   });
+}
+
+/* A shot filed under no location is a shot nobody packs for, and the document
+   gives no sign it is missing - it just quietly describes a smaller film than
+   the one being shot. On long plans the model drops them in bulk: a 243-shot
+   plan came back with 54 of them belonging nowhere. Asking harder in the
+   prompt helps but cannot be trusted, so count them here and put the strays
+   somewhere visible. A gap you can see is a gap you can close. */
+function accountForEveryShot(locs){
+  var all=[],seen={};
+  planScenes().forEach(function(s){
+    all.push(s.label);
+    s.kids.forEach(function(k){ all.push(k.__label); });
+  });
+  locs.forEach(function(l){
+    (l.shots||[]).forEach(function(x){ seen[String(x).trim().toLowerCase()]=1; });
+  });
+  var missing=all.filter(function(l){ return !seen[l.toLowerCase()]; });
+  if(missing.length){
+    console.warn('[breakdown] '+missing.length+' of '+all.length+' shots came back unplaced');
+    locs.push({name:'Unplaced',timeOfDay:'',shots:missing,props:[],wardrobe:[],cast:[],
+      note:'The breakdown left these out. Decide where they happen before you pack.'});
+  }
+  return locs;
 }
 function pesc(t){ return String(t==null?'':t).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];}); }
 
