@@ -2550,9 +2550,20 @@ function parseBlocks(text){
       }
       return;
     }
-    var tcm=line.match(/(\d{1,2}:\d{2})\s*[-]\s*(\d{1,2}:\d{2})/);
-    var content=line.replace(typeRe,'').replace(/(\d{1,2}:\d{2})\s*[-]\s*(\d{1,2}:\d{2})/,'').replace(/^[:\s\-]+/,'').trim();
-    var tcStart=tcm?tcm[1]:'00:00',tcEnd=tcm?tcm[2]:'00:05';
+    var full=/(\d{1,2}:\d{2})\s*[-]\s*(\d{1,2}:\d{2})/;
+    // the model also writes "06:03-05", dropping the minute off the end when
+    // it is the same as the start. That used to match nothing, so the block
+    // fell back to 00:00-00:05 and kept "06:03-05 -" as part of its text -
+    // one shot silently teleported to the top of the timeline.
+    var short=/(\d{1,2}):(\d{2})\s*[-]\s*(\d{2})(?!\s*:)/;
+    var tcm=line.match(full),tcStart,tcEnd,strip=full;
+    if(tcm){ tcStart=tcm[1];tcEnd=tcm[2]; }
+    else{
+      var sm=line.match(short);
+      if(sm){ tcStart=sm[1]+':'+sm[2];tcEnd=sm[1]+':'+sm[3];strip=short; }
+      else{ tcStart='00:00';tcEnd='00:05'; }
+    }
+    var content=line.replace(typeRe,'').replace(strip,'').replace(/^[:\s\-]+/,'').trim();
     // model typos like "01:14 - 00:16": end before start - repair with a 2s cut
     if(ts(tcEnd)<ts(tcStart))tcEnd=sec2tc(ts(tcStart)+2);
     out.push({type:tm[1].toLowerCase(),tcStart:tcStart,tcEnd:tcEnd,content:content,shots:[]});
