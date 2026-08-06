@@ -2553,6 +2553,9 @@ function planHighlight(){
   }catch(e){ /* if this isn't allowed, 'input' still covers typing */ }
 })();
 
+// longer than any block the generator asks for: b-roll cuts are 1-4s, voiceover
+// lines under ten, and long music sections are split at twenty before parsing
+var MAX_BLOCK_SEC=30;
 function parseBlocks(text){
   var btypes=(PT_BLOCKS[projectType]||PT_BLOCKS.youtube).join('|');
   var typeRe=new RegExp('\\[?('+btypes+')\\]?','i');
@@ -2586,6 +2589,18 @@ function parseBlocks(text){
     var content=line.replace(typeRe,'').replace(strip,'').replace(/^[:\s\-]+/,'').trim();
     // model typos like "01:14 - 00:16": end before start - repair with a 2s cut
     if(ts(tcEnd)<ts(tcStart))tcEnd=sec2tc(ts(tcStart)+2);
+    // "5:18 - 6:19" for a one-second transition that belongs at 6:18: the end
+    // lines up with the block after it, so it is the start whose minute is
+    // mistyped. Nothing the generator asks for runs this long - cuts are 1-4s,
+    // voiceover lines under ten, and music is already split at twenty - so a
+    // block over half a minute is a typo rather than a very long shot. Borrow
+    // the end's minute, and only keep it if that yields a sane length.
+    if(ts(tcEnd)-ts(tcStart)>MAX_BLOCK_SEC){
+      var mend=tcStart.split(':');
+      var guess=tcEnd.split(':')[0]+':'+mend[1];
+      var span=ts(tcEnd)-ts(guess);
+      if(span>0&&span<=MAX_BLOCK_SEC)tcStart=guess;
+    }
     out.push({type:tm[1].toLowerCase(),tcStart:tcStart,tcEnd:tcEnd,content:content,shots:[]});
   });
   return out.filter(function(b){return b.content;});
