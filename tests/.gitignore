@@ -1,0 +1,5 @@
+node_modules
+package-lock.json
+# whatever the tests render while they run
+*.png
+*.pdf

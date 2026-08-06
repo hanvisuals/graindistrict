@@ -1,0 +1,6 @@
+{
+  "name": "graindistrict-tests",
+  "private": true,
+  "description": "Browser tests for graindistrict. Every one drives a real Chromium.",
+  "dependencies": { "playwright": "^1.49.0" }
+}
