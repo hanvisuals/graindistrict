@@ -2367,7 +2367,7 @@ var projectBreakdown=null;   // location-by-location shooting breakdown
    version of the code that made it, and either one changing throws it out.
    Bump the version whenever the breakdown prompt or its handling changes -
    that is what retires the copies already saved in people's projects. */
-var BREAKDOWN_V=4;
+var BREAKDOWN_V=5;
 var projectBreakdownKey=null;
 function breakdownKey(){
   var t=BREAKDOWN_V+'|'+planAsText(),h=5381;
@@ -4062,8 +4062,39 @@ function planAsText(){
    drafted in parallel pieces; the breakdown is drafted the same way, and the
    pieces are merged on the location's name afterwards. */
 var BREAKDOWN_CHUNK=45;
-function breakdownSys(li,part){
+/* Pieces drafted side by side cannot hear each other, so each one names the
+   same room its own way and the merge - which joins on the name - leaves them
+   apart. One export came back with seven separate entries for one desk:
+   "calisma masasi, gunduz", "ev, calisma masasi kosesi", "calisma odasi,
+   aksam", "bilgisayar masasi, gece"... forty-one locations where there were
+   maybe fifteen. So the places are named once, by someone looking at the whole
+   film, and the pieces only decide which shot goes where. The whole plan is a
+   large thing to send but a short thing to answer, which is the safe direction
+   - it was the length of the answer that broke everything else. */
+function genLocationNames(li,lines){
+  var brief=lines.map(function(l){ return l.replace(/\s{2}\([^)]*\)\s*$/,''); }).join('\n');
+  var sys=(li?li+'\n\n':'')
+    +'You are a first assistant director reading a whole shot plan and listing only the places it has '
+    +'to be shot in.\n\n'
+    +'A location is somewhere a crew travels to and sets up in. The same room at a different hour is '
+    +'the same location unless the setup genuinely changes - one lighting change is not a new place. '
+    +'A desk, a study and a work table in the same flat are one location, not three.\n\n'
+    +'Give as few locations as honestly cover the film, and no fewer. Name each one plainly and the '
+    +'same way every time it comes up.\n\n'
+    +'Return ONLY JSON: [{"name":"...","timeOfDay":"..."}]'
+    +(li?'\n\n'+li:'');
+  return withTimeout(apiRetry(sys,'Shot plan:\n'+brief).then(parseLocations),60000,null,'location names');
+}
+function breakdownSys(li,part,names){
   return (li?li+'\n\n':'')
+    +(names&&names.length
+      ? 'These are the locations of this film, already settled by someone who read all of it:\n'
+        +names.map(function(n){return '- '+n.name+(n.timeOfDay?' ('+n.timeOfDay+')':'');}).join('\n')
+        +'\n\nUse these names exactly as written - other people are placing the rest of the shots '
+        +'against the same list, and a name spelled differently becomes a second location nobody '
+        +'meant. Only add a location of your own if a shot genuinely happens somewhere not on the '
+        +'list.\n\n'
+      : '')
     +'You are a first assistant director turning a shot plan into a shooting breakdown.\n\n'
     +'Group the shots by LOCATION - the real place a crew has to travel to and set up in. Shots that '
     +'happen in the same place belong together even if they are far apart in the plan, because that is '
@@ -4128,7 +4159,16 @@ function genBreakdown(){
   if(!nodes.length)return Promise.resolve(null);
   var li=langInstr(inputLang,'the breakdown');
   var lines=planAsText().split('\n');
-  var sys=breakdownSys(li,lines.length>BREAKDOWN_CHUNK);
+  var many=lines.length>BREAKDOWN_CHUNK;
+  // a short plan goes to one writer, who has no one to disagree with
+  var first=many?genLocationNames(li,lines):Promise.resolve(null);
+  return first.then(function(names){
+    if(many&&!(names&&names.length))console.warn('[breakdown] no agreed location list - pieces will name their own');
+    var sys=breakdownSys(li,many,names);
+    return runBreakdown(lines,sys);
+  });
+}
+function runBreakdown(lines,sys){
   return breakdownPass(lines,sys).then(function(parts){
     if(!parts.length)return null;
     var merged=mergeLocations(parts);
