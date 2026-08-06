@@ -4080,13 +4080,33 @@ function genBreakdown(){
     +'"wardrobe":["..."],"cast":["..."],"note":"..."}]'
     +(li?'\n\n'+li:'');
   return api(sys,'Shot plan:\n'+planAsText()).then(function(raw){
-    try{
-      var m=raw.match(/\[[\s\S]*\]/);
-      if(!m)return null;
-      var arr=JSON.parse(m[0]);
-      return (arr&&arr.length)?accountForEveryShot(arr):null;
-    }catch(e){ console.warn('[breakdown] could not parse',e); return null; }
+    var arr=parseLocations(raw);
+    return arr?accountForEveryShot(arr):null;
   });
+}
+
+/* A 243-shot plan needs around twenty locations, and that answer can run past
+   the model's output limit - the JSON simply stops, mid-object, and a strict
+   parse throws away a perfectly good list of eighteen because the nineteenth
+   was cut in half. Everything before the break is still true, so keep the
+   objects that closed and let the coverage check account for the rest. */
+function parseLocations(raw){
+  var m=String(raw||'').match(/\[[\s\S]*\]/);
+  if(m){ try{ var whole=JSON.parse(m[0]); if(whole&&whole.length)return whole; }catch(e){} }
+  var open=String(raw||'').indexOf('[');
+  if(open<0){ console.warn('[breakdown] no JSON in the reply'); return null; }
+  var body=String(raw).slice(open);
+  for(var i=body.lastIndexOf('}');i>0;i=body.lastIndexOf('}',i-1)){
+    try{
+      var part=JSON.parse(body.slice(0,i+1)+']');
+      if(part&&part.length){
+        console.warn('[breakdown] reply was cut off - salvaged '+part.length+' locations');
+        return part;
+      }
+    }catch(e){}
+  }
+  console.warn('[breakdown] could not parse the reply');
+  return null;
 }
 
 /* A shot filed under no location is a shot nobody packs for, and the document
@@ -4223,15 +4243,26 @@ function doExport(){
   var btn=document.getElementById('btnExport');
   var label=btn?btn.textContent:'';
   if(btn){ btn.textContent='working out locations...'; btn.disabled=true; }
+  var why='';
   genBreakdown().then(function(bd){
     projectBreakdown=bd;
     projectBreakdownKey=bd?key:null;
     if(bd)saveHistory();
+    else why='The model did not come back with anything usable.';
   },function(e){
     console.warn('[breakdown] failed',e);
+    why=(e&&e.message)?e.message:'The request failed.';
   }).then(function(){
     if(btn){ btn.textContent=label; btn.disabled=false; }
-    // a failed breakdown still leaves a perfectly good shot list
+    // A failed breakdown still leaves a perfectly good shot list, so it still
+    // prints - but silently handing over a document with no locations in it
+    // looks exactly like a document that never had any, and you find out on
+    // the day. Say what happened, then print.
+    if(why){
+      return gdAsk({title:'No locations this time',
+        message:why+' The shot list will print without them - press ↻ next to export to try again.',
+        ok:'Print anyway'}).then(printNow);
+    }
     printNow();
   });
 }
@@ -5073,6 +5104,9 @@ document.addEventListener('mouseup',function(e){
      alerts) those calls return silently, and renaming or deleting looks
      simply broken with nothing on screen to explain it. */
   var askDone=null;
+  // the export lives outside this closure and has always needed to ask things
+  // too - without this its dialogs threw instead of appearing
+  window.gdAsk=gdAsk;
   function gdAsk(opts){
     opts=opts||{};
     return new Promise(function(resolve){
