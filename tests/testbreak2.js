@@ -1,7 +1,7 @@
 const http=require('http'), fs=require('fs');
 const { chromium } = require('./node_modules/playwright');
 let calls=0;
-const mk=(n)=>JSON.stringify([{name:"Location "+n,timeOfDay:"day",shots:[1],props:["P"+n],wardrobe:[],cast:[],equipment:[],note:"note "+n}]);
+const mk=(n)=>JSON.stringify([{name:"Location "+n,timeOfDay:"day",shots:["01"],props:["P"+n],wardrobe:[],cast:[],equipment:[],note:"note "+n}]);
 const server=http.createServer((req,res)=>{
   if(req.url.startsWith('/index.html')){
     let h=fs.readFileSync((process.env.APP||'/home/user/graindistrict/index.html'),'utf8');
