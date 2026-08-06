@@ -125,6 +125,33 @@ server.listen(8934, async()=>{
   const t3b=await shown();
   ok('a piece that keeps failing ends up in the unplaced list', /Unplaced/.test(t3b));
 
+  // the same place written with and without its time of day is one place
+  handler=(user,i)=>{
+    const mine=[...user.matchAll(/^([0-9a-z.]+)\./gm)].map(m=>m[1]);
+    // odd pieces bracket the name, even ones leave it bare
+    return JSON.stringify([loc(i%2 ? 'Baski Evi (Gunduz)' : 'Baski Evi', mine)]);
+  };
+  seen=[]; seenSys=[]; named=[]; await reset();
+  await page.click('#btnExport'); await page.waitForTimeout(4000);
+  const bn=await page.evaluate(()=>[].map.call(document.querySelectorAll('.pv-loc-name'),e=>e.textContent));
+  ok('a name carrying its time of day folds into its bare twin', bn.length===1, bn);
+  ok('and keeps the bare spelling', bn[0]==='Baski Evi', bn);
+  const bc=await page.evaluate(()=>{
+    var n=0;[].forEach.call(document.querySelectorAll('.pv-loc-shots'),function(e){
+      n+=e.textContent.replace('shots ','').split(',').filter(x=>x.trim()).length;});
+    return n;});
+  ok('with every shot from both spellings', bc===160, bc);
+
+  // but two brackets with no bare twin are two places somebody meant
+  handler=(user,i)=>{
+    const mine=[...user.matchAll(/^([0-9a-z.]+)\./gm)].map(m=>m[1]);
+    return JSON.stringify([loc(i%2 ? 'Mutfak (sabah)' : 'Mutfak (gece)', mine)]);
+  };
+  seen=[]; seenSys=[]; named=[]; await reset();
+  await page.click('#btnExport'); await page.waitForTimeout(4000);
+  const tw=await page.evaluate(()=>[].map.call(document.querySelectorAll('.pv-loc-name'),e=>e.textContent));
+  ok('two bracketed names with no bare twin stay apart', tw.length===2, tw);
+
   // the naming pass is one request like any other and can fail on its own
   namer=()=>'sorry, no';
   handler=(user)=>JSON.stringify([loc('Mutfak',[...user.matchAll(/^([0-9a-z.]+)\./gm)].map(m=>m[1]))]);
