@@ -1,0 +1,51 @@
+const { chromium } = require('./node_modules/playwright');
+(async () => {
+  const browser = await chromium.launch({executablePath:(process.env.CHROME||'/opt/pw-browsers/chromium-1194/chrome-linux/chrome')});
+  const page = await browser.newPage({viewport:{width:1440,height:900}});
+  page.on('pageerror', e => console.log('PAGE ERROR:', e.message));
+  await page.goto(('file://'+(process.env.APP||'/home/user/graindistrict/index.html')));
+  await page.waitForTimeout(300);
+  await page.evaluate(()=>{ document.getElementById('gdAuthOv').classList.remove('show','gate'); document.body.classList.remove('gd-gated'); });
+  const ok=(n,c,x)=>console.log((c?'PASS':'FAIL')+' - '+n+(x!==undefined&&!c?' '+JSON.stringify(x):''));
+
+  const r = await page.evaluate(async () => {
+    show('s5'); projectType='youtube';
+    nodes=[{id:1,type:'broll',tcStart:'00:00',tcEnd:'00:03',content:'A',shots:[],x:100,y:100,grp:0}];
+    var longText='A deliberately long shot note that wraps onto several lines so the card is much taller than a collapsed one and the stacking has to account for it.';
+    attShots=[
+      {id:10,parentId:1,k:'props',t:longText,x:100,y:290,collapsed:false},
+      {id:11,parentId:1,k:'action',t:longText,x:100,y:340,collapsed:false},
+      {id:12,parentId:1,k:'emotion',t:'short',x:100,y:390,collapsed:true},
+      {id:13,parentId:1,k:'tech',t:longText,x:100,y:440,collapsed:false}
+    ];
+    conns=[];imgNodes=[];noteNodes=[];nodeDrawerClosed={};scale=1;px=0;py=0;
+    renderAll();
+    await new Promise(r=>setTimeout(r,300));
+
+    function box(id){ var e=document.getElementById(id); var r=e.getBoundingClientRect(); return {top:r.top, bottom:r.bottom, h:Math.round(r.height)}; }
+    var b=[box('att-10'),box('att-11'),box('att-12'),box('att-13')];
+    var overlaps=false;
+    for(var i=0;i<b.length-1;i++) if(b[i].bottom > b[i+1].top + 0.5) overlaps=true;
+    var ordered = b.every(function(x,i){ return i===0 || x.top > b[i-1].top; });
+    var collapsedShorter = b[2].h < b[0].h;
+
+    // collapse one and make sure the stack closes up
+    attShots[0].collapsed=true;
+    renderAttShots();
+    await new Promise(r=>setTimeout(r,300));
+    var after=[box('att-10'),box('att-11'),box('att-12'),box('att-13')];
+    var overlapsAfter=false;
+    for(var i=0;i<after.length-1;i++) if(after[i].bottom > after[i+1].top + 0.5) overlapsAfter=true;
+    var closedUp = after[3].top < b[3].top - 10;
+
+    return {b, overlaps, ordered, collapsedShorter, overlapsAfter, closedUp};
+  });
+
+  ok('expanded cards stack without overlapping', !r.overlaps, r.b);
+  ok('they stay in order top to bottom', r.ordered, r.b);
+  ok('a collapsed card really is shorter than an expanded one', r.collapsedShorter, r.b.map(x=>x.h));
+  ok('collapsing one closes the stack up', r.closedUp);
+  ok('and still nothing overlaps afterwards', !r.overlapsAfter);
+
+  await browser.close();
+})();
