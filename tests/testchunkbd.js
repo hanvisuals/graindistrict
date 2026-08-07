@@ -3,7 +3,7 @@
 const http=require('http'), fs=require('fs');
 const { chromium } = require('./node_modules/playwright');
 const { clickBarBtn } = require('./ui.js');
-let seen=[], seenSys=[], named=[], handler=null, namer=null;
+let seen=[], seenSys=[], named=[], namedSys=[], handler=null, namer=null;
 const server=http.createServer((req,res)=>{
   if(req.url.startsWith('/index.html')){
     let h=fs.readFileSync((process.env.APP||'/home/user/graindistrict/index.html'),'utf8');
@@ -16,8 +16,8 @@ const server=http.createServer((req,res)=>{
     res.writeHead(200,{'Content-Type':'text/plain; charset=utf-8','Access-Control-Allow-Origin':'*'});
     const sys=body.system||'';
     if(!/first assistant director/.test(sys)) return res.end('{}');
-    if(/listing only the places/.test(sys)){
-      named.push(body.user||'');
+    if(/listing the setups/.test(sys)){
+      named.push(body.user||''); namedSys.push(sys);
       return res.end(namer?namer():JSON.stringify([{name:'Mutfak',timeOfDay:'day'},{name:'Sokak',timeOfDay:'dawn'}]));
     }
     seen.push(body.user||''); seenSys.push(sys);
@@ -65,7 +65,7 @@ server.listen(8934, async()=>{
     const half=Math.ceil(mine.length/2);
     return JSON.stringify([loc('Mutfak',mine.slice(0,half)),loc('Sokak',mine.slice(half))]);
   };
-  seen=[]; seenSys=[]; named=[]; await reset();
+  seen=[]; seenSys=[]; named=[]; namedSys=[]; await reset();
   await clickBarBtn(page,'#btnExport'); await page.waitForTimeout(3000);
   ok('the places are named once, before anyone places a shot', named.length===1, named.length);
   ok('that pass sees the whole film, not a chunk',
@@ -76,6 +76,24 @@ server.listen(8934, async()=>{
      (seenSys[0]||'').slice(0,220));
   ok('told to spell them exactly, so the pieces join up',
      seenSys.every(x=>/Use these names exactly as written/.test(x)));
+
+  // This stage decides how finely the film is divided and the placing stage
+  // is then told not to invent names, so a rule about splitting only bites if
+  // it is written here. It used to say the opposite - "a desk, a study and a
+  // work table in the same flat are one location" - and a nine-minute film
+  // came back with 252 of its 328 shots under one heading.
+  const nsys=namedSys[0]||'';
+  ok('the naming pass is asked for setups, not addresses',
+     /A location here is a SETUP/.test(nsys)&&/It is not an address/.test(nsys), nsys.slice(0,160));
+  ok('it is told two setups in one room are two entries',
+     /Two setups in the same room are two entries/.test(nsys));
+  ok('it is told how many shots it is dividing, and when an entry is too big',
+     /This plan has 160 shots/.test(nsys)&&/more than about forty/.test(nsys),
+     (nsys.match(/This plan has [^.]*\./)||[''])[0]);
+  ok('and guarded against splitting by camera angle instead',
+     /Do not make a setup out of a camera angle/.test(nsys)&&/Do not split by time alone/.test(nsys));
+  ok('a place that really is the whole film may still say so',
+     /genuinely holds the whole film/.test(nsys));
   ok('it was broken down in several pieces, not one', seen.length>=4, seen.length);
   ok('no piece was handed more than a chunk',
      seen.every(u=>u.split('\n').filter(l=>/^[0-9a-z.]+\./.test(l)).length<=45),
@@ -107,7 +125,7 @@ server.listen(8934, async()=>{
     if(i===1&&failed++===0)return 'sorry, no';       // only the first attempt fails
     return JSON.stringify([loc('Mutfak',mine)]);
   };
-  seen=[]; seenSys=[]; named=[]; await reset();
+  seen=[]; seenSys=[]; named=[]; namedSys=[]; await reset();
   await clickBarBtn(page,'#btnExport'); await page.waitForTimeout(4000);
   const t2=await shown();
   ok('one failed piece does not lose the others', /Mutfak/.test(t2));
@@ -119,7 +137,7 @@ server.listen(8934, async()=>{
 
   // a piece that never comes back is written down, not hidden
   handler=(user,i)=>i%3===1?'sorry, no':JSON.stringify([loc('Mutfak',[...user.matchAll(/^([0-9a-z.]+)\./gm)].map(m=>m[1]))]);
-  seen=[]; seenSys=[]; named=[]; await reset();
+  seen=[]; seenSys=[]; named=[]; namedSys=[]; await reset();
   await clickBarBtn(page,'#btnExport'); await page.waitForTimeout(5000);
   const t3b=await shown();
   ok('a piece that keeps failing ends up in the unplaced list', /Unplaced/.test(t3b));
@@ -130,7 +148,7 @@ server.listen(8934, async()=>{
     // odd pieces bracket the name, even ones leave it bare
     return JSON.stringify([loc(i%2 ? 'Baski Evi (Gunduz)' : 'Baski Evi', mine)]);
   };
-  seen=[]; seenSys=[]; named=[]; await reset();
+  seen=[]; seenSys=[]; named=[]; namedSys=[]; await reset();
   await clickBarBtn(page,'#btnExport'); await page.waitForTimeout(4000);
   const bn=await page.evaluate(()=>[].map.call(document.querySelectorAll('.pv-loc-name'),e=>e.textContent));
   ok('a name carrying its time of day folds into its bare twin', bn.length===1, bn);
@@ -145,7 +163,7 @@ server.listen(8934, async()=>{
     const mine=[...user.matchAll(/^([0-9a-z.]+)\./gm)].map(m=>m[1]);
     return JSON.stringify([loc(i%2 ? 'Mutfak (sabah)' : 'Mutfak (gece)', mine)]);
   };
-  seen=[]; seenSys=[]; named=[]; await reset();
+  seen=[]; seenSys=[]; named=[]; namedSys=[]; await reset();
   await clickBarBtn(page,'#btnExport'); await page.waitForTimeout(4000);
   const tw=await page.evaluate(()=>[].map.call(document.querySelectorAll('.pv-loc-name'),e=>e.textContent));
   ok('two bracketed names with no bare twin stay apart', tw.length===2, tw);
@@ -153,7 +171,7 @@ server.listen(8934, async()=>{
   // the naming pass is one request like any other and can fail on its own
   namer=()=>'sorry, no';
   handler=(user)=>JSON.stringify([loc('Mutfak',[...user.matchAll(/^([0-9a-z.]+)\./gm)].map(m=>m[1]))]);
-  seen=[]; seenSys=[]; named=[]; await reset();
+  seen=[]; seenSys=[]; named=[]; namedSys=[]; await reset();
   await clickBarBtn(page,'#btnExport'); await page.waitForTimeout(4000);
   const tn=await shown();
   ok('a failed naming pass does not sink the breakdown', /Mutfak/.test(tn)&&!/Unplaced/.test(tn), tn.slice(0,200));
@@ -162,7 +180,7 @@ server.listen(8934, async()=>{
 
   // a shot claimed by two pieces is packed for once
   handler=()=>JSON.stringify([loc('Mutfak',['01','01a']),loc('Sokak',['01a','01b'])]);
-  seen=[]; seenSys=[]; named=[]; await reset();
+  seen=[]; seenSys=[]; named=[]; namedSys=[]; await reset();
   await clickBarBtn(page,'#btnExport'); await page.waitForTimeout(2500);
   const dup=await page.evaluate(()=>
     [].map.call(document.querySelectorAll('.pv-loc-list .pv-num'),n=>n.textContent.trim()));
