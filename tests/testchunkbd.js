@@ -2,6 +2,7 @@
 // the location's name, because one reply cannot hold two hundred shots.
 const http=require('http'), fs=require('fs');
 const { chromium } = require('./node_modules/playwright');
+const { clickBarBtn } = require('./ui.js');
 let seen=[], seenSys=[], named=[], handler=null, namer=null;
 const server=http.createServer((req,res)=>{
   if(req.url.startsWith('/index.html')){
@@ -65,7 +66,7 @@ server.listen(8934, async()=>{
     return JSON.stringify([loc('Mutfak',mine.slice(0,half)),loc('Sokak',mine.slice(half))]);
   };
   seen=[]; seenSys=[]; named=[]; await reset();
-  await page.click('#btnExport'); await page.waitForTimeout(3000);
+  await clickBarBtn(page,'#btnExport'); await page.waitForTimeout(3000);
   ok('the places are named once, before anyone places a shot', named.length===1, named.length);
   ok('that pass sees the whole film, not a chunk',
      (named[0]||'').split('\n').filter(l=>/^[0-9a-z.]+\./.test(l)).length===160,
@@ -108,7 +109,7 @@ server.listen(8934, async()=>{
     return JSON.stringify([loc('Mutfak',mine)]);
   };
   seen=[]; seenSys=[]; named=[]; await reset();
-  await page.click('#btnExport'); await page.waitForTimeout(4000);
+  await clickBarBtn(page,'#btnExport'); await page.waitForTimeout(4000);
   const t2=await shown();
   ok('one failed piece does not lose the others', /Mutfak/.test(t2));
   ok('its shots are asked for again rather than written off', !/Unplaced/.test(t2), t2.slice(0,220));
@@ -121,7 +122,7 @@ server.listen(8934, async()=>{
   // a piece that never comes back is written down, not hidden
   handler=(user,i)=>i%3===1?'sorry, no':JSON.stringify([loc('Mutfak',[...user.matchAll(/^([0-9a-z.]+)\./gm)].map(m=>m[1]))]);
   seen=[]; seenSys=[]; named=[]; await reset();
-  await page.click('#btnExport'); await page.waitForTimeout(5000);
+  await clickBarBtn(page,'#btnExport'); await page.waitForTimeout(5000);
   const t3b=await shown();
   ok('a piece that keeps failing ends up in the unplaced list', /Unplaced/.test(t3b));
 
@@ -132,7 +133,7 @@ server.listen(8934, async()=>{
     return JSON.stringify([loc(i%2 ? 'Baski Evi (Gunduz)' : 'Baski Evi', mine)]);
   };
   seen=[]; seenSys=[]; named=[]; await reset();
-  await page.click('#btnExport'); await page.waitForTimeout(4000);
+  await clickBarBtn(page,'#btnExport'); await page.waitForTimeout(4000);
   const bn=await page.evaluate(()=>[].map.call(document.querySelectorAll('.pv-loc-name'),e=>e.textContent));
   ok('a name carrying its time of day folds into its bare twin', bn.length===1, bn);
   ok('and keeps the bare spelling', bn[0]==='Baski Evi', bn);
@@ -148,7 +149,7 @@ server.listen(8934, async()=>{
     return JSON.stringify([loc(i%2 ? 'Mutfak (sabah)' : 'Mutfak (gece)', mine)]);
   };
   seen=[]; seenSys=[]; named=[]; await reset();
-  await page.click('#btnExport'); await page.waitForTimeout(4000);
+  await clickBarBtn(page,'#btnExport'); await page.waitForTimeout(4000);
   const tw=await page.evaluate(()=>[].map.call(document.querySelectorAll('.pv-loc-name'),e=>e.textContent));
   ok('two bracketed names with no bare twin stay apart', tw.length===2, tw);
 
@@ -156,7 +157,7 @@ server.listen(8934, async()=>{
   namer=()=>'sorry, no';
   handler=(user)=>JSON.stringify([loc('Mutfak',[...user.matchAll(/^([0-9a-z.]+)\./gm)].map(m=>m[1]))]);
   seen=[]; seenSys=[]; named=[]; await reset();
-  await page.click('#btnExport'); await page.waitForTimeout(4000);
+  await clickBarBtn(page,'#btnExport'); await page.waitForTimeout(4000);
   const tn=await shown();
   ok('a failed naming pass does not sink the breakdown', /Mutfak/.test(tn)&&!/Unplaced/.test(tn), tn.slice(0,200));
   ok('the pieces then name places themselves', seenSys.every(x=>!/already settled/.test(x)));
@@ -165,7 +166,7 @@ server.listen(8934, async()=>{
   // a shot claimed by two pieces is packed for once
   handler=()=>JSON.stringify([loc('Mutfak',['01','01a']),loc('Sokak',['01a','01b'])]);
   seen=[]; seenSys=[]; named=[]; await reset();
-  await page.click('#btnExport'); await page.waitForTimeout(2500);
+  await clickBarBtn(page,'#btnExport'); await page.waitForTimeout(2500);
   const dup=await page.evaluate(()=>{
     var all=[];[].forEach.call(document.querySelectorAll('.pv-loc-shots'),function(e){
       e.textContent.replace('shots ','').split(',').map(s=>s.trim()).filter(Boolean).forEach(s=>all.push(s));});

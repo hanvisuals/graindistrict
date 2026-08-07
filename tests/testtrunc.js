@@ -2,6 +2,7 @@
 // mostly true, and whatever is missing must be visible rather than silent.
 const http=require('http'), fs=require('fs');
 const { chromium } = require('./node_modules/playwright');
+const { clickBarBtn } = require('./ui.js');
 let REPLY='';
 const server=http.createServer((req,res)=>{
   if(req.url.startsWith('/index.html')){
@@ -48,7 +49,7 @@ server.listen(8933, async()=>{
   const full=JSON.stringify([loc(1,['01','01a']),loc(2,['01b','02']),loc(3,['02a','02b'])]);
   REPLY=full.slice(0, full.lastIndexOf('{'))+'{"name":"Mekan 4","timeOfDay":"da';
   await reset();
-  await page.click('#btnExport'); await page.waitForTimeout(1200);
+  await clickBarBtn(page,'#btnExport'); await page.waitForTimeout(1200);
   let t=await shown();
   ok('a cut-off reply keeps the locations that did close',
      /Mekan 1/.test(t)&&/Mekan 2/.test(t), t.slice(0,150));
@@ -60,7 +61,7 @@ server.listen(8933, async()=>{
   // 2. nothing usable at all: the export must say so instead of going quiet
   REPLY='I am sorry, I cannot help with that request.';
   await reset();
-  await page.click('#btnExport'); await page.waitForTimeout(1000);
+  await clickBarBtn(page,'#btnExport'); await page.waitForTimeout(1000);
   const dlg=await page.evaluate(()=>{
     var d=document.querySelector('.gd-ask,.gd-dialog,[class*=ask]');
     return document.body.innerText;
@@ -81,7 +82,7 @@ server.listen(8933, async()=>{
 
   // the empty-board guard uses the same dialog and had never been pressed
   await page.evaluate(()=>{ nodes=[]; renderAll(); window.__printed=0; });
-  await page.click('#btnExport'); await page.waitForTimeout(500);
+  await clickBarBtn(page,'#btnExport'); await page.waitForTimeout(500);
   ok('exporting an empty board explains itself instead of throwing',
      /Nothing to export/i.test(await page.evaluate(()=>document.body.innerText)));
   ok('and prints nothing', await page.evaluate(()=>window.__printed)===0);
@@ -99,7 +100,7 @@ server.listen(8933, async()=>{
   // 3. a clean reply is untouched by any of this
   REPLY=JSON.stringify([loc(1,['01','01a','01b']),loc(2,['02','02a','02b'])]);
   await reset();
-  await page.click('#btnExport'); await page.waitForTimeout(1200);
+  await clickBarBtn(page,'#btnExport'); await page.waitForTimeout(1200);
   const t3=await shown();
   ok('a clean reply still goes through without a word',
      /Mekan 1/.test(t3)&&/Mekan 2/.test(t3)&&!/Unplaced/.test(t3));

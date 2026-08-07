@@ -2,6 +2,7 @@
 // model silently drops them, so the code counts and surfaces the strays.
 const http=require('http'), fs=require('fs');
 const { chromium } = require('./node_modules/playwright');
+const { clickBarBtn } = require('./ui.js');
 let BREAKDOWN='';
 const server=http.createServer((req,res)=>{
   if(req.url.startsWith('/index.html')){
@@ -49,7 +50,7 @@ server.listen(8931, async()=>{
   // the model files only three of the eight
   BREAKDOWN=JSON.stringify([{name:'Mutfak',timeOfDay:'day',shots:['01','01a','01b'],
     props:['Fincan'],wardrobe:[],cast:['Anlatici'],note:'Sabah isigi.'}]);
-  await page.click('#btnExport'); await page.waitForTimeout(1200);
+  await clickBarBtn(page,'#btnExport'); await page.waitForTimeout(1200);
   const r=await page.evaluate(()=>{
     var v=document.getElementById('printView');
     return {names:[].map.call(v.querySelectorAll('.pv-loc-name'),e=>e.textContent),
@@ -68,7 +69,7 @@ server.listen(8931, async()=>{
   BREAKDOWN=JSON.stringify([
     {name:'Mutfak',timeOfDay:'day',shots:['01','01a','01b','01c'],props:[],wardrobe:[],cast:[],note:'x'},
     {name:'Sokak',timeOfDay:'dawn',shots:['02','02a','02b','02c'],props:[],wardrobe:[],cast:[],note:'y'}]);
-  await page.click('#btnExport'); await page.waitForTimeout(1200);
+  await clickBarBtn(page,'#btnExport'); await page.waitForTimeout(1200);
   const full=await page.evaluate(()=>{
     var v=document.getElementById('printView');
     return {locs:v.querySelectorAll('.pv-loc').length, text:v.textContent};
@@ -80,7 +81,7 @@ server.listen(8931, async()=>{
   BREAKDOWN=JSON.stringify([
     {name:'Mutfak',timeOfDay:'day',shots:[' 01 ','01A','01b','01c'],props:[],wardrobe:[],cast:[],note:'x'},
     {name:'Sokak',timeOfDay:'dawn',shots:['02','02a','02b','02c'],props:[],wardrobe:[],cast:[],note:'y'}]);
-  await page.click('#btnExport'); await page.waitForTimeout(1200);
+  await clickBarBtn(page,'#btnExport'); await page.waitForTimeout(1200);
   const sloppy=await page.evaluate(()=>document.getElementById('printView').textContent);
   ok('sloppy casing or stray spaces do not fake a missing shot', !/Unplaced/.test(sloppy));
 

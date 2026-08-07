@@ -294,7 +294,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 /* CONNECTIONS */
 .conn-svg{position:absolute;top:0;left:0;pointer-events:none;overflow:visible;}
 /* TOOLBAR */
-.toolbar{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:2px;z-index:50;padding:6px;background:rgba(18,18,18,.97);border:1px solid rgba(255,255,255,.1);border-radius:14px;backdrop-filter:blur(24px);box-shadow:0 8px 40px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.04);}
+.toolbar{position:fixed;bottom:calc(var(--strip-h,52px) + 38px);left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:2px;z-index:50;padding:6px;background:rgba(18,18,18,.97);border:1px solid rgba(255,255,255,.1);border-radius:14px;backdrop-filter:blur(24px);box-shadow:0 8px 40px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.04);}
 .tb-btn{position:relative;width:36px;height:36px;display:flex;align-items:center;justify-content:center;border:1px solid transparent;background:transparent;color:rgba(255,255,255,.4);cursor:pointer;outline:none;border-radius:8px;transition:color .15s,background .15s,opacity .2s;}
 .tb-btn:hover{background:rgba(255,255,255,.07);color:rgba(255,255,255,.85);}
 .tb-btn.on{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.14);color:#fff;}
@@ -342,10 +342,12 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 .translate-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,#5a8acc,#8a5acc);transition:width .3s ease;}
 .translate-toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(8px);background:rgba(18,18,18,.97);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:9px 16px;font-family:var(--sans);font-size:12px;color:#fff;z-index:10002;opacity:0;pointer-events:none;transition:all .25s ease;box-shadow:0 8px 30px rgba(0,0,0,.5);backdrop-filter:blur(16px);}
 .translate-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-/* when music strip is visible, lift the floating toolbar + legend above it */
-#s5.has-music .toolbar{bottom:200px;}
-#s5.has-music .guide{bottom:190px;}
-#s5.has-music .zoom-ind{bottom:165px;}
+/* The toolbar, the legend and the zoom readout float above the bottom strips.
+   How tall those strips are depends on three things - whether the music strip
+   is open, whether the timeline needs two lanes, and the phone's home
+   indicator - so it is measured, not guessed. --strip-h is written by
+   syncStripH() and is the only number these three need to know. */
+#s5{--strip-h:52px;}
 .tl-abbr{font-family:var(--mono);font-size:8px;letter-spacing:.04em;color:rgba(255,255,255,.8);font-weight:700;text-transform:uppercase;pointer-events:none;user-select:none;text-shadow:0 1px 2px rgba(0,0,0,.7);}
 .tl-total{font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:rgba(255,255,255,.2);text-transform:uppercase;margin-left:10px;flex-shrink:0;}
 .timeline.two-lane{height:96px;}
@@ -437,17 +439,27 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 .pb-overlay{display:none;position:absolute;inset:0;z-index:60;background:rgba(5,5,6,.98);flex-direction:column;backdrop-filter:blur(20px);}
 .pb-overlay.open{display:flex;}
 .pb-top{height:48px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 1.2rem;border-bottom:1px solid var(--border);}
+/* the account widget floats over every screen, this one included, and its
+   close button was landing underneath it */
+.pb-top{padding-right:calc(1.2rem + var(--gd-acct-w,0px));}
 .pb-top-title{font-family:var(--mono);font-size:11px;letter-spacing:.3em;color:rgba(255,255,255,.45);text-transform:uppercase;}
 .pb-close{font-family:var(--sans);font-size:13px;font-weight:500;padding:5px 14px;border:1px solid var(--border-hi);background:rgba(255,255,255,.05);color:var(--text-2);cursor:pointer;outline:none;border-radius:7px;transition:all .15s;}
 .pb-close:hover{background:rgba(255,255,255,.1);color:#fff;}
 .pb-monitor{flex:1;display:flex;align-items:center;justify-content:center;padding:28px;min-height:0;position:relative;}
 .pb-frame{
-  position:relative;height:100%;max-height:100%;aspect-ratio:16/9;max-width:100%;
+  position:relative;aspect-ratio:16/9;max-width:100%;max-height:100%;
   background:#000;border-radius:12px;overflow:hidden;
   border:1px solid rgba(255,255,255,.08);box-shadow:0 30px 90px rgba(0,0,0,.7);
   display:flex;align-items:center;justify-content:center;
 }
 .pb-frame img{width:100%;height:100%;object-fit:contain;display:block;background:#fff;}
+/* Which side of the frame is the binding one depends on the shape of the
+   window. Driving it from height, as it always was, gives a stretched frame on
+   a tablet held upright, because max-width clamps the width without the height
+   following. So: landscape sizes from the height, upright sizes from the
+   width, and the max-* on the other axis is the backstop either way. */
+@media (min-aspect-ratio:3/2){ .pb-frame{height:100%;width:auto;} }
+@media (max-aspect-ratio:3/2){ .pb-frame{width:100%;height:auto;} }
 .pb-frame-empty{display:flex;flex-direction:column;align-items:center;gap:10px;color:rgba(255,255,255,.2);font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;}
 .pb-frame-empty svg{width:42px;height:42px;opacity:.5;}
 .pb-badge{position:absolute;top:14px;left:14px;display:flex;align-items:center;gap:8px;z-index:2;}
@@ -504,7 +516,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 .nc:hover .port-dot{opacity:1;}
 .port-dot:hover{background:rgba(255,255,255,.4);border-color:#fff;}
 /* GUIDE */
-.guide{position:fixed;bottom:80px;right:1rem;background:rgba(10,10,10,.97);border:1px solid var(--border);border-radius:8px;padding:12px 14px;z-index:50;backdrop-filter:blur(20px);pointer-events:none;min-width:185px;}
+.guide{position:fixed;bottom:calc(var(--strip-h,52px) + 28px);right:1rem;background:rgba(10,10,10,.97);border:1px solid var(--border);border-radius:8px;padding:12px 14px;z-index:50;backdrop-filter:blur(20px);pointer-events:none;min-width:185px;}
 .guide-title{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--text-3);text-transform:uppercase;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border);pointer-events:auto;cursor:grab;display:flex;align-items:center;gap:6px;}
 .guide-x{margin-left:auto;background:none;border:none;color:var(--text-3);font-size:15px;line-height:1;cursor:pointer;padding:0 2px;pointer-events:auto;}
 .guide-x:hover{color:#fff;}
@@ -518,7 +530,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 .gi{display:flex;align-items:center;gap:7px;font-family:var(--sans);font-size:12px;color:var(--text-2);margin-bottom:4px;}
 .gd{width:7px;height:7px;flex-shrink:0;border-radius:2px;}
 .gd.r{border-radius:50%;}
-.zoom-ind{position:fixed;bottom:28px;left:1.2rem;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:rgba(255,255,255,.2);text-transform:uppercase;z-index:50;pointer-events:none;}
+.zoom-ind{position:fixed;bottom:calc(var(--strip-h,52px) + 8px);left:1.2rem;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:rgba(255,255,255,.2);text-transform:uppercase;z-index:50;pointer-events:none;}
 /* UNDO */
 .undo-hint{position:absolute;top:8px;left:50%;transform:translateX(-50%);font-family:var(--sans);font-size:12px;font-weight:500;color:rgba(255,255,255,.8);background:rgba(20,20,20,.97);border:1px solid var(--border-hi);border-radius:6px;padding:5px 12px;z-index:100;pointer-events:none;opacity:0;transition:opacity .3s;}
 .undo-hint.show{opacity:1;}
@@ -602,6 +614,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 .s3-back-btn{font-family:var(--sans);font-size:.88rem;font-weight:500;color:rgba(255,255,255,.4);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:7px;padding:.35rem .85rem;cursor:pointer;transition:all .15s;}
 .s3-back-btn:hover{color:#fff;background:rgba(255,255,255,.1);}
 .s3-topbar-labels{position:absolute;left:50%;transform:translateX(-50%);display:flex;gap:60px;}
+.s3-acts{display:flex;align-items:center;gap:16px;}
 .s3-col-label{font-family:var(--mono);font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.18);}
 .s3-body{display:flex;flex:1;overflow:hidden;min-height:0;}
 .s3-col-left{flex:0 0 44%;overflow-y:auto;padding:44px 48px;scroll-behavior:smooth;}
@@ -730,6 +743,185 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 @media (prefers-reduced-motion:reduce){
   .glow::after{transition:none;}
   .btn:active,.gd-pill:active,.cf-act:active,.gd-btn:active,.kb-cont:active{transform:none;}
+}
+
+/* ===== PHONES AND TABLETS =====
+   The desktop layout assumes a wide window and a mouse: a 300px sidebar
+   permanently eating the left edge, nine labelled buttons across the top bar,
+   a floating tool palette, and hover for everything. None of that survives a
+   390px screen.
+
+   Two breakpoints, because the two problems have different widths.
+
+   Below 1024px the top bar runs out of room first - nine labelled buttons plus
+   the account widget need about 900px on their own - so the buttons move into
+   a menu and the account widget sheds its email. A tablet in portrait keeps
+   everything else it already had.
+
+   Below 760px the sidebar is the problem: 300px of a 390px screen leaves a
+   canvas too narrow to work on, so it becomes a drawer, the brief and the plan
+   take turns, and the tool palette is allowed to scroll.
+
+   The two things that never shrink are the canvas and the tap target. */
+
+/* Two things break every full-height mobile layout: 100vh is taller than the
+   visible area while the browser's own chrome is showing, and the home
+   indicator sits on top of the bottom 34px. dvh fixes the first; the safe-area
+   inset, published as a variable here so the board can add it where it needs
+   to, fixes the second. */
+:root{--safe-b:env(safe-area-inset-bottom, 0px);}
+@supports (height:100dvh){ .screen{height:100dvh;} }
+
+/* the setup screens are centred columns with no scroll of their own, so on a
+   short screen the bottom of the form - including the button that starts the
+   whole thing - is simply unreachable */
+#s1{overflow-y:auto;justify-content:safe center;}
+#s1>*{flex-shrink:0;}
+/* these two screens centre their children, which left the top bar as a 172px
+   stub floating in the middle of the window rather than a bar across it */
+#s0>.topbar,#s1>.topbar{align-self:stretch;position:sticky;top:0;z-index:5;}
+.cbar-ic{display:none;width:38px;height:38px;flex-shrink:0;align-items:center;justify-content:center;background:transparent;border:none;outline:none;color:var(--text-2);cursor:pointer;border-radius:9px;padding:0;}
+.cbar-ic svg{width:19px;height:19px;}
+.cbar-ic:hover{background:rgba(255,255,255,.07);color:#fff;}
+.panel-scrim{display:none;position:absolute;inset:0;z-index:65;background:rgba(0,0,0,.55);backdrop-filter:blur(2px);}
+/* a glyph is enough when it sits next to export on a wide bar; in a menu of
+   worded items it is a riddle, so the wording comes back there */
+.btn-menu-t{display:none;}
+
+/* ---- tablet portrait and down: the top bar's buttons become a menu ---- */
+@media (max-width:1023px){
+  .cbar{padding:0 .5rem;gap:4px;position:relative;overflow:visible;}
+  #cbarMore{display:flex;}
+  .ctopic{flex:1;min-width:0;max-width:none;font-size:12.5px;}
+  /* nine items is taller than a phone held sideways, hence the cap */
+  .cbar .tbar-r{display:none;position:absolute;top:52px;right:8px;z-index:60;
+    flex-direction:column;align-items:stretch;gap:4px;width:196px;padding:7px;
+    max-height:calc(100dvh - 64px);overflow-y:auto;
+    background:rgba(16,16,16,.98);border:1px solid rgba(255,255,255,.11);border-radius:12px;
+    box-shadow:0 18px 50px rgba(0,0,0,.75);backdrop-filter:blur(20px);}
+  .cbar .tbar-r.open{display:flex;}
+  .cbar .tbar-r .btn{width:100%;min-height:42px;text-align:left;justify-content:flex-start;
+    font-size:14px;padding:10px 12px;margin-left:0!important;}
+  .btn-menu-t{display:inline;}
+
+  .modal{width:min(420px,calc(100vw - 24px));max-height:88vh;overflow-y:auto;}
+  .music-strip .ms-meta{flex-wrap:wrap;}
+
+  /* the BRIEF / PLAN headings are centred absolutely, so they take no space and
+     happily print themselves on top of "0 blocks" once the bar gets tight */
+  .s3-topbar{padding-left:12px;gap:10px;}
+  .s3-topbar-labels{position:static;transform:none;flex:1;justify-content:center;gap:34px;}
+}
+
+/* ---- phones: the sidebar becomes a drawer and the canvas gets the screen ----
+   A phone turned sideways is 844px wide and 390px tall: wide enough to dodge a
+   width-only breakpoint, and far too short to give 300px of it to a sidebar.
+   Short screens get the same treatment as narrow ones. */
+@media (max-width:759px),(max-height:500px){
+  #panelToggle{display:flex;}
+  .cbar{padding-left:.25rem;}
+  .ctopic{font-size:12px;}
+
+  /* above the floating tool palette (50) - a drawer that things poke through
+     does not read as a drawer */
+  .left-panel{position:absolute;top:0;left:0;bottom:0;z-index:70;width:min(320px,88vw);
+    transform:translateX(-101%);transition:transform .22s cubic-bezier(.22,.7,.16,1);
+    box-shadow:0 0 40px rgba(0,0,0,.6);}
+  .left-panel.open{transform:none;}
+  .panel-scrim.show{display:block;}
+  .block-list{max-height:38vh;}
+
+  /* the palette has to fit, so let it scroll rather than get cut off mid-row */
+  .toolbar{left:8px;right:8px;transform:none;
+    max-width:none;overflow-x:auto;justify-content:flex-start;
+    scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+  .toolbar::-webkit-scrollbar{display:none;}
+  .tb-drag{display:none;}                 /* dragging the palette is a mouse idea */
+  .tb-btn{width:42px;height:42px;flex-shrink:0;}
+
+  /* the legend floats over the canvas, which on a phone is all the canvas
+     there is - and nothing on it can be dragged out of the way by a finger */
+  .guide{display:none;}
+  /* the strip's home indicator sits under the timeline, not on top of it */
+  .timeline-wrap{padding-bottom:var(--safe-b);background:#070707;}
+  .script-overlay{width:100%;}
+  .music-strip .ms-meta,.music-strip .ms-legend{display:none;}
+
+  /* --- brief and plan take turns instead of sharing 390px --- */
+  /* Back, the tabs and Open in Canvas cannot share one 390px line with the
+     account widget, so the tabs drop to a row of their own */
+  .s3-topbar{padding:8px 10px;gap:8px;flex-wrap:wrap;}
+  .s3-topbar-labels{order:3;flex:1 0 100%;position:static;transform:none;gap:6px;}
+  .s3-col-label{flex:1;text-align:center;font-size:11px;letter-spacing:.14em;padding:9px 8px;border-radius:8px;
+    cursor:pointer;color:rgba(255,255,255,.35);border:1px solid var(--border);}
+  .s3-acts{gap:10px;}
+  #s3[data-tab="brief"] .s3-col-label:first-child,
+  #s3[data-tab="plan"] .s3-col-label:last-child{color:#fff;background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.14);}
+  #s3[data-tab="brief"] .s3-col-right,
+  #s3[data-tab="plan"] .s3-col-left{display:none;}
+  .s3-col-divider{display:none;}
+  .s3-col-left,.s3-col-right{flex:1 1 auto;padding:20px 16px;}
+  .s3-topbar .kb-sub{display:none;}
+  .kb-cont{padding:.55rem .9rem;font-size:.82rem;white-space:nowrap;}
+
+  .modal{padding:18px;gap:13px;}
+  .iw{padding:1.1rem 1rem 2.4rem;gap:1.05rem;}
+  .pt-grid{gap:8px;}
+  .topbar{padding:0 .8rem;}
+
+  /* --- the equipment and brief steps --- */
+  /* these two centre a tall column with no scroll of its own, and the Back
+     button floats over the top of it */
+  #s_equipment,#s_brief{overflow-y:auto;}
+  .kb-wrap{padding:3.6rem 1rem 2rem;gap:1.2rem!important;}
+  .kb-title{font-size:1.45rem!important;}
+  .kb-sub{font-size:.86rem;}
+  .brief-ta{height:150px;}
+  .brief-display{max-height:42vh;}
+  /* three buttons across 358px turns "Use This Brief" into three stacked
+     words - give the one that matters its own row */
+  .brief-row{flex-wrap:wrap;}
+  .brief-row .gobtn{flex:1 0 100%!important;padding:.85rem 1rem;}
+  .brief-skip-btn{flex:1;min-height:42px;padding:0 14px;}
+  .kb-back{top:.7rem;left:.7rem;}
+
+  /* --- preview --- */
+  /* padding-left only - the right side still has to keep clear of the account
+     widget, which .pb-top reserves from --gd-acct-w */
+  .pb-top{padding-left:.8rem;}
+  .pb-monitor{padding:12px;}
+  .pb-transport{padding:12px 14px 18px;}
+  .pb-script{padding:34px 14px 14px;}
+  .pb-script-txt{font-size:13.5px;max-height:4.5em;}
+  .pb-time{min-width:0;font-size:10px;}
+  .pb-bar-row{gap:9px;}
+}
+
+/* the account widget and the projects sidebar are styled by the account
+   module's own stylesheet, which loads after this one - their narrow-screen
+   rules live there, or they would simply be overwritten */
+
+/* Sideways, the canvas is only about 250px tall - the floating palette should
+   not be a fifth of it. */
+@media (max-height:500px){
+  .toolbar{padding:4px;}
+  .tb-btn{width:36px;height:36px;}
+  .tb-btn svg{width:16px;height:16px;}
+}
+
+/* Coarse pointers cannot hover and cannot reliably hit a 24px target, whatever
+   the window is wide. Keyed on the input device, not the width, so a
+   touchscreen laptop gets it too. */
+.gi-touch{display:none;}
+@media (hover:none) and (pointer:coarse){
+  /* the legend was written for a mouse - a wheel, a hover, a Ctrl key */
+  .gi-mouse{display:none;}
+  .gi-touch{display:block;}
+  .btn,.opt,.bd-act,.bd-type-btn,.modal-type,.cf-act,.gd-pill,.bl-addbtn{min-height:38px;}
+  .bl-item{padding:11px 14px;}
+  .tb-btn[data-tip]:hover::after{display:none;}
+  /* :hover sticks after a tap on touch, leaving buttons lit up until the next one */
+  .btn:hover,.opt:hover,.cf-act:hover,.gd-pill:hover{background:inherit;}
 }
 
 /* ===== PRINTABLE SHOT LIST =====
@@ -1009,14 +1201,14 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
   <div class="lsub" id="s2sub">0s</div>
 </div>
 
-<div id="s3" class="screen s3-split-screen">
+<div id="s3" class="screen s3-split-screen" data-tab="plan">
   <div class="s3-topbar">
     <button class="s3-back-btn" onclick="show('s1')">Back</button>
     <div class="s3-topbar-labels">
-      <span class="s3-col-label">BRIEF</span>
-      <span class="s3-col-label">PLAN</span>
+      <span class="s3-col-label" onclick="s3Tab('brief')">BRIEF</span>
+      <span class="s3-col-label" onclick="s3Tab('plan')">PLAN</span>
     </div>
-    <div style="display:flex;align-items:center;gap:16px;">
+    <div class="s3-acts">
       <span class="kb-sub" id="wc" style="font-size:.8rem;color:rgba(255,255,255,.25)">0 blocks</span>
       <button class="kb-cont" onclick="buildCanvas()">Open in Canvas</button>
     </div>
@@ -1041,8 +1233,14 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 
 <div id="s5" class="screen">
   <div class="cbar">
+    <button class="cbar-ic" id="panelToggle" onclick="toggleLeftPanel()" title="Blocks" aria-label="Blocks">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
     <div class="ctopic" id="ctopic"></div>
-    <div class="tbar-r">
+    <button class="cbar-ic" id="cbarMore" onclick="toggleCbarMenu()" title="Actions" aria-label="Actions">
+      <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>
+    </button>
+    <div class="tbar-r" id="cbarActions">
       <button class="btn" onclick="undoAction()" title="Ctrl+Z">undo</button>
       <button class="btn" onclick="redoAction()" title="Ctrl+Shift+Z / Ctrl+Y">redo</button>
       <button class="btn" onclick="fitScreen()">fit</button>
@@ -1050,12 +1248,13 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
       <button class="btn" id="recceBtn" onclick="toggleReccePanel()" style="display:none">recce</button>
       <button class="btn" id="previewBtn" onclick="openPlayback()">▶ preview</button>
       <button class="btn" id="btnExport" onclick="doExport()">export</button>
-      <button class="btn" id="btnRebreak" onclick="projectBreakdown=null;projectBreakdownKey=null;doExport()" title="Throw away the locations and work them out again">&#8635;</button>
+      <button class="btn" id="btnRebreak" onclick="projectBreakdown=null;projectBreakdownKey=null;doExport()" title="Throw away the locations and work them out again">&#8635;<span class="btn-menu-t"> locations again</span></button>
       <button class="btn" onclick="if(window.gdNewProject)gdNewProject();projectBrief='';projectConstraints='';clearRecce();var rp=document.getElementById('reccePanel');if(rp)rp.classList.remove('open');show('s1')">new</button>
     </div>
   </div>
   <div class="canvas-body">
-    <div class="left-panel">
+    <div class="panel-scrim" id="panelScrim" onclick="toggleLeftPanel(false)"></div>
+    <div class="left-panel" id="leftPanel">
       <div class="sp-wrap" id="spWrap"></div>
       <div class="block-list" id="blockList">
         <div class="bl-head">
@@ -1124,7 +1323,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
     <div class="ms-status" id="msStatus" style="display:none">analyzing song…</div>
     <audio id="stripAudio" preload="auto"></audio>
   </div>
-  <div class="timeline-wrap" style="position:relative">
+  <div class="timeline-wrap" id="tlWrap" style="position:relative">
     <div class="timeline" id="tl"></div>
     <div class="tl-playhead" id="tlHead" style="display:none"></div>
   </div>
@@ -1176,12 +1375,16 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
     <div class="gi"><div class="gd" style="background:var(--c-mu)"></div>music</div>
     <div class="gi"><div class="gd" style="background:var(--c-tr)"></div>transition</div>
     <div class="guide-sec">controls</div>
-    <div class="gi">mouse wheel = zoom</div>
-    <div class="gi">2-finger scroll = pan</div>
-    <div class="gi">pinch / ctrl+scroll = zoom</div>
-    <div class="gi">space+drag = pan</div>
-    <div class="gi">hover node = connect dots</div>
-    <div class="gi">Ctrl+Z = undo</div>
+    <div class="gi gi-mouse">mouse wheel = zoom</div>
+    <div class="gi gi-mouse">2-finger scroll = pan</div>
+    <div class="gi gi-mouse">pinch / ctrl+scroll = zoom</div>
+    <div class="gi gi-mouse">space+drag = pan</div>
+    <div class="gi gi-mouse">hover node = connect dots</div>
+    <div class="gi gi-mouse">Ctrl+Z = undo</div>
+    <div class="gi gi-touch">drag = move a block</div>
+    <div class="gi gi-touch">2 fingers = pan</div>
+    <div class="gi gi-touch">pinch = zoom</div>
+    <div class="gi gi-touch">tap a block = open it</div>
   </div>
   <div class="zoom-ind" id="zind">100%</div>
   <div class="recce-panel" id="reccePanel">
@@ -2165,6 +2368,71 @@ function renderPbFrame(node){
   html+='<div class="pb-script"><div class="pb-script-txt">'+(node.content||'')+'</div>'+shots+'</div>';
   frame.innerHTML=html;
 }
+
+/* ---------- narrow-screen chrome ----------
+   On a phone the left panel is a drawer and, from tablet width down, the top
+   bar's buttons live behind a menu. Both are plain class toggles; the layout
+   itself is CSS, so on a wide window these do nothing visible. */
+function narrowUI(){ return window.matchMedia('(max-width:1023px)').matches; }
+function toggleLeftPanel(force){
+  var p=document.getElementById('leftPanel'),s=document.getElementById('panelScrim');
+  if(!p)return;
+  var open=(force===undefined)?!p.classList.contains('open'):!!force;
+  p.classList.toggle('open',open);
+  if(s)s.classList.toggle('show',open);
+  document.body.classList.toggle('panel-open',open);
+  if(open)closeCbarMenu();
+}
+function toggleCbarMenu(force){
+  var m=document.getElementById('cbarActions');
+  if(!m)return;
+  var open=(force===undefined)?!m.classList.contains('open'):!!force;
+  m.classList.toggle('open',open);
+  if(open)toggleLeftPanel(false);
+}
+function closeCbarMenu(){ toggleCbarMenu(false); }
+// tapping anywhere else puts the menu away, the way a menu is expected to
+document.addEventListener('pointerdown',function(e){
+  var m=document.getElementById('cbarActions');
+  if(!m||!m.classList.contains('open'))return;
+  if(e.target.closest&&(e.target.closest('#cbarActions')||e.target.closest('#cbarMore')))return;
+  closeCbarMenu();
+},true);
+// picking something from the menu should also dismiss it
+document.addEventListener('click',function(e){
+  if(!narrowUI())return;
+  var b=e.target.closest&&e.target.closest('#cbarActions .btn');
+  if(b)setTimeout(closeCbarMenu,0);
+});
+// on a phone the brief and the plan take turns instead of sharing the width
+function s3Tab(which){
+  var s=document.getElementById('s3'); if(s)s.dataset.tab=which;
+}
+
+/* How much of the bottom of the screen the strips have taken. The music strip
+   opens and closes, the timeline grows a second lane when two blocks overlap,
+   and a phone reserves a bar for its home indicator - so measure it rather
+   than keep a table of magic numbers for each combination. The toolbar, the
+   legend and the zoom readout all sit on top of this. */
+function syncStripH(){
+  var s5=document.getElementById('s5'); if(!s5)return;
+  var h=0;
+  ['musicStrip','tlWrap'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el&&getComputedStyle(el).display!=='none')h+=el.getBoundingClientRect().height;
+  });
+  s5.style.setProperty('--strip-h',Math.round(h)+'px');
+}
+(function(){
+  if(window.ResizeObserver){
+    var ro=new ResizeObserver(syncStripH);
+    ['musicStrip','tlWrap'].forEach(function(id){
+      var el=document.getElementById(id); if(el)ro.observe(el);
+    });
+  }
+  window.addEventListener('resize',syncStripH);
+  syncStripH();
+})();
 
 function toggleScript(){
   var ov=document.getElementById('scriptOverlay');
@@ -4552,6 +4820,112 @@ vp.addEventListener('gesturechange',function(e){
 });
 vp.addEventListener('gestureend',function(e){e.preventDefault();});
 
+/* ---------- touch on the canvas ----------
+   Every interaction on this board - dragging a block, drawing a connection,
+   panning - is written against mouse events. A phone does not send those: it
+   sends touches, and the compatibility mouse events browsers synthesise from
+   them arrive only for a tap, never for a drag, because the first unprevented
+   touchmove hands the gesture to the page scroller and cancels them.
+
+   So translate here instead of rewriting twenty handlers. One finger on a card
+   becomes a mouse; two fingers pinch to zoom and pan.
+
+   One finger on the bare board pans it. That gesture has no mouse equivalent
+   to borrow - the board only pans on middle-drag or space+drag, and a phone
+   has neither - so it is handled here directly. It is also the first thing
+   anyone tries.
+
+   Anything that scrolls on its own - the block list, the script overlay, a
+   textarea - is left alone. */
+(function(){
+  var SCROLLS='.block-list,.block-detail,.script-overlay,.sp-wrap,textarea,input,'
+             +'[contenteditable="true"],.recce-panel,.sb-panel';
+  // everything the board puts on the canvas; a finger anywhere else is on the grid
+  var THINGS='.nc,.att-shot,.img-node,.note-node,.port-dot,.sb-panel,.sb-regen,.loc-panel';
+  var tId=null,pinch=null,startX=0,startY=0,moved=false,lastTouch=null,pan=null;
+  function scrolly(t){ return !!(t&&t.closest&&t.closest(SCROLLS)); }
+  function onThing(t){ return !!(t&&t.closest&&t.closest(THINGS)); }
+  function fire(kind,t,btn){
+    t.target.dispatchEvent(new MouseEvent(kind,{
+      bubbles:true,cancelable:true,view:window,button:btn||0,buttons:kind==='mouseup'?0:1,
+      clientX:t.clientX,clientY:t.clientY}));
+  }
+  function dist(a,b){ var dx=a.clientX-b.clientX,dy=a.clientY-b.clientY; return Math.hypot(dx,dy); }
+  function mid(a,b){ return {x:(a.clientX+b.clientX)/2,y:(a.clientY+b.clientY)/2}; }
+
+  vp.addEventListener('touchstart',function(e){
+    if(scrolly(e.target))return;
+    if(e.touches.length===2){
+      // a pinch starting mid-drag would leave the drag hanging - end it first
+      if(tId!==null){ if(lastTouch)fire('mouseup',lastTouch); tId=null; }
+      var a=e.touches[0],b=e.touches[1];
+      pinch={d:dist(a,b),c:mid(a,b)}; pan=null;
+      e.preventDefault();
+      return;
+    }
+    if(e.touches.length!==1||pinch)return;
+    var t=e.touches[0];
+    tId=t.identifier; startX=t.clientX; startY=t.clientY; moved=false;
+    lastTouch=t;
+    if(onThing(t.target)) fire('mousedown',t);
+    else pan={x:t.clientX,y:t.clientY};
+    e.preventDefault();
+  },{passive:false});
+
+  function find(list,id){
+    for(var i=0;i<list.length;i++) if(list[i].identifier===id) return list[i];
+    return null;
+  }
+
+  vp.addEventListener('touchmove',function(e){
+    if(pinch&&e.touches.length===2){
+      var a=e.touches[0],b=e.touches[1],d=dist(a,b),c=mid(a,b);
+      if(pinch.d>0)zoomAt(c.x,c.y,d/pinch.d);
+      px+=c.x-pinch.c.x; py+=c.y-pinch.c.y; updateT();
+      pinch={d:d,c:c};
+      e.preventDefault();
+      return;
+    }
+    if(tId===null)return;
+    var t=find(e.touches,tId); if(!t)return;
+    lastTouch=t;
+    if(!moved&&Math.hypot(t.clientX-startX,t.clientY-startY)>4)moved=true;
+    if(pan){ px+=t.clientX-pan.x; py+=t.clientY-pan.y; pan={x:t.clientX,y:t.clientY}; updateT(); }
+    else fire('mousemove',t);
+    e.preventDefault();
+  },{passive:false});
+
+  function end(e){
+    if(pinch&&e.touches.length<2)pinch=null;
+    if(tId===null)return;
+    if(find(e.touches,tId))return;      // other fingers lifted, ours is still down
+    var t=lastTouch,wasPan=!!pan;
+    tId=null; pan=null;
+    if(!t)return;
+    if(wasPan){
+      // a pan that never travelled is a tap on the grid, not a pan - so it
+      // still has to land as a plain mouse click, whatever the board does
+      // with those
+      if(moved)return;
+      fire('mousedown',t); fire('mouseup',t);
+    }else{
+      fire('mousemove',t); fire('mouseup',t);
+    }
+    // a tap has to land as a click too: the app opens the block detail, picks a
+    // tool and closes menus on click, and no click follows a prevented touch
+    if(!moved)t.target.dispatchEvent(new MouseEvent('click',{
+      bubbles:true,cancelable:true,view:window,clientX:t.clientX,clientY:t.clientY}));
+  }
+  vp.addEventListener('touchend',end,{passive:false});
+  vp.addEventListener('touchcancel',end,{passive:false});
+})();
+// let the canvas keep every gesture instead of handing it to the page scroller
+vp.style.touchAction='none';
+
+// the timeline is a horizontal strip - it should scroll under a finger, and
+// the mouse-drag scroller must not fight it
+tl.style.touchAction='pan-x';
+
 tl.addEventListener('wheel',function(e){
   e.preventDefault();
   tl.scrollLeft+=e.deltaY||e.deltaX;
@@ -4910,7 +5284,36 @@ document.addEventListener('mouseup',function(e){
   // underneath it. --gd-acct-w is measured from the widget itself, because its
   // width changes with the signed-in email.
   +'.cbar{padding-right:calc(1.2rem + var(--gd-acct-w,0px));}'
-  +'.s3-topbar{padding-right:calc(24px + var(--gd-acct-w,0px));}';
+  +'.s3-topbar{padding-right:calc(24px + var(--gd-acct-w,0px));}'
+  // On a phone the email and the save state are luxuries the bar cannot
+  // afford, and "Projects" shrinks to its glyph. syncAcctSpace still measures
+  // the widget, so the bars reserve exactly the smaller width it now needs.
+  +'@media (max-width:1023px){'
+  +'  .gd-acct{top:5px;right:6px;gap:4px;}'
+  +'  .gd-email,.gd-save-state{display:none;}'
+  +'  .gd-pill{padding:8px 11px;font-size:12px;}'
+  +'  #gdProjBtn .gd-pill-t{display:none;}'
+  +'  .cbar{padding-right:calc(.5rem + var(--gd-acct-w,120px));}'
+  +'  .s3-topbar{padding-right:calc(10px + var(--gd-acct-w,120px));}'
+  +'  .gd-modal.wide{max-width:100%;}'
+  +'  .gd-ov{padding:14px;overflow-y:auto;}'
+  +'}'
+  +'@media (max-width:759px),(max-height:500px){'
+  // the split screen's top bar wraps to two rows here, and only the first one
+  // shares the line with the account widget - so the room is reserved on that
+  // row's buttons, not on the whole bar
+  +'  .s3-topbar{padding-right:10px;}'
+  +'  .s3-acts{margin-right:var(--gd-acct-w,120px);}'
+  +'  .gd-home{width:min(280px,84vw);}'
+  +'  #gdHomeCf{padding:0 10px;}'
+  +'  .gd-modal{padding:20px;}'
+  +'  #gdAuthOv{gap:20px;}'
+  +'  .cf-wrap{--cf-card:clamp(148px,42vw,200px);}'
+  +'  .cf-wrap::before,.cf-wrap::after{width:34px;}'
+  // the projects tab clings to the left edge, which is exactly where the
+  // blocks drawer slides out from
+  +'  body.panel-open .gd-home-tab{display:none;}'
+  +'}';
   var st=document.createElement('style'); st.textContent=css; document.head.appendChild(st);
 
   /* ---------- DOM ---------- */
@@ -4973,6 +5376,17 @@ document.addEventListener('mouseup',function(e){
     });
   }
   window.addEventListener('resize',syncAcctSpace);
+  // the widget changes width for reasons nobody remembers to announce - a
+  // longer email, the save state appearing, the phone rules stripping both -
+  // so watch it instead of relying on every one of those paths to call in
+  if(window.ResizeObserver){
+    var acctRO=new ResizeObserver(function(){
+      var a=byId('gdAcct'); if(!a)return;
+      var w=Math.ceil(a.getBoundingClientRect().width);
+      document.documentElement.style.setProperty('--gd-acct-w',(w?(w+16):0)+'px');
+    });
+    var acctEl=byId('gdAcct'); if(acctEl)acctRO.observe(acctEl);
+  }
 
   /* ---------- serialize / restore full board state ---------- */
   function serialize(){
@@ -5068,13 +5482,13 @@ document.addEventListener('mouseup',function(e){
     var a=byId('gdAcct'); if(!a) return;
     if(token){
       a.innerHTML='<span class="gd-save-state" id="gdSaveState"></span>'
-        +'<button class="gd-pill" id="gdProjBtn">&#9636; Projects</button>'
+        +'<button class="gd-pill" id="gdProjBtn" title="Projects">&#9636;<span class="gd-pill-t"> Projects</span></button>'
         +'<span class="gd-email">'+esc(userEmail||'')+'</span>'
         +'<button class="gd-pill" id="gdSignOut">Sign out</button>';
       byId('gdSignOut').onclick=function(){ signOut(false); };
     } else {
       a.innerHTML='<span class="gd-save-state" id="gdSaveState"></span>'
-        +'<button class="gd-pill" id="gdProjBtn">&#9636; Projects</button>'
+        +'<button class="gd-pill" id="gdProjBtn" title="Projects">&#9636;<span class="gd-pill-t"> Projects</span></button>'
         +'<button class="gd-pill primary" id="gdSignIn">Sign in</button>';
       byId('gdSignIn').onclick=openAuth;
     }
