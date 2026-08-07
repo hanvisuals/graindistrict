@@ -2656,7 +2656,7 @@ var projectBreakdown=null;   // location-by-location shooting breakdown
    version of the code that made it, and either one changing throws it out.
    Bump the version whenever the breakdown prompt or its handling changes -
    that is what retires the copies already saved in people's projects. */
-var BREAKDOWN_V=7;
+var BREAKDOWN_V=8;
 var projectBreakdownKey=null;
 function breakdownKey(){
   var t=BREAKDOWN_V+'|'+planAsText(),h=5381;
@@ -4360,16 +4360,40 @@ var BREAKDOWN_CHUNK=45;
    film, and the pieces only decide which shot goes where. The whole plan is a
    large thing to send but a short thing to answer, which is the safe direction
    - it was the length of the answer that broke everything else. */
+/* This stage decides how finely the film is divided, and the placing stage
+   afterwards is told to use its names and not invent others - so a rule about
+   splitting only helps if it is written here. It used to say the opposite:
+   "a desk, a study and a work table in the same flat are one location", "give
+   as few locations as honestly cover the film". A nine-minute film came back
+   with one entry named "Ev - calisma masasi / oda" holding 252 of its 328
+   shots, which is not a location, it is a house. Everything downstream then
+   went wrong in that one entry and nowhere else: ninety-six props where the
+   other five places had fourteen, one person listed seven ways.
+
+   The unit is a setup - what you light, point the camera at, and strike - not
+   an address. But it must not swing the other way either: an earlier version
+   of the breakdown produced forty-one locations for one film, half of them a
+   single shot's framing. Both guards are stated. */
 function genLocationNames(li,lines){
   var brief=lines.map(function(l){ return l.replace(/\s{2}\([^)]*\)\s*$/,''); }).join('\n');
   var sys=(li?li+'\n\n':'')
-    +'You are a first assistant director reading a whole shot plan and listing only the places it has '
-    +'to be shot in.\n\n'
-    +'A location is somewhere a crew travels to and sets up in. The same room at a different hour is '
-    +'the same location unless the setup genuinely changes - one lighting change is not a new place. '
-    +'A desk, a study and a work table in the same flat are one location, not three.\n\n'
-    +'Give as few locations as honestly cover the film, and no fewer. Name each one plainly and the '
-    +'same way every time it comes up.\n\n'
+    +'You are a first assistant director reading a whole shot plan and listing the setups it has to '
+    +'be shot in.\n\n'
+    +'A location here is a SETUP: one thing you light, point a camera at, and then strike before the '
+    +'next one. It is not an address. Two setups in the same room are two entries, because on the '
+    +'day they are two separate pieces of work - the desk at night and the mirror by the window are '
+    +'not the same job even though you never leave the flat.\n\n'
+    +'Name them so the room is still visible: "Ev - calisma masasi", "Ev - ayna", "Ev - yatak". Then '
+    +'somebody reading the list can see both what to travel to and what to build.\n\n'
+    +'This plan has '+lines.length+' shots. An entry that would end up holding more than about forty '
+    +'of them is a room you have not divided yet - look at what the shots in it actually stand in '
+    +'front of. If their descriptions name different surfaces, different furniture or different '
+    +'light, those are the setups, and they are what to list.\n\n'
+    +'The other way is just as wrong. Do not make a setup out of a camera angle: two shots of the '
+    +'same desk from different distances are one entry. Do not split by time alone - the same setup '
+    +'lit the same way at a different hour is one entry. If a place genuinely holds the whole film, '
+    +'say so once rather than inventing distinctions that are not there.\n\n'
+    +'Name each one plainly and the same way every time it comes up.\n\n'
     +'Return ONLY JSON: [{"name":"...","timeOfDay":"..."}]'
     +(li?'\n\n'+li:'');
   return withTimeout(apiRetry(sys,'Shot plan:\n'+brief).then(parseLocations),60000,null,'location names');
@@ -4381,8 +4405,8 @@ function breakdownSys(li,part,names){
         +names.map(function(n){return '- '+n.name+(n.timeOfDay?' ('+n.timeOfDay+')':'');}).join('\n')
         +'\n\nUse these names exactly as written - other people are placing the rest of the shots '
         +'against the same list, and a name spelled differently becomes a second location nobody '
-        +'meant. Only add a location of your own if a shot genuinely happens somewhere not on the '
-        +'list.\n\n'
+        +'meant. Only add one of your own if a shot plainly stands in front of something none of '
+        +'these names covers.\n\n'
       : '')
     +'You are a first assistant director turning a shot plan into a shooting breakdown.\n\n'
     +'Group the shots by LOCATION - the real place a crew has to travel to and set up in. Shots that '
@@ -4397,11 +4421,9 @@ function breakdownSys(li,part,names){
     +'A voiceover is still recorded somewhere - a quiet room, a booth - and that is its location. None '
     +'may be left out, none may appear twice. Before you answer, count the shots you were given and '
     +'count the shots across your locations; they must be the same number.\n\n'
-    +'A location is a place, not a shot. Do not give one shot a location of its own when it plainly '
-    +'happens in the same room as its neighbours, and do not let one location swallow everything either '
-    +'- if a place is collecting more than a dozen shots, split it by what actually changes on the day: '
-    +'a different room, a different time, a different lighting setup. "The house" is not a location; '
-    +'"the kitchen, morning" is.\n\n'
+    +'A location is a setup, not a shot: what you light, point a camera at, and strike. Do not give '
+    +'one shot a setup of its own because the camera moved, and do not let one setup swallow the film '
+    +'either - "the house" is not a location, "the kitchen, morning" is.\n\n'
     +(part?'These shots are one stretch of a longer film, and other people are breaking down the rest at '
       +'the same time. Name each location plainly and by itself - "kitchen, morning", not "the kitchen '
       +'where the notebook scene happens" - so that a place appearing in someone else\'s stretch comes '
