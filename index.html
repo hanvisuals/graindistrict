@@ -143,6 +143,26 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 .vp.panning{cursor:grabbing;}
 .vp.connecting{cursor:crosshair;}
 .cw{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform;}
+/* Location view is a production overlay on the same board. Each place gets a
+   horizontal swimlane, so a crew can scan down the locations and pan across
+   the shots at that place without losing the hand-arranged story layout. */
+.location-lane{position:absolute;border:1px solid rgba(255,255,255,.075);border-radius:18px;background:linear-gradient(115deg,rgba(255,255,255,.035),rgba(255,255,255,.012) 46%,rgba(255,255,255,.022));pointer-events:none;overflow:hidden;}
+.location-lane::after{content:'';position:absolute;left:24px;right:24px;top:112px;height:1px;background:linear-gradient(90deg,rgba(201,168,76,.38),rgba(255,255,255,.06),transparent);}
+.location-head{position:absolute;left:24px;right:24px;top:20px;display:flex;align-items:flex-start;gap:22px;min-width:0;}
+.location-index{font-family:var(--mono);font-size:9px;line-height:1.4;letter-spacing:.16em;text-transform:uppercase;color:rgba(201,168,76,.72);white-space:nowrap;padding-top:4px;}
+.location-title-wrap{min-width:180px;max-width:310px;}
+.location-title{font-family:var(--sans);font-size:20px;font-weight:600;line-height:1.15;color:rgba(255,255,255,.94);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.location-sub{display:flex;gap:7px;align-items:center;margin-top:7px;}
+.location-chip{font-family:var(--mono);font-size:9px;letter-spacing:.06em;color:rgba(255,255,255,.45);border:1px solid rgba(255,255,255,.1);border-radius:999px;padding:3px 7px;white-space:nowrap;}
+.location-meta{display:grid;grid-template-columns:repeat(3,minmax(130px,1fr));gap:8px 20px;flex:1;min-width:0;padding-top:1px;}
+.location-meta-item{min-width:0;}
+.location-meta-k{display:block;font-family:var(--mono);font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.23);margin-bottom:4px;}
+.location-meta-v{display:block;font-family:var(--sans);font-size:11px;line-height:1.3;color:rgba(255,255,255,.58);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.location-lane.unplaced{border-color:rgba(204,85,85,.28);background:linear-gradient(115deg,rgba(204,85,85,.07),rgba(255,255,255,.012) 55%);}
+.location-lane.unplaced .location-index{color:rgba(235,110,110,.8);}
+.cw.location-view .nc{box-shadow:0 8px 28px rgba(0,0,0,.38);}
+.cw.location-view .nc-tag{color:rgba(255,255,255,.38);font-size:10px;}
+.cw.location-view .port-dot,.cw.location-view .nc-drawer,.cw.location-view .nc-sb-btn,.cw.location-view .sb-panel,.cw.location-view .sb-regen,.cw.location-view .loc-panel{display:none!important;}
 /* CANVAS CARDS */
 .nc{position:absolute;background:#161616;border:1px solid var(--border);border-radius:var(--r);cursor:grab;transition:box-shadow .18s;}
 .nc:hover{box-shadow:0 4px 24px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.12);}
@@ -803,6 +823,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
   .cbar .tbar-r .btn{width:100%;min-height:42px;text-align:left;justify-content:flex-start;
     font-size:14px;padding:10px 12px;margin-left:0!important;}
   .btn-menu-t{display:inline;}
+  .location-head{gap:14px;}
+  .location-title-wrap{min-width:160px;max-width:240px;}
+  .location-meta{grid-template-columns:repeat(3,minmax(110px,1fr));gap:8px 12px;}
 
   .modal{width:min(420px,calc(100vw - 24px));max-height:88vh;overflow-y:auto;}
   .music-strip .ms-meta{flex-wrap:wrap;}
@@ -1267,10 +1290,11 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
       <button class="btn" onclick="fitScreen()">fit</button>
       <button class="btn on" id="scriptBtn" onclick="toggleScript()">script</button>
       <button class="btn" id="recceBtn" onclick="toggleReccePanel()" style="display:none">recce</button>
+      <button class="btn" id="btnLocations" onclick="toggleLocationView()" title="Group the board by shooting location">locations</button>
       <button class="btn" id="previewBtn" onclick="openPlayback()">▶ preview</button>
       <button class="btn" id="btnExport" onclick="doExport()">export</button>
       <button class="btn" id="btnRebreak" onclick="projectBreakdown=null;projectBreakdownKey=null;doExport()" title="Throw away the locations and work them out again">&#8635;<span class="btn-menu-t"> locations again</span></button>
-      <button class="btn" onclick="if(window.gdNewProject)gdNewProject();projectBrief='';projectConstraints='';clearRecce();var rp=document.getElementById('reccePanel');if(rp)rp.classList.remove('open');show('s1')">new</button>
+      <button class="btn" onclick="if(window.gdNewProject)gdNewProject();resetLocationViewState();projectBrief='';projectConstraints='';clearRecce();var rp=document.getElementById('reccePanel');if(rp)rp.classList.remove('open');show('s1')">new</button>
     </div>
   </div>
   <div class="canvas-body">
@@ -1691,7 +1715,7 @@ function redoAction(){
   showUndoHint('redone');
 }
 function captureState(){
-  return {nodes:JSON.stringify(nodes),attShots:JSON.stringify(attShots),imgNodes:JSON.stringify(imgNodes),noteNodes:JSON.stringify(noteNodes),conns:JSON.stringify(conns)};
+  return {nodes:JSON.stringify(itemsAtStoryPositions(nodes,'nodes')),attShots:JSON.stringify(itemsAtStoryPositions(attShots,'atts')),imgNodes:JSON.stringify(imgNodes),noteNodes:JSON.stringify(noteNodes),conns:JSON.stringify(conns)};
 }
 function applyHistoryState(state){
   nodes=JSON.parse(state.nodes);
@@ -1699,6 +1723,10 @@ function applyHistoryState(state){
   imgNodes=JSON.parse(state.imgNodes);
   noteNodes=JSON.parse(state.noteNodes);
   conns=JSON.parse(state.conns);
+  if(canvasViewMode==='location'&&locationViewState){
+    locationViewState.nodes=positionMap(nodes);locationViewState.atts=positionMap(attShots);
+    nodes.forEach(function(n){nodeDrawerClosed[n.id]=true;});layoutLocationView();
+  }
   selId=null;selImgId=null;selNoteId=null;
   renderAll();
 }
@@ -2663,6 +2691,169 @@ function breakdownKey(){
   for(var i=0;i<t.length;i++)h=((h*33)^t.charCodeAt(i))>>>0;
   return h.toString(36)+'-'+t.length;
 }
+/* The location board is deliberately a view, not a second saved layout. It
+   temporarily moves the existing cards into production swimlanes, while this
+   snapshot protects every hand-positioned story coordinate and camera view. */
+var canvasViewMode='story';
+var locationViewState=null;
+var locationLanes=[];
+var locationViewBusy=false;
+function positionMap(items){
+  var out={};
+  (items||[]).forEach(function(item){ out[item.id]={x:item.x,y:item.y}; });
+  return out;
+}
+function itemsAtStoryPositions(items,bucket){
+  if(canvasViewMode!=='location'||!locationViewState)return items;
+  var saved=locationViewState[bucket]||{};
+  return items.map(function(item){
+    var copy=Object.assign({},item),p=saved[item.id];
+    if(p){copy.x=p.x;copy.y=p.y;}
+    return copy;
+  });
+}
+function storyViewForSave(){
+  if(canvasViewMode==='location'&&locationViewState&&locationViewState.view)return locationViewState.view;
+  return {scale:scale,px:px,py:py};
+}
+function syncLocationButton(){
+  var btn=document.getElementById('btnLocations');
+  if(!btn)return;
+  btn.disabled=locationViewBusy;
+  btn.classList.toggle('on',canvasViewMode==='location');
+  btn.textContent=locationViewBusy?'working out locations...':(canvasViewMode==='location'?'story order':'locations');
+  btn.title=canvasViewMode==='location'?'Return to the hand-arranged story board':'Group the board by shooting location';
+  btn.setAttribute('aria-pressed',canvasViewMode==='location'?'true':'false');
+}
+function resetLocationViewState(){
+  canvasViewMode='story';locationViewState=null;locationLanes=[];locationViewBusy=false;
+  syncLocationButton();
+}
+function restoreStoryLayout(){
+  if(!locationViewState)return;
+  var np=locationViewState.nodes||{},ap=locationViewState.atts||{};
+  nodes.forEach(function(n){var p=np[n.id];if(p){n.x=p.x;n.y=p.y;}});
+  attShots.forEach(function(a){var p=ap[a.id];if(p){a.x=p.x;a.y=p.y;}});
+  nodeDrawerClosed=Object.assign({},locationViewState.drawers||{});
+  if(locationViewState.view){scale=locationViewState.view.scale;px=locationViewState.view.px;py=locationViewState.view.py;}
+}
+function locationLabelKey(label){return String(label==null?'':label).trim().toLowerCase();}
+function ensureLocationStoryPositions(){
+  if(!locationViewState)return;
+  var saved=locationViewState.nodes||(locationViewState.nodes={}),xs=[],ys=[];
+  Object.keys(saved).forEach(function(id){xs.push(saved[id].x);ys.push(saved[id].y);});
+  var nextX=(xs.length?Math.max.apply(null,xs):60)+NC_W+48;
+  var baseY=ys.length?Math.min.apply(null,ys):80;
+  nodes.forEach(function(n){
+    if(saved[n.id])return;
+    saved[n.id]={x:nextX,y:baseY};nextX+=NC_W+48;
+  });
+  var savedAtts=locationViewState.atts||(locationViewState.atts={});
+  attShots.forEach(function(a){
+    if(savedAtts[a.id])return;
+    var pp=saved[a.parentId]||{x:60,y:80};
+    var siblings=attShots.filter(function(x){return x.parentId===a.parentId&&savedAtts[x.id];}).length;
+    savedAtts[a.id]={x:pp.x,y:pp.y+190+siblings*98};
+  });
+}
+function layoutLocationView(){
+  if(canvasViewMode!=='location'||!projectBreakdown)return;
+  ensureLocationStoryPositions();
+  var byLabel={},used={};
+  planScenes().forEach(function(scene){
+    byLabel[locationLabelKey(scene.label)]=scene.head;
+    scene.kids.forEach(function(k){byLabel[locationLabelKey(k.__label)]=k;});
+  });
+  var groups=[];
+  projectBreakdown.forEach(function(loc){
+    var groupNodes=[];
+    (loc.shots||[]).forEach(function(label){
+      var n=byLabel[locationLabelKey(label)];
+      if(!n||used[n.id])return;
+      used[n.id]=1;groupNodes.push(n);
+    });
+    groups.push({location:loc,nodes:groupNodes});
+  });
+  var loose=nodes.filter(function(n){return !used[n.id];});
+  if(loose.length){
+    groups.push({location:{name:'Not placed yet',timeOfDay:'',props:[],wardrobe:[],cast:[],note:'Choose a location for these shots.'},nodes:loose,unplaced:true});
+  }
+  var startX=42,startY=34,cardGap=28,laneGap=42;
+  var minLaneWidth=760,y=startY;
+  locationLanes=groups.map(function(group,idx){
+    var tallest=0;
+    group.nodes.forEach(function(n){
+      var lines=String(n.content||'').split('\n').reduce(function(total,line){return total+Math.max(1,Math.ceil(line.length/25));},0);
+      tallest=Math.max(tallest,68+lines*20);
+    });
+    var laneHeight=Math.max(354,146+tallest+42);
+    var width=Math.max(minLaneWidth,48+group.nodes.length*(NC_W+cardGap));
+    group.nodes.forEach(function(n,i){n.x=startX+24+i*(NC_W+cardGap);n.y=y+146;});
+    var lane={x:startX,y:y,width:width,height:laneHeight,index:idx+1,location:group.location,nodes:group.nodes,unplaced:group.unplaced||String(group.location.name||'').toLowerCase()==='unplaced'};
+    y+=laneHeight+laneGap;
+    return lane;
+  });
+}
+function addLocationMeta(parent,key,values){
+  var item=document.createElement('div');item.className='location-meta-item';
+  var k=document.createElement('span');k.className='location-meta-k';k.textContent=key;
+  var v=document.createElement('span');v.className='location-meta-v';v.textContent=(values&&values.length)?values.join(' · '):'—';
+  v.title=v.textContent;item.appendChild(k);item.appendChild(v);parent.appendChild(item);
+}
+function renderLocationLanes(cw){
+  locationLanes.forEach(function(lane){
+    var loc=lane.location||{};
+    var el=document.createElement('div');el.className='location-lane'+(lane.unplaced?' unplaced':'');
+    el.style.cssText='left:'+lane.x+'px;top:'+lane.y+'px;width:'+lane.width+'px;height:'+lane.height+'px;';
+    var head=document.createElement('div');head.className='location-head';
+    var ix=document.createElement('div');ix.className='location-index';ix.textContent=lane.unplaced?'needs a home':'location '+String(lane.index).padStart(2,'0');
+    var titleWrap=document.createElement('div');titleWrap.className='location-title-wrap';
+    var title=document.createElement('div');title.className='location-title';title.textContent=loc.name||'Unnamed location';title.title=title.textContent;
+    var sub=document.createElement('div');sub.className='location-sub';
+    var count=document.createElement('span');count.className='location-chip';count.textContent=lane.nodes.length+(lane.nodes.length===1?' shot':' shots');sub.appendChild(count);
+    if(loc.timeOfDay){var time=document.createElement('span');time.className='location-chip';time.textContent=loc.timeOfDay;sub.appendChild(time);}
+    titleWrap.appendChild(title);titleWrap.appendChild(sub);
+    var meta=document.createElement('div');meta.className='location-meta';
+    addLocationMeta(meta,'cast',loc.cast);addLocationMeta(meta,'wardrobe',loc.wardrobe);addLocationMeta(meta,'props',loc.props);
+    head.appendChild(ix);head.appendChild(titleWrap);head.appendChild(meta);el.appendChild(head);cw.appendChild(el);
+  });
+}
+function focusFirstLocation(){
+  if(!locationLanes.length)return;
+  var vpEl=document.getElementById('vp'),r=vpEl.getBoundingClientRect(),first=locationLanes[0];
+  var sc=Math.min(.9,(r.width-28)/Math.min(first.width,980));
+  scale=Math.max(.46,sc);px=14-first.x*scale;py=14-first.y*scale;updateT();
+}
+function enterLocationView(){
+  if(canvasViewMode==='location'||!projectBreakdown||!projectBreakdown.length)return;
+  locationViewState={nodes:positionMap(nodes),atts:positionMap(attShots),drawers:Object.assign({},nodeDrawerClosed),view:{scale:scale,px:px,py:py}};
+  canvasViewMode='location';
+  nodes.forEach(function(n){nodeDrawerClosed[n.id]=true;});
+  layoutLocationView();syncLocationButton();renderAll();
+  requestAnimationFrame(focusFirstLocation);
+}
+function leaveLocationView(){
+  if(canvasViewMode!=='location')return;
+  restoreStoryLayout();canvasViewMode='story';locationViewState=null;locationLanes=[];
+  syncLocationButton();renderAll();
+}
+function toggleLocationView(){
+  if(locationViewBusy)return;
+  if(canvasViewMode==='location'){leaveLocationView();return;}
+  if(!nodes.length){gdAsk({title:'Nothing to group',message:'Build a board first.',ok:'OK'});return;}
+  var key=breakdownKey();
+  if(projectBreakdown&&projectBreakdown.length&&projectBreakdownKey===key){enterLocationView();return;}
+  locationViewBusy=true;syncLocationButton();
+  var why='';
+  genBreakdown().then(function(bd){
+    projectBreakdown=bd;projectBreakdownKey=bd?key:null;
+    if(bd)saveHistory();else why='The model did not come back with anything usable.';
+  },function(e){console.warn('[breakdown] failed',e);why=(e&&e.message)?e.message:'The request failed.';}).then(function(){
+    locationViewBusy=false;syncLocationButton();
+    if(why)return gdAsk({title:'No locations this time',message:why+' Try the locations button again in a moment.',ok:'OK'});
+    enterLocationView();
+  });
+}
 var projectConstraints='';
 
 function goToEquipment(){
@@ -3235,6 +3426,7 @@ function buildCanvas(){
 
     Promise.all(chunkPromises).then(function(chunkResults){
       clearInterval(clInt);
+      resetLocationViewState();
       var sd=[].concat.apply([],chunkResults);
       var posArr=layoutBlocks(blocks);
       nodes=blocks.map(function(b,i){
@@ -3275,6 +3467,7 @@ function buildCanvas(){
 
 
 function renderAll(){
+  if(canvasViewMode==='location')layoutLocationView();
   renderBlockList();renderBlockDetail();renderCanvas();renderImgNodes();renderNoteNodes();renderConns();renderTL();renderMusicStrip();updateRecceBtn();updateT();
 }
 
@@ -3625,6 +3818,8 @@ function renderCanvas(){
   attPresentBeforeWipe={};
   document.querySelectorAll('.att-shot').forEach(function(el){attPresentBeforeWipe[el.id]=1;});
   cw.innerHTML='';
+  cw.classList.toggle('location-view',canvasViewMode==='location');
+  if(canvasViewMode==='location')renderLocationLanes(cw);
   nodes.forEach(function(node,idx){
     var el=document.createElement('div');
     el.className='nc'+(node.id===selId?' sel':'');
@@ -3632,7 +3827,7 @@ function renderCanvas(){
     el.id='nc-'+node.id;
     el.style.cssText='left:'+node.x+'px;top:'+node.y+'px;width:'+NC_W+'px;';
     var stripe=document.createElement('div');stripe.className='nc-stripe';
-    var tag=document.createElement('div');tag.className='nc-tag';tag.textContent=String(idx+1).padStart(2,'0');
+    var tag=document.createElement('div');tag.className='nc-tag';tag.textContent=canvasViewMode==='location'?(node.__label||String(idx+1).padStart(2,'0')):String(idx+1).padStart(2,'0');
     var inner=document.createElement('div');inner.className='nc-inner';
     var badge=document.createElement('div');badge.className='nc-badge';badge.textContent=TL[node.type]||node.type;
     var txt=document.createElement('div');txt.className='nc-text';txt.textContent=node.content;
@@ -3767,6 +3962,7 @@ function renderCanvas(){
     el.appendChild(pdL);el.appendChild(pdR);
     el.addEventListener('mousedown',function(e){
       if(e.button!==0)return;
+      if(canvasViewMode==='location')return;
       if(e.target.classList.contains('port-dot'))return;
       // any button inside the card (drawer, storyboard-gen, etc) handles its
       // own click - starting a drag here would set dragN on every mousedown,
@@ -3830,6 +4026,7 @@ function renderCanvas(){
 
 function renderImgNodes(){
   document.querySelectorAll('.img-node').forEach(function(el){el.remove();});
+  if(canvasViewMode==='location')return;
   var cw=document.getElementById('cw');
   imgNodes.forEach(function(img){
     var el=document.createElement('div');
@@ -3881,6 +4078,7 @@ function renderImgNodes(){
 
 function renderNoteNodes(){
   document.querySelectorAll('.note-node').forEach(function(el){el.remove();});
+  if(canvasViewMode==='location')return;
   var cw=document.getElementById('cw');
   noteNodes.forEach(function(note){
     var el=document.createElement('div');
@@ -3945,6 +4143,7 @@ function getPos(type,id,side){
 function renderConns(){
   var svg=document.getElementById('connSvg');
   svg.querySelectorAll('.conn-path').forEach(function(el){el.remove();});
+  if(canvasViewMode==='location')return;
   conns.forEach(function(conn){
     var fp=getPos(conn.fromType,conn.fromId,'right');
     var tp=getPos(conn.toType,conn.toId,'left');
@@ -4053,7 +4252,7 @@ function reflowAttShots(parentId,heights){
   // again just piles new cards on the old ones" - it wasn't; the audio
   // block's stack and the next row's own cards were overlapping on screen.
   // Push just that group's visual nodes further down to stay clear instead.
-  if(nodeAtts.length&&AUDIO_BLOCKS[pnode.type]&&pnode.grp!=null){
+  if(canvasViewMode!=='location'&&nodeAtts.length&&AUDIO_BLOCKS[pnode.type]&&pnode.grp!=null){
     var needed=curY+GAP,pushed=false;
     nodes.forEach(function(sib){
       if(sib.grp===pnode.grp&&!AUDIO_BLOCKS[sib.type]&&sib.y<needed){
@@ -4279,10 +4478,18 @@ function reviseBlock(nodeId,instruction){
 function fitScreen(){
   if(!nodes.length)return;
   var vp=document.getElementById('vp'),r=vp.getBoundingClientRect();
-  var minX=Math.min.apply(null,nodes.map(function(n){return n.x;}))-20;
-  var maxX=Math.max.apply(null,nodes.map(function(n){return n.x+NC_W;}))+20;
-  var minY=Math.min.apply(null,nodes.map(function(n){return n.y;}))-20;
-  var maxY=Math.max.apply(null,nodes.map(function(n){return n.y+160;}))+20;
+  var minX,maxX,minY,maxY;
+  if(canvasViewMode==='location'&&locationLanes.length){
+    minX=Math.min.apply(null,locationLanes.map(function(l){return l.x;}))-20;
+    maxX=Math.max.apply(null,locationLanes.map(function(l){return l.x+l.width;}))+20;
+    minY=Math.min.apply(null,locationLanes.map(function(l){return l.y;}))-20;
+    maxY=Math.max.apply(null,locationLanes.map(function(l){return l.y+l.height;}))+20;
+  }else{
+    minX=Math.min.apply(null,nodes.map(function(n){return n.x;}))-20;
+    maxX=Math.max.apply(null,nodes.map(function(n){return n.x+NC_W;}))+20;
+    minY=Math.min.apply(null,nodes.map(function(n){return n.y;}))-20;
+    maxY=Math.max.apply(null,nodes.map(function(n){return n.y+160;}))+20;
+  }
   var sc=Math.min(r.width/(maxX-minX),r.height/(maxY-minY),.9);
   scale=Math.max(sc,.1);
   px=r.width/2-(minX+(maxX-minX)/2)*scale;
@@ -5565,13 +5772,14 @@ document.addEventListener('mouseup',function(e){
       aiMode:(typeof aiMode!=='undefined'?aiMode:true),
       songName:songName, songDuration:songDuration, songAnalysis:songAnalysis,
       recceImages:recceImages,
-      nodes:nodes, attShots:attShots, imgNodes:imgNodes, noteNodes:noteNodes, conns:conns, nid:nid,
+      nodes:itemsAtStoryPositions(nodes,'nodes'), attShots:itemsAtStoryPositions(attShots,'atts'), imgNodes:imgNodes, noteNodes:noteNodes, conns:conns, nid:nid,
       script:(byId('scriptTa')?byId('scriptTa').value:''),
-      view:{scale:scale,px:px,py:py}
+      view:storyViewForSave()
     };
   }
   function restore(d){
     d=d||{};
+    resetLocationViewState();
     projectType=d.projectType||'youtube'; topic=d.topic||''; tone=d.tone||tone; fmt=d.fmt||fmt; styleMode=d.styleMode||styleMode;
     inputLang=d.inputLang||'en'; durMin=d.durMin||durMin; durMax=d.durMax||durMax;
     projectBrief=d.projectBrief||''; projectConstraints=d.projectConstraints||'';
@@ -5668,6 +5876,7 @@ document.addEventListener('mouseup',function(e){
   // pending autosave would land that project in local storage after the
   // session ended.
   function clearBoard(){
+    resetLocationViewState();
     nodes=[]; attShots=[]; imgNodes=[]; noteNodes=[]; conns=[]; nid=1;
     nodeDrawerClosed={};
     topic=''; projectBrief=''; projectConstraints=''; projectBreakdown=null; projectBreakdownKey=null;
