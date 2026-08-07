@@ -87,13 +87,23 @@ server.listen(8934, async()=>{
      /A location here is a SETUP/.test(nsys)&&/It is not an address/.test(nsys), nsys.slice(0,160));
   ok('it is told two setups in one room are two entries',
      /Two setups in the same room are two entries/.test(nsys));
-  ok('it is told how many shots it is dividing, and when an entry is too big',
-     /This plan has 160 shots/.test(nsys)&&/more than about forty/.test(nsys),
+  // Saying "different surfaces, different furniture" was read as different
+  // objects on the same surface: one desk came back as ten entries - "masa
+  // (kagit ve kalem)", "masa (yeni kagit ve kalem)", "masa (kagitlar
+  // yayilmis)" - sixty-eight shots of the same lamp from the same position
+  // with the paper rearranged. The line has to be drawn at the work.
+  ok('the line is drawn between what is built and what is set down on it',
+     /what you BUILD and what you PUT IN FRONT OF IT/.test(nsys)
+     &&/you have not struck anything, you have swapped a prop/.test(nsys), nsys.slice(0,200));
+  ok('it is told the shot count, and told it is not a quota',
+     /This plan has 160 shots/.test(nsys)&&/context, not a quota/.test(nsys),
      (nsys.match(/This plan has [^.]*\./)||[''])[0]);
-  ok('and guarded against splitting by camera angle instead',
+  ok('and guarded against splitting by camera angle or by the clock',
      /Do not make a setup out of a camera angle/.test(nsys)&&/Do not split by time alone/.test(nsys));
-  ok('a place that really is the whole film may still say so',
-     /genuinely holds the whole film/.test(nsys));
+  ok('a place that really is most of the film may still say so once',
+     /it is normal for one setup to carry a large share/.test(nsys));
+  ok('and it is asked to merge names that differ only by what is on the surface',
+     /read your own list back/.test(nsys)&&/they are one entry and you should merge/.test(nsys));
   ok('it was broken down in several pieces, not one', seen.length>=4, seen.length);
   ok('no piece was handed more than a chunk',
      seen.every(u=>u.split('\n').filter(l=>/^[0-9a-z.]+\./.test(l)).length<=45),

@@ -2656,7 +2656,7 @@ var projectBreakdown=null;   // location-by-location shooting breakdown
    version of the code that made it, and either one changing throws it out.
    Bump the version whenever the breakdown prompt or its handling changes -
    that is what retires the copies already saved in people's projects. */
-var BREAKDOWN_V=8;
+var BREAKDOWN_V=9;
 var projectBreakdownKey=null;
 function breakdownKey(){
   var t=BREAKDOWN_V+'|'+planAsText(),h=5381;
@@ -4373,7 +4373,14 @@ var BREAKDOWN_CHUNK=45;
    The unit is a setup - what you light, point the camera at, and strike - not
    an address. But it must not swing the other way either: an earlier version
    of the breakdown produced forty-one locations for one film, half of them a
-   single shot's framing. Both guards are stated. */
+   single shot's framing.
+
+   Saying "different surfaces, different furniture" was read as different
+   objects on the same surface, and one desk came back as ten entries - "masa
+   (kagit ve kalem)", "masa (yeni kagit ve kalem)", "masa (kagitlar yayilmis)"
+   - sixty-eight shots of the same lamp and the same camera position with the
+   paper rearranged. So the line is drawn where the work is: what you build
+   versus what you set down on it. */
 function genLocationNames(li,lines){
   var brief=lines.map(function(l){ return l.replace(/\s{2}\([^)]*\)\s*$/,''); }).join('\n');
   var sys=(li?li+'\n\n':'')
@@ -4385,14 +4392,22 @@ function genLocationNames(li,lines){
     +'not the same job even though you never leave the flat.\n\n'
     +'Name them so the room is still visible: "Ev - calisma masasi", "Ev - ayna", "Ev - yatak". Then '
     +'somebody reading the list can see both what to travel to and what to build.\n\n'
-    +'This plan has '+lines.length+' shots. An entry that would end up holding more than about forty '
-    +'of them is a room you have not divided yet - look at what the shots in it actually stand in '
-    +'front of. If their descriptions name different surfaces, different furniture or different '
-    +'light, those are the setups, and they are what to list.\n\n'
-    +'The other way is just as wrong. Do not make a setup out of a camera angle: two shots of the '
-    +'same desk from different distances are one entry. Do not split by time alone - the same setup '
-    +'lit the same way at a different hour is one entry. If a place genuinely holds the whole film, '
-    +'say so once rather than inventing distinctions that are not there.\n\n'
+    +'The line is between what you BUILD and what you PUT IN FRONT OF IT. Where the camera stands '
+    +'and how the light is rigged is the setup. What happens to be lying on the table is not. A desk '
+    +'shot from the same position under the same lamp is ONE entry whether the paper, the shirt or '
+    +'the laptop is on it - you have not struck anything, you have swapped a prop. Rebuild the light '
+    +'or move the camera somewhere else in the room and that is a second entry.\n\n'
+    +'Do not make a setup out of a camera angle either: two shots of the same desk from different '
+    +'distances are one entry. Do not split by time alone - the same rig at a different hour is one '
+    +'entry.\n\n'
+    +'This plan has '+lines.length+' shots. That number is context, not a quota: it is normal for one '
+    +'setup to carry a large share of a film that really is mostly one desk, and saying so once is '
+    +'better than cutting it into pieces that are the same build under different names. But if a '
+    +'single entry is running to most of the plan, look again - somewhere in it the camera moves or '
+    +'the light changes, and that is where it divides.\n\n'
+    +'Before you answer, read your own list back. If two names differ only by what is on the surface '
+    +'- "masa (kagit ve kalem)" and "masa (kagit yayilmis)" - they are one entry and you should merge '
+    +'them.\n\n'
     +'Name each one plainly and the same way every time it comes up.\n\n'
     +'Return ONLY JSON: [{"name":"...","timeOfDay":"..."}]'
     +(li?'\n\n'+li:'');
