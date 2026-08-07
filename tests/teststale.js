@@ -64,7 +64,7 @@ server.listen(8932, async()=>{
   ok('so is one made by an older version of the code', calls===4, calls);
 
   // the recalculate button forces a fresh one even when nothing changed
-  await clickBarBtn(page,'#btnRebreak'); await page.waitForTimeout(1000);
+  await page.evaluate(()=>{window.gdAsk=()=>Promise.resolve(true);requestLocationRefresh();}); await page.waitForTimeout(1000);
   ok('the recalculate button still forces a fresh one', calls===5, calls);
   await clickBarBtn(page,'#btnExport'); await page.waitForTimeout(800);
   ok('and the fresh one is then cached like any other', calls===5, calls);

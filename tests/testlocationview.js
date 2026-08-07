@@ -57,7 +57,7 @@ const { pathToFileURL } = require('url');
     captured:JSON.parse(captureState().nodes).map(n=>({id:n.id,x:n.x,y:n.y}))
   }));
   console.log('TEST 1 - one focused location opens with a two-place navigator:',
-    home.mode==='location'&&home.button==='story order'&&home.lanes[0]==='Family Home'&&home.tabs.length===2&&home.active.startsWith('Family Home')?'PASS':'FAIL');
+    home.mode==='location'&&home.button==='Story order'&&home.lanes[0]==='Family Home'&&home.tabs.length===2&&home.active.startsWith('Family Home')?'PASS':'FAIL');
   console.log('TEST 2 - VO becomes context and only visual shots become cards:',
     home.cues===2&&home.shots===5&&home.transitions===0?'PASS':'FAIL');
   console.log('TEST 3 - production labels stay on compact cards:',
@@ -100,7 +100,7 @@ const { pathToFileURL } = require('url');
     notes:document.querySelectorAll('.note-node').length,paths:document.querySelectorAll('.conn-path').length
   }));
   console.log('TEST 10 - story layout, camera and story-only items restore exactly:',
-    restored.mode==='story'&&restored.button==='locations'&&!restored.nav&&restored.nodes[1].x===70&&restored.nodes[5].y===820&&
+    restored.mode==='story'&&restored.button==='Locations'&&!restored.nav&&restored.nodes[1].x===70&&restored.nodes[5].y===820&&
     restored.att.x===410&&restored.att.y===520&&restored.scale===.82&&restored.px===123&&restored.py===77&&
     restored.images===1&&restored.notes===1&&restored.paths===1?'PASS':'FAIL');
 
