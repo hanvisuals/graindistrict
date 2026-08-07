@@ -10,9 +10,13 @@ const OUTLINE=JSON.stringify({
              "220 gram ham pamuk blank tisort",
              "Magazada 20-30 dolar, bu 13 dolara mal oldu",
              "Bagcilar'da bir baskici, sali sabahi"],
-  segments:[{start:"00:00",end:"01:00",beat:"Duz beyaz tisort alinir, hicbir sey dusunulmez."},
-            {start:"01:00",end:"02:00",beat:"Photoshop acilir, hicbir sey bilinmez, iki saat bosa gider."},
-            {start:"02:00",end:"03:00",beat:"Eski eskiz defteri bulunur."}]
+  continuity:{heroObject:"ham pamuk tisort",heroObjectAppearance:"sol goguste tek cizgi yuz",
+    performerVisibility:"yuz hic gorunmez",locations:["Ev","Bagcilar baskici"],
+    props:["ham pamuk tisort","eskiz defteri"],wardrobe:["siyah tisort"],timeProgression:"sabah -> oglen"},
+  motifs:[{name:"egri yuz",maxUses:2,progression:["defterde","tisortte"]}],
+  segments:[{start:"00:00",end:"01:00",beat:"Duz beyaz tisort alinir, hicbir sey dusunulmez.",newInformation:"Neden hazir tisort istemedigi",openingState:"tisort pakette",closingState:"tisort masada",usesSpecifics:["220 gram ham pamuk blank tisort"],motifStep:"",forbiddenRepeats:["baski fiyati"]},
+            {start:"01:00",end:"02:00",beat:"Photoshop acilir, hicbir sey bilinmez, iki saat bosa gider.",newInformation:"Dijital tasarimin neden calismadigi",openingState:"tisort masada",closingState:"Photoshop kapanmis",usesSpecifics:[],motifStep:"",forbiddenRepeats:["neden hazir tisort istemedigi"]},
+            {start:"02:00",end:"03:00",beat:"Eski eskiz defteri bulunur.",newInformation:"Cizimin defterden gelmesi",openingState:"Photoshop kapanmis",closingState:"yuz tisorte basilmis",usesSpecifics:["Tek cizgide cizilmis egri bir murekkep yuz, sol gogus uzerinde"],motifStep:"defterde",forbiddenRepeats:["Photoshop basarisizligi"]}]
 });
 const server=http.createServer((req,res)=>{
   if(req.url.startsWith('/index.html')){
@@ -52,6 +56,8 @@ server.listen(8926, async()=>{
 
   ok('the outline is asked for a thesis before anything is written', /THESIS/.test(outline));
   ok('and for concrete facts the whole video shares', /SPECIFICS/.test(outline));
+  ok('and locks physical continuity before parallel writing', /CONTINUITY/.test(outline)&&/cardboard box cannot become a wooden box/.test(outline));
+  ok('and gives repeated motifs a finite progression', /MOTIFS/.test(outline)&&/maximum number of uses/.test(outline));
   ok('and for what each beat costs', /costs/.test(outline));
   // the stub answers every segment with three blocks, which is a shortfall,
   // so each one is legitimately redrafted once - count distinct windows
@@ -59,18 +65,25 @@ server.listen(8926, async()=>{
   ok('all three segment windows were written', windows.length===3, windows);
   ok('every segment carries the thesis', segs.every(s=>/begenilmekten vazgecmekle/.test(s)), segs.length);
   ok('every segment carries the same fixed facts', segs.every(s=>/220 gram ham pamuk/.test(s)&&/13 dolara mal oldu/.test(s)));
+  ok('every segment carries one canonical physical world',segs.every(s=>/heroObjectAppearance/.test(s)&&/yuz hic gorunmez/.test(s)));
+  ok('every segment carries the shared motif ledger',segs.every(s=>/MOTIF LEDGER/.test(s)&&/defterde/.test(s)));
   const second=segs.find(s=>/from 01:00 to 02:00/.test(s))||'';
   const first=segs.find(s=>/from 00:00 to 01:00/.test(s))||'';
   ok('a segment is told which ground the one before it already used',
      /ALREADY COVERED, immediately before you: "Duz beyaz tisort alinir/.test(second), second.slice(-300));
   ok('and is told to begin after it, not restate it', /begin after it/.test(second));
+  ok('each segment owns distinct new information',/NEW INFORMATION THIS SEGMENT OWNS: Dijital/.test(second));
+  ok('information owned elsewhere is explicitly off limits',/INFORMATION OWNED BY OTHER SEGMENTS/.test(second)&&/Neden hazir tisort istemedigi/.test(second));
+  ok('physical state is handed across the boundary',/OPENING PHYSICAL STATE: tisort masada/.test(second)&&/CLOSING PHYSICAL STATE: Photoshop kapanmis/.test(second));
+  ok('each parallel writer receives a finite local camera budget',/CAMERA-SHOT BUDGET FOR THIS SEGMENT: about 10 BROLL shots, hard maximum 15/.test(second));
+  ok('voice and image are checked for literal coverage',/SEMANTIC COVERAGE CHECK/.test(second));
   ok('the first segment is not told that, having nothing before it', first&&!/ALREADY COVERED/.test(first));
   ok('the "less X more Y" construction is banned', segs.every(s=>/less X, more Y/.test(s)));
   ok('three-part lists are capped', segs.every(s=>/Three-part parallel lists/.test(s)));
   ok('abandoning an announced structure is banned', segs.every(s=>/abandon/.test(s)));
   ok('showing the actual object is required', segs.every(s=>/Show the thing the video is about/.test(s)));
   ok('cost detail is told to stay in passing', segs.every(s=>/Mention and move/.test(s)));
-  ok('the cutting arithmetic survived all of it', segs.every(s=>/CUTTING MATH/.test(s)));
+  ok('the tone-aware pacing budget survived all of it', segs.every(s=>/PACING & COVERAGE BUDGET/.test(s)));
 
   // an old-shaped outline (a bare array) must still produce a usable plan
   seen=[];

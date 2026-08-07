@@ -116,7 +116,7 @@ server.listen(8920, async()=>{
   ok('the shot text survived the reshuffle', /notebook page filling with numbers/.test(r.text));
   ok('the creative brief is no longer in the export', !/Empty Rooms/.test(r.text));
   ok('it actually printed', r.printed===1, r.printed);
-  ok('the button went back to normal', r.btnLabel==='export' && !r.btnDisabled, r);
+  ok('the button went back to normal', r.btnLabel.toLowerCase()==='export' && !r.btnDisabled, r);
 
   // second export must not regenerate
   await page.evaluate(()=>{ window.__calls=0; var f=window.fetch; window.fetch=function(){window.__calls++;return f.apply(this,arguments);}; });
