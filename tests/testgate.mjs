@@ -51,6 +51,10 @@ server.listen(8903, async ()=>{
 
   ok('"Keep me signed in" is offered and on by default',
      await page.isChecked('#gdRemember'));
+  ok('new projects use the Gawx direction by default',
+     await page.evaluate(()=>styleMode==='gawx'));
+  ok('there is no style decision screen in the setup flow',
+     await page.locator('#styleOpts').count()===0);
 
   // sign up WITH remember -> survives a full browser restart
   await page.click('#gdAuthToggle');
