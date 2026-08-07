@@ -291,6 +291,16 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 .note-del{font-size:12px;color:rgba(255,255,255,.2);background:none;border:none;cursor:pointer;padding:0;transition:color .12s;}
 .note-del:hover{color:rgba(255,80,80,.9);}
 .note-ta{width:100%;background:transparent;border:none;outline:none;font-family:var(--sans);font-size:13px;font-weight:400;line-height:1.5;color:rgba(255,255,200,.65);padding:2px 8px 8px;resize:none;user-select:text;min-height:50px;}
+/* LOCATION BANDS - drawn behind the cards when the board is grouped by place */
+.loc-band{position:absolute;z-index:0;pointer-events:none;border:1px solid rgba(255,255,255,.07);
+  border-radius:14px;background:rgba(255,255,255,.012);}
+.loc-band-head{position:absolute;top:16px;left:20px;display:flex;align-items:baseline;gap:10px;}
+.loc-band-n{font-family:var(--mono);font-size:12px;font-weight:700;color:rgba(255,255,255,.3);}
+.loc-band-name{font-family:var(--sans);font-size:15px;font-weight:600;color:rgba(255,255,255,.72);}
+.loc-band-tod{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;
+  color:rgba(255,255,255,.28);}
+.loc-band-count{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;
+  color:rgba(255,255,255,.22);}
 /* CONNECTIONS */
 .conn-svg{position:absolute;top:0;left:0;pointer-events:none;overflow:visible;}
 /* TOOLBAR */
@@ -1268,6 +1278,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
       <button class="btn on" id="scriptBtn" onclick="toggleScript()">script</button>
       <button class="btn" id="recceBtn" onclick="toggleReccePanel()" style="display:none">recce</button>
       <button class="btn" id="previewBtn" onclick="openPlayback()">▶ preview</button>
+      <button class="btn" id="btnArrange" onclick="toggleArrangement()" title="Cards are in story order - click to group them by location">by time</button>
       <button class="btn" id="btnExport" onclick="doExport()">export</button>
       <button class="btn" id="btnRebreak" onclick="projectBreakdown=null;projectBreakdownKey=null;doExport()" title="Throw away the locations and work them out again">&#8635;<span class="btn-menu-t"> locations again</span></button>
       <button class="btn" onclick="if(window.gdNewProject)gdNewProject();projectBrief='';projectConstraints='';clearRecce();var rp=document.getElementById('reccePanel');if(rp)rp.classList.remove('open');show('s1')">new</button>
@@ -1691,7 +1702,11 @@ function redoAction(){
   showUndoHint('redone');
 }
 function captureState(){
-  return {nodes:JSON.stringify(nodes),attShots:JSON.stringify(attShots),imgNodes:JSON.stringify(imgNodes),noteNodes:JSON.stringify(noteNodes),conns:JSON.stringify(conns)};
+  // the arrangement travels with the positions: undoing a regroup restores the
+  // cards' old x and y, and bands left drawn behind them would be boundaries
+  // around nothing
+  return {nodes:JSON.stringify(nodes),attShots:JSON.stringify(attShots),imgNodes:JSON.stringify(imgNodes),noteNodes:JSON.stringify(noteNodes),conns:JSON.stringify(conns),
+          arrangement:boardArrangement,bands:JSON.stringify(locationBands)};
 }
 function applyHistoryState(state){
   nodes=JSON.parse(state.nodes);
@@ -1699,8 +1714,11 @@ function applyHistoryState(state){
   imgNodes=JSON.parse(state.imgNodes);
   noteNodes=JSON.parse(state.noteNodes);
   conns=JSON.parse(state.conns);
+  boardArrangement=state.arrangement||'timeline';
+  locationBands=state.bands?JSON.parse(state.bands):null;
   selId=null;selImgId=null;selNoteId=null;
   renderAll();
+  if(typeof syncArrangeBtn==='function')syncArrangeBtn();
 }
 function showUndoHint(text){
   var hint=document.getElementById('undoHint');
@@ -3153,6 +3171,156 @@ function layoutBlocks(blocks){
   return pos;
 }
 
+/* ---------- arranging the board ----------
+   The board is laid out in story order: an audio block with the cuts that play
+   under it in a row below, left to right through the film. That is the order
+   you edit in.
+
+   It is not the order you shoot in. You go to a place, do everything that
+   happens there, and leave - and the breakdown already knows which shots those
+   are, because the export asks it. This puts that answer on the canvas: one
+   band per location, the shots inside it in plan order.
+
+   Both arrangements are just x and y on the nodes, so switching is undoable
+   like any other move. */
+var boardArrangement='timeline';
+var locationBands=null;
+
+// the canvas is wider than it is tall, so a narrow band stacks into a tall
+// column and the fit has to zoom everything down to see it
+var BAND_COLS=9, BAND_PAD=30, BAND_GAP=80, BAND_LABEL_H=64;
+// a block on its own is about this tall; its shot cards stack downwards from
+// 190px below its top, so a row carrying them needs room for the tallest stack
+// in it or the next row lands on top of the cards
+var BAND_ROW_MIN=240, ATT_TOP=190, ATT_STEP=38;
+function bandRowH(row){
+  var tallest=0;
+  row.forEach(function(n){
+    var c=0; attShots.forEach(function(a){ if(a.parentId===n.id)c++; });
+    if(c&&!nodeDrawerClosed[n.id]){
+      var h=ATT_TOP+c*ATT_STEP+20;
+      if(h>tallest)tallest=h;
+    }
+  });
+  return Math.max(BAND_ROW_MIN,tallest);
+}
+
+// shot cards hang off their block's x and are stacked down from its y, so a
+// block that moves has to take them with it
+function moveNodeAtts(node){
+  attShots.forEach(function(a){ if(a.parentId===node.id) a.x=node.x; });
+}
+function arrangeByLocation(){
+  if(!projectBreakdown||!projectBreakdown.length)return false;
+  var byLabel={};
+  planScenes().forEach(function(sc){
+    byLabel[String(sc.label).trim().toLowerCase()]=sc.head;
+    sc.kids.forEach(function(k){ byLabel[String(k.__label).trim().toLowerCase()]=k; });
+  });
+  var order={}; nodes.forEach(function(n,i){ order[n.id]=i; });
+  var placed={}, bands=[], y=60, X0=60;
+  function band(name,timeOfDay,list){
+    var own=[];
+    list.forEach(function(lab){
+      var n=byLabel[String(lab).trim().toLowerCase()];
+      if(!n||placed[n.id])return;
+      placed[n.id]=1; own.push(n);
+    });
+    if(!own.length)return;
+    // inside a band everything happens in one place, so the useful order is
+    // simply the order of the film
+    own.sort(function(a,b){ return order[a.id]-order[b.id]; });
+    var rowsOf=[];
+    for(var r=0;r<own.length;r+=BAND_COLS)rowsOf.push(own.slice(r,r+BAND_COLS));
+    var rowY=y+BAND_LABEL_H, inner=BAND_LABEL_H;
+    rowsOf.forEach(function(row){
+      var h=bandRowH(row);
+      row.forEach(function(n,i){
+        n.x=X0+i*(NC_W+NC_GAP);
+        n.y=rowY;
+        // the group number drives the audio-block reflow, which belongs to the
+        // story layout and would shove cards around inside a band
+        n.grp=null;
+        moveNodeAtts(n);
+      });
+      rowY+=h; inner+=h;
+    });
+    var cols=Math.min(own.length,BAND_COLS);
+    bands.push({name:name||'Location', timeOfDay:timeOfDay||'', count:own.length,
+      x:X0-BAND_PAD, y:y,
+      w:cols*NC_W+(cols-1)*NC_GAP+BAND_PAD*2,
+      h:inner+BAND_PAD});
+    y+=inner+BAND_PAD+BAND_GAP;
+  }
+  projectBreakdown.forEach(function(loc){ band(loc.name,loc.timeOfDay,loc.shots||[]); });
+  // a shot the breakdown never placed still has to be somewhere on the board,
+  // and leaving it where it was would drop it on top of a band
+  var left=nodes.filter(function(n){ return !placed[n.id]; });
+  if(left.length)band('Not placed yet','',left.map(function(n){
+    for(var k in byLabel) if(byLabel[k]===n) return k;
+    return '';
+  }));
+  if(!bands.length)return false;
+  locationBands=bands; boardArrangement='location';
+  return true;
+}
+function arrangeByTimeline(){
+  var pos=layoutBlocks(nodes);
+  nodes.forEach(function(n,i){
+    if(!pos[i])return;
+    n.x=pos[i].x; n.y=pos[i].y; n.grp=(pos[i].grp==null?null:pos[i].grp);
+    moveNodeAtts(n);
+  });
+  locationBands=null; boardArrangement='timeline';
+}
+function applyArrangement(){
+  renderAll();
+  // the stacks under each block are laid out from measured heights, which can
+  // only be read once the cards are back in the DOM
+  var seen={};
+  attShots.forEach(function(a){ if(!seen[a.parentId]){ seen[a.parentId]=1; reflowAttShots(a.parentId); } });
+  renderConns(); fitScreen();
+}
+function toggleArrangement(){
+  var btn=document.getElementById('btnArrange');
+  if(!nodes.length){ gdAsk({title:'Nothing to arrange',message:'Build a board first.',ok:'OK'}); return; }
+  if(boardArrangement==='location'){
+    saveHistory(); arrangeByTimeline(); applyArrangement(); syncArrangeBtn(); return;
+  }
+  if(projectBreakdown&&projectBreakdown.length&&projectBreakdownKey===breakdownKey()){
+    saveHistory();
+    if(arrangeByLocation())applyArrangement();
+    syncArrangeBtn(); return;
+  }
+  // no usable breakdown yet - work one out, the same one export uses
+  var label=btn?btn.textContent:'';
+  if(btn){ btn.textContent='working out locations...'; btn.disabled=true; }
+  var key=breakdownKey();
+  genBreakdown().then(function(bd){
+    projectBreakdown=bd; projectBreakdownKey=bd?key:null;
+    if(btn){ btn.disabled=false; btn.textContent=label; }
+    if(!bd){ gdAsk({title:'No locations this time',
+      message:'The model did not come back with anything usable. Try again in a moment.',ok:'OK'}); return; }
+    saveHistory();
+    if(arrangeByLocation())applyArrangement();
+    syncArrangeBtn();
+  },function(e){
+    if(btn){ btn.disabled=false; btn.textContent=label; }
+    console.warn('[arrange] failed',e);
+    gdAsk({title:'Could not work out the locations',
+      message:(e&&e.message)?e.message:'The request failed.',ok:'OK'});
+  });
+}
+function syncArrangeBtn(){
+  var btn=document.getElementById('btnArrange');
+  if(!btn)return;
+  btn.textContent=(boardArrangement==='location'?'by location':'by time');
+  btn.classList.toggle('on',boardArrangement==='location');
+  btn.title=boardArrangement==='location'
+    ? 'Cards are grouped by location - click to lay them back out in story order'
+    : 'Cards are in story order - click to group them by location';
+}
+
 function buildCanvasSys(li){
   var briefCtx=projectBrief?('Production Brief context (use specified equipment, locations, lighting plan from this):\n'+projectBrief+'\n\n'):'';
   if(projectType==='music'){
@@ -3625,6 +3793,27 @@ function renderCanvas(){
   attPresentBeforeWipe={};
   document.querySelectorAll('.att-shot').forEach(function(el){attPresentBeforeWipe[el.id]=1;});
   cw.innerHTML='';
+  // the bands sit behind everything and answer for nothing - they are a label
+  // and a boundary, not something to click
+  if(locationBands)locationBands.forEach(function(b,i){
+    var band=document.createElement('div');
+    band.className='loc-band';
+    band.style.cssText='left:'+b.x+'px;top:'+b.y+'px;width:'+b.w+'px;height:'+b.h+'px;';
+    var h=document.createElement('div'); h.className='loc-band-head';
+    var n=document.createElement('span'); n.className='loc-band-n';
+    n.textContent=String(i+1).padStart(2,'0');
+    var nm=document.createElement('span'); nm.className='loc-band-name'; nm.textContent=b.name;
+    h.appendChild(n); h.appendChild(nm);
+    if(b.timeOfDay){
+      var t=document.createElement('span'); t.className='loc-band-tod'; t.textContent=b.timeOfDay;
+      h.appendChild(t);
+    }
+    var c=document.createElement('span'); c.className='loc-band-count';
+    c.textContent=b.count+(b.count===1?' shot':' shots');
+    h.appendChild(c);
+    band.appendChild(h);
+    cw.appendChild(band);
+  });
   nodes.forEach(function(node,idx){
     var el=document.createElement('div');
     el.className='nc'+(node.id===selId?' sel':'');
@@ -4283,6 +4472,12 @@ function fitScreen(){
   var maxX=Math.max.apply(null,nodes.map(function(n){return n.x+NC_W;}))+20;
   var minY=Math.min.apply(null,nodes.map(function(n){return n.y;}))-20;
   var maxY=Math.max.apply(null,nodes.map(function(n){return n.y+160;}))+20;
+  // a band reaches above its first card to make room for its name, so fitting
+  // to the cards alone cuts the heading of the top one off screen
+  if(locationBands)locationBands.forEach(function(b){
+    if(b.x<minX)minX=b.x-20; if(b.x+b.w>maxX)maxX=b.x+b.w+20;
+    if(b.y<minY)minY=b.y-20; if(b.y+b.h>maxY)maxY=b.y+b.h+20;
+  });
   var sc=Math.min(r.width/(maxX-minX),r.height/(maxY-minY),.9);
   scale=Math.max(sc,.1);
   px=r.width/2-(minX+(maxX-minX)/2)*scale;
@@ -5562,6 +5757,9 @@ document.addEventListener('mouseup',function(e){
       v:1, projectType:projectType, topic:topic, tone:tone, fmt:fmt, styleMode:styleMode, inputLang:inputLang,
       durMin:durMin, durMax:durMax, projectBrief:projectBrief, projectConstraints:projectConstraints,
       projectBreakdown:projectBreakdown, projectBreakdownKey:projectBreakdownKey,
+      // the cards' own x and y already travel with the nodes; these are what
+      // tells the board it is grouped, so the bands come back with them
+      boardArrangement:boardArrangement, locationBands:locationBands,
       aiMode:(typeof aiMode!=='undefined'?aiMode:true),
       songName:songName, songDuration:songDuration, songAnalysis:songAnalysis,
       recceImages:recceImages,
@@ -5576,6 +5774,9 @@ document.addEventListener('mouseup',function(e){
     inputLang=d.inputLang||'en'; durMin=d.durMin||durMin; durMax=d.durMax||durMax;
     projectBrief=d.projectBrief||''; projectConstraints=d.projectConstraints||'';
     projectBreakdown=d.projectBreakdown||null; projectBreakdownKey=d.projectBreakdownKey||null;
+    boardArrangement=d.boardArrangement||'timeline';
+    locationBands=(boardArrangement==='location'&&d.locationBands&&d.locationBands.length)?d.locationBands:null;
+    if(!locationBands)boardArrangement='timeline';
     if(typeof d.aiMode!=='undefined'&&typeof aiMode!=='undefined') aiMode=d.aiMode;
     songName=d.songName||''; songDuration=d.songDuration||0; songAnalysis=d.songAnalysis||null; songURL=null;
     recceImages=d.recceImages||[];
@@ -5586,6 +5787,7 @@ document.addEventListener('mouseup',function(e){
     show('s5');
     if(typeof renderAll==='function') renderAll();
     if(typeof renderRecceGrid==='function') renderRecceGrid();
+    if(typeof syncArrangeBtn==='function') syncArrangeBtn();
     saveHistory();
   }
 
@@ -5671,6 +5873,7 @@ document.addEventListener('mouseup',function(e){
     nodes=[]; attShots=[]; imgNodes=[]; noteNodes=[]; conns=[]; nid=1;
     nodeDrawerClosed={};
     topic=''; projectBrief=''; projectConstraints=''; projectBreakdown=null; projectBreakdownKey=null;
+    boardArrangement='timeline'; locationBands=null;
     recceImages=[];
     songName=''; songDuration=0; songAnalysis=null; songURL=null;
     var sta=byId('scriptTa'); if(sta) sta.value='';

@@ -84,10 +84,15 @@ const TOUCH_HELPERS=`
     return {open:document.getElementById('cbarActions').classList.contains('open'),
             fits:m.right<=document.documentElement.clientWidth+1&&m.left>=-1,
             btns:document.querySelectorAll('#cbarActions .btn').length,
-            exportSeen:getComputedStyle(document.getElementById('btnExport')).display!=='none'};
+            barBtns:document.querySelectorAll('.cbar .tbar-r .btn').length,
+            exportSeen:getComputedStyle(document.getElementById('btnExport')).display!=='none',
+            arrangeSeen:getComputedStyle(document.getElementById('btnArrange')).display!=='none'};
   });
   ok('the actions menu opens inside the screen', menu.open&&menu.fits, menu);
-  ok('every action is still reachable', menu.btns===9&&menu.exportSeen, menu);
+  // the count is whatever the bar carries - what matters is that nothing was
+  // left behind on a bar that no longer exists
+  ok('every action is still reachable',
+     menu.btns===menu.barBtns&&menu.exportSeen&&menu.arrangeSeen, menu);
 
   // opening the drawer must not leave the menu hanging over it
   await page.click('#panelToggle');
