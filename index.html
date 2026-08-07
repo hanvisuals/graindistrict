@@ -1475,7 +1475,7 @@ body.location-mode #btnRebreak{display:inline-flex!important;}
     <div class="s1-form-shell">
     <div>
       <div class="ilabel" id="s1TopicLabel">what is this video about?</div>
-      <textarea class="ita" id="topicIn" placeholder="a rainy morning in NYC... or NYC'de yagmurlu bir sabah..." rows="3"></textarea>
+      <textarea class="ita" id="topicIn" placeholder="A rainy morning in NYC — intimate, cinematic, handheld..." rows="3"></textarea>
       <div class="s1-error" id="topicErr" role="alert" aria-live="polite"></div>
       <div class="mv-suggest" id="mvSuggest">
         <span class="mv-suggest-dot"></span>
@@ -1568,7 +1568,7 @@ body.location-mode #btnRebreak{display:inline-flex!important;}
       <h1 class="kb-title" style="font-size:1.75rem">What are you working with?</h1>
       <p class="kb-sub" style="margin-top:.5rem;max-width:440px">Camera, lenses, locations, lighting, props, budget — anlat. AI senin kısıtlarına göre kreatif brief üretsin.</p>
     </div>
-    <textarea class="brief-ta" id="constraintsIn" placeholder="Sony a7S III, 24-70mm ve 12-24mm f2.8 lensler. Buğday tarlası, tenha yol, karavan. 9 kırmızı halı. Dolgu ışık var, dış mekan ağırlıklı. Sıfır bütçe. Soft akustik, aşk acısı..."></textarea>
+    <textarea class="brief-ta" id="constraintsIn" placeholder="Sony a7S III with 24–70mm and 12–24mm f/2.8 lenses. A wheat field, empty road and caravan are available. Nine red rugs, one fill light, mostly exterior locations. Zero budget. Soft acoustic mood, a story about heartbreak..."></textarea>
     <div class="brief-row">
       <button class="brief-skip-btn" onclick="skipEquipment()">Skip details</button>
       <button class="gobtn" style="flex:1;margin:0" onclick="generateBrief()">Generate brief</button>
@@ -2222,12 +2222,12 @@ function setProjectType(type){
   if(type==='music'){
     s1.classList.add('mv-mode');
     document.getElementById('s1TopicLabel').textContent='what song is this video for?';
-    document.getElementById('topicIn').placeholder='Song name, artist, mood... or sarki adi, sanatci, mood...';
+    document.getElementById('topicIn').placeholder='Song title, artist, mood, pace and visual references...';
     startMvHints();
   }else{
     s1.classList.remove('mv-mode');
     document.getElementById('s1TopicLabel').textContent='what is this video about?';
-    document.getElementById('topicIn').placeholder='a rainy morning in NYC... or NYC\'de yagmurlu bir sabah...';
+    document.getElementById('topicIn').placeholder='A rainy morning in NYC — intimate, cinematic, handheld...';
     stopMvHints();
   }
   show('s1');
