@@ -683,6 +683,8 @@ body #s0{align-items:stretch;justify-content:flex-start;position:relative;isolat
 .dna-top-meta{font-family:var(--mono);font-size:8px;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.32);}
 .dna-back{min-width:72px;min-height:42px;border:1px solid rgba(255,255,255,.1);border-radius:999px;background:rgba(255,255,255,.04);color:rgba(255,255,255,.62);font-family:var(--sans);font-size:12px;cursor:pointer;}
 .dna-back:hover{color:#fff;border-color:rgba(255,255,255,.22);}
+.dna-back:disabled{opacity:.34;cursor:default;}
+.dna-back:disabled:hover{color:rgba(255,255,255,.62);border-color:rgba(255,255,255,.1);}
 .dna-shell{width:min(920px,calc(100% - 36px));margin:auto;padding:clamp(42px,7vh,84px) 0 calc(52px + var(--safe-b));}
 .dna-progress{display:flex;align-items:center;gap:8px;margin-bottom:clamp(34px,6vh,66px);}
 .dna-progress span{height:3px;border-radius:99px;background:rgba(255,255,255,.1);flex:1;transition:background .25s,transform .25s;}
@@ -700,6 +702,7 @@ body #s0{align-items:stretch;justify-content:flex-start;position:relative;isolat
 .dna-option-title{display:block;font-family:var(--sans);font-size:16px;font-weight:600;letter-spacing:-.015em;margin-bottom:6px;}
 .dna-option-desc{display:block;font-family:var(--sans);font-size:12px;line-height:1.45;color:rgba(255,255,255,.38);}
 .dna-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:28px;}
+.dna-action-left{display:flex;flex-direction:column;align-items:flex-start;gap:8px;}
 .dna-skip{min-height:44px;border:0;background:transparent;color:rgba(255,255,255,.34);font-family:var(--sans);font-size:12px;cursor:pointer;padding:0 4px;}
 .dna-skip:hover{color:#fff;}
 .dna-next{min-height:48px;border:0;border-radius:999px;background:#f4f1e9;color:#111;font-family:var(--sans);font-size:13px;font-weight:650;padding:0 25px;cursor:pointer;}
@@ -723,6 +726,48 @@ body #s0{align-items:stretch;justify-content:flex-start;position:relative;isolat
 .dna-profile-v{font-family:var(--sans);font-size:12px;color:rgba(255,255,255,.66);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .dna-profile-edit{min-width:58px;min-height:38px;border:1px solid rgba(255,255,255,.11);border-radius:999px;background:rgba(255,255,255,.035);color:rgba(255,255,255,.62);font-family:var(--sans);font-size:11px;cursor:pointer;}
 .dna-profile-edit:hover{color:#fff;}
+.dna-autosave{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.28);}
+.dna-autosave::before{content:'';width:5px;height:5px;border-radius:50%;background:#78a984;box-shadow:0 0 9px rgba(120,169,132,.6);}
+
+/* MY CREATOR DNA — a persistent channel profile, presented as a destination
+   rather than a hidden edit action inside one project. */
+#s_dna_hub{overflow-y:auto;background:
+  radial-gradient(circle at 75% 35%,rgba(223,188,77,.09),transparent 28%),
+  radial-gradient(circle at 85% 64%,rgba(109,155,211,.07),transparent 26%),
+  linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px),#090a09;
+  background-size:auto,auto,52px 52px,52px 52px;}
+.dna-hub-shell{width:min(1180px,calc(100% - 40px));margin:auto;padding:clamp(52px,8vh,96px) 0 calc(64px + var(--safe-b));}
+.dna-hub-hero{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(360px,.92fr);align-items:center;gap:clamp(32px,7vw,100px);min-height:410px;}
+.dna-hub-k{display:flex;align-items:center;gap:11px;font-family:var(--mono);font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:rgba(223,188,77,.72);margin-bottom:24px;}
+.dna-hub-k::before{content:'';width:28px;height:1px;background:currentColor;}
+.dna-hub-title{font-family:var(--sans);font-size:clamp(56px,7.4vw,108px);font-weight:590;line-height:.82;letter-spacing:-.072em;color:#f4f1e9;}
+.dna-hub-title em{display:block;font-style:normal;color:transparent;-webkit-text-stroke:1px rgba(244,241,233,.44);}
+.dna-hub-intro{max-width:52ch;margin-top:28px;font-family:var(--sans);font-size:14px;line-height:1.65;color:rgba(255,255,255,.43);}
+.dna-hub-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:29px;}
+.dna-hub-primary,.dna-hub-secondary{min-height:48px;border-radius:999px;padding:0 22px;font-family:var(--sans);font-size:12px;font-weight:650;cursor:pointer;}
+.dna-hub-primary{border:0;background:#f4f1e9;color:#0a0a0a;box-shadow:0 14px 32px rgba(0,0,0,.28);}
+.dna-hub-secondary{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.035);color:rgba(255,255,255,.62);}
+.dna-hub-primary:hover{background:#fff;}.dna-hub-secondary:hover{color:#fff;border-color:rgba(255,255,255,.24);}
+.dna-hub-status{display:inline-flex;align-items:center;gap:7px;margin-top:16px;font-family:var(--mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.28);}
+.dna-hub-status::before{content:'';width:5px;height:5px;border-radius:50%;background:#78a984;box-shadow:0 0 9px rgba(120,169,132,.55);}
+.dna-visual{position:relative;min-height:390px;display:flex;align-items:center;justify-content:center;perspective:760px;isolation:isolate;}
+.dna-visual::before,.dna-visual::after{content:'';position:absolute;border-radius:50%;pointer-events:none;}
+.dna-visual::before{width:320px;height:320px;border:1px solid rgba(223,188,77,.13);box-shadow:inset 0 0 70px rgba(223,188,77,.035),0 0 80px rgba(0,0,0,.35);animation:dna-orbit 16s linear infinite;}
+.dna-visual::after{width:230px;height:230px;background:radial-gradient(circle,rgba(223,188,77,.08),transparent 66%);filter:blur(9px);animation:dna-breathe 4.8s ease-in-out infinite;}
+.dna-helix{position:relative;width:230px;height:326px;transform-style:preserve-3d;z-index:2;filter:drop-shadow(0 0 18px rgba(223,188,77,.12));}
+.dna-rung{--phase:0deg;position:absolute;left:50%;top:calc(18px + var(--y,0px));width:172px;height:2px;display:block;transform-style:preserve-3d;transform:translateX(-50%) rotateY(var(--phase));animation:dna-twist 7.2s linear infinite;}
+.dna-rung i{position:absolute;left:5px;right:5px;top:0;height:1px;background:linear-gradient(90deg,rgba(109,155,211,.64),rgba(255,255,255,.08) 47%,rgba(223,188,77,.78));box-shadow:0 0 8px rgba(223,188,77,.14);}
+.dna-rung::before,.dna-rung::after{content:'';position:absolute;top:50%;width:10px;height:10px;border-radius:50%;transform:translateY(-50%);}
+.dna-rung::before{left:0;background:#6d9bd3;box-shadow:0 0 15px rgba(109,155,211,.72),0 0 3px #fff;}
+.dna-rung::after{right:0;background:#dfbc4d;box-shadow:0 0 15px rgba(223,188,77,.75),0 0 3px #fff;}
+.dna-visual-code{position:absolute;right:2%;bottom:7%;font-family:var(--mono);font-size:7px;line-height:1.8;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.2);}
+@keyframes dna-twist{to{transform:translateX(-50%) rotateY(calc(var(--phase) + 360deg));}}
+@keyframes dna-orbit{to{transform:rotate(360deg);}}
+@keyframes dna-breathe{0%,100%{opacity:.55;transform:scale(.92)}50%{opacity:1;transform:scale(1.08)}}
+.dna-hub-profile{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(280px,.88fr);gap:12px;margin-top:clamp(32px,6vh,70px);}
+.dna-hub-profile .dna-card{min-height:220px;}
+.dna-hub-empty{grid-column:1/-1;border:1px dashed rgba(255,255,255,.12);border-radius:20px;padding:30px;font-family:var(--sans);font-size:13px;line-height:1.6;color:rgba(255,255,255,.42);}
 /* KREA-STYLE PLAN CHOICE + S3 */
 .kb-prog-wrap{position:absolute;top:0;left:0;right:0;height:2px;background:rgba(255,255,255,.07);z-index:10;}
 .kb-prog-fill{height:100%;background:rgba(255,255,255,.35);transition:width .35s;}
@@ -992,6 +1037,17 @@ body #s0{align-items:stretch;justify-content:flex-start;position:relative;isolat
   .dna-card{padding:20px;}
   .dna-profile{align-items:flex-start;}
   .dna-profile-v{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+  .dna-autosave{font-size:7px;}
+  .dna-hub-shell{width:calc(100% - 28px);padding:42px 0 calc(44px + var(--safe-b));}
+  .dna-hub-hero{grid-template-columns:1fr;gap:16px;min-height:0;}
+  .dna-hub-title{font-size:clamp(58px,18vw,76px);}
+  .dna-hub-intro{font-size:13px;margin-top:22px;}
+  .dna-visual{min-height:315px;margin-top:5px;}
+  .dna-visual::before{width:270px;height:270px;}
+  .dna-helix{height:326px;transform:scale(.84);}
+  .dna-visual-code{right:2px;bottom:2px;}
+  .dna-hub-profile{grid-template-columns:1fr;margin-top:26px;}
+  .dna-hub-profile .dna-card{min-height:0;}
   #panelToggle{display:flex;}
   .cbar{padding-left:.25rem;}
   .ctopic{font-size:12px;}
@@ -1469,6 +1525,7 @@ body.location-mode #btnRebreak{display:inline-flex!important;}
 @media (prefers-reduced-motion:reduce){
   .entry-signal-live::before{animation:none;}
   .pt-btn,.pt-btn::before,.pt-btn::after,.pt-icon-wrap,.pt-arrow{transition-duration:.01ms!important;}
+  .dna-visual::before,.dna-visual::after,.dna-rung{animation-play-state:paused!important;}
 }
 </style>
 </head>
@@ -1534,9 +1591,50 @@ body.location-mode #btnRebreak{display:inline-flex!important;}
   </div>
 </div>
 
+<div id="s_dna_hub" class="screen">
+  <div class="dna-top">
+    <button class="dna-back" onclick="closeCreatorDnaHub()">&larr; Back</button>
+    <span class="dna-brand">GRAIN DISTRICT</span>
+    <span class="dna-top-meta">YouTube channel profile</span>
+  </div>
+  <main class="dna-hub-shell">
+    <section class="dna-hub-hero">
+      <div>
+        <div class="dna-hub-k">Creator intelligence / persistent profile</div>
+        <h1 class="dna-hub-title">My Creator <em>DNA.</em></h1>
+        <p class="dna-hub-intro" id="dnaHubIntro">Your channel should feel like you before a project even begins. This profile becomes the standing direction behind every YouTube brief, script and production plan.</p>
+        <div class="dna-hub-actions">
+          <button class="dna-hub-primary" id="dnaHubEdit" onclick="editCreatorDnaFromHub()">Edit my DNA &rarr;</button>
+          <button class="dna-hub-secondary" id="dnaHubStart" onclick="startYouTubeFromDnaHub()">Start a YouTube project</button>
+        </div>
+        <div class="dna-hub-status" id="dnaHubStatus">Profile saved automatically</div>
+      </div>
+      <div class="dna-visual" aria-hidden="true">
+        <div class="dna-helix">
+          <span class="dna-rung" style="--y:0px;--phase:0deg"><i></i></span>
+          <span class="dna-rung" style="--y:24px;--phase:30deg"><i></i></span>
+          <span class="dna-rung" style="--y:48px;--phase:60deg"><i></i></span>
+          <span class="dna-rung" style="--y:72px;--phase:90deg"><i></i></span>
+          <span class="dna-rung" style="--y:96px;--phase:120deg"><i></i></span>
+          <span class="dna-rung" style="--y:120px;--phase:150deg"><i></i></span>
+          <span class="dna-rung" style="--y:144px;--phase:180deg"><i></i></span>
+          <span class="dna-rung" style="--y:168px;--phase:210deg"><i></i></span>
+          <span class="dna-rung" style="--y:192px;--phase:240deg"><i></i></span>
+          <span class="dna-rung" style="--y:216px;--phase:270deg"><i></i></span>
+          <span class="dna-rung" style="--y:240px;--phase:300deg"><i></i></span>
+          <span class="dna-rung" style="--y:264px;--phase:330deg"><i></i></span>
+          <span class="dna-rung" style="--y:288px;--phase:360deg"><i></i></span>
+        </div>
+        <div class="dna-visual-code">Profile signal / active<br>Story &middot; presence &middot; rhythm<br>Production boundary / auto-saved</div>
+      </div>
+    </section>
+    <section class="dna-hub-profile" id="dnaHubProfile"></section>
+  </main>
+</div>
+
 <div id="s_dna" class="screen">
   <div class="dna-top">
-    <button class="dna-back" onclick="dnaBack()">&larr; Back</button>
+    <button class="dna-back" id="dnaBackBtn" onclick="dnaBack()">&larr; Previous</button>
     <span class="dna-brand">GRAIN DISTRICT</span>
     <span class="dna-top-meta">Creator intelligence / channel setup</span>
   </div>
@@ -1548,7 +1646,10 @@ body.location-mode #btnRebreak{display:inline-flex!important;}
     <div class="dna-options" id="dnaOptions"></div>
     <div class="dna-summary" id="dnaSummary" style="display:none"></div>
     <div class="dna-actions">
-      <button class="dna-skip" id="dnaSkip" onclick="skipCreatorDna()">Use a balanced profile for now</button>
+      <div class="dna-action-left">
+        <span class="dna-autosave" id="dnaAutosave">Draft saved automatically</span>
+        <button class="dna-skip" id="dnaSkip" onclick="skipCreatorDna()">Use a balanced profile for now</button>
+      </div>
       <button class="dna-next" id="dnaNext" onclick="dnaNext()" disabled>Continue &rarr;</button>
     </div>
   </div>
@@ -1569,7 +1670,7 @@ body.location-mode #btnRebreak{display:inline-flex!important;}
     <div class="dna-profile" id="dnaProfile">
       <span class="dna-profile-dot"></span>
       <span class="dna-profile-copy"><span class="dna-profile-k">Creator DNA active</span><span class="dna-profile-v" id="dnaProfileText"></span></span>
-      <button class="dna-profile-edit" onclick="editCreatorDna()">Edit</button>
+      <button class="dna-profile-edit" onclick="openCreatorDnaHub()">My DNA</button>
     </div>
     <div>
       <div class="ilabel" id="s1TopicLabel">what is this video about?</div>
@@ -1623,7 +1724,7 @@ body.location-mode #btnRebreak{display:inline-flex!important;}
           <input type="file" accept="image/*" multiple id="recceFiles" style="display:none" onchange="addRecceImages(event)">
         </label>
       </div>
-      <div class="recce-hint" id="recceHint">Mekan görsellerini yükle — üstteki prompt ile birlikte analiz edilip plana yansır.</div>
+      <div class="recce-hint" id="recceHint">Upload location photos — they will be analysed with your prompt and reflected in the plan.</div>
     </div>
     <div class="s1-youtube-only">
       <div>
@@ -1664,7 +1765,7 @@ body.location-mode #btnRebreak{display:inline-flex!important;}
     <div style="text-align:center">
       <span class="brief-label">production brief</span>
       <h1 class="kb-title" style="font-size:1.75rem">What are you working with?</h1>
-      <p class="kb-sub" style="margin-top:.5rem;max-width:440px">Camera, lenses, locations, lighting, props, budget — anlat. AI senin kısıtlarına göre kreatif brief üretsin.</p>
+      <p class="kb-sub" style="margin-top:.5rem;max-width:440px">Describe your camera, lenses, locations, lighting, props and budget. AI will build the creative brief around your real constraints.</p>
     </div>
     <textarea class="brief-ta" id="constraintsIn" placeholder="Sony a7S III with 24–70mm and 12–24mm f/2.8 lenses. A wheat field, empty road and caravan are available. Nine red rugs, one fill light, mostly exterior locations. Zero budget. Soft acoustic mood, a story about heartbreak..."></textarea>
     <div class="brief-row">
@@ -2086,7 +2187,7 @@ function stylePack(part){
   var p=STYLE_PACKS[styleMode];
   return p?'\n\n'+p[part]:'';
 }
-var creatorDNA=null,dnaDraft=null,dnaStep=0,dnaReturnScreen='s0';
+var creatorDNA=null,dnaDraft=null,dnaStep=0,dnaReturnScreen='s1',dnaHubReturnScreen='s0';
 var DNA_QS=[
   {key:'outcome',title:'What should viewers leave with?',help:'Choose the result your videos should create most often.',options:[
     {v:'feel',t:'A feeling',d:'Connection, atmosphere or a personal shift.'},
@@ -2138,16 +2239,33 @@ var DNA_LABELS={
   capabilities:{solo:'solo production',studio:'home / studio',locations:'exterior locations',products:'product close-ups',screen:'screen recording',motion:'motion graphics'},
   avoid:{forced_drama:'forced drama',generic_broll:'generic B-roll',speed:'constant fast cuts',personal_detour:'personal detours',jargon:'unexplained jargon',clickbait:'clickbait',none:'no fixed exclusions'}
 };
-function creatorDnaStorageKey(){
+function creatorDnaOwnerSlug(){
   var email='guest';
   try{email=localStorage.getItem('gd_email')||sessionStorage.getItem('gd_email')||'guest';}catch(e){}
-  return 'gd_creator_dna_v1_'+String(email).toLowerCase().replace(/[^a-z0-9@._-]+/g,'_');
+  return String(email).toLowerCase().replace(/[^a-z0-9@._-]+/g,'_');
 }
+function creatorDnaStorageKey(){return 'gd_creator_dna_v1_'+creatorDnaOwnerSlug();}
+function creatorDnaDraftStorageKey(){return 'gd_creator_dna_draft_v1_'+creatorDnaOwnerSlug();}
 function loadCreatorDna(){
   try{var d=JSON.parse(localStorage.getItem(creatorDnaStorageKey())||'null');return d&&d.v===1?d:null;}catch(e){return null;}
 }
 function storeCreatorDna(d){
   try{localStorage.setItem(creatorDnaStorageKey(),JSON.stringify(d));}catch(e){}
+}
+function loadCreatorDnaDraft(){
+  try{
+    var d=JSON.parse(localStorage.getItem(creatorDnaDraftStorageKey())||'null');
+    return d&&d.v===1&&d.draft?d:null;
+  }catch(e){return null;}
+}
+function storeCreatorDnaDraft(){
+  if(!dnaDraft)return;
+  try{localStorage.setItem(creatorDnaDraftStorageKey(),JSON.stringify({v:1,step:dnaStep,draft:dnaDraft,returnScreen:dnaReturnScreen,updatedAt:Date.now()}));}catch(e){}
+  var el=document.getElementById('dnaAutosave');
+  if(el)el.textContent='Draft saved automatically';
+}
+function clearCreatorDnaDraft(){
+  try{localStorage.removeItem(creatorDnaDraftStorageKey());}catch(e){}
 }
 function balancedCreatorDna(){
   return {v:1,outcome:'understand',carrier:'hybrid',presence:'sometimes',pace:'balanced',capabilities:['solo','studio','screen'],avoid:['generic_broll','clickbait']};
@@ -2220,10 +2338,58 @@ function renderCreatorDnaProfile(){
 function openCreatorDna(force,returnTo){
   creatorDNA=creatorDNA||loadCreatorDna();
   if(creatorDNA&&!force){applyCreatorDnaDefaults();show('s1');return;}
-  dnaReturnScreen=returnTo||'s0';dnaDraft=creatorDNA?JSON.parse(JSON.stringify(creatorDNA)):{};dnaStep=0;
+  dnaReturnScreen=returnTo||'s1';
+  var saved=loadCreatorDnaDraft();
+  if(saved){
+    dnaReturnScreen=saved.returnScreen||dnaReturnScreen;
+    dnaDraft=JSON.parse(JSON.stringify(saved.draft));
+    dnaStep=Math.max(0,Math.min(DNA_QS.length,Number(saved.step)||0));
+  }else{
+    dnaDraft=creatorDNA?JSON.parse(JSON.stringify(creatorDNA)):{};
+    dnaStep=0;
+    storeCreatorDnaDraft();
+  }
   show('s_dna');renderDnaStep();
 }
 function editCreatorDna(){openCreatorDna(true,'s1');}
+function openCreatorDnaHub(){
+  var active=document.querySelector('.screen.active');
+  if(active&&active.id!=='s_dna_hub'&&active.id!=='s_dna')dnaHubReturnScreen=active.id;
+  else if(active&&active.id==='s_dna')dnaHubReturnScreen=dnaReturnScreen||'s0';
+  creatorDNA=loadCreatorDna()||creatorDNA;
+  renderCreatorDnaHub();show('s_dna_hub');
+}
+function closeCreatorDnaHub(){show(dnaHubReturnScreen||'s0');}
+function editCreatorDnaFromHub(){openCreatorDna(true,'s_dna_hub');}
+function startYouTubeFromDnaHub(){
+  projectType='youtube';
+  if(!creatorDNA){openCreatorDna(true,'s_dna_hub');return;}
+  applyCreatorDnaDefaults();show('s1');
+}
+function renderCreatorDnaHub(){
+  var profile=document.getElementById('dnaHubProfile'),edit=document.getElementById('dnaHubEdit'),start=document.getElementById('dnaHubStart'),status=document.getElementById('dnaHubStatus');
+  if(!profile||!edit||!start||!status)return;
+  var d=loadCreatorDna()||creatorDNA,saved=loadCreatorDnaDraft();
+  creatorDNA=d||null;
+  if(!d){
+    profile.innerHTML='<div class="dna-hub-empty">Your Creator DNA is not finished yet. The interview takes six focused questions, and every choice is saved as you go.</div>';
+    edit.textContent=saved?'Continue building my DNA \u2192':'Build my Creator DNA \u2192';
+    start.style.display='none';
+    status.textContent=saved?'Draft saved \u00b7 question '+(Math.min(DNA_QS.length,(Number(saved.step)||0)+1))+' of '+DNA_QS.length:'Ready when you are';
+    return;
+  }
+  var caps=dnaList('capabilities',d.capabilities),avoid=dnaList('avoid',d.avoid).filter(function(x){return x!=='no fixed exclusions';});
+  profile.innerHTML='<article class="dna-card hero"><div class="dna-card-k">Your channel profile</div><h2>'+creatorDnaName(d)+'</h2><p>'+creatorDnaStructure(d)+'</p><div class="dna-chips">'
+    +[dnaValueLabel('outcome',d.outcome),dnaValueLabel('presence',d.presence),dnaValueLabel('pace',d.pace)].concat(caps).map(function(x){return '<span class="dna-chip">'+x+'</span>';}).join('')+'</div></article>'
+    +'<article class="dna-card"><div class="dna-card-k">Standing direction</div><div class="dna-rules">'
+    +'<div class="dna-rule"><b>01</b><span>'+creatorDnaVisual(d)+'</span></div>'
+    +'<div class="dna-rule"><b>02</b><span>Available: '+(caps.join(', ')||'not specified')+'.</span></div>'
+    +'<div class="dna-rule"><b>03</b><span>Avoid: '+(avoid.join(', ')||'no fixed exclusions')+'.</span></div>'
+    +'</div></article>';
+  edit.textContent=saved?'Continue editing \u2192':'Edit my DNA \u2192';
+  start.style.display='';
+  status.textContent=saved?'Changes saved as a draft':'Profile saved automatically';
+}
 function dnaOptionClick(value){
   var q=DNA_QS[dnaStep];if(!q)return;
   if(q.multiple){
@@ -2232,10 +2398,13 @@ function dnaOptionClick(value){
     else{arr=arr.filter(function(v){return v!=='none';});var i=arr.indexOf(value);if(i>=0)arr.splice(i,1);else arr.push(value);}
     dnaDraft[q.key]=arr;
   }else dnaDraft[q.key]=value;
+  storeCreatorDnaDraft();
   renderDnaStep();
 }
 function renderDnaStep(){
-  var progress=document.getElementById('dnaProgress'),label=document.getElementById('dnaStepLabel'),qEl=document.getElementById('dnaQuestion'),help=document.getElementById('dnaHelp'),opts=document.getElementById('dnaOptions'),sum=document.getElementById('dnaSummary'),next=document.getElementById('dnaNext'),skip=document.getElementById('dnaSkip');
+  var progress=document.getElementById('dnaProgress'),label=document.getElementById('dnaStepLabel'),qEl=document.getElementById('dnaQuestion'),help=document.getElementById('dnaHelp'),opts=document.getElementById('dnaOptions'),sum=document.getElementById('dnaSummary'),next=document.getElementById('dnaNext'),skip=document.getElementById('dnaSkip'),back=document.getElementById('dnaBackBtn'),autosave=document.getElementById('dnaAutosave');
+  if(back)back.textContent=dnaStep>0?'\u2190 Previous':'My Creator DNA';
+  if(autosave)autosave.textContent='Draft saved automatically';
   progress.innerHTML='';for(var p=0;p<=DNA_QS.length;p++){var bar=document.createElement('span');bar.className=p<=dnaStep?'on':'';progress.appendChild(bar);}
   if(dnaStep>=DNA_QS.length){
     label.textContent='Creator DNA / READY';qEl.textContent='This is how Grain District understands you.';help.textContent='Nothing is locked forever. You can edit this profile from the idea screen.';
@@ -2260,15 +2429,17 @@ function renderDnaStep(){
   });
 }
 function dnaNext(){
-  if(dnaStep<DNA_QS.length){dnaStep++;renderDnaStep();return;}
-  creatorDNA=Object.assign({v:1},balancedCreatorDna(),dnaDraft);storeCreatorDna(creatorDNA);applyCreatorDnaDefaults();show('s1');
+  if(dnaStep<DNA_QS.length){dnaStep++;storeCreatorDnaDraft();renderDnaStep();return;}
+  creatorDNA=Object.assign({v:1},balancedCreatorDna(),dnaDraft,{updatedAt:Date.now()});storeCreatorDna(creatorDNA);clearCreatorDnaDraft();applyCreatorDnaDefaults();
+  if(dnaReturnScreen==='s_dna_hub'){renderCreatorDnaHub();show('s_dna_hub');}else show('s1');
 }
 function dnaBack(){
-  if(dnaStep>0){dnaStep--;renderDnaStep();return;}
-  show(dnaReturnScreen||'s0');
+  if(dnaStep>0){dnaStep--;storeCreatorDnaDraft();renderDnaStep();return;}
+  dnaHubReturnScreen=dnaReturnScreen||'s0';renderCreatorDnaHub();show('s_dna_hub');
 }
 function skipCreatorDna(){
-  creatorDNA=balancedCreatorDna();storeCreatorDna(creatorDNA);applyCreatorDnaDefaults();show('s1');
+  creatorDNA=Object.assign(balancedCreatorDna(),{updatedAt:Date.now()});storeCreatorDna(creatorDNA);clearCreatorDnaDraft();applyCreatorDnaDefaults();
+  if(dnaReturnScreen==='s_dna_hub'){renderCreatorDnaHub();show('s_dna_hub');}else show('s1');
 }
 creatorDNA=loadCreatorDna();
 var durMin=2,durMax=4;
@@ -2512,7 +2683,7 @@ function setProjectType(type){
     document.getElementById('topicIn').placeholder='A rainy morning in NYC — intimate, cinematic, handheld...';
     stopMvHints();
   }
-  if(type==='youtube'){openCreatorDna(false,'s0');return;}
+  if(type==='youtube'){openCreatorDna(false,'s1');return;}
   renderCreatorDnaProfile();show('s1');
 }
 
@@ -2893,7 +3064,7 @@ function renderRecceGrid(){
     grid.insertBefore(d,addBtn);
   });
   var hint=document.getElementById('recceHint');
-  if(hint)hint.textContent=recceImages.length?(recceImages.length+' photo'+(recceImages.length>1?'s':'')+' loaded · analyzed with the song when you generate'):'Mekanda çektiğin kareleri yükle — AI bunları analiz edip plana yansıtsın.';
+  if(hint)hint.textContent=recceImages.length?(recceImages.length+' photo'+(recceImages.length>1?'s':'')+' loaded · analysed with your prompt when you generate'):'Upload photos from the location — AI will analyse them and reflect the real space in your plan.';
 }
 
 /* build Claude user content: recce images (vision) + text */
@@ -6587,8 +6758,8 @@ document.addEventListener('mouseup',function(e){
           var d={}; try{ d=JSON.parse(t); }catch(e){}
           // an expired or revoked session shouldn't look like a save bug -
           // drop straight back to signed-out and say so
-          if(r.status===401){ signOut(true); throw new Error(d.error||'Oturumun sona erdi, tekrar giriş yap.'); }
-          if(!r.ok) throw new Error(d.error||('Sunucu hatası '+r.status));
+          if(r.status===401){ signOut(true); throw new Error(d.error||'Your session has expired. Please sign in again.'); }
+          if(!r.ok) throw new Error(d.error||('Server error '+r.status));
           return d;
         });
       });
@@ -6618,6 +6789,9 @@ document.addEventListener('mouseup',function(e){
   +'.gd-acct{position:fixed;top:9px;right:14px;z-index:10000;display:flex;align-items:center;gap:8px;font-family:var(--sans);}'
   +'.gd-pill{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:500;padding:6px 13px;border-radius:999px;border:1px solid var(--border-hi);background:rgba(255,255,255,.05);color:var(--text-2);cursor:pointer;transition:all .15s;backdrop-filter:blur(8px);}'
   +'.gd-pill:hover{background:rgba(255,255,255,.1);color:#fff;}'
+  +'.gd-pill.dna{border-color:rgba(223,188,77,.22);background:rgba(223,188,77,.055);color:rgba(244,231,188,.72);}'
+  +'.gd-pill.dna:hover{border-color:rgba(223,188,77,.42);background:rgba(223,188,77,.1);color:#fff;box-shadow:0 0 20px rgba(223,188,77,.08);}'
+  +'.gd-dna-mini{width:14px;height:14px;overflow:visible;flex:0 0 auto;}'
   +'.gd-pill.primary{background:#fff;color:#000;border-color:#fff;}'
   +'.gd-pill.primary:hover{background:rgba(255,255,255,.85);}'
   +'.gd-email{font-family:var(--mono);font-size:10px;color:var(--text-3);letter-spacing:.02em;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'
@@ -6726,7 +6900,7 @@ document.addEventListener('mouseup',function(e){
   +'  .gd-acct{top:5px;right:6px;gap:4px;}'
   +'  .gd-email,.gd-save-state{display:none;}'
   +'  .gd-pill{padding:8px 11px;font-size:12px;}'
-  +'  #gdProjBtn .gd-pill-t{display:none;}'
+  +'  #gdProjBtn .gd-pill-t,#gdDnaBtn .gd-pill-t{display:none;}'
   +'  .cbar{padding-right:calc(.5rem + var(--gd-acct-w,120px));}'
   +'  .s3-topbar{padding-right:calc(10px + var(--gd-acct-w,120px));}'
   +'  .gd-modal.wide{max-width:100%;}'
@@ -6953,7 +7127,7 @@ document.addEventListener('mouseup',function(e){
       setSaveState('error');
       console.error('[gd] save failed',e);
       if(e&&(e.name==='QuotaExceededError'||/quota/i.test(e.message||''))){
-        alert('Bu tarayıcıda kayıt için yer kalmadı.\n\nProjects panelinden eski projeleri dışa aktarıp silebilirsin.');
+        alert('This browser has run out of storage.\n\nExport or delete older projects from the Projects panel to free up space.');
         return;
       }
       // signed in but the save didn't reach the server (offline, worker down):
@@ -6979,16 +7153,19 @@ document.addEventListener('mouseup',function(e){
     if(token){
       a.innerHTML='<span class="gd-save-state" id="gdSaveState"></span>'
         +'<button class="gd-pill" id="gdProjBtn" title="Projects">&#9636;<span class="gd-pill-t"> Projects</span></button>'
+        +'<button class="gd-pill dna" id="gdDnaBtn" title="My Creator DNA"><svg class="gd-dna-mini" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M3 2c7 2 3 10 10 12M13 2C6 4 10 12 3 14M4.6 5.1h6.8M4.6 10.9h6.8"/></svg><span class="gd-pill-t"> My DNA</span></button>'
         +'<span class="gd-email">'+esc(userEmail||'')+'</span>'
         +'<button class="gd-pill" id="gdSignOut">Sign out</button>';
       byId('gdSignOut').onclick=function(){ signOut(false); };
     } else {
       a.innerHTML='<span class="gd-save-state" id="gdSaveState"></span>'
         +'<button class="gd-pill" id="gdProjBtn" title="Projects">&#9636;<span class="gd-pill-t"> Projects</span></button>'
+        +'<button class="gd-pill dna" id="gdDnaBtn" title="My Creator DNA"><svg class="gd-dna-mini" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M3 2c7 2 3 10 10 12M13 2C6 4 10 12 3 14M4.6 5.1h6.8M4.6 10.9h6.8"/></svg><span class="gd-pill-t"> My DNA</span></button>'
         +'<button class="gd-pill primary" id="gdSignIn">Sign in</button>';
       byId('gdSignIn').onclick=openAuth;
     }
     byId('gdProjBtn').onclick=openProjects;
+    byId('gdDnaBtn').onclick=function(){ if(typeof openCreatorDnaHub==='function')openCreatorDnaHub(); };
     syncAcctSpace();
   }
   // wipe the board back to a blank slate. Signing out has to do this: leaving
@@ -7019,7 +7196,7 @@ document.addEventListener('mouseup',function(e){
     clearBoard();
     show('s0');
     renderAccount(); updateHomePanel();
-    if(expired) alert('Oturumun sona erdi. Tekrar giriş yapman gerekiyor.');
+    if(expired) alert('Your session has expired. Please sign in again.');
     applyAuthGate();
   }
 
@@ -7051,7 +7228,7 @@ document.addEventListener('mouseup',function(e){
     var email=byId('gdEmail').value.trim(), pass=byId('gdPass').value;
     var err=byId('gdAuthErr'), btn=byId('gdAuthBtn');
     err.style.color='#e0686a'; err.textContent='';
-    if(!email||!pass){ err.textContent='E-posta ve şifre gir.'; return; }
+    if(!email||!pass){ err.textContent='Enter your email and password.'; return; }
     btn.disabled=true;
     fetch(API+(authMode==='signup'?'/signup':'/login'),{
       method:'POST',headers:{'Content-Type':'application/json'},
@@ -7059,7 +7236,7 @@ document.addEventListener('mouseup',function(e){
     }).then(function(r){
       return r.text().then(function(t){
         var d={}; try{ d=JSON.parse(t); }catch(e){}
-        if(!r.ok) throw new Error(d.error||('Sunucu hatası '+r.status));
+        if(!r.ok) throw new Error(d.error||('Server error '+r.status));
         return d;
       });
     }).then(function(d){
@@ -7086,7 +7263,7 @@ document.addEventListener('mouseup',function(e){
       offerUpload();
     },function(e){
       btn.disabled=false;
-      err.textContent=e.message||'Giriş yapılamadı.';
+      err.textContent=e.message||'Could not sign in.';
     });
   }
   // projects made before signing up would otherwise be stranded in this
@@ -7127,7 +7304,7 @@ document.addEventListener('mouseup',function(e){
         body:JSON.stringify({email:email})})
         .then(function(r){ return r.text().then(function(t){
           var d={}; try{ d=JSON.parse(t); }catch(e){}
-          if(!r.ok) throw new Error(d.error||('Sunucu hatası '+r.status));
+          if(!r.ok) throw new Error(d.error||('Server error '+r.status));
           return d;
         });})
         .then(function(){
@@ -7135,7 +7312,7 @@ document.addEventListener('mouseup',function(e){
           // an account, matching what the server does
           err.style.color='#7aa37a';
           err.textContent='If that address has an account, a reset link is on its way.';
-        },function(e){ err.textContent=e.message||'Gönderilemedi.'; });
+        },function(e){ err.textContent=e.message||'Could not send the reset link.'; });
     });
   };
 
@@ -7158,7 +7335,7 @@ document.addEventListener('mouseup',function(e){
           body:JSON.stringify({token:tok,password:pw})})
           .then(function(r){ return r.text().then(function(t){
             var d={}; try{ d=JSON.parse(t); }catch(e){}
-            if(!r.ok) throw new Error(d.error||('Sunucu hatası '+r.status));
+            if(!r.ok) throw new Error(d.error||('Server error '+r.status));
             return d;
           });})
           .then(function(d){
@@ -7447,7 +7624,7 @@ document.addEventListener('mouseup',function(e){
   }
   function openProject(id){
     store.get(id).then(function(p){
-      if(!p){ alert('Proje bulunamadı.'); return; }
+      if(!p){ alert('Project not found.'); return; }
       currentProjectId=p.id;
       currentCreated=p.created_at||Date.now();
       currentName=p.name||null;
@@ -7455,7 +7632,7 @@ document.addEventListener('mouseup',function(e){
       restore(p.data);
       byId('gdProjOv').classList.remove('show');
       setSaveState('saved');
-    },function(e){ alert('Proje açılamadı: '+(e.message||e)); });
+    },function(e){ alert('Could not open the project: '+(e.message||e)); });
   }
   function delProject(id){
     gdAsk({title:'Delete this project?',message:'This cannot be undone.',ok:'Delete',danger:true}).then(function(yes){
@@ -7468,7 +7645,7 @@ document.addEventListener('mouseup',function(e){
       if(currentProjectId===id) window.gdNewProject();
       if(byId('gdProjOv').classList.contains('show')) openProjects();
       renderHomePanel();
-    },function(e){ alert('Silinemedi: '+(e.message||e)); });
+    },function(e){ alert('Could not delete the project: '+(e.message||e)); });
   }
   function renameProject(id){
     store.get(id).then(function(p){
@@ -7481,7 +7658,7 @@ document.addEventListener('mouseup',function(e){
           if(currentProjectId===id){ currentName=n; currentNameManual=true; }
           if(byId('gdProjOv').classList.contains('show')) openProjects();
           renderHomePanel();
-        },function(e){ alert('Ad değiştirilemedi: '+(e.message||e)); });
+        },function(e){ alert('Could not rename the project: '+(e.message||e)); });
       });
     });
   }
@@ -7502,22 +7679,22 @@ document.addEventListener('mouseup',function(e){
     store.get(id).then(function(p){
       if(!p) return;
       download('graindistrict_'+safeName(p.name)+'.json',JSON.stringify({gd:1,project:p},null,2));
-    },function(e){ alert('Dışa aktarılamadı: '+(e.message||e)); });
+    },function(e){ alert('Could not export the project: '+(e.message||e)); });
   }
   function importFile(file){
     var fr=new FileReader();
     fr.onload=function(){
       var parsed;
-      try{ parsed=JSON.parse(fr.result); }catch(e){ alert('Bu dosya geçerli bir proje dosyası değil.'); return; }
+      try{ parsed=JSON.parse(fr.result); }catch(e){ alert('This is not a valid project file.'); return; }
       var p=parsed&&parsed.project?parsed.project:parsed;
-      if(!p||!p.data){ alert('Bu dosya geçerli bir proje dosyası değil.'); return; }
+      if(!p||!p.data){ alert('This is not a valid project file.'); return; }
       // always a NEW id, so importing can never silently overwrite something
       var rec={id:(token?null:uid()),name:(p.name||'Imported project'),nameManual:true,
                data:p.data,created_at:p.created_at||Date.now(),updated_at:Date.now()};
       store.put(rec).then(function(){
         if(byId('gdProjOv').classList.contains('show')) openProjects();
         renderHomePanel();
-      },function(e){ alert('İçe aktarılamadı: '+(e.message||e)); });
+      },function(e){ alert('Could not import the project: '+(e.message||e)); });
     };
     fr.readAsText(file);
   }
