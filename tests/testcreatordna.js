@@ -13,7 +13,7 @@ const { pathToFileURL }=require('url');
   const ok=(n,c,x)=>console.log((c?'PASS':'FAIL')+' - '+n+(x!==undefined&&!c?' '+JSON.stringify(x).slice(0,500):''));
   await page.evaluate(()=>{
     document.getElementById('gdAuthOv').classList.remove('show','gate');document.body.classList.remove('gd-gated');
-    Object.keys(localStorage).filter(k=>k.indexOf('gd_creator_dna_v1_')===0).forEach(k=>localStorage.removeItem(k));
+    Object.keys(localStorage).filter(k=>k.indexOf('gd_creator_dna_')===0).forEach(k=>localStorage.removeItem(k));
     creatorDNA=null;show('s0');
   });
 
@@ -25,14 +25,31 @@ const { pathToFileURL }=require('url');
       &&formats.find(x=>x.type==='film').disabled&&/Coming soon/i.test(formats.find(x=>x.type==='film').text),formats);
   ok('YouTube and the blank canvas stay available',
     !formats.find(x=>x.type==='youtube').disabled&&!formats.find(x=>x.type==='other').disabled,formats);
+  const english=await page.evaluate(()=>({recce:document.getElementById('recceHint').textContent,equipment:document.querySelector('#s_equipment .kb-sub').textContent}));
+  ok('production setup defaults are fully English',/Upload location photos/.test(english.recce)&&/real constraints/.test(english.equipment),english);
 
   await page.click('.pt-btn[data-type=youtube]');
   ok('a first-time YouTube creator enters the DNA interview',await page.evaluate(()=>document.querySelector('.screen.active').id==='s_dna'));
   ok('the interview begins with a high-signal viewer outcome question',/viewers leave/i.test(await page.textContent('#dnaQuestion')));
 
   async function choose(text){await page.getByRole('button',{name:new RegExp(text,'i')}).click();}
-  await choose('Something learned');await page.click('#dnaNext');
-  await choose('Products and real demos');await page.click('#dnaNext');
+  await choose('Something learned');
+  ok('each answer is saved immediately as a resumable draft',await page.evaluate(()=>{
+    const d=loadCreatorDnaDraft();return !!d&&d.step===0&&d.draft.outcome==='learn';
+  }));
+  await page.click('#dnaBackBtn');
+  const draftHub=await page.evaluate(()=>({screen:document.querySelector('.screen.active').id,status:document.getElementById('dnaHubStatus').textContent,rungs:document.querySelectorAll('.dna-rung').length}));
+  ok('Back from the first question opens My Creator DNA instead of the home screen',draftHub.screen==='s_dna_hub'&&/Draft saved/.test(draftHub.status),draftHub);
+  ok('My Creator DNA has a live helix visual',draftHub.rungs===13,draftHub);
+  await page.click('#dnaHubEdit');
+  ok('the saved draft resumes on the same answer',await page.evaluate(()=>dnaStep===0&&dnaDraft.outcome==='learn'&&document.querySelector('.screen.active').id==='s_dna'));
+  await page.click('#dnaNext');
+  await choose('Products and real demos');
+  await page.click('#dnaBackBtn');
+  ok('Back inside the interview returns to the previous question, never home',await page.evaluate(()=>dnaStep===0&&document.querySelector('.screen.active').id==='s_dna'));
+  await page.click('#dnaNext');
+  ok('later answers also survive backward navigation',await page.evaluate(()=>dnaStep===1&&dnaDraft.carrier==='demo'));
+  await page.click('#dnaNext');
   await choose('Voice only');await page.click('#dnaNext');
   await choose('Clear and balanced');await page.click('#dnaNext');
   await choose('Solo production');await choose('Product close-ups');await choose('Screen recording');await page.click('#dnaNext');
@@ -64,7 +81,12 @@ const { pathToFileURL }=require('url');
   await page.evaluate(()=>show('s0'));await page.click('.pt-btn[data-type=youtube]');
   ok('returning creators go straight to their idea',await page.evaluate(()=>document.querySelector('.screen.active').id==='s1'));
   await page.click('#dnaProfile .dna-profile-edit');
-  ok('Creator DNA remains editable',await page.evaluate(()=>document.querySelector('.screen.active').id==='s_dna'&&dnaDraft.carrier==='demo'));
+  const hub=await page.evaluate(()=>({screen:document.querySelector('.screen.active').id,title:document.querySelector('#dnaHubProfile .dna-card.hero h2').textContent,nav:!!document.getElementById('gdDnaBtn')}));
+  await page.waitForTimeout(350);
+  if(process.env.QA_DIR)await page.screenshot({path:path.join(process.env.QA_DIR,'creator-dna-hub-desktop.png'),fullPage:true});
+  ok('My Creator DNA is a persistent profile destination in the main navigation',hub.screen==='s_dna_hub'&&hub.title==='Evidence-led Reviewer'&&hub.nav,hub);
+  await page.click('#dnaHubEdit');
+  ok('Creator DNA remains editable from its own profile page',await page.evaluate(()=>document.querySelector('.screen.active').id==='s_dna'&&dnaDraft.carrier==='demo'));
 
   // Graphics-led profiles change both language and document semantics: BROLL
   // becomes a designed scene, not a fake camera/location plan.
@@ -83,7 +105,12 @@ const { pathToFileURL }=require('url');
   ok('shooting-location controls stay out of a graphics-only workflow',graphics.locations==='none',graphics.locations);
 
   await page.setViewportSize({width:390,height:844});
-  await page.evaluate(()=>{creatorDNA=null;dnaDraft={};dnaStep=0;show('s_dna');renderDnaStep();});
+  await page.evaluate(()=>{clearCreatorDnaDraft();creatorDNA=loadCreatorDna();openCreatorDnaHub();});
+  await page.waitForTimeout(350);
+  if(process.env.QA_DIR)await page.screenshot({path:path.join(process.env.QA_DIR,'creator-dna-hub-mobile.png'),fullPage:true});
+  const mobileHub=await page.evaluate(()=>({scrollW:document.documentElement.scrollWidth,vw:document.documentElement.clientWidth,visualH:Math.round(document.querySelector('.dna-visual').getBoundingClientRect().height),profileCols:getComputedStyle(document.getElementById('dnaHubProfile')).gridTemplateColumns}));
+  ok('My Creator DNA stays cinematic and readable on a phone',mobileHub.scrollW<=mobileHub.vw&&mobileHub.visualH>=300&&!/\s/.test(mobileHub.profileCols),mobileHub);
+  await page.evaluate(()=>{clearCreatorDnaDraft();creatorDNA=null;dnaDraft={};dnaStep=0;show('s_dna');renderDnaStep();});
   if(process.env.QA_DIR)await page.screenshot({path:path.join(process.env.QA_DIR,'creator-dna-question-mobile.png'),fullPage:true});
   const mobile=await page.evaluate(()=>{
     const o=document.querySelector('.dna-option').getBoundingClientRect(),n=document.getElementById('dnaNext').getBoundingClientRect();
