@@ -17,10 +17,18 @@ fails=0
 for t in $files; do
   printf '%-22s ' "$t"
   out=$(timeout 300 node "$t" 2>&1)
+  rc=$?
   p=$(printf '%s' "$out" | grep -cE '(^|: )PASS')
   f=$(printf '%s' "$out" | grep -cE '^(FAIL|PAGE ERROR)|: FAIL')
+  # A crashed or timed-out test may not print a FAIL marker. Treat its exit
+  # status as a failure so a broken harness cannot look green.
+  if [ "$rc" -ne 0 ] && [ "$f" -eq 0 ]; then f=1; fi
   echo "$p pass, $f fail"
-  if [ "$f" -gt 0 ]; then fails=$((fails+1)); printf '%s\n' "$out" | grep -E '^(FAIL|PAGE ERROR)|: FAIL' | sed 's/^/    /'; fi
+  if [ "$f" -gt 0 ]; then
+    fails=$((fails+1))
+    printf '%s\n' "$out" | grep -E '^(FAIL|PAGE ERROR)|: FAIL' | sed 's/^/    /'
+    if [ "$rc" -ne 0 ]; then printf '%s\n' "$out" | tail -n 12 | sed 's/^/    /'; fi
+  fi
 done
 [ "$fails" -eq 0 ] || echo "--- $fails file(s) with failures"
 exit "$fails"

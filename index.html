@@ -2656,7 +2656,7 @@ var projectBreakdown=null;   // location-by-location shooting breakdown
    version of the code that made it, and either one changing throws it out.
    Bump the version whenever the breakdown prompt or its handling changes -
    that is what retires the copies already saved in people's projects. */
-var BREAKDOWN_V=9;
+var BREAKDOWN_V=10;
 var projectBreakdownKey=null;
 function breakdownKey(){
   var t=BREAKDOWN_V+'|'+planAsText(),h=5381;
@@ -4360,54 +4360,42 @@ var BREAKDOWN_CHUNK=45;
    film, and the pieces only decide which shot goes where. The whole plan is a
    large thing to send but a short thing to answer, which is the safe direction
    - it was the length of the answer that broke everything else. */
-/* This stage decides how finely the film is divided, and the placing stage
-   afterwards is told to use its names and not invent others - so a rule about
-   splitting only helps if it is written here. It used to say the opposite:
-   "a desk, a study and a work table in the same flat are one location", "give
-   as few locations as honestly cover the film". A nine-minute film came back
-   with one entry named "Ev - calisma masasi / oda" holding 252 of its 328
-   shots, which is not a location, it is a house. Everything downstream then
-   went wrong in that one entry and nowhere else: ninety-six props where the
-   other five places had fourteen, one person listed seven ways.
+/* This stage decides how the film is divided, and the placing stage afterwards
+   is told to use its names, so the rule has to be written here.
 
-   The unit is a setup - what you light, point the camera at, and strike - not
-   an address. But it must not swing the other way either: an earlier version
-   of the breakdown produced forty-one locations for one film, half of them a
-   single shot's framing.
+   Getting it right took three tries in the wrong direction, all measured on
+   the same film. Asking for as few places as honestly cover it gave one entry
+   holding 252 of 328 shots. Asking for setups - what you light and strike -
+   split a desk ten ways by what was lying on it. Drawing the line at what you
+   build rather than what you set down on it moved the splitting onto the story
+   instead: "the bit where he messages Kaan" became its own entry, and the desk
+   came back as twelve.
 
-   Saying "different surfaces, different furniture" was read as different
-   objects on the same surface, and one desk came back as ten entries - "masa
-   (kagit ve kalem)", "masa (yeni kagit ve kalem)", "masa (kagitlar yayilmis)"
-   - sixty-eight shots of the same lamp and the same camera position with the
-   paper rearranged. So the line is drawn where the work is: what you build
-   versus what you set down on it. */
+   The model was being asked to infer, from prose that describes a film, which
+   shots share a lamp - which the prose does not say. So it divided by the only
+   structure it could see, and each rewording just changed which one.
+
+   The question a shot list actually answers is where you have to go. That is
+   in the plan, and it does not need inferring. One building is one entry
+   however many rooms and hours are inside it. */
 function genLocationNames(li,lines){
   var brief=lines.map(function(l){ return l.replace(/\s{2}\([^)]*\)\s*$/,''); }).join('\n');
   var sys=(li?li+'\n\n':'')
-    +'You are a first assistant director reading a whole shot plan and listing the setups it has to '
+    +'You are a first assistant director reading a whole shot plan and listing the places it has to '
     +'be shot in.\n\n'
-    +'A location here is a SETUP: one thing you light, point a camera at, and then strike before the '
-    +'next one. It is not an address. Two setups in the same room are two entries, because on the '
-    +'day they are two separate pieces of work - the desk at night and the mirror by the window are '
-    +'not the same job even though you never leave the flat.\n\n'
-    +'Name them so the room is still visible: "Ev - calisma masasi", "Ev - ayna", "Ev - yatak". Then '
-    +'somebody reading the list can see both what to travel to and what to build.\n\n'
-    +'The line is between what you BUILD and what you PUT IN FRONT OF IT. Where the camera stands '
-    +'and how the light is rigged is the setup. What happens to be lying on the table is not. A desk '
-    +'shot from the same position under the same lamp is ONE entry whether the paper, the shirt or '
-    +'the laptop is on it - you have not struck anything, you have swapped a prop. Rebuild the light '
-    +'or move the camera somewhere else in the room and that is a second entry.\n\n'
-    +'Do not make a setup out of a camera angle either: two shots of the same desk from different '
-    +'distances are one entry. Do not split by time alone - the same rig at a different hour is one '
-    +'entry.\n\n'
-    +'This plan has '+lines.length+' shots. That number is context, not a quota: it is normal for one '
-    +'setup to carry a large share of a film that really is mostly one desk, and saying so once is '
-    +'better than cutting it into pieces that are the same build under different names. But if a '
-    +'single entry is running to most of the plan, look again - somewhere in it the camera moves or '
-    +'the light changes, and that is where it divides.\n\n'
-    +'Before you answer, read your own list back. If two names differ only by what is on the surface '
-    +'- "masa (kagit ve kalem)" and "masa (kagit yayilmis)" - they are one entry and you should merge '
+    +'A location is somewhere you TRAVEL to. If you can shoot it without leaving the building, it is '
+    +'one location. A home is one entry - "Ev" - however many rooms, hours and setups happen inside '
+    +'it: the desk, the mirror, the bathroom, the bed, the screen printing, the night and the '
+    +'morning are all the same journey and the same day.\n\n'
+    +'Give the list somebody uses to plan a shooting day: "Ev", "Okul duvari", "H&M magazasi", '
+    +'"Baski evi", "Ikinci el kitapci". Nothing in brackets.\n\n'
+    +'Do not split a place by the room, by the setup, by the lighting, by what is on the table, by '
+    +'the hour, or by what happens in the story. None of those are a second journey. Two different '
+    +'branches of the same shop in different streets ARE two entries, because you drive between '
     +'them.\n\n'
+    +'Expect few entries. A film shot mostly at home is one big entry and a handful of small ones, '
+    +'and that is the correct answer - it is what the day looks like. Do not invent distinctions to '
+    +'make the list longer.\n\n'
     +'Name each one plainly and the same way every time it comes up.\n\n'
     +'Return ONLY JSON: [{"name":"...","timeOfDay":"..."}]'
     +(li?'\n\n'+li:'');
@@ -4436,9 +4424,8 @@ function breakdownSys(li,part,names){
     +'A voiceover is still recorded somewhere - a quiet room, a booth - and that is its location. None '
     +'may be left out, none may appear twice. Before you answer, count the shots you were given and '
     +'count the shots across your locations; they must be the same number.\n\n'
-    +'A location is a setup, not a shot: what you light, point a camera at, and strike. Do not give '
-    +'one shot a setup of its own because the camera moved, and do not let one setup swallow the film '
-    +'either - "the house" is not a location, "the kitchen, morning" is.\n\n'
+    +'A location is a place you travel to, not a room, a setup or a scene. Everything shot inside one '
+    +'building belongs to that building\'s entry, however different the rooms are.\n\n'
     +(part?'These shots are one stretch of a longer film, and other people are breaking down the rest at '
       +'the same time. Name each location plainly and by itself - "kitchen, morning", not "the kitchen '
       +'where the notebook scene happens" - so that a place appearing in someone else\'s stretch comes '
@@ -4456,9 +4443,8 @@ function breakdownSys(li,part,names){
     +'camera.\n\n'
     +'The shots below each name their own props in their own words, and the same object is worded '
     +'differently every time. Merge them. One plant that appears in eleven shots is one line. If two '
-    +'entries could be satisfied by the same trip to the same shop, they are one entry. A location '
-    +'needing more than about fifteen props is nearly always a list that was collected instead of '
-    +'consolidated - or a location that should have been split.\n\n'
+    +'entries could be satisfied by the same trip to the same shop, they are one entry. A whole house '
+    +'genuinely needs a long list; a list of the same six things worded thirty ways does not.\n\n'
     +'Wardrobe and cast the same way: one person is one entry, however many shots they are in.\n\n'
     +'Return ONLY JSON: [{"name":"...","timeOfDay":"...","shots":["01","01a"],"props":["..."],'
     +'"wardrobe":["..."],"cast":["..."],"note":"..."}]'

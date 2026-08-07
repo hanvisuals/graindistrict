@@ -16,7 +16,11 @@ const server=http.createServer((req,res)=>{
     res.writeHead(200,{'Content-Type':'text/plain; charset=utf-8','Access-Control-Allow-Origin':'*'});
     const sys=body.system||'';
     if(!/first assistant director/.test(sys)) return res.end('{}');
-    if(/listing the setups/.test(sys)){
+    // Route on the JSON contract, not on the prose. The naming pass is the one
+    // that asks for names and times only; the placing pass asks for shots as
+    // well. Three rewordings of this prompt have already broken a router that
+    // matched a phrase in it.
+    if(!/"shots":/.test(sys)){
       named.push(body.user||''); namedSys.push(sys);
       return res.end(namer?namer():JSON.stringify([{name:'Mutfak',timeOfDay:'day'},{name:'Sokak',timeOfDay:'dawn'}]));
     }
@@ -83,27 +87,25 @@ server.listen(8934, async()=>{
   // work table in the same flat are one location" - and a nine-minute film
   // came back with 252 of its 328 shots under one heading.
   const nsys=namedSys[0]||'';
-  ok('the naming pass is asked for setups, not addresses',
-     /A location here is a SETUP/.test(nsys)&&/It is not an address/.test(nsys), nsys.slice(0,160));
-  ok('it is told two setups in one room are two entries',
-     /Two setups in the same room are two entries/.test(nsys));
-  // Saying "different surfaces, different furniture" was read as different
-  // objects on the same surface: one desk came back as ten entries - "masa
-  // (kagit ve kalem)", "masa (yeni kagit ve kalem)", "masa (kagitlar
-  // yayilmis)" - sixty-eight shots of the same lamp from the same position
-  // with the paper rearranged. The line has to be drawn at the work.
-  ok('the line is drawn between what is built and what is set down on it',
-     /what you BUILD and what you PUT IN FRONT OF IT/.test(nsys)
-     &&/you have not struck anything, you have swapped a prop/.test(nsys), nsys.slice(0,200));
-  ok('it is told the shot count, and told it is not a quota',
-     /This plan has 160 shots/.test(nsys)&&/context, not a quota/.test(nsys),
-     (nsys.match(/This plan has [^.]*\./)||[''])[0]);
-  ok('and guarded against splitting by camera angle or by the clock',
-     /Do not make a setup out of a camera angle/.test(nsys)&&/Do not split by time alone/.test(nsys));
-  ok('a place that really is most of the film may still say so once',
-     /it is normal for one setup to carry a large share/.test(nsys));
-  ok('and it is asked to merge names that differ only by what is on the surface',
-     /read your own list back/.test(nsys)&&/they are one entry and you should merge/.test(nsys));
+  // Three rewordings tried to teach this stage which shots share a lamp, and
+  // each one moved the splitting somewhere else - onto the objects on the
+  // desk, then onto the story. The prose does not say which shots share a
+  // lamp, so the model divided by whatever structure it could see. What a
+  // shot list actually answers is where you have to go, and that the plan
+  // does say.
+  ok('the naming pass is asked for places you travel to',
+     /A location is somewhere you TRAVEL to/.test(nsys)
+     &&/If you can shoot it without leaving the building, it is one location/.test(nsys),
+     nsys.slice(0,200));
+  ok('a home is one entry however many rooms are in it',
+     /A home is one entry/.test(nsys)&&/the same journey and the same day/.test(nsys));
+  ok('and none of the things it used to split on count as a journey',
+     /Do not split a place by the room, by the setup, by the lighting, by what is on the table, by/
+       .test(nsys)&&/what happens in the story/.test(nsys));
+  ok('two shops in different streets are still two entries',
+     /different streets ARE two entries/.test(nsys));
+  ok('a short list is the right answer, not a lazy one',
+     /Expect few entries/.test(nsys)&&/Do not invent distinctions to make the list longer/.test(nsys));
   ok('it was broken down in several pieces, not one', seen.length>=4, seen.length);
   ok('no piece was handed more than a chunk',
      seen.every(u=>u.split('\n').filter(l=>/^[0-9a-z.]+\./.test(l)).length<=45),
