@@ -96,9 +96,8 @@ server.listen(8934, async()=>{
      locNames.filter(n=>/Mutfak/.test(n)).length===1, locNames);
   ok('and nothing was left unplaced', !/Unplaced/.test(t1), t1.slice(0,200));
   const covered=await page.evaluate(()=>{
-    var n=0;[].forEach.call(document.querySelectorAll('.pv-loc-shots'),function(e){
-      n+=e.textContent.replace('shots ','').split(',').filter(x=>x.trim()).length;});
-    return n;});
+    // count the rows actually printed, which is what a person ends up holding
+    return document.querySelectorAll('.pv-loc-list .pv-num').length;});
   ok('all 160 shots are accounted for exactly once', covered===160, covered);
 
   // a piece that fails once is asked again before anything is called unplaced
@@ -114,9 +113,8 @@ server.listen(8934, async()=>{
   ok('one failed piece does not lose the others', /Mutfak/.test(t2));
   ok('its shots are asked for again rather than written off', !/Unplaced/.test(t2), t2.slice(0,220));
   const cov2=await page.evaluate(()=>{
-    var n=0;[].forEach.call(document.querySelectorAll('.pv-loc-shots'),function(e){
-      n+=e.textContent.replace('shots ','').split(',').filter(x=>x.trim()).length;});
-    return n;});
+    // count the rows actually printed, which is what a person ends up holding
+    return document.querySelectorAll('.pv-loc-list .pv-num').length;});
   ok('so the second time round every shot is placed', cov2===160, cov2);
 
   // a piece that never comes back is written down, not hidden
@@ -138,9 +136,8 @@ server.listen(8934, async()=>{
   ok('a name carrying its time of day folds into its bare twin', bn.length===1, bn);
   ok('and keeps the bare spelling', bn[0]==='Baski Evi', bn);
   const bc=await page.evaluate(()=>{
-    var n=0;[].forEach.call(document.querySelectorAll('.pv-loc-shots'),function(e){
-      n+=e.textContent.replace('shots ','').split(',').filter(x=>x.trim()).length;});
-    return n;});
+    // count the rows actually printed, which is what a person ends up holding
+    return document.querySelectorAll('.pv-loc-list .pv-num').length;});
   ok('with every shot from both spellings', bc===160, bc);
 
   // but two brackets with no bare twin are two places somebody meant
@@ -167,10 +164,8 @@ server.listen(8934, async()=>{
   handler=()=>JSON.stringify([loc('Mutfak',['01','01a']),loc('Sokak',['01a','01b'])]);
   seen=[]; seenSys=[]; named=[]; await reset();
   await clickBarBtn(page,'#btnExport'); await page.waitForTimeout(2500);
-  const dup=await page.evaluate(()=>{
-    var all=[];[].forEach.call(document.querySelectorAll('.pv-loc-shots'),function(e){
-      e.textContent.replace('shots ','').split(',').map(s=>s.trim()).filter(Boolean).forEach(s=>all.push(s));});
-    return all;});
+  const dup=await page.evaluate(()=>
+    [].map.call(document.querySelectorAll('.pv-loc-list .pv-num'),n=>n.textContent.trim()));
   const seenOnce=new Set(dup);
   ok('a shot claimed twice is listed in one place only', dup.length===seenOnce.size, dup.slice(0,20));
 

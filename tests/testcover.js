@@ -53,15 +53,18 @@ server.listen(8931, async()=>{
   await clickBarBtn(page,'#btnExport'); await page.waitForTimeout(1200);
   const r=await page.evaluate(()=>{
     var v=document.getElementById('printView');
+    // read the shots off the printed rows, not off a heading: the heading
+    // could be right while the page below it was empty
     return {names:[].map.call(v.querySelectorAll('.pv-loc-name'),e=>e.textContent),
-            shots:[].map.call(v.querySelectorAll('.pv-loc-shots'),e=>e.textContent),
+            shots:[].map.call(v.querySelectorAll('.pv-loc'),el=>
+              [].map.call(el.querySelectorAll('.pv-loc-list .pv-num'),n=>n.textContent).join(', ')),
             text:v.textContent, count:(v.querySelector('.pv-bd h2')||{}).textContent};
   });
   ok('the five shots nobody placed are surfaced, not swallowed',
      /Unplaced/.test(r.text) && /01c/.test(r.text) && /02c/.test(r.text), r.names);
-  ok('and exactly the missing ones are listed',
-     (r.shots[1]||'')==='shots 01c, 02, 02a, 02b, 02c', r.shots);
-  ok('the ones the model did place are left alone', (r.shots[0]||'')==='shots 01, 01a, 01b', r.shots);
+  ok('and exactly the missing ones are printed under it',
+     (r.shots[1]||'')==='01c, 02, 02a, 02b, 02c', r.shots);
+  ok('the ones the model did place are left alone', (r.shots[0]||'')==='01, 01a, 01b', r.shots);
   ok('it says what to do about them', /before you pack/.test(r.text));
 
   // a complete breakdown must gain nothing
@@ -82,8 +85,16 @@ server.listen(8931, async()=>{
     {name:'Mutfak',timeOfDay:'day',shots:[' 01 ','01A','01b','01c'],props:[],wardrobe:[],cast:[],note:'x'},
     {name:'Sokak',timeOfDay:'dawn',shots:['02','02a','02b','02c'],props:[],wardrobe:[],cast:[],note:'y'}]);
   await clickBarBtn(page,'#btnExport'); await page.waitForTimeout(1200);
-  const sloppy=await page.evaluate(()=>document.getElementById('printView').textContent);
-  ok('sloppy casing or stray spaces do not fake a missing shot', !/Unplaced/.test(sloppy));
+  const sloppy=await page.evaluate(()=>{
+    var v=document.getElementById('printView');
+    return {text:v.textContent,
+            printed:[].map.call(v.querySelectorAll('.pv-loc-list .pv-num'),n=>n.textContent).sort().join()};
+  });
+  ok('sloppy casing or stray spaces do not fake a missing shot', !/Unplaced/.test(sloppy.text));
+  // counting them as placed is only half the job - a label the lookup does not
+  // recognise would drop the shot off the page while still looking accounted for
+  ok('and the shot itself still reaches the page, under the plan\'s own label',
+     sloppy.printed==='01,01a,01b,01c,02,02a,02b,02c', sloppy.printed);
 
   await browser.close(); server.close();
 });
