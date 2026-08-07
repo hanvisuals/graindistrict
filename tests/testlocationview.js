@@ -37,6 +37,7 @@ const { pathToFileURL } = require('url');
     ];
     projectBreakdownKey=breakdownKey();
     genBreakdown=function(){throw new Error('cached breakdown should have been used');};renderAll();
+    window.__storyAttY=attShots[0].y;
   });
 
   await page.click('#btnLocations');await page.waitForTimeout(100);
@@ -97,11 +98,12 @@ const { pathToFileURL } = require('url');
     mode:canvasViewMode,button:document.getElementById('btnLocations').textContent,
     nodes:Object.fromEntries(nodes.map(n=>[n.id,{x:n.x,y:n.y}])),att:{x:attShots[0].x,y:attShots[0].y},scale,px,py,
     nav:document.getElementById('locationNav').classList.contains('show'),images:document.querySelectorAll('.img-node').length,
-    notes:document.querySelectorAll('.note-node').length,paths:document.querySelectorAll('.conn-path').length
+    notes:document.querySelectorAll('.note-node').length,paths:document.querySelectorAll('.conn-path').length,
+    expectedAttY:window.__storyAttY
   }));
   console.log('TEST 10 - story layout, camera and story-only items restore exactly:',
     restored.mode==='story'&&restored.button==='Locations'&&!restored.nav&&restored.nodes[1].x===70&&restored.nodes[5].y===820&&
-    restored.att.x===410&&restored.att.y===520&&restored.scale===.82&&restored.px===123&&restored.py===77&&
+    restored.att.x===410&&restored.att.y===restored.expectedAttY&&restored.scale===.82&&restored.px===123&&restored.py===77&&
     restored.images===1&&restored.notes===1&&restored.paths===1?'PASS':'FAIL');
 
   await page.setViewportSize({width:390,height:760});await page.click('#cbarMore');await page.click('#btnLocations');await page.waitForTimeout(100);
