@@ -19,6 +19,12 @@ const { pathToFileURL } = require('url');
     setProjectType('youtube');show('s1');
   });
 
+  const defaultCopy=await page.evaluate(()=>({
+    topic:document.getElementById('topicIn').placeholder,
+    constraints:document.getElementById('constraintsIn').placeholder
+  }));
+  ok('Setup examples default to English',/rainy morning in NYC/i.test(defaultCopy.topic)&&/wheat field/i.test(defaultCopy.constraints)&&!/Buğday|lensler|bütçe|aşk/i.test(defaultCopy.topic+' '+defaultCopy.constraints),defaultCopy);
+
   const nav=await page.evaluate(()=>{
     const back=document.querySelector('.s1-back').getBoundingClientRect();
     const logo=document.querySelector('#s1 .logo').getBoundingClientRect();
