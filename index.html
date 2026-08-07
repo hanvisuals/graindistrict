@@ -29,8 +29,18 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 .btn:hover{background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.22);}
 .btn.on{background:rgba(255,255,255,.12);color:#fff;}
 /* INPUT */
-#s0,#s1{align-items:center;justify-content:center;}
+body #s0{align-items:stretch;justify-content:flex-start;position:relative;isolation:isolate;background:#080808;}
+#s0::before{content:'';position:fixed;inset:0;z-index:-2;pointer-events:none;background:
+  radial-gradient(circle at 12% 18%,rgba(223,188,77,.1),transparent 28%),
+  radial-gradient(circle at 82% 72%,rgba(73,106,155,.085),transparent 30%),
+  linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);background-size:auto,auto,46px 46px,46px 46px;}
+#s0::after{content:'GRAIN DISTRICT';position:fixed;left:-.04em;bottom:-.18em;z-index:-1;pointer-events:none;font-family:var(--sans);font-size:clamp(90px,17vw,270px);font-weight:700;letter-spacing:-.095em;white-space:nowrap;color:rgba(255,255,255,.012);}
+#s1{align-items:center;justify-content:center;}
 .iw{width:100%;max-width:480px;padding:2rem;display:flex;flex-direction:column;gap:1.3rem;}
+#s0 .iw{max-width:1380px;margin:0 auto;padding:clamp(54px,8vh,108px) clamp(22px,4vw,64px) 72px;gap:0;}
+#s0>.topbar{height:62px;padding-left:clamp(22px,4vw,64px);padding-right:calc(clamp(22px,4vw,64px) + var(--gd-acct-w,0px));background:rgba(8,8,8,.62);border-color:rgba(255,255,255,.065);backdrop-filter:blur(18px);}
+#s0>.topbar .logo{color:rgba(255,255,255,.88);}
+.entry-top-meta{margin-left:24px;padding-left:24px;border-left:1px solid rgba(255,255,255,.12);font-family:var(--mono);font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.3);}
 .ilabel{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.07em;color:var(--text-3);text-transform:uppercase;margin-bottom:5px;}
 .ita{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--sans);font-size:14px;font-weight:400;line-height:1.65;padding:.85rem 1rem;resize:none;outline:none;min-height:90px;transition:border-color .15s;}
 .ita:focus{border-color:var(--border-hi);}
@@ -588,54 +598,68 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 .undo-hint{position:absolute;top:8px;left:50%;transform:translateX(-50%);font-family:var(--sans);font-size:12px;font-weight:500;color:rgba(255,255,255,.8);background:rgba(20,20,20,.97);border:1px solid var(--border-hi);border-radius:6px;padding:5px 12px;z-index:100;pointer-events:none;opacity:0;transition:opacity .3s;}
 .undo-hint.show{opacity:1;}
 /* PROJECT TYPE (s0) */
-.pt-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;}
+.entry-hero{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(260px,.55fr);align-items:end;gap:clamp(32px,6vw,90px);margin-bottom:clamp(24px,4vh,52px);}
+.entry-eyebrow{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:rgba(223,188,77,.78);margin-bottom:18px;}
+.entry-eyebrow::before{content:'';width:26px;height:1px;background:currentColor;}
+.entry-title{font-family:var(--sans);font-size:clamp(54px,7vw,112px);font-weight:600;letter-spacing:-.075em;line-height:.78;text-transform:uppercase;color:#f4f1e9;}
+.entry-title span{display:block;}
+.entry-title .entry-title-shift{padding-left:.66em;color:transparent;-webkit-text-stroke:1px rgba(244,241,233,.48);}
+.entry-intro{align-self:end;padding:0 0 6px;border-top:1px solid rgba(255,255,255,.12);}
+.entry-intro p{font-family:var(--sans);font-size:clamp(14px,1.15vw,17px);line-height:1.55;color:rgba(255,255,255,.55);padding:20px 0 22px;max-width:34ch;}
+.entry-signal{display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:var(--mono);font-size:8px;letter-spacing:.13em;text-transform:uppercase;color:rgba(255,255,255,.3);}
+.entry-signal-live{display:flex;align-items:center;gap:7px;color:rgba(255,255,255,.52);}
+.entry-signal-live::before{content:'';width:6px;height:6px;border-radius:50%;background:#dfbc4d;box-shadow:0 0 14px rgba(223,188,77,.85);animation:entry-signal 2.2s ease-in-out infinite;}
+@keyframes entry-signal{50%{opacity:.35;box-shadow:0 0 4px rgba(223,188,77,.35);}}
+.entry-section{display:flex;align-items:center;gap:12px;margin-bottom:12px;font-family:var(--mono);font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.28);}
+.entry-section::after{content:'';height:1px;flex:1;background:rgba(255,255,255,.08);}
+.entry-section span:last-child{order:3;}
+.pt-grid{display:grid;grid-template-columns:1.3fr 1fr 1.12fr .88fr;gap:10px;width:100%;}
 .pt-btn{
-  background:rgba(255,255,255,.03);
-  border:1px solid rgba(255,255,255,.07);
-  color:var(--text-2);cursor:pointer;outline:none;
-  padding:22px 20px 20px;text-align:left;
-  transition:all .22s cubic-bezier(.25,.8,.25,1);
-  display:flex;flex-direction:column;gap:0;
-  border-radius:12px;position:relative;overflow:hidden;
+  min-height:190px;background:linear-gradient(145deg,rgba(255,255,255,.052),rgba(255,255,255,.016));
+  border:1px solid rgba(255,255,255,.09);color:var(--text-2);cursor:pointer;outline:none;
+  padding:18px;text-align:left;transition:transform .38s cubic-bezier(.16,1,.3,1),border-color .25s,background .25s,box-shadow .38s;
+  display:flex;flex-direction:column;justify-content:space-between;gap:22px;
+  border-radius:18px;position:relative;overflow:hidden;isolation:isolate;
 }
 .pt-btn::before{
-  content:'';position:absolute;inset:0;
-  opacity:0;transition:opacity .22s;
-  border-radius:inherit;
+  content:'';position:absolute;width:220px;height:220px;left:var(--mx,-70px);top:var(--my,-100px);transform:translate(-50%,-50%);
+  opacity:.26;filter:blur(2px);transition:opacity .3s,transform .5s cubic-bezier(.16,1,.3,1);border-radius:50%;z-index:-1;
 }
-.pt-btn[data-type="youtube"]::before{background:radial-gradient(ellipse at 20% 20%, rgba(255,60,60,.09) 0%, transparent 70%);}
-.pt-btn[data-type="music"]::before{background:radial-gradient(ellipse at 20% 20%, rgba(170,90,204,.12) 0%, transparent 70%);}
-.pt-btn[data-type="film"]::before{background:radial-gradient(ellipse at 20% 20%, rgba(90,138,204,.12) 0%, transparent 70%);}
-.pt-btn[data-type="other"]::before{background:radial-gradient(ellipse at 20% 20%, rgba(201,168,76,.09) 0%, transparent 70%);}
-.pt-btn:hover::before{opacity:1;}
-.pt-btn[data-type="youtube"]:hover{border-color:rgba(255,60,60,.35);box-shadow:0 0 0 1px rgba(255,60,60,.1) inset;}
-.pt-btn[data-type="music"]:hover{border-color:rgba(170,90,204,.35);box-shadow:0 0 0 1px rgba(170,90,204,.1) inset;}
-.pt-btn[data-type="film"]:hover{border-color:rgba(90,138,204,.35);box-shadow:0 0 0 1px rgba(90,138,204,.1) inset;}
-.pt-btn[data-type="other"]:hover{border-color:rgba(201,168,76,.35);box-shadow:0 0 0 1px rgba(201,168,76,.1) inset;}
-.pt-btn:hover{background:rgba(255,255,255,.055);}
+.pt-btn::after{content:'';position:absolute;inset:0;z-index:-2;background:linear-gradient(120deg,transparent 45%,rgba(255,255,255,.045) 50%,transparent 56%);transform:translateX(-100%);transition:transform .8s cubic-bezier(.16,1,.3,1);}
+.pt-btn[data-type="youtube"]::before{background:radial-gradient(circle,rgba(222,74,59,.7),transparent 68%);}
+.pt-btn[data-type="music"]::before{background:radial-gradient(circle,rgba(158,92,196,.65),transparent 68%);}
+.pt-btn[data-type="film"]::before{background:radial-gradient(circle,rgba(75,122,190,.65),transparent 68%);}
+.pt-btn[data-type="other"]::before{background:radial-gradient(circle,rgba(223,188,77,.62),transparent 68%);}
+.pt-btn:hover{transform:translateY(-7px);border-color:rgba(255,255,255,.24);background:linear-gradient(145deg,rgba(255,255,255,.08),rgba(255,255,255,.025));box-shadow:0 22px 55px rgba(0,0,0,.38);}
+.pt-btn:hover::before{opacity:.5;transform:translate(-50%,-50%) scale(1.16);}
+.pt-btn:hover::after{transform:translateX(100%);}
 .pt-icon-wrap{
-  width:36px;height:36px;border-radius:9px;
+  width:42px;height:42px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
-  margin-bottom:14px;flex-shrink:0;
-  transition:transform .22s cubic-bezier(.25,.8,.25,1);
+  flex-shrink:0;border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(16px);
+  transition:transform .38s cubic-bezier(.16,1,.3,1),background .25s;
 }
-.pt-btn:hover .pt-icon-wrap{transform:scale(1.08);}
-.pt-btn[data-type="youtube"] .pt-icon-wrap{background:rgba(255,60,60,.13);}
-.pt-btn[data-type="music"] .pt-icon-wrap{background:rgba(170,90,204,.13);}
-.pt-btn[data-type="film"] .pt-icon-wrap{background:rgba(90,138,204,.13);}
-.pt-btn[data-type="other"] .pt-icon-wrap{background:rgba(201,168,76,.1);}
+.pt-btn:hover .pt-icon-wrap{transform:rotate(-8deg) scale(1.08);background:rgba(255,255,255,.1);}
+.pt-btn[data-type="youtube"] .pt-icon-wrap{background:rgba(255,60,60,.1);}
+.pt-btn[data-type="music"] .pt-icon-wrap{background:rgba(170,90,204,.1);}
+.pt-btn[data-type="film"] .pt-icon-wrap{background:rgba(90,138,204,.1);}
+.pt-btn[data-type="other"] .pt-icon-wrap{background:rgba(201,168,76,.08);}
 .pt-icon-wrap svg{width:18px;height:18px;}
 .pt-btn[data-type="youtube"] .pt-icon-wrap svg{color:rgba(255,80,80,.9);}
 .pt-btn[data-type="music"] .pt-icon-wrap svg{color:rgba(180,100,220,.9);}
 .pt-btn[data-type="film"] .pt-icon-wrap svg{color:rgba(100,155,220,.9);}
 .pt-btn[data-type="other"] .pt-icon-wrap svg{color:rgba(201,168,76,.9);}
-.pt-title{font-family:var(--sans);font-size:14px;font-weight:600;color:#fff;margin-bottom:4px;line-height:1;}
-.pt-sub{font-family:var(--mono);font-size:10px;font-weight:400;color:var(--text-3);letter-spacing:.04em;}
+.pt-card-top,.pt-card-bottom{position:relative;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;z-index:1;}
+.pt-card-bottom{align-items:flex-end;}
+.pt-title{font-family:var(--sans);font-size:clamp(17px,1.35vw,22px);font-weight:600;color:#f7f4ed;margin-bottom:7px;line-height:1;letter-spacing:-.035em;}
+.pt-sub{font-family:var(--mono);font-size:8px;font-weight:400;color:rgba(255,255,255,.34);letter-spacing:.06em;line-height:1.55;}
+.pt-arrow{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.5);transition:transform .35s cubic-bezier(.16,1,.3,1),background .25s,color .25s;}
+.pt-arrow svg{width:14px;height:14px;}
+.pt-btn:hover .pt-arrow{transform:translate(3px,-3px);background:#f4f1e9;color:#0a0a0a;}
 .pt-tag{
-  position:absolute;top:12px;right:12px;
+  position:static;
   font-family:var(--mono);font-size:9px;letter-spacing:.12em;
-  padding:2px 6px;border-radius:4px;
-  opacity:.45;
+  padding:4px 7px;border-radius:999px;opacity:.68;
 }
 .pt-btn[data-type="youtube"] .pt-tag{color:rgba(255,80,80,1);background:rgba(255,60,60,.1);}
 .pt-btn[data-type="music"] .pt-tag{color:rgba(180,100,220,1);background:rgba(170,90,204,.1);}
@@ -843,6 +867,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
 
 /* ---- tablet portrait and down: the top bar's buttons become a menu ---- */
 @media (max-width:1023px){
+  .entry-hero{grid-template-columns:1fr;gap:30px;}
+  .entry-intro{max-width:520px;}
+  .pt-grid{grid-template-columns:1fr 1fr;}
+  .pt-btn{min-height:170px;}
   .cbar{padding:0 .5rem;gap:4px;position:relative;overflow:visible;}
   #cbarMore{display:flex;}
   .ctopic{flex:1;min-width:0;max-width:none;font-size:12.5px;}
@@ -874,6 +902,23 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
    width-only breakpoint, and far too short to give 300px of it to a sidebar.
    Short screens get the same treatment as narrow ones. */
 @media (max-width:759px),(max-height:500px){
+  #s0>.topbar{height:54px;padding:0 14px;}
+  .entry-top-meta{display:none;}
+  #s0 .iw{padding:38px 14px calc(36px + var(--safe-b));}
+  .entry-hero{gap:28px;margin-bottom:38px;}
+  .entry-eyebrow{font-size:8px;letter-spacing:.14em;margin-bottom:14px;}
+  .entry-title{font-size:clamp(48px,17vw,70px);line-height:.82;}
+  .entry-title .entry-title-shift{padding-left:.35em;}
+  .entry-intro p{font-size:14px;padding:16px 0 18px;}
+  .entry-signal{font-size:7px;}
+  .entry-section{margin-bottom:9px;}
+  .pt-grid{grid-template-columns:1fr 1fr;gap:8px;}
+  .pt-btn{min-height:154px;padding:14px;border-radius:15px;gap:16px;}
+  .pt-btn[data-type="youtube"],.pt-btn[data-type="other"]{grid-column:1/-1;min-height:164px;}
+  .pt-icon-wrap{width:38px;height:38px;}
+  .pt-title{font-size:17px;}
+  .pt-arrow{width:30px;height:30px;}
+  .pt-btn[data-type="music"] .pt-arrow,.pt-btn[data-type="film"] .pt-arrow{display:none;}
   #panelToggle{display:flex;}
   .cbar{padding-left:.25rem;}
   .ctopic{font-size:12px;}
@@ -1086,64 +1131,69 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
   .pv-frame{width:28mm;}
   .pv-frame img{width:100%;border:1px solid #e0e0e0;display:block;}
 }
+@media (prefers-reduced-motion:reduce){
+  .entry-signal-live::before{animation:none;}
+  .pt-btn,.pt-btn::before,.pt-btn::after,.pt-icon-wrap,.pt-arrow{transition-duration:.01ms!important;}
+}
 </style>
 </head>
 <body>
 
 <div id="printView" aria-hidden="true"></div>
 <div id="s0" class="screen active">
-  <div class="topbar"><span class="logo">HVNVSLS</span></div>
+  <div class="topbar"><span class="logo">HVNVSLS</span><span class="entry-top-meta">Grain District / pre-production system</span></div>
   <div class="iw">
-    <div class="ilabel">what are you making?</div>
+    <div class="entry-hero">
+      <div>
+        <div class="entry-eyebrow">A film begins before the camera rolls</div>
+        <h1 class="entry-title"><span>Make the</span><span class="entry-title-shift">cut first.</span></h1>
+      </div>
+      <div class="entry-intro">
+        <p>Turn a loose idea into a shot-ready visual plan. Build the story, see every cut and walk onto set knowing what comes next.</p>
+        <div class="entry-signal"><span class="entry-signal-live">Creative engine ready</span><span>GD / 01</span></div>
+      </div>
+    </div>
+    <div class="entry-section"><span>Start a new project</span><span>Choose a format</span></div>
     <div class="pt-grid">
       <button class="pt-btn" data-type="youtube" onclick="setProjectType('youtube')">
-        <span class="pt-tag">YT</span>
-        <div class="pt-icon-wrap">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="5 3 19 12 5 21 5 3"/>
-          </svg>
+        <div class="pt-card-top">
+          <div class="pt-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
+          <span class="pt-tag">YT</span>
         </div>
-        <div class="pt-title">YouTube Video</div>
-        <div class="pt-sub">voiceover · b-roll · essay</div>
+        <div class="pt-card-bottom">
+          <div><div class="pt-title">YouTube Video</div><div class="pt-sub">voiceover &middot; b-roll &middot; visual essay</div></div>
+          <span class="pt-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 19 19 5M9 5h10v10"/></svg></span>
+        </div>
       </button>
       <button class="pt-btn" data-type="music" onclick="setProjectType('music')">
-        <span class="pt-tag">MV</span>
-        <div class="pt-icon-wrap">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 18V5l12-2v13"/>
-            <circle cx="6" cy="18" r="3"/>
-            <circle cx="18" cy="16" r="3"/>
-          </svg>
+        <div class="pt-card-top">
+          <div class="pt-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
+          <span class="pt-tag">MV</span>
         </div>
-        <div class="pt-title">Music Video</div>
-        <div class="pt-sub">verse · chorus · bridge</div>
+        <div class="pt-card-bottom">
+          <div><div class="pt-title">Music Video</div><div class="pt-sub">verse &middot; chorus &middot; performance</div></div>
+          <span class="pt-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 19 19 5M9 5h10v10"/></svg></span>
+        </div>
       </button>
       <button class="pt-btn" data-type="film" onclick="setProjectType('film')">
-        <span class="pt-tag">SF</span>
-        <div class="pt-icon-wrap">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="2" y="7" width="20" height="15" rx="2"/>
-            <polyline points="16 2 12 7 8 2"/>
-            <line x1="2" y1="12" x2="22" y2="12"/>
-            <line x1="7" y1="7" x2="7" y2="22"/>
-            <line x1="17" y1="7" x2="17" y2="22"/>
-          </svg>
+        <div class="pt-card-top">
+          <div class="pt-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="16 2 12 7 8 2"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="7" y1="7" x2="7" y2="22"/><line x1="17" y1="7" x2="17" y2="22"/></svg></div>
+          <span class="pt-tag">SF</span>
         </div>
-        <div class="pt-title">Short Film</div>
-        <div class="pt-sub">scenes · dialogue · action</div>
+        <div class="pt-card-bottom">
+          <div><div class="pt-title">Short Film</div><div class="pt-sub">scenes &middot; dialogue &middot; action</div></div>
+          <span class="pt-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 19 19 5M9 5h10v10"/></svg></span>
+        </div>
       </button>
       <button class="pt-btn" data-type="other" onclick="setProjectType('other')">
-        <span class="pt-tag">—</span>
-        <div class="pt-icon-wrap">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="7" height="7" rx="1"/>
-            <rect x="14" y="3" width="7" height="7" rx="1"/>
-            <rect x="3" y="14" width="7" height="7" rx="1"/>
-            <rect x="14" y="14" width="7" height="7" rx="1"/>
-          </svg>
+        <div class="pt-card-top">
+          <div class="pt-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
+          <span class="pt-tag">00</span>
         </div>
-        <div class="pt-title">Other</div>
-        <div class="pt-sub">generic shot planning</div>
+        <div class="pt-card-bottom">
+          <div><div class="pt-title">Other</div><div class="pt-sub">blank production canvas</div></div>
+          <span class="pt-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 19 19 5M9 5h10v10"/></svg></span>
+        </div>
       </button>
     </div>
   </div>
@@ -1222,13 +1272,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
           <button class="opt on" data-v="voiceover">voiceover</button>
           <button class="opt" data-v="vlog">vlog narration</button>
           <button class="opt" data-v="essay">visual essay</button>
-        </div>
-      </div>
-      <div>
-        <div class="ilabel">style</div>
-        <div class="opts" id="styleOpts">
-          <button class="opt on" data-v="none">none</button>
-          <button class="opt" data-v="gawx">gawx</button>
         </div>
       </div>
     </div>
@@ -1634,7 +1677,7 @@ function genStoryboard(attId){
 var DC={voiceover:'var(--c-vo)',broll:'var(--c-br)',music:'var(--c-mu)',transition:'var(--c-tr)',intro:'#cc6688',verse:'#5588cc',chorus:'#cc8844',bridge:'#44aacc',hook:'#8855cc',lip_sync:'#c44488',outro:'#cc5555',scene:'#5aaa7a',dialogue:'#aa5a5a',action:'#cc7744',montage:'#6677cc',main:'#888888',segment:'#777777'};
 var PT_BLOCKS={youtube:['VOICEOVER','BROLL','MUSIC','TRANSITION'],music:['VERSE','CHORUS','HOOK','LIP_SYNC','BRIDGE','INTRO','OUTRO','TRANSITION'],film:['SCENE','DIALOGUE','ACTION','MONTAGE','TRANSITION'],other:['INTRO','MAIN','SEGMENT','OUTRO','TRANSITION']};
 
-var tone='introspective',fmt='voiceover',styleMode='none',topic='',inputLang='en',projectType='youtube';
+var tone='introspective',fmt='voiceover',styleMode='gawx',topic='',inputLang='en',projectType='youtube';
 
 var STYLE_PACKS={
 gawx:{
@@ -1755,6 +1798,7 @@ function redoAction(){
 function captureState(){
   return {nodes:JSON.stringify(itemsAtStoryPositions(nodes,'nodes')),attShots:JSON.stringify(itemsAtStoryPositions(attShots,'atts')),imgNodes:JSON.stringify(imgNodes),noteNodes:JSON.stringify(noteNodes),conns:JSON.stringify(conns)};
 }
+
 function applyHistoryState(state){
   nodes=JSON.parse(state.nodes);
   attShots=JSON.parse(state.attShots);
@@ -1778,11 +1822,15 @@ function showUndoHint(text){
 document.getElementById('toneOpts').querySelectorAll('.opt').forEach(function(b){
   b.onclick=function(){document.getElementById('toneOpts').querySelectorAll('.opt').forEach(function(x){x.classList.remove('on');});b.classList.add('on');tone=b.dataset.v;};
 });
-document.getElementById('styleOpts').querySelectorAll('.opt').forEach(function(b){
-  b.onclick=function(){document.getElementById('styleOpts').querySelectorAll('.opt').forEach(function(x){x.classList.remove('on');});b.classList.add('on');styleMode=b.dataset.v;};
-});
 document.getElementById('fmtOpts').querySelectorAll('.opt').forEach(function(b){
   b.onclick=function(){document.getElementById('fmtOpts').querySelectorAll('.opt').forEach(function(x){x.classList.remove('on');});b.classList.add('on');fmt=b.dataset.v;};
+});
+document.querySelectorAll('.pt-btn').forEach(function(card){
+  card.addEventListener('pointermove',function(e){
+    var r=card.getBoundingClientRect();
+    card.style.setProperty('--mx',(e.clientX-r.left)+'px');
+    card.style.setProperty('--my',(e.clientY-r.top)+'px');
+  });
 });
 document.getElementById('scriptTa').addEventListener('input',function(){
   document.getElementById('wc').textContent=this.value.trim().split('\n').filter(function(l){return l.trim();}).length+' blocks';
@@ -1856,6 +1904,9 @@ function startMvHints(){
 function stopMvHints(){if(mvHintTimer){clearInterval(mvHintTimer);mvHintTimer=null;}}
 function setProjectType(type){
   projectType=type;
+  // Gawx is the house visual language for new work. The old style picker was
+  // an extra decision before the user had even described the film.
+  styleMode='gawx';
   var s1=document.getElementById('s1');
   if(type==='music'){
     s1.classList.add('mv-mode');
@@ -5854,7 +5905,57 @@ document.addEventListener('mouseup',function(e){
   // the projects tab clings to the left edge, which is exactly where the
   // blocks drawer slides out from
   +'  body.panel-open .gd-home-tab{display:none;}'
-  +'}';
+  +'}'
+  // Editorial Liquid Cinema: the gate is the real landing page, not a modal
+  // floating over an app the visitor cannot use yet.
+  +'.gd-auth-hero,.gd-auth-reel,.gd-brand-foot,.gd-brand-status{display:none;}'
+  +'.gd-brand-head{display:flex;align-items:center;justify-content:center;}'
+  +'.gd-auth-kicker{font-family:var(--mono);font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:rgba(201,168,76,.7);margin-bottom:18px;}'
+  +'#gdAuthOv.gate{display:grid;grid-template-columns:minmax(0,1.32fr) minmax(430px,.68fr);align-items:stretch;justify-content:stretch;gap:0;padding:0;overflow:hidden;background:#070707;backdrop-filter:none;}'
+  +'#gdAuthOv.gate::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background:radial-gradient(circle at 18% 16%,rgba(201,168,76,.16),transparent 28%),radial-gradient(circle at 74% 78%,rgba(65,97,151,.13),transparent 31%),linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px);background-size:auto,auto,48px 48px,48px 48px;}'
+  +'#gdAuthOv.gate::after{opacity:.075;mix-blend-mode:soft-light;}'
+  +'#gdAuthOv.gate .gd-brand{display:flex;height:100dvh;min-width:0;flex-direction:column;align-items:stretch;justify-content:space-between;text-align:left;padding:clamp(28px,4.4vw,70px);overflow:hidden;}'
+  +'#gdAuthOv.gate .gd-brand-head{display:flex;align-items:flex-start;justify-content:space-between;}'
+  +'#gdAuthOv.gate .gd-brand-mark{font-size:13px;letter-spacing:.42em;text-indent:0;}'
+  +'#gdAuthOv.gate .gd-brand-sub{font-family:var(--mono);font-size:8px;letter-spacing:.2em;text-align:left;margin-top:9px;color:rgba(255,255,255,.27);}'
+  +'#gdAuthOv.gate .gd-brand-status{display:block;font-family:var(--mono);font-size:8px;letter-spacing:.13em;text-transform:uppercase;color:rgba(255,255,255,.28);}'
+  +'#gdAuthOv.gate .gd-auth-hero{display:block;position:relative;z-index:2;margin-top:auto;margin-bottom:auto;max-width:860px;}'
+  +'.gd-auth-hero-k{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:9px;letter-spacing:.19em;text-transform:uppercase;color:rgba(222,188,78,.78);margin-bottom:24px;}'
+  +'.gd-auth-hero-k::before{content:"";width:28px;height:1px;background:currentColor;}'
+  +'#gdAuthOv.gate .gd-auth-hero h1{font-family:var(--sans);font-size:clamp(50px,6vw,104px);font-weight:600;letter-spacing:-.075em;line-height:.84;text-transform:uppercase;color:#f3f0e8;}'
+  +'#gdAuthOv.gate .gd-auth-hero h1 em{font-style:normal;color:transparent;-webkit-text-stroke:1px rgba(243,240,232,.48);}'
+  +'#gdAuthOv.gate .gd-auth-hero p{max-width:48ch;margin-top:30px;font-size:clamp(13px,1vw,16px);line-height:1.65;color:rgba(255,255,255,.48);}'
+  +'#gdAuthOv.gate .gd-auth-reel{display:flex;position:absolute;left:clamp(28px,4.4vw,70px);right:clamp(28px,4.4vw,70px);bottom:clamp(70px,10vh,130px);height:86px;gap:9px;opacity:.28;transform:perspective(700px) rotateX(56deg) rotateZ(-4deg);transform-origin:left bottom;pointer-events:none;}'
+  +'.gd-auth-frame{flex:1;position:relative;display:flex;align-items:flex-end;padding:10px;border:1px solid rgba(255,255,255,.22);border-radius:6px;background:linear-gradient(145deg,rgba(255,255,255,.12),rgba(255,255,255,.015));font-family:var(--mono);font-size:7px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.6);overflow:hidden;}'
+  +'.gd-auth-frame::before{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 10%,rgba(223,188,77,.24) 48%,transparent 74%);animation:gd-film-pass 7s ease-in-out infinite;}'
+  +'.gd-auth-frame.f2::before{animation-delay:-2.1s;}.gd-auth-frame.f3::before{animation-delay:-4.4s;}'
+  +'@keyframes gd-film-pass{0%,25%{transform:translateX(-110%)}70%,100%{transform:translateX(110%)}}'
+  +'#gdAuthOv.gate .gd-brand-foot{display:flex;align-items:center;justify-content:space-between;border-top:1px solid rgba(255,255,255,.1);padding-top:18px;font-family:var(--mono);font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.27);}'
+  +'#gdAuthOv.gate .gd-modal{width:100%;max-width:none;height:100dvh;display:flex;flex-direction:column;justify-content:center;border:none;border-left:1px solid rgba(255,255,255,.1);border-radius:0;padding:clamp(42px,6vw,88px);background:linear-gradient(150deg,rgba(30,30,30,.86),rgba(10,10,10,.76));box-shadow:-34px 0 90px rgba(0,0,0,.35);backdrop-filter:blur(32px) saturate(125%);overflow-y:auto;}'
+  +'#gdAuthOv.gate .gd-modal::before{content:"";position:absolute;left:-1px;top:11%;bottom:11%;width:1px;background:linear-gradient(transparent,rgba(223,188,77,.62),transparent);}'
+  +'#gdAuthOv.gate .gd-modal h2{font-size:clamp(35px,3.4vw,52px);font-weight:600;letter-spacing:-.055em;line-height:1;margin-bottom:12px;}'
+  +'#gdAuthOv.gate .gd-modal p.sub{max-width:42ch;font-size:13px;line-height:1.65;color:rgba(255,255,255,.42);margin-bottom:32px;}'
+  +'#gdAuthOv.gate .gd-field{margin-bottom:15px;}'
+  +'#gdAuthOv.gate .gd-field label{font-family:var(--mono);font-size:8px;letter-spacing:.15em;margin-bottom:8px;color:rgba(255,255,255,.33);}'
+  +'#gdAuthOv.gate .gd-input{height:54px;border-radius:14px;padding:0 16px;background:rgba(255,255,255,.045);border-color:rgba(255,255,255,.105);box-shadow:inset 0 1px 0 rgba(255,255,255,.025);}'
+  +'#gdAuthOv.gate .gd-input:hover{border-color:rgba(255,255,255,.18);}'
+  +'#gdAuthOv.gate .gd-input:focus{border-color:rgba(223,188,77,.56);box-shadow:0 0 0 3px rgba(223,188,77,.07),inset 0 1px 0 rgba(255,255,255,.04);}'
+  +'#gdAuthOv.gate .gd-check{margin:5px 0 20px;font-size:11px;color:rgba(255,255,255,.4);}'
+  +'#gdAuthOv.gate .gd-check input{accent-color:#dfbc4d;}'
+  +'#gdAuthOv.gate .gd-btn{position:relative;min-height:55px;overflow:hidden;border-radius:999px;background:linear-gradient(100deg,#f4f1e9 0%,#ddd8ca 45%,#fff 100%);box-shadow:0 14px 34px rgba(0,0,0,.36),inset 0 1px 0 #fff;transition:transform .28s cubic-bezier(.16,1,.3,1),box-shadow .28s;}'
+  +'#gdAuthOv.gate .gd-btn::before{content:"";position:absolute;width:150%;height:330%;left:-25%;top:-115%;border-radius:42%;background:rgba(223,188,77,.35);transform:translateX(-80%) rotate(10deg);transition:transform .75s cubic-bezier(.16,1,.3,1);}'
+  +'#gdAuthOv.gate .gd-btn:hover{opacity:1;transform:translateY(-2px);box-shadow:0 20px 44px rgba(0,0,0,.44),0 0 34px rgba(223,188,77,.12);}'
+  +'#gdAuthOv.gate .gd-btn:hover::before{transform:translateX(68%) rotate(10deg);}'
+  +'#gdAuthOv.gate .gd-btn:active{transform:scale(.985);}'
+  +'#gdAuthOv.gate .gd-authlinks{margin-top:17px;}'
+  +'#gdAuthOv.gate .gd-link{text-decoration:none;font-size:11px;color:rgba(255,255,255,.42);}'
+  +'#gdAuthOv.gate .gd-link:hover{color:#fff;}'
+  +'#gdAuthOv.gate .gd-note{display:flex;align-items:center;gap:8px;margin-top:22px;padding-top:18px;font-family:var(--mono);font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.24);}'
+  +'.gd-note-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#6da377;box-shadow:0 0 10px rgba(109,163,119,.55);flex-shrink:0;}'
+  +'@media (max-width:900px){#gdAuthOv.gate{grid-template-columns:1fr;overflow-y:auto;align-items:stretch;}#gdAuthOv.gate .gd-brand{height:auto;min-height:270px;padding:24px 20px 30px;}#gdAuthOv.gate .gd-brand-status,#gdAuthOv.gate .gd-auth-reel,#gdAuthOv.gate .gd-brand-foot{display:none;}#gdAuthOv.gate .gd-auth-hero{margin:44px 0 0;}#gdAuthOv.gate .gd-auth-hero-k{margin-bottom:14px;}#gdAuthOv.gate .gd-auth-hero h1{font-size:clamp(45px,11vw,70px);}#gdAuthOv.gate .gd-auth-hero p{display:none;}#gdAuthOv.gate .gd-modal{height:auto;min-height:574px;border-left:none;border-top:1px solid rgba(255,255,255,.1);padding:46px clamp(20px,8vw,70px) 52px;overflow:visible;}#gdAuthOv.gate .gd-modal::before{left:10%;right:10%;top:-1px;bottom:auto;width:auto;height:1px;background:linear-gradient(90deg,transparent,rgba(223,188,77,.62),transparent);}}'
+  +'@media (max-height:620px) and (orientation:landscape){#gdAuthOv.gate{display:block;overflow-y:auto;}#gdAuthOv.gate .gd-brand{display:none;}#gdAuthOv.gate .gd-modal{min-height:100dvh;padding:30px max(24px,15vw);}}'
+  +'@media (max-width:520px){#gdAuthOv.gate .gd-brand{min-height:236px;}#gdAuthOv.gate .gd-brand-mark{font-size:11px;}#gdAuthOv.gate .gd-auth-hero{margin-top:34px;}#gdAuthOv.gate .gd-auth-hero-k{font-size:7px;}#gdAuthOv.gate .gd-auth-hero h1{font-size:44px;line-height:.86;}#gdAuthOv.gate .gd-modal{min-height:608px;padding:38px 20px 46px;}#gdAuthOv.gate .gd-modal h2{font-size:36px;}#gdAuthOv.gate .gd-authlinks{gap:8px;}#gdAuthOv.gate .gd-link{font-size:10px;}}'
+  +'@media (prefers-reduced-motion:reduce){.gd-auth-frame::before{animation:none;}#gdAuthOv.gate .gd-btn::before{display:none;}}';
   var st=document.createElement('style'); st.textContent=css; document.head.appendChild(st);
 
   /* ---------- DOM ---------- */
@@ -5863,14 +5964,20 @@ document.addEventListener('mouseup',function(e){
   +'<div class="gd-acct" id="gdAcct"></div>'
   +'<div class="gd-ov" id="gdAuthOv">'
   +'  <div class="gd-brand">'
-  +'    <div class="gd-brand-mark">HVNVSLS</div>'
-  +'    <div class="gd-brand-rule"></div>'
-  +'    <div class="gd-brand-sub">cut-by-cut shot plans</div>'
+  +'    <div class="gd-brand-head"><div><div class="gd-brand-mark">HVNVSLS</div><div class="gd-brand-sub">Grain District</div></div><span class="gd-brand-status">creative system / 01</span></div>'
+  +'    <div class="gd-auth-hero">'
+  +'      <div class="gd-auth-hero-k">Pre-production, re-cut</div>'
+  +'      <h1>Find the story.<br><em>Frame the feeling.</em></h1>'
+  +'      <p>From first thought to final shot list — one visual workspace for filmmakers who think in cuts.</p>'
+  +'    </div>'
+  +'    <div class="gd-auth-reel" aria-hidden="true"><span class="gd-auth-frame f1">01 / story</span><span class="gd-auth-frame f2">02 / rhythm</span><span class="gd-auth-frame f3">03 / image</span></div>'
+  +'    <div class="gd-brand-foot"><span>Built for the frame</span><span>New York / Worldwide</span></div>'
   +'  </div>'
   +'  <div class="gd-modal">'
   +'  <button class="gd-x" data-close>&times;</button>'
+  +'  <div class="gd-auth-kicker">Member workspace / secure access</div>'
   +'  <h2 id="gdAuthTitle">Sign in</h2>'
-  +'  <p class="sub" id="gdAuthSub">Sign in and your projects follow you to any computer.</p>'
+  +'  <p class="sub" id="gdAuthSub">Your projects, references and shot plans — waiting exactly where you left them.</p>'
   +'  <div class="gd-field"><label>Email</label><input class="gd-input" id="gdEmail" type="email" autocomplete="email" placeholder="you@email.com"></div>'
   +'  <div class="gd-field"><label>Password</label><input class="gd-input" id="gdPass" type="password" autocomplete="current-password" placeholder="••••••••"></div>'
   +'  <label class="gd-check"><input type="checkbox" id="gdRemember" checked><span>Keep me signed in</span></label>'
@@ -5878,7 +5985,7 @@ document.addEventListener('mouseup',function(e){
   +'  <div class="gd-err" id="gdAuthErr"></div>'
   +'  <div class="gd-authlinks"><button class="gd-link" id="gdAuthToggle">Create an account</button>'
   +'  <button class="gd-link" id="gdForgot">Forgot password?</button></div>'
-  +'  <div class="gd-note">Your projects are saved to your account, so they are there from any computer you sign in from.</div>'
+  +'  <div class="gd-note"><span class="gd-note-dot"></span>Your work is synced privately across your devices.</div>'
   +'</div></div>'
   +'<div class="gd-ov" id="gdProjOv"><div class="gd-modal wide">'
   +'  <button class="gd-x" data-close>&times;</button>'
@@ -5946,7 +6053,7 @@ document.addEventListener('mouseup',function(e){
   function restore(d){
     d=d||{};
     resetLocationViewState();
-    projectType=d.projectType||'youtube'; topic=d.topic||''; tone=d.tone||tone; fmt=d.fmt||fmt; styleMode=d.styleMode||styleMode;
+    projectType=d.projectType||'youtube'; topic=d.topic||''; tone=d.tone||tone; fmt=d.fmt||fmt; styleMode=d.styleMode||'gawx';
     inputLang=d.inputLang||'en'; durMin=d.durMin||durMin; durMax=d.durMax||durMax;
     projectBrief=d.projectBrief||''; projectConstraints=d.projectConstraints||'';
     projectBreakdown=d.projectBreakdown||null; projectBreakdownKey=d.projectBreakdownKey||null;
@@ -6016,6 +6123,7 @@ document.addEventListener('mouseup',function(e){
   }
   window.gdNewProject=function(){
     currentProjectId=null; currentCreated=null; currentName=null; currentNameManual=false;
+    styleMode='gawx';
     setSaveState('');
   };
 
@@ -6085,6 +6193,9 @@ document.addEventListener('mouseup',function(e){
   function setAuthMode(m){
     authMode=m;
     byId('gdAuthTitle').textContent=(m==='signin'?'Sign in':'Create account');
+    byId('gdAuthSub').textContent=(m==='signin'
+      ?'Your projects, references and shot plans — waiting exactly where you left them.'
+      :'Create your private workspace and take every project with you.');
     byId('gdAuthBtn').textContent=(m==='signin'?'Sign in':'Create account');
     byId('gdAuthToggle').textContent=(m==='signin'?'Create an account':'I already have an account');
     byId('gdPass').setAttribute('autocomplete',m==='signin'?'current-password':'new-password');
