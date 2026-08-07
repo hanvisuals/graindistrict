@@ -961,14 +961,30 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
      page break is useless to whoever is holding it */
 
   .pv-bd{margin-bottom:11mm;}
-  .pv-loc{break-inside:avoid;page-break-inside:avoid;padding:3.5mm 0;border-top:1px solid #ececec;}
+  /* a location now carries its shots, so it can be many pages long - only its
+     heading has to hold together, not the whole block */
+  .pv-loc{padding:3.5mm 0;border-top:1px solid #ececec;}
+  .pv-loc-head,.pv-loc-dl,.pv-loc-note{break-inside:avoid;page-break-inside:avoid;}
+  .pv-loc-head{break-after:avoid;page-break-after:avoid;}
+  .pv-loc-list{margin-top:2.5mm;}
+  /* Story order stacks the number over its timecode over its type, because a
+     beat heading has room to breathe. In a location list that stack is three
+     lines tall for a shot whose description is one, which is most of them -
+     so the label runs along a single line instead. */
+  .pv-loc-list .pv-row{grid-template-columns:38mm 1fr auto;}
+  .pv-loc-list .pv-idx{display:flex;align-items:baseline;gap:2mm;}
+  .pv-loc-list .pv-num{font-size:9pt;}
+  .pv-loc-list .pv-tc{margin-top:0;}
+  .pv-loc-list .pv-type{font-size:5.5pt;margin-top:0;}
+  .pv-loc-list .pv-row{padding:1.6mm 0;border-top:1px solid #f0f0f0;}
+  .pv-loc-list .pv-row:first-child{border-top:none;}
   .pv-loc:first-of-type{border-top:none;padding-top:1mm;}
   .pv-loc-head{display:flex;align-items:baseline;gap:3mm;flex-wrap:wrap;margin-bottom:2mm;}
   .pv-loc-n{font-family:var(--mono);font-size:11pt;font-weight:700;color:#111;}
   .pv-loc-name{font-size:12pt;font-weight:600;color:#111;}
   .pv-loc-tod{font-family:var(--mono);font-size:7pt;letter-spacing:.12em;text-transform:uppercase;color:#888;}
   /* not uppercased - these are shot labels and 01A is not the same thing as 01a */
-  .pv-loc-shots{font-family:var(--mono);font-size:7pt;letter-spacing:.08em;color:#aaa;margin-left:auto;}
+  .pv-loc-shots{font-family:var(--mono);font-size:7pt;letter-spacing:.08em;color:#aaa;margin-left:auto;white-space:nowrap;}
   .pv-loc-dl{display:grid;grid-template-columns:19mm 1fr;gap:1mm 4mm;margin:0 0 0 6mm;
              padding-left:3mm;border-left:1px solid #eee;max-width:140mm;}
   .pv-loc-dl dt{font-family:var(--mono);font-size:6.5pt;font-weight:700;letter-spacing:.12em;
@@ -982,7 +998,12 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;o
   .pv-sc{border-top:1px solid #e2e2e2;padding:3mm 0 3.5mm;}
   .pv-sc:first-of-type{border-top:none;padding-top:1mm;}
   .pv-row{display:grid;grid-template-columns:24mm 1fr auto;gap:5mm;
-          break-inside:avoid;page-break-inside:avoid;break-after:avoid;page-break-after:avoid;}
+          break-inside:avoid;page-break-inside:avoid;}
+  /* in story order a row is a beat heading and the cuts under it are its
+     body, so it must not be left stranded at the foot of a page. In a
+     location list every row is a shot of equal weight, and telling the
+     paginator never to break after one just leaves pages half empty. */
+  .pv-sc>.pv-row{break-after:avoid;page-break-after:avoid;}
   .pv-idx{line-height:1.3;}
   .pv-num{font-family:var(--mono);font-size:13pt;font-weight:700;color:#111;line-height:1;letter-spacing:-.02em;}
   .pv-tc{font-family:var(--mono);font-size:7.5pt;color:#666;margin-top:1.4mm;white-space:nowrap;}
@@ -4584,6 +4605,18 @@ function docTitle(){
   return cut.replace(/[\s,;:.\-–—]+$/,'')+'…';
 }
 
+/* The document you carry to a shoot is organised the way you shoot: you go to
+   a place, do everything that happens there, and strike. So the shot list is
+   grouped under its locations, each one carrying what you need before you
+   arrive - who, what to wear, what to pack, what to watch out for - and then
+   the shots themselves. A location summary is not a separate section to
+   cross-reference any more; it is the heading of the work.
+
+   Story order is not lost: every shot keeps the number and timecode it has on
+   the board, so 01a is 01a wherever it is printed.
+
+   Without a breakdown there is nothing to group by, so the document falls back
+   to story order - the beats with their cuts nested underneath. */
 function buildPrintView(){
   var v=document.getElementById('printView');
   var when=new Date().toLocaleDateString(undefined,{day:'numeric',month:'long',year:'numeric'});
@@ -4596,75 +4629,127 @@ function buildPrintView(){
     +fmtTime(total)+' &middot; '+pesc(when)+'</div>'
     +'</div>';
 
-  if(projectBreakdown&&projectBreakdown.length){
-    h+='<section class="pv-bd"><h2>Locations &middot; '+projectBreakdown.length+'</h2>';
-    projectBreakdown.forEach(function(loc,li){
-      h+='<article class="pv-loc">'
-        +'<div class="pv-loc-head">'
-        +'<span class="pv-loc-n">'+String(li+1).padStart(2,'0')+'</span>'
-        +'<span class="pv-loc-name">'+pesc(loc.name||'Location')+'</span>'
-        +(loc.timeOfDay?'<span class="pv-loc-tod">'+pesc(loc.timeOfDay)+'</span>':'')
-        +(loc.shots&&loc.shots.length?'<span class="pv-loc-shots">shots '+loc.shots.join(', ')+'</span>':'')
-        +'</div>';
-      function list(label,arr){
-        if(!arr||!arr.length)return '';
-        return '<dt>'+label+'</dt><dd>'+pesc(arr.join(' &middot; ')).replace(/&amp;middot;/g,'&middot;')+'</dd>';
-      }
-      var dl=list('CAST',loc.cast)+list('WARDROBE',loc.wardrobe)+list('PROPS',loc.props);
-      if(dl)h+='<dl class="pv-loc-dl">'+dl+'</dl>';
-      if(loc.note)h+='<p class="pv-loc-note">'+pesc(loc.note)+'</p>';
-      h+='</article>';
-    });
-    h+='</section>';
-  }
-
   // a frame next to a shot is worth a paragraph of description on set;
   // if the image can't be fetched the cell simply collapses
   function frame(n){
     return n.sbUrl?'<div class="pv-frame"><img src="'+pesc(n.sbUrl)+'" alt="" onerror="this.parentNode.style.display=\'none\'"></div>':'';
   }
-  // four labelled rows per shot filled pages with headings nobody reads. The
-  // same words run together on one line say exactly as much and cost a line
-  // instead of five.
-  function details(n){
-    var sh=shotsFor(n.id);
+  // Only the prop list survives into print. Four labelled fields per two-second
+  // cut cost five pages of a twenty-two page document, and of the four only
+  // this one answers a question you have before you leave the house. The rest
+  // are on the board, where they are read.
+  //
+  // And under a location whose heading already lists what to pack, repeating
+  // that list on every row says nothing. Only what the heading does not cover
+  // is printed - which turns the line from noise into the one thing worth
+  // seeing: this shot needs something the rest of the day does not.
+  function propKey(s){ return String(s||'').toLowerCase().replace(/\s+/g,' ').trim(); }
+  function details(n,covered){
+    var sh=shotsFor(n.id).filter(function(a){return a.k==='props';});
     if(!sh.length)return '';
-    return '<div class="pv-det">'+sh.map(function(a){
-      return '<span class="pv-det-k">'+pesc(SK_LABEL[a.k]||a.k)+'</span> '+pesc(a.t);
-    }).join('<span class="pv-det-sep">&middot;</span>')+'</div>';
+    var parts=[];
+    sh.forEach(function(a){
+      var left=String(a.t||'').split(/\s*[,·]\s*/).filter(function(x){
+        return x.trim() && !(covered&&covered[propKey(x)]);
+      });
+      if(left.length)parts.push(left.join(', '));
+    });
+    if(!parts.length)return '';
+    return '<div class="pv-det"><span class="pv-det-k">'+pesc(SK_LABEL.props)+'</span> '
+      +pesc(parts.join(', '))+'</div>';
   }
-
-  h+='<section><h2>Shot list</h2>';
-  planScenes().forEach(function(s){
-    var n=s.head;
-    h+='<article class="pv-sc">'
-      // number, timing and type read as one label instead of being scattered
-      // across the row - the eye should find a shot by its number, then know
-      // when and what it is without moving
-      +'<div class="pv-row">'
+  function shotRow(label,n,covered){
+    return '<div class="pv-row">'
       +'<div class="pv-idx">'
-      +'<div class="pv-num">'+pesc(s.label)+'</div>'
+      +'<div class="pv-num">'+pesc(label)+'</div>'
       +'<div class="pv-tc">'+pesc(n.tcStart)+'&ndash;'+pesc(n.tcEnd)+'</div>'
       +'<div class="pv-type">'+pesc(n.type.toUpperCase())+'</div>'
       +'</div>'
-      +'<div class="pv-body"><div class="pv-content">'+pesc(n.content)+'</div>'+details(n)+'</div>'
+      +'<div class="pv-body"><div class="pv-content">'+pesc(n.content)+'</div>'+details(n,covered)+'</div>'
       +frame(n)
       +'</div>';
-    if(s.kids.length){
-      h+='<div class="pv-kids">';
-      s.kids.forEach(function(k){
-        h+='<div class="pv-kid">'
-          +'<div class="pv-kid-n">'+pesc(k.__label)+'</div>'
-          +'<div class="pv-kid-tc">'+pesc(k.tcStart)+'&ndash;'+pesc(k.tcEnd)+'</div>'
-          +'<div class="pv-kid-body"><div class="pv-kid-content">'+pesc(k.content)+'</div>'+details(k)+'</div>'
-          +frame(k)
-          +'</div>';
-      });
-      h+='</div>';
+  }
+
+  var scenes=planScenes();
+  if(projectBreakdown&&projectBreakdown.length){
+    // The model does not always give a label back exactly as it was handed
+    // out - "01A", " 01 " - and accountForEveryShot already forgives that when
+    // it decides whether a shot was placed. If the lookup here were stricter
+    // than that check, a shot could be counted as placed and still never be
+    // printed: gone from the document with nothing to show it was ever there.
+    // So match the same way, and print the plan's own spelling of the label.
+    var byLabel={};
+    function labKey(x){ return String(x==null?'':x).trim().toLowerCase(); }
+    scenes.forEach(function(s){
+      byLabel[labKey(s.label)]={label:s.label,node:s.head};
+      s.kids.forEach(function(k){ byLabel[labKey(k.__label)]={label:k.__label,node:k}; });
+    });
+    function list(label,arr){
+      if(!arr||!arr.length)return '';
+      return '<dt>'+label+'</dt><dd>'+pesc(arr.join(' &middot; ')).replace(/&amp;middot;/g,'&middot;')+'</dd>';
     }
-    h+='</article>';
-  });
-  h+='</section>';
+    function locBlock(li,name,timeOfDay,cast,wardrobe,props,note,labels){
+      var rows='',count=0,covered={};
+      (props||[]).forEach(function(x){ covered[propKey(x)]=1; });
+      var used={};
+      (labels||[]).forEach(function(lab){
+        var hit=byLabel[labKey(lab)];
+        // the same shot listed twice at one location prints once
+        if(!hit||used[hit.label])return;
+        used[hit.label]=1;
+        rows+=shotRow(hit.label,hit.node,covered); count++;
+      });
+      var out='<article class="pv-loc">'
+        +'<div class="pv-loc-head">'
+        +'<span class="pv-loc-n">'+String(li+1).padStart(2,'0')+'</span>'
+        +'<span class="pv-loc-name">'+pesc(name||'Location')+'</span>'
+        +(timeOfDay?'<span class="pv-loc-tod">'+pesc(timeOfDay)+'</span>':'')
+        +'<span class="pv-loc-shots">'+count+' shot'+(count===1?'':'s')+'</span>'
+        +'</div>';
+      var dl=list('CAST',cast)+list('WARDROBE',wardrobe)+list('PROPS',props);
+      if(dl)out+='<dl class="pv-loc-dl">'+dl+'</dl>';
+      if(note)out+='<p class="pv-loc-note">'+pesc(note)+'</p>';
+      return out+'<div class="pv-loc-list">'+rows+'</div></article>';
+    }
+
+    h+='<section class="pv-bd"><h2>Shot list by location &middot; '+projectBreakdown.length+'</h2>';
+    var printed={};
+    projectBreakdown.forEach(function(loc,li){
+      (loc.shots||[]).forEach(function(lab){
+        var hit=byLabel[labKey(lab)];
+        if(hit)printed[labKey(hit.label)]=1;
+      });
+      h+=locBlock(li,loc.name,loc.timeOfDay,loc.cast,loc.wardrobe,loc.props,loc.note,loc.shots);
+    });
+    // a shot the breakdown never placed still has to be shot, so it cannot
+    // simply fall out of the document
+    var left=allShotLabels().filter(function(l){ return !printed[labKey(l)]; });
+    if(left.length){
+      h+=locBlock(projectBreakdown.length,'Not placed yet','',null,null,null,
+        'These have no location. Decide where they happen before you pack.',left);
+    }
+    h+='</section>';
+  }else{
+    // no breakdown - story order, beats with their cuts underneath
+    h+='<section><h2>Shot list</h2>';
+    scenes.forEach(function(s){
+      h+='<article class="pv-sc">'+shotRow(s.label,s.head);
+      if(s.kids.length){
+        h+='<div class="pv-kids">';
+        s.kids.forEach(function(k){
+          h+='<div class="pv-kid">'
+            +'<div class="pv-kid-n">'+pesc(k.__label)+'</div>'
+            +'<div class="pv-kid-tc">'+pesc(k.tcStart)+'&ndash;'+pesc(k.tcEnd)+'</div>'
+            +'<div class="pv-kid-body"><div class="pv-kid-content">'+pesc(k.content)+'</div>'+details(k)+'</div>'
+            +frame(k)
+            +'</div>';
+        });
+        h+='</div>';
+      }
+      h+='</article>';
+    });
+    h+='</section>';
+  }
   v.innerHTML=h;
 }
 

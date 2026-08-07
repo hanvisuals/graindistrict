@@ -45,10 +45,14 @@ const fs = require('fs');
 
   // five blocks: two spine beats, three cuts filed underneath them
   ok('every block is accounted for', v.beats===2&&v.cuts===3, {beats:v.beats,cuts:v.cuts});
-  ok('the shot cards are included (this is what the old export lost)', v.detTerms===4, v.detTerms);
+  // Of the four shot cards only the prop list is printed. The other three -
+  // action, emotion, tech - are direction, and they cost five pages of a
+  // twenty-two page document to say what the description already says.
+  ok('the prop list is included (this is what the old export lost)', v.detTerms===1, v.detTerms);
   ok('prop list is named properly, not "props"', /prop list/i.test(v.text));
   ok('the actual prop text is there', /Worn notebook, ballpoint pen/.test(v.text));
-  ok('the tech note is there', /100mm macro/.test(v.text));
+  ok('the fields that are direction, not logistics, stay off the page',
+     !/100mm macro/.test(v.text)&&!/Quiet resignation/.test(v.text)&&!/Hand hesitates/.test(v.text));
   // the creative brief was replaced by the location breakdown - see testbreak.js
   ok('the brief is no longer in the document', !/Empty Rooms/.test(v.text));
   ok('the project title heads the document', /Neden New York/.test(v.text));

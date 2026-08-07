@@ -75,12 +75,16 @@ server.listen(8920, async()=>{
     return {printed:window.__printed, hasBd:!!(projectBreakdown&&projectBreakdown.length),
             locCount:v.querySelectorAll('.pv-loc').length,
             text:v.textContent,
-            beats:[].map.call(v.querySelectorAll('.pv-sc'),function(sc){
-              return {n:sc.querySelector('.pv-num').textContent,
-                      kids:[].map.call(sc.querySelectorAll('.pv-kid-n'),function(k){return k.textContent;})};
+            // which shots are printed under which location, read off the
+            // page itself rather than off a summary line
+            under:[].map.call(v.querySelectorAll('.pv-loc'),function(el){
+              return {loc:el.querySelector('.pv-loc-name').textContent,
+                      shots:[].map.call(el.querySelectorAll('.pv-loc-list .pv-num'),
+                                        function(n){return n.textContent;})};
             }),
             dets:v.querySelectorAll('.pv-det').length,
             oldRows:v.querySelectorAll('.pv-shots').length,
+            nested:v.querySelectorAll('.pv-kid').length,
             btnLabel:document.getElementById('btnExport').textContent,
             btnDisabled:document.getElementById('btnExport').disabled};
   });
@@ -92,12 +96,23 @@ server.listen(8920, async()=>{
   ok('wardrobe is listed', /Grey hoodie/.test(r.text));
   ok('who is needed is listed', /Two background extras/.test(r.text));
   ok('the practical warning is there', /permits/.test(r.text));
-  ok('which shots happen where is shown', /shots 01a, 01b/.test(r.text));
   ok('no kit list any more', !/Shotgun mic/.test(r.text)&&!/100mm macro .*bounce/.test(r.text));
-  ok('the plan is numbered as beats, not a flat list',
-     JSON.stringify(r.beats)===JSON.stringify([{n:'01',kids:['01a','01b']},{n:'02',kids:['02a']}]), r.beats);
-  ok('a cut is filed under the line it plays under', /01a/.test(r.text)&&/01b/.test(r.text));
-  ok('shot details are one line, not four labelled rows', r.dets===1&&r.oldRows===0, {dets:r.dets,old:r.oldRows});
+  // the document is ordered the way the day is: a place, then everything that
+  // happens there - not the timeline, which is the order you edit in
+  ok('each shot is printed under the location it happens at',
+     JSON.stringify(r.under)===JSON.stringify([
+       {loc:'Diner \u2014 interior booth',shots:['01a','01b']},
+       {loc:'Subway platform',shots:['02a']},
+       {loc:'Studio / voice booth',shots:['01','02']}]), r.under);
+  ok('every shot is printed exactly once',
+     r.under.reduce(function(a,l){return a.concat(l.shots);},[]).sort().join()==='01,01a,01b,02,02a', r.under);
+  ok('story order is not lost - the labels travel with the shots',
+     /01a/.test(r.text)&&/01b/.test(r.text)&&/02a/.test(r.text));
+  ok('nothing is nested any more, the location does the grouping', r.nested===0, r.nested);
+  // the booth's own props are listed in its heading, so repeating them on
+  // every row underneath would say nothing
+  ok('props already promised by the location are not repeated per shot',
+     r.dets===0&&r.oldRows===0, {dets:r.dets,old:r.oldRows});
   ok('the shot text survived the reshuffle', /notebook page filling with numbers/.test(r.text));
   ok('the creative brief is no longer in the export', !/Empty Rooms/.test(r.text));
   ok('it actually printed', r.printed===1, r.printed);
