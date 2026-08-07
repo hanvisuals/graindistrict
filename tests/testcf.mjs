@@ -10,6 +10,9 @@ class MockD1{ constructor(){this.db=new DatabaseSync(':memory:')}
     async all(){return{results:db.prepare(sql).all(...p)}}};return a} }
 const env={GD_KV:new MockD1()};
 const server=http.createServer(async(req,res)=>{
+  if(req.url==='/favicon.ico'){
+    res.writeHead(204);res.end();return;
+  }
   if(req.url==='/index.html'){
     let h=fs.readFileSync((process.env.APP||'/home/user/graindistrict/index.html'),'utf8');
     h=h.replace(/var WORKER='[^']*'/,"var WORKER='http://localhost:8905/'");
@@ -122,6 +125,11 @@ server.listen(8905, async()=>{
   const landed = await page.evaluate(()=>document.getElementById('s5').classList.contains('active'));
   ok('one click on an off-centre card opens it', landed, {picked,landed});
 
+  // Return home before exercising the separate Open action. The card click
+  // above intentionally navigates to the board, so the home actions are no
+  // longer visible until a user comes back to the project shelf.
+  await page.evaluate(()=>show('s0'));
+  await page.waitForSelector('#gdHomeActs [data-a=open]', {state:'visible'});
   // Open button loads the project
   await page.click('#gdHomeActs [data-a=open]');
   await page.waitForTimeout(900);

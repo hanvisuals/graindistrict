@@ -1,4 +1,4 @@
-const { chromium } = require('/tmp/claude-0/-home-user-graindistrict/bfe5caec-d6f0-5809-9c8b-4552ea7a3c13/scratchpad/node_modules/playwright');
+const { chromium } = require('./node_modules/playwright');
 (async () => {
   const browser = await chromium.launch({executablePath:(process.env.CHROME||'/opt/pw-browsers/chromium-1194/chrome-linux/chrome')});
   const page = await browser.newPage({viewport:{width:1280,height:800}});
