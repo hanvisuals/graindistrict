@@ -87,13 +87,19 @@ const APP = process.env.APP || path.resolve(__dirname, '..', 'index.html');
     ];attShots=[];conns=[];imgNodes=[];noteNodes=[];nodeDrawerClosed={};scale=.92;px=14;py=45;renderAll();
   });
   await page.waitForTimeout(180);
-  const board = await page.evaluate(()=>({
-    nodes:document.querySelectorAll('.nc').length,
-    radius:getComputedStyle(document.querySelector('.nc')).borderRadius,
-    live:/LIVE BOARD/.test(document.querySelector('.cbar-brand').textContent),
-    scrollW:document.documentElement.scrollWidth,vw:document.documentElement.clientWidth
-  }));
+  const board = await page.evaluate(()=>{
+    const grid=getComputedStyle(document.querySelector('.vp'));
+    return {
+      nodes:document.querySelectorAll('.nc').length,
+      radius:getComputedStyle(document.querySelector('.nc')).borderRadius,
+      live:/LIVE BOARD/.test(document.querySelector('.cbar-brand').textContent),
+      gridImage:grid.backgroundImage,gridSize:grid.backgroundSize,gridUnit:parseFloat(grid.backgroundSize),zoom:scale,
+      scrollW:document.documentElement.scrollWidth,vw:document.documentElement.clientWidth
+    };
+  });
   ok('visual board cards use the new tactile card system', board.nodes===4 && parseFloat(board.radius)>=12 && board.live, board);
+  ok('production board uses the quiet line grid without a radial glow',
+    Math.abs(board.gridUnit-24*board.zoom)<.1 && !/radial-gradient/.test(board.gridImage), board);
   ok('the polished board creates no horizontal page overflow', board.scrollW<=board.vw, board);
   if(process.env.QA_DIR) await page.screenshot({ path:process.env.QA_DIR + '/workspace-board-desktop.png' });
 

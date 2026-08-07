@@ -1321,7 +1321,10 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,label:focus-with
 .bd-wrap{padding:16px;gap:15px;}
 .bd-act,.bd-type-btn{border-radius:999px;}
 .bd-ta,.bd-tc-in{border-radius:10px;background:rgba(255,255,255,.025);}
-.vp{background-color:#070807;background-image:radial-gradient(circle at 74% 18%,rgba(109,155,211,.045),transparent 25%),linear-gradient(rgba(255,255,255,.021) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.021) 1px,transparent 1px);background-size:auto,40px 40px,40px 40px;}
+/* Keep the production canvas on the same quiet grid used by the rest of the
+   workspace. The former blue radial layer brightened the intersections and
+   produced a dotted/moire pattern behind cards at common browser zooms. */
+.vp{background-color:#070807;background-image:linear-gradient(rgba(255,255,255,.017) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.017) 1px,transparent 1px);background-size:24px 24px;}
 .nc{border-color:rgba(255,255,255,.085);border-radius:14px;background:linear-gradient(145deg,rgba(27,28,27,.98),rgba(17,18,17,.98));box-shadow:0 9px 26px rgba(0,0,0,.28),inset 0 1px rgba(255,255,255,.025);transition:box-shadow .28s var(--gd-ease),transform .28s var(--gd-ease),border-color .2s;}
 .nc:hover{transform:translateY(-3px);border-color:rgba(255,255,255,.17);box-shadow:0 18px 40px rgba(0,0,0,.46),0 0 0 1px rgba(255,255,255,.05);}
 .nc.drag{transition:none!important;}
