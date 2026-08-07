@@ -4860,7 +4860,19 @@ function measureAttHeights(onlyParentId){
   });
   return h;
 }
-function drawAttChain(heights,onlyParentId){
+// Parent blocks are content-sized too. A long B-roll description can be much
+// taller than the old 190px placement guess, so its attached cards and the
+// connector chain must start from the block's measured bottom edge.
+function measureNodeHeights(onlyParentId){
+  var h={};
+  nodes.forEach(function(n){
+    if(onlyParentId!=null&&n.id!==onlyParentId)return;
+    var el=document.getElementById('nc-'+n.id);
+    if(el)h[n.id]=el.offsetHeight;
+  });
+  return h;
+}
+function drawAttChain(heights,onlyParentId,nodeHeights){
   var cw=document.getElementById('cw');
   var byParent={};
   attShots.forEach(function(att){
@@ -4872,7 +4884,8 @@ function drawAttChain(heights,onlyParentId){
     var pnode=null;for(var i=0;i<nodes.length;i++){if(nodes[i].id===Number(pid)){pnode=nodes[i];break;}}
     if(!pnode)return;
     var list=byParent[pid].slice().sort(function(a,b){return a.y-b.y;});
-    var fromX=pnode.x+NC_W/2,fromY=pnode.y+140;
+    var parentH=nodeHeights&&nodeHeights[pnode.id];
+    var fromX=pnode.x+NC_W/2,fromY=pnode.y+(parentH!=null?parentH:140);
     list.forEach(function(att){
       var toX=att.x+NC_W/2,toY=att.y;
       drawAttLine(cw,fromX,fromY,toX,toY,pid);
@@ -4882,9 +4895,10 @@ function drawAttChain(heights,onlyParentId){
 }
 function updateAttLines(onlyParentId){
   var heights=measureAttHeights(onlyParentId);
+  var nodeHeights=measureNodeHeights(onlyParentId);
   var sel=(onlyParentId!=null)?'.att-line[data-p="'+onlyParentId+'"]':'.att-line';
   document.querySelectorAll(sel).forEach(function(el){el.remove();});
-  drawAttChain(heights,onlyParentId);
+  drawAttChain(heights,onlyParentId,nodeHeights);
 }
 function renderAttShots(){
   // Every re-render tears these cards down and builds them again, so the
@@ -4920,6 +4934,7 @@ function renderAttShots(){
       a.collapsed=!a.collapsed;
       elRef.classList.toggle('collapsed',a.collapsed);
       reflowAttShots(a.parentId);
+      updateAttLines(a.parentId);
     });})(att,el);
     var body=document.createElement('div');body.className='att-body';body.textContent=att.t||'(empty)';
     el.appendChild(stripe);el.appendChild(head);el.appendChild(body);
@@ -4945,15 +4960,15 @@ function renderAttShots(){
   // shot text no longer clips to 3 lines, so card height now varies with
   // content length - stack each parent's cards using their REAL measured
   // DOM height (not a fixed guess) now that they're all in the DOM
-  var seenParents={},heights=measureAttHeights();
+  var seenParents={},heights=measureAttHeights(),nodeHeights=measureNodeHeights();
   attShots.forEach(function(att){
     if(nodeDrawerClosed[att.parentId]||seenParents[att.parentId])return;
     seenParents[att.parentId]=1;
-    reflowAttShots(att.parentId,heights);
+    reflowAttShots(att.parentId,heights,nodeHeights);
   });
   // connector lines drawn last, using each shot's now-final stacked position -
   // chained through the gaps only, never crossing over a card's own text
-  drawAttChain(heights);
+  drawAttChain(heights,undefined,nodeHeights);
 }
 
 var attPresentBeforeWipe=null;
@@ -5169,7 +5184,7 @@ function renderCanvas(){
         txtEl.contentEditable='false';
         txtEl.style.cursor='';
         var newVal=txtEl.textContent.trim();
-        if(newVal&&newVal!==node.content){saveHistory();node.content=newVal;renderBlockList();renderTL();}
+        if(newVal&&newVal!==node.content){saveHistory();node.content=newVal;renderBlockList();renderTL();reflowNodeAttachments(node.id);}
       }
       txtEl.onblur=finishEdit;
       txtEl.onkeydown=function(ev){if(ev.key==='Enter'&&!ev.shiftKey){ev.preventDefault();txtEl.blur();}if(ev.key==='Escape'){txtEl.textContent=node.content;txtEl.blur();}};
@@ -5381,7 +5396,7 @@ function renderTL(){
   var tot=document.createElement('div');tot.className='tl-total';tot.textContent=nodes.length+' cuts  '+durMin+'-'+durMax+'min';tl.appendChild(tot);
 }
 
-function reflowAttShots(parentId,heights){
+function reflowAttShots(parentId,heights,nodeHeights){
   var pnode=null;for(var i=0;i<nodes.length;i++){if(nodes[i].id===parentId){pnode=nodes[i];break;}}
   if(!pnode)return;
   var GAP=8,FALLBACK_H=90;
@@ -5391,7 +5406,10 @@ function reflowAttShots(parentId,heights){
   // caller has one; measuring here per card would force a layout every
   // iteration, because each iteration also writes style.top
   var own=heights||measureAttHeights();
-  var curY=pnode.y+190;
+  var parents=nodeHeights||measureNodeHeights(parentId);
+  var parentH=parents[parentId];
+  if(parentH==null){var measuredParent=measureNodeHeights(parentId);parentH=measuredParent[parentId];if(parentH!=null)parents[parentId]=parentH;}
+  var curY=pnode.y+(parentH!=null?parentH:182)+GAP;
   nodeAtts.forEach(function(a){
     a.y=curY;
     var el=document.getElementById('att-'+a.id);
@@ -5415,11 +5433,22 @@ function reflowAttShots(parentId,heights){
         sib.y=needed;pushed=true;
         var sEl=document.getElementById('nc-'+sib.id);
         if(sEl)sEl.style.top=sib.y+'px';
-        reflowAttShots(sib.id,own);
+        reflowAttShots(sib.id,own,parents);
       }
     });
     if(pushed)renderCanvas();
   }
+}
+
+// Text can also grow through the side editor, AI revise and direct editing.
+// Wait one frame for the browser to lay out the new copy, then move the
+// attached production cards and their gap-only connector as one operation.
+function reflowNodeAttachments(parentId){
+  requestAnimationFrame(function(){
+    var heights=measureAttHeights(parentId),parents=measureNodeHeights(parentId);
+    reflowAttShots(parentId,heights,parents);
+    updateAttLines(parentId);
+  });
 }
 
 function tcToSec(tc){
@@ -5579,11 +5608,13 @@ function updateContent(id,val){
   var n=null;for(var i=0;i<nodes.length;i++){if(nodes[i].id===id){n=nodes[i];break;}}
   if(!n)return;n.content=val;
   renderBlockList();var el=document.getElementById('nc-'+id);if(el)el.querySelector('.nc-text').textContent=val;
+  reflowNodeAttachments(id);
 }
 function delShot(nodeId,shotId){
   var n=null;for(var i=0;i<nodes.length;i++){if(nodes[i].id===nodeId){n=nodes[i];break;}}
   if(!n)return;n.shots=n.shots.filter(function(s){return s.id!==shotId;});renderBlockDetail();
   var el=document.getElementById('nc-'+nodeId);if(el){var f=el.querySelector('.nc-footer');if(f){f.innerHTML='';(n.shots||[]).forEach(function(s){var d=document.createElement('div');d.className='nc-shot-dot';d.style.background=SK[s.k]||'#555';f.appendChild(d);});}}
+  reflowNodeAttachments(nodeId);
 }
 
 function planNode(id){
@@ -5633,6 +5664,7 @@ function reviseBlock(nodeId,instruction){
     n.content=raw.trim();
     renderBlockDetail();renderBlockList();
     var el=document.getElementById('nc-'+nodeId);if(el)el.querySelector('.nc-text').textContent=n.content;
+    reflowNodeAttachments(nodeId);
   }).catch(function(e){alert('Error: '+e.message);});
 }
 
