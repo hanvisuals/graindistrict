@@ -47,7 +47,7 @@ const CHROME = process.env.CHROME || '/opt/pw-browsers/chromium-1194/chrome-linu
     vw: document.documentElement.clientWidth
   }));
   ok('the new-project home has the editorial headline and four formats', /Make the\s*cut first/.test(home.title) && home.cards === 4, home);
-  ok('Gawx is automatic and the style picker is gone', home.style === 'gawx' && home.stylePicker === 0, home);
+  ok('the old per-project style picker is gone; Creator DNA owns the channel profile', home.stylePicker === 0, home);
   ok('the desktop home stays inside the viewport', home.scrollW <= home.vw, home);
 
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });

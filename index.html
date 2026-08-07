@@ -665,6 +665,64 @@ body #s0{align-items:stretch;justify-content:flex-start;position:relative;isolat
 .pt-btn[data-type="music"] .pt-tag{color:rgba(180,100,220,1);background:rgba(170,90,204,.1);}
 .pt-btn[data-type="film"] .pt-tag{color:rgba(100,155,220,1);background:rgba(90,138,204,.1);}
 .pt-btn[data-type="other"] .pt-tag{color:rgba(201,168,76,1);background:rgba(201,168,76,.1);}
+.pt-btn:disabled{cursor:not-allowed;opacity:.43;filter:saturate(.45);}
+.pt-btn:disabled:hover{transform:none;border-color:rgba(255,255,255,.09);background:linear-gradient(145deg,rgba(255,255,255,.052),rgba(255,255,255,.016));box-shadow:none;}
+.pt-btn:disabled:hover::before{opacity:.26;transform:translate(-50%,-50%);}
+.pt-btn:disabled:hover::after{transform:translateX(-100%);}
+.pt-btn:disabled:hover .pt-icon-wrap{transform:none;background:rgba(255,255,255,.04);}
+.pt-coming{font-family:var(--mono);font-size:7px;letter-spacing:.13em;text-transform:uppercase;color:rgba(255,255,255,.48);border:1px solid rgba(255,255,255,.13);border-radius:999px;padding:6px 8px;white-space:nowrap;}
+
+/* CREATOR DNA — a one-time channel interview, not another per-project style
+   picker. Answers become a compact production contract used by every YouTube
+   brief and plan until the creator edits it. */
+#s_dna{overflow-y:auto;background:
+  radial-gradient(circle at 80% 18%,rgba(223,188,77,.075),transparent 28%),
+  radial-gradient(circle at 15% 80%,rgba(190,70,55,.055),transparent 32%),var(--bg);}
+.dna-top{height:62px;display:flex;align-items:center;justify-content:space-between;padding:0 calc(clamp(18px,3vw,46px) + var(--gd-acct-w,0px)) 0 clamp(18px,3vw,46px);border-bottom:1px solid rgba(255,255,255,.07);position:sticky;top:0;z-index:5;background:rgba(10,10,10,.86);backdrop-filter:blur(18px);}
+.dna-brand{font-family:var(--sans);font-size:13px;font-weight:700;letter-spacing:.12em;color:#fff;position:absolute;left:50%;transform:translateX(-50%);}
+.dna-top-meta{font-family:var(--mono);font-size:8px;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.32);}
+.dna-back{min-width:72px;min-height:42px;border:1px solid rgba(255,255,255,.1);border-radius:999px;background:rgba(255,255,255,.04);color:rgba(255,255,255,.62);font-family:var(--sans);font-size:12px;cursor:pointer;}
+.dna-back:hover{color:#fff;border-color:rgba(255,255,255,.22);}
+.dna-shell{width:min(920px,calc(100% - 36px));margin:auto;padding:clamp(42px,7vh,84px) 0 calc(52px + var(--safe-b));}
+.dna-progress{display:flex;align-items:center;gap:8px;margin-bottom:clamp(34px,6vh,66px);}
+.dna-progress span{height:3px;border-radius:99px;background:rgba(255,255,255,.1);flex:1;transition:background .25s,transform .25s;}
+.dna-progress span.on{background:#dfbc4d;transform:scaleY(1.5);}
+.dna-progress-label{font-family:var(--mono);font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:rgba(223,188,77,.7);margin-bottom:15px;}
+.dna-question{font-family:var(--sans);font-size:clamp(34px,5.2vw,68px);font-weight:620;letter-spacing:-.055em;line-height:.98;color:#f5f2eb;max-width:780px;}
+.dna-help{font-family:var(--sans);font-size:14px;line-height:1.55;color:rgba(255,255,255,.42);margin-top:16px;max-width:600px;}
+.dna-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:clamp(30px,5vh,48px);}
+.dna-option{min-height:105px;border:1px solid rgba(255,255,255,.1);border-radius:16px;background:rgba(255,255,255,.028);padding:18px 20px;text-align:left;color:#fff;cursor:pointer;display:flex;align-items:flex-start;gap:15px;transition:border-color .2s,background .2s,transform .25s;}
+.dna-option:hover{transform:translateY(-2px);background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.2);}
+.dna-option.sel{border-color:rgba(223,188,77,.78);background:rgba(223,188,77,.075);box-shadow:inset 0 0 0 1px rgba(223,188,77,.18);}
+.dna-option-mark{width:23px;height:23px;border-radius:50%;border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;flex:0 0 auto;margin-top:1px;font-family:var(--mono);font-size:10px;color:transparent;}
+.dna-option.sel .dna-option-mark{border-color:#dfbc4d;background:#dfbc4d;color:#111;}
+.dna-option-copy{display:block;min-width:0;}
+.dna-option-title{display:block;font-family:var(--sans);font-size:16px;font-weight:600;letter-spacing:-.015em;margin-bottom:6px;}
+.dna-option-desc{display:block;font-family:var(--sans);font-size:12px;line-height:1.45;color:rgba(255,255,255,.38);}
+.dna-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:28px;}
+.dna-skip{min-height:44px;border:0;background:transparent;color:rgba(255,255,255,.34);font-family:var(--sans);font-size:12px;cursor:pointer;padding:0 4px;}
+.dna-skip:hover{color:#fff;}
+.dna-next{min-height:48px;border:0;border-radius:999px;background:#f4f1e9;color:#111;font-family:var(--sans);font-size:13px;font-weight:650;padding:0 25px;cursor:pointer;}
+.dna-next:disabled{opacity:.3;cursor:not-allowed;}
+.dna-summary{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(280px,.95fr);gap:12px;margin-top:34px;}
+.dna-card{border:1px solid rgba(255,255,255,.1);border-radius:20px;background:rgba(255,255,255,.03);padding:24px;}
+.dna-card.hero{background:linear-gradient(145deg,rgba(223,188,77,.1),rgba(255,255,255,.025));border-color:rgba(223,188,77,.27);}
+.dna-card-k{font-family:var(--mono);font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:rgba(223,188,77,.7);margin-bottom:14px;}
+.dna-card h2{font-family:var(--sans);font-size:clamp(27px,3.2vw,40px);line-height:1;letter-spacing:-.045em;color:#fff;margin-bottom:14px;}
+.dna-card p{font-family:var(--sans);font-size:13px;line-height:1.55;color:rgba(255,255,255,.48);}
+.dna-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:18px;}
+.dna-chip{font-family:var(--mono);font-size:8px;letter-spacing:.08em;text-transform:uppercase;border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:6px 8px;color:rgba(255,255,255,.55);}
+.dna-rules{display:grid;gap:13px;}
+.dna-rule{display:grid;grid-template-columns:22px 1fr;gap:10px;font-family:var(--sans);font-size:12px;line-height:1.45;color:rgba(255,255,255,.52);}
+.dna-rule b{font-family:var(--mono);font-size:8px;color:#dfbc4d;padding-top:3px;}
+.dna-profile{display:none;align-items:center;gap:13px;border:1px solid rgba(223,188,77,.18);background:rgba(223,188,77,.045);border-radius:13px;padding:11px 13px;margin-bottom:14px;}
+.dna-profile.show{display:flex;}
+.dna-profile-dot{width:8px;height:8px;border-radius:50%;background:#dfbc4d;box-shadow:0 0 14px rgba(223,188,77,.55);flex:0 0 auto;}
+.dna-profile-copy{min-width:0;flex:1;}
+.dna-profile-k{font-family:var(--mono);font-size:7px;letter-spacing:.14em;text-transform:uppercase;color:rgba(223,188,77,.66);margin-bottom:3px;}
+.dna-profile-v{font-family:var(--sans);font-size:12px;color:rgba(255,255,255,.66);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dna-profile-edit{min-width:58px;min-height:38px;border:1px solid rgba(255,255,255,.11);border-radius:999px;background:rgba(255,255,255,.035);color:rgba(255,255,255,.62);font-family:var(--sans);font-size:11px;cursor:pointer;}
+.dna-profile-edit:hover{color:#fff;}
 /* KREA-STYLE PLAN CHOICE + S3 */
 .kb-prog-wrap{position:absolute;top:0;left:0;right:0;height:2px;background:rgba(255,255,255,.07);z-index:10;}
 .kb-prog-fill{height:100%;background:rgba(255,255,255,.35);transition:width .35s;}
@@ -919,6 +977,21 @@ body #s0{align-items:stretch;justify-content:flex-start;position:relative;isolat
   .pt-title{font-size:17px;}
   .pt-arrow{width:30px;height:30px;}
   .pt-btn[data-type="music"] .pt-arrow,.pt-btn[data-type="film"] .pt-arrow{display:none;}
+  .pt-coming{font-size:6px;padding:5px 6px;}
+  .dna-top{height:56px;padding:0 calc(12px + var(--gd-acct-w,120px)) 0 12px;}
+  .dna-brand{display:none;}
+  .dna-top-meta{display:none;}
+  .dna-shell{width:calc(100% - 24px);padding:34px 0 calc(34px + var(--safe-b));}
+  .dna-progress{margin-bottom:32px;gap:5px;}
+  .dna-question{font-size:clamp(34px,11vw,48px);}
+  .dna-options{grid-template-columns:1fr;margin-top:28px;gap:8px;}
+  .dna-option{min-height:84px;padding:15px;}
+  .dna-actions{position:sticky;bottom:0;margin:22px -12px -34px;padding:12px 12px calc(12px + var(--safe-b));background:linear-gradient(180deg,transparent,rgba(10,10,10,.97) 22%);}
+  .dna-next{min-height:48px;}
+  .dna-summary{grid-template-columns:1fr;}
+  .dna-card{padding:20px;}
+  .dna-profile{align-items:flex-start;}
+  .dna-profile-v{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
   #panelToggle{display:flex;}
   .cbar{padding-left:.25rem;}
   .ctopic{font-size:12px;}
@@ -1427,24 +1500,24 @@ body.location-mode #btnRebreak{display:inline-flex!important;}
           <span class="pt-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 19 19 5M9 5h10v10"/></svg></span>
         </div>
       </button>
-      <button class="pt-btn" data-type="music" onclick="setProjectType('music')">
+      <button class="pt-btn" data-type="music" disabled aria-disabled="true" title="Music Video is coming soon">
         <div class="pt-card-top">
           <div class="pt-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
           <span class="pt-tag">MV</span>
         </div>
         <div class="pt-card-bottom">
           <div><div class="pt-title">Music Video</div><div class="pt-sub">verse &middot; chorus &middot; performance</div></div>
-          <span class="pt-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 19 19 5M9 5h10v10"/></svg></span>
+          <span class="pt-coming">Coming soon</span>
         </div>
       </button>
-      <button class="pt-btn" data-type="film" onclick="setProjectType('film')">
+      <button class="pt-btn" data-type="film" disabled aria-disabled="true" title="Short Film is coming soon">
         <div class="pt-card-top">
           <div class="pt-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="16 2 12 7 8 2"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="7" y1="7" x2="7" y2="22"/><line x1="17" y1="7" x2="17" y2="22"/></svg></div>
           <span class="pt-tag">SF</span>
         </div>
         <div class="pt-card-bottom">
           <div><div class="pt-title">Short Film</div><div class="pt-sub">scenes &middot; dialogue &middot; action</div></div>
-          <span class="pt-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 19 19 5M9 5h10v10"/></svg></span>
+          <span class="pt-coming">Coming soon</span>
         </div>
       </button>
       <button class="pt-btn" data-type="other" onclick="setProjectType('other')">
@@ -1461,6 +1534,26 @@ body.location-mode #btnRebreak{display:inline-flex!important;}
   </div>
 </div>
 
+<div id="s_dna" class="screen">
+  <div class="dna-top">
+    <button class="dna-back" onclick="dnaBack()">&larr; Back</button>
+    <span class="dna-brand">GRAIN DISTRICT</span>
+    <span class="dna-top-meta">Creator intelligence / channel setup</span>
+  </div>
+  <div class="dna-shell">
+    <div class="dna-progress" id="dnaProgress" aria-label="Creator DNA progress"></div>
+    <div class="dna-progress-label" id="dnaStepLabel">Creator DNA / 01</div>
+    <h1 class="dna-question" id="dnaQuestion">What should viewers leave with?</h1>
+    <p class="dna-help" id="dnaHelp">Choose the result your videos should create most often.</p>
+    <div class="dna-options" id="dnaOptions"></div>
+    <div class="dna-summary" id="dnaSummary" style="display:none"></div>
+    <div class="dna-actions">
+      <button class="dna-skip" id="dnaSkip" onclick="skipCreatorDna()">Use a balanced profile for now</button>
+      <button class="dna-next" id="dnaNext" onclick="dnaNext()" disabled>Continue &rarr;</button>
+    </div>
+  </div>
+</div>
+
 <div id="s1" class="screen">
   <div class="topbar"><button class="btn s1-back" onclick="show('s0')">&larr; Back</button><span class="logo">HVNVSLS</span><span class="flow-mark"><i></i>Direction intake / 01</span></div>
   <div class="iw">
@@ -1473,6 +1566,11 @@ body.location-mode #btnRebreak{display:inline-flex!important;}
       </div>
     </div>
     <div class="s1-form-shell">
+    <div class="dna-profile" id="dnaProfile">
+      <span class="dna-profile-dot"></span>
+      <span class="dna-profile-copy"><span class="dna-profile-k">Creator DNA active</span><span class="dna-profile-v" id="dnaProfileText"></span></span>
+      <button class="dna-profile-edit" onclick="editCreatorDna()">Edit</button>
+    </div>
     <div>
       <div class="ilabel" id="s1TopicLabel">what is this video about?</div>
       <textarea class="ita" id="topicIn" placeholder="A rainy morning in NYC — intimate, cinematic, handheld..." rows="3"></textarea>
@@ -1984,9 +2082,195 @@ var STYLE_PACKS={
 };
 function stylePack(part){
   if(projectType!=='youtube')return '';
+  if(creatorDNA&&creatorDNA.carrier&&creatorDNA.carrier!=='story')return '\n\n'+creatorDnaStyle(part);
   var p=STYLE_PACKS[styleMode];
   return p?'\n\n'+p[part]:'';
 }
+var creatorDNA=null,dnaDraft=null,dnaStep=0,dnaReturnScreen='s0';
+var DNA_QS=[
+  {key:'outcome',title:'What should viewers leave with?',help:'Choose the result your videos should create most often.',options:[
+    {v:'feel',t:'A feeling',d:'Connection, atmosphere or a personal shift.'},
+    {v:'learn',t:'Something learned',d:'A clear skill, method or explanation.'},
+    {v:'decide',t:'A confident decision',d:'A review, comparison or recommendation.'},
+    {v:'understand',t:'A new way to see it',d:'Turn a complex idea into a clear mental model.'}
+  ]},
+  {key:'carrier',title:'What carries the video on screen?',help:'This changes the story structure and the kind of production plan Grain District builds.',options:[
+    {v:'story',t:'Me and the story',d:'Personal experience, process and cinematic B-roll.'},
+    {v:'presenter',t:'My explanation',d:'Direct-to-camera teaching with supporting examples.'},
+    {v:'demo',t:'Products and real demos',d:'Evidence, tests, close-ups and sample results.'},
+    {v:'graphics',t:'Graphics and animation',d:'Typography, diagrams and designed visual scenes.'},
+    {v:'hybrid',t:'A considered mix',d:'Presenter, B-roll, screens and graphics as needed.'}
+  ]},
+  {key:'presence',title:'How visible are you?',help:'No invented faces or talking-head shots: the plan will respect this boundary.',options:[
+    {v:'camera',t:'I speak to camera',d:'The presenter is the main visual anchor.'},
+    {v:'sometimes',t:'I appear sometimes',d:'Use on-camera moments only when they add clarity.'},
+    {v:'voice',t:'Voice only',d:'The narration leads; my face stays off screen.'},
+    {v:'none',t:'No person at all',d:'Objects, screens or graphics carry everything.'}
+  ]},
+  {key:'pace',title:'How should the edit breathe?',help:'This sets the real camera-shot budget — not just an adjective in the prompt.',options:[
+    {v:'reflective',t:'Slow and thoughtful',d:'Longer holds, room for texture and silence.'},
+    {v:'balanced',t:'Clear and balanced',d:'Steady progression without feeling rushed.'},
+    {v:'energetic',t:'Fast and energetic',d:'Dense information and purposeful quick cuts.'}
+  ]},
+  {key:'capabilities',multiple:true,title:'What can you actually produce?',help:'Pick everything available. The AI will treat this as a production boundary, not a wish list.',options:[
+    {v:'solo',t:'Solo production',d:'One person must be able to execute the plan.'},
+    {v:'studio',t:'Home or studio',d:'Controlled talking-head, tabletop or interior work.'},
+    {v:'locations',t:'Exterior locations',d:'Real-world scenes and location B-roll are possible.'},
+    {v:'products',t:'Product close-ups',d:'Macro details, demonstrations and sample footage.'},
+    {v:'screen',t:'Screen recording',d:'Software, research and workflows can appear directly.'},
+    {v:'motion',t:'Motion graphics',d:'Designed typography, diagrams and animation are possible.'}
+  ]},
+  {key:'avoid',multiple:true,title:'What should never become your default?',help:'Negative preferences are often the strongest part of a creative identity.',options:[
+    {v:'forced_drama',t:'Forced drama',d:'No manufactured struggle or philosophical ending.'},
+    {v:'generic_broll',t:'Generic B-roll',d:'No filler hands, windows, dust or unrelated footage.'},
+    {v:'speed',t:'Constant fast cuts',d:'Do not confuse energy with cutting every second.'},
+    {v:'personal_detour',t:'Personal detours',d:'Keep teaching and reviews focused on the subject.'},
+    {v:'jargon',t:'Unexplained jargon',d:'Technical language always earns a clear explanation.'},
+    {v:'clickbait',t:'Clickbait language',d:'The hook can be strong without making a false promise.'},
+    {v:'none',t:'Nothing here',d:'Let the project decide each time.'}
+  ]}
+];
+var DNA_LABELS={
+  outcome:{feel:'emotion-led',learn:'teaching-led',decide:'decision-led',understand:'idea-led'},
+  carrier:{story:'story-led',presenter:'presenter-led',demo:'demo-led',graphics:'graphics-led',hybrid:'hybrid'},
+  presence:{camera:'on camera',sometimes:'selective on-camera',voice:'voiceover only',none:'no people'},
+  pace:{reflective:'reflective pacing',balanced:'balanced pacing',energetic:'energetic pacing'},
+  capabilities:{solo:'solo production',studio:'home / studio',locations:'exterior locations',products:'product close-ups',screen:'screen recording',motion:'motion graphics'},
+  avoid:{forced_drama:'forced drama',generic_broll:'generic B-roll',speed:'constant fast cuts',personal_detour:'personal detours',jargon:'unexplained jargon',clickbait:'clickbait',none:'no fixed exclusions'}
+};
+function creatorDnaStorageKey(){
+  var email='guest';
+  try{email=localStorage.getItem('gd_email')||sessionStorage.getItem('gd_email')||'guest';}catch(e){}
+  return 'gd_creator_dna_v1_'+String(email).toLowerCase().replace(/[^a-z0-9@._-]+/g,'_');
+}
+function loadCreatorDna(){
+  try{var d=JSON.parse(localStorage.getItem(creatorDnaStorageKey())||'null');return d&&d.v===1?d:null;}catch(e){return null;}
+}
+function storeCreatorDna(d){
+  try{localStorage.setItem(creatorDnaStorageKey(),JSON.stringify(d));}catch(e){}
+}
+function balancedCreatorDna(){
+  return {v:1,outcome:'understand',carrier:'hybrid',presence:'sometimes',pace:'balanced',capabilities:['solo','studio','screen'],avoid:['generic_broll','clickbait']};
+}
+function dnaValueLabel(group,value){return (DNA_LABELS[group]&&DNA_LABELS[group][value])||value||'';}
+function dnaList(group,values){return (values||[]).map(function(v){return dnaValueLabel(group,v);});}
+function creatorDnaName(d){
+  return {story:'Cinematic Storyteller',presenter:'Clear YouTube Guide',demo:'Evidence-led Reviewer',graphics:'Visual Explainer',hybrid:'Hybrid Creator'}[d&&d.carrier]||'YouTube Creator';
+}
+function creatorDnaOneLine(d){
+  if(!d)return '';
+  return [dnaValueLabel('carrier',d.carrier),dnaValueLabel('presence',d.presence),dnaValueLabel('pace',d.pace)].filter(Boolean).join(' · ');
+}
+function creatorDnaStructure(d){
+  return {
+    story:'Build from real events: concrete hook → attempt → cost or friction → discovery → visible change. Never manufacture a failure or a moral.',
+    presenter:'Open with the viewer problem and a precise promise. Teach in ordered sections; each section ends with a usable takeaway.',
+    demo:'Set evaluation criteria first. For every item: use case → real demonstration → evidence → limitation → who it is for.',
+    graphics:'Build a visual argument: claim → diagram or example → change over time → comparison → concise synthesis.',
+    hybrid:'Choose one primary spine for the episode, then use presenter, demo, screen and graphics only where each communicates best.'
+  }[d&&d.carrier]||'';
+}
+function creatorDnaVisual(d){
+  var base={story:'Voice and real tactile images carry the story.',presenter:'The presenter is the anchor; B-roll proves or clarifies a point.',demo:'Products, tests and sample results must provide the evidence.',graphics:'Every BROLL block is a designed graphic scene: specify composition, text hierarchy, diagram, motion and required assets — never invent camera footage.',hybrid:'Assign every idea to the clearest available visual medium.'}[d&&d.carrier]||'';
+  var face={camera:'Use direct-to-camera delivery throughout.',sometimes:'Use the creator on camera selectively.',voice:'Never show the creator\'s face; narration is voiceover only.',none:'Do not put a person or body part on screen.'}[d&&d.presence]||'';
+  return base+' '+face;
+}
+function creatorDnaContext(){
+  var d=creatorDNA;if(projectType!=='youtube'||!d)return '';
+  var caps=dnaList('capabilities',d.capabilities),avoid=dnaList('avoid',d.avoid).filter(function(x){return x!=='no fixed exclusions';});
+  return '\n\nCREATOR DNA — THIS IS THE CHANNEL\'S STANDING PRODUCTION CONTRACT:\n'
+    +'- Primary mode: '+dnaValueLabel('carrier',d.carrier)+'\n'
+    +'- Viewer outcome: '+dnaValueLabel('outcome',d.outcome)+'\n'
+    +'- Creator presence: '+dnaValueLabel('presence',d.presence)+'\n'
+    +'- Editing rhythm: '+dnaValueLabel('pace',d.pace)+'\n'
+    +'- Available production methods: '+(caps.join(', ')||'not specified')+'\n'
+    +'- Never default to: '+(avoid.join(', ')||'none specified')+'\n\n'
+    +'STRUCTURE: '+creatorDnaStructure(d)+'\n'
+    +'VISUAL GRAMMAR: '+creatorDnaVisual(d)+'\n'
+    +'Do not override this profile with a generic cinematic essay formula. Project-specific instructions may narrow it, but may not contradict creator visibility, available production methods, or exclusions.';
+}
+function creatorDnaStyle(part){
+  var d=creatorDNA||balancedCreatorDna(),mode=d.carrier;
+  if(part==='script'){
+    if(mode==='presenter')return 'CREATOR DNA STYLE (writing): Direct, useful YouTube explanation. State the viewer problem and exact promise early. Use clear sections, examples and takeaways. Never invent a personal struggle or philosophical transformation.';
+    if(mode==='demo')return 'CREATOR DNA STYLE (writing): Evidence before opinion. Establish criteria, demonstrate each item, name its limitation, and give a precise recommendation. No manufactured story arc.';
+    if(mode==='graphics')return 'CREATOR DNA STYLE (writing): Write for visual explanation. One idea per beat, concrete relationships, short labels and clean transitions. Avoid anecdotes that cannot be visualised.';
+    return 'CREATOR DNA STYLE (writing): Use one clear episode spine. Mix story, explanation and evidence only when each advances the same promise; never drift into a default cinematic essay structure.';
+  }
+  if(mode==='presenter')return 'CREATOR DNA STYLE (visuals): Presenter-led coverage with purposeful product inserts, examples, screen captures and restrained labels. Every cut must clarify the spoken point.';
+  if(mode==='demo')return 'CREATOR DNA STYLE (visuals): Show the real test, controls, result and limitation. Prefer comparable framing and sample footage over atmospheric filler.';
+  if(mode==='graphics')return 'CREATOR DNA STYLE (visuals): No live-action camera footage unless the profile explicitly makes it available. Treat every BROLL line as a designed scene with layout, type, diagram, motion and asset notes.';
+  return 'CREATOR DNA STYLE (visuals): Choose the clearest medium per beat and keep transitions between presenter, real footage, screens and graphics intentional.';
+}
+function applyCreatorDnaDefaults(){
+  if(!creatorDNA)return;
+  tone=creatorDNA.pace==='energetic'?'energetic':'introspective';
+  fmt=creatorDNA.presence==='camera'?'vlog':(creatorDNA.carrier==='story'?'essay':'voiceover');
+  var toneOpts=document.getElementById('toneOpts'),fmtOpts=document.getElementById('fmtOpts');
+  if(toneOpts)toneOpts.querySelectorAll('.opt').forEach(function(b){b.classList.toggle('on',b.dataset.v===tone);});
+  if(fmtOpts)fmtOpts.querySelectorAll('.opt').forEach(function(b){b.classList.toggle('on',b.dataset.v===fmt);});
+  renderCreatorDnaProfile();
+}
+function renderCreatorDnaProfile(){
+  var box=document.getElementById('dnaProfile'),txt=document.getElementById('dnaProfileText');
+  if(!box||!txt)return;
+  box.classList.toggle('show',projectType==='youtube'&&!!creatorDNA);
+  txt.textContent=creatorDnaName(creatorDNA)+' · '+creatorDnaOneLine(creatorDNA);
+}
+function openCreatorDna(force,returnTo){
+  creatorDNA=creatorDNA||loadCreatorDna();
+  if(creatorDNA&&!force){applyCreatorDnaDefaults();show('s1');return;}
+  dnaReturnScreen=returnTo||'s0';dnaDraft=creatorDNA?JSON.parse(JSON.stringify(creatorDNA)):{};dnaStep=0;
+  show('s_dna');renderDnaStep();
+}
+function editCreatorDna(){openCreatorDna(true,'s1');}
+function dnaOptionClick(value){
+  var q=DNA_QS[dnaStep];if(!q)return;
+  if(q.multiple){
+    var arr=Array.isArray(dnaDraft[q.key])?dnaDraft[q.key].slice():[];
+    if(value==='none')arr=arr.indexOf('none')>=0?[]:['none'];
+    else{arr=arr.filter(function(v){return v!=='none';});var i=arr.indexOf(value);if(i>=0)arr.splice(i,1);else arr.push(value);}
+    dnaDraft[q.key]=arr;
+  }else dnaDraft[q.key]=value;
+  renderDnaStep();
+}
+function renderDnaStep(){
+  var progress=document.getElementById('dnaProgress'),label=document.getElementById('dnaStepLabel'),qEl=document.getElementById('dnaQuestion'),help=document.getElementById('dnaHelp'),opts=document.getElementById('dnaOptions'),sum=document.getElementById('dnaSummary'),next=document.getElementById('dnaNext'),skip=document.getElementById('dnaSkip');
+  progress.innerHTML='';for(var p=0;p<=DNA_QS.length;p++){var bar=document.createElement('span');bar.className=p<=dnaStep?'on':'';progress.appendChild(bar);}
+  if(dnaStep>=DNA_QS.length){
+    label.textContent='Creator DNA / READY';qEl.textContent='This is how Grain District understands you.';help.textContent='Nothing is locked forever. You can edit this profile from the idea screen.';
+    opts.style.display='none';sum.style.display='grid';skip.style.display='none';next.disabled=false;next.textContent='Use this Creator DNA →';
+    var d=Object.assign({v:1},balancedCreatorDna(),dnaDraft),caps=dnaList('capabilities',d.capabilities),avoid=dnaList('avoid',d.avoid);
+    sum.innerHTML='<article class="dna-card hero"><div class="dna-card-k">Your channel profile</div><h2>'+creatorDnaName(d)+'</h2><p>'+creatorDnaStructure(d)+'</p><div class="dna-chips">'
+      +[dnaValueLabel('outcome',d.outcome),dnaValueLabel('presence',d.presence),dnaValueLabel('pace',d.pace)].concat(caps).map(function(x){return '<span class="dna-chip">'+x+'</span>';}).join('')+'</div></article>'
+      +'<article class="dna-card"><div class="dna-card-k">Standing direction</div><div class="dna-rules">'
+      +'<div class="dna-rule"><b>01</b><span>'+creatorDnaVisual(d)+'</span></div>'
+      +'<div class="dna-rule"><b>02</b><span>Available: '+(caps.join(', ')||'not specified')+'.</span></div>'
+      +'<div class="dna-rule"><b>03</b><span>Avoid: '+(avoid.join(', ')||'no fixed exclusions')+'.</span></div>'
+      +'</div></article>';
+    return;
+  }
+  var q=DNA_QS[dnaStep],value=dnaDraft[q.key],selected=q.multiple?(Array.isArray(value)&&value.length>0):!!value;
+  label.textContent='Creator DNA / '+String(dnaStep+1).padStart(2,'0');qEl.textContent=q.title;help.textContent=q.help;opts.style.display='grid';sum.style.display='none';skip.style.display='';next.disabled=!selected;next.textContent=dnaStep===DNA_QS.length-1?'See my DNA →':'Continue →';
+  opts.innerHTML='';q.options.forEach(function(o){
+    var on=q.multiple?(Array.isArray(value)&&value.indexOf(o.v)>=0):value===o.v;
+    var b=document.createElement('button');b.type='button';b.className='dna-option'+(on?' sel':'');b.setAttribute('aria-pressed',on?'true':'false');
+    b.innerHTML='<span class="dna-option-mark">✓</span><span class="dna-option-copy"><span class="dna-option-title">'+o.t+'</span><span class="dna-option-desc">'+o.d+'</span></span>';
+    b.onclick=function(){dnaOptionClick(o.v);};opts.appendChild(b);
+  });
+}
+function dnaNext(){
+  if(dnaStep<DNA_QS.length){dnaStep++;renderDnaStep();return;}
+  creatorDNA=Object.assign({v:1},balancedCreatorDna(),dnaDraft);storeCreatorDna(creatorDNA);applyCreatorDnaDefaults();show('s1');
+}
+function dnaBack(){
+  if(dnaStep>0){dnaStep--;renderDnaStep();return;}
+  show(dnaReturnScreen||'s0');
+}
+function skipCreatorDna(){
+  creatorDNA=balancedCreatorDna();storeCreatorDna(creatorDNA);applyCreatorDnaDefaults();show('s1');
+}
+creatorDNA=loadCreatorDna();
 var durMin=2,durMax=4;
 var songURL=null,songName='',songDuration=0;
 var songAnalysis=null;
@@ -2211,6 +2495,7 @@ function startMvHints(){
 }
 function stopMvHints(){if(mvHintTimer){clearInterval(mvHintTimer);mvHintTimer=null;}}
 function setProjectType(type){
+  if(type==='music'||type==='film')return;
   projectType=type;
   // Gawx is the house visual language for new work. The old style picker was
   // an extra decision before the user had even described the film.
@@ -2227,7 +2512,8 @@ function setProjectType(type){
     document.getElementById('topicIn').placeholder='A rainy morning in NYC — intimate, cinematic, handheld...';
     stopMvHints();
   }
-  show('s1');
+  if(type==='youtube'){openCreatorDna(false,'s0');return;}
+  renderCreatorDnaProfile();show('s1');
 }
 
 function fmtTime(s){s=Math.max(0,Math.round(s||0));var m=Math.floor(s/60);var ss=s%60;return m+':'+(ss<10?'0':'')+ss;}
@@ -3034,13 +3320,15 @@ function splitLongMusicBlocks(text){
    unrealistic for one person to shoot. Keep one shared pacing budget in code
    so the prompt, parallel segments and final guardrail all use the same math. */
 function ytPacingProfile(totalSec){
-  var fast=tone==='energetic';
-  var avgHold=fast?3:6;
+  var dnaPace=creatorDNA&&creatorDNA.pace;
+  var fast=dnaPace?dnaPace==='energetic':tone==='energetic';
+  var balanced=dnaPace==='balanced';
+  var avgHold=fast?3:(balanced?4.5:6);
   var target=Math.max(8,Math.round(totalSec/avgHold));
   return {
-    name:fast?'energetic':'reflective',
-    minHold:fast?2:4,
-    maxHold:fast?5:10,
+    name:fast?'energetic':(balanced?'balanced':'reflective'),
+    minHold:fast?2:(balanced?3:4),
+    maxHold:fast?5:(balanced?7:10),
     avgHold:avgHold,
     targetCuts:target,
     minCuts:Math.max(6,Math.floor(target*.85)),
@@ -3085,7 +3373,7 @@ function buildGenSys(totalSec,li){
       +'- Rhetorical questions the narrator immediately answers, and openers of the "these days" / "have you ever" family.'
       +stylePack('script')+stylePack('shots');
   }
-  return (li?li+'\n\n':'')+base+(li?'\n\n'+li:'')+'\n\nLANGUAGE: Write ALL block content - voiceover words, visual descriptions, everything after the timecode - in the SAME LANGUAGE the user wrote the topic in. Keep the [TYPE] tags in English.\n\nReturn ONLY plain text. Each block is EXACTLY ONE line - never split a block across two lines, never repeat the timecode on its own line:\n[TYPE] 00:00-00:00 - content';
+  return (li?li+'\n\n':'')+base+creatorDnaContext()+(li?'\n\n'+li:'')+'\n\nLANGUAGE: Write ALL block content - voiceover words, visual descriptions, everything after the timecode - in the SAME LANGUAGE the user wrote the topic in. Keep the [TYPE] tags in English.\n\nReturn ONLY plain text. Each block is EXACTLY ONE line - never split a block across two lines, never repeat the timecode on its own line:\n[TYPE] 00:00-00:00 - content';
 }
 
 var pcChoice='ai';
@@ -3141,6 +3429,8 @@ function syncLocationButton(){
   var btn=document.getElementById('btnLocations');
   document.body.classList.toggle('location-mode',canvasViewMode==='location');
   if(!btn)return;
+  btn.style.display=isGraphicsLed()?'none':'';
+  var rb=document.getElementById('btnRebreak');if(rb)rb.style.display=isGraphicsLed()?'none':'';
   btn.disabled=locationViewBusy;
   btn.classList.toggle('on',canvasViewMode==='location');
   btn.textContent=locationViewBusy?'Finding locations...':(canvasViewMode==='location'?'Story order':'Locations');
@@ -3367,6 +3657,7 @@ function leaveLocationView(){
 }
 function toggleLocationView(){
   if(locationViewBusy)return;
+  if(isGraphicsLed())return;
   if(canvasViewMode==='location'){leaveLocationView();return;}
   if(!nodes.length){gdAsk({title:'Nothing to group',message:'Build a board first.',ok:'OK'});return;}
   var key=breakdownKey();
@@ -3451,7 +3742,7 @@ function renderMarkdown(text){
 
 function generateBrief(){
   show('s2');startLoad('s2');
-  var sys='You are a professional film director and creative producer. Based on the project description, write a concise creative brief with these sections:\n\n1. CONCEPT: A catchy concept name and 2-3 sentence visual theme\n2. VISUAL APPROACH: Color palette, lens/camera plan, mood, key aesthetic decisions\n3. SCENE BREAKDOWN: Each location with costume suggestion, key actions, lighting notes\n4. SHOOTING SCHEDULE: Suggested time blocks for each scene\n\nBe creative but strictly within the constraints described. If real location photos are attached, base the visual approach and scene breakdown on what is actually visible in them. Write in the same language the user used. Keep it tight and actionable.'+stylePack('shots');
+  var sys='You are a professional film director and creative producer. Based on the project description, write a concise creative brief with these sections:\n\n1. CONCEPT: A catchy concept name and 2-3 sentence visual theme\n2. VISUAL APPROACH: Color palette, lens/camera plan, mood, key aesthetic decisions\n3. SCENE BREAKDOWN: Each location with costume suggestion, key actions, lighting notes\n4. SHOOTING SCHEDULE: Suggested time blocks for each scene\n\nBe creative but strictly within the constraints described. If real location photos are attached, base the visual approach and scene breakdown on what is actually visible in them. Write in the same language the user used. Keep it tight and actionable.'+stylePack('shots')+creatorDnaContext();
   var constraints=document.getElementById('constraintsIn');
   var cv=constraints?constraints.value.trim():'';
   projectConstraints=cv;
@@ -3527,7 +3818,7 @@ function genScript(){
   if(projectConstraints)productionContext+='\n\nAvailable production resources and constraints:\n'+projectConstraints;
   if(approvedBrief)productionContext+='\n\nApproved creative brief (follow this direction):\n'+approvedBrief;
   var planMsg='Create shot plan for: '+topic+'. Duration: '+durMin+'-'+durMax+' minutes. Tone: '+tone+productionContext+extra;
-  var briefSys='You are a professional film director and creative producer. Based on this project description, write a concise creative brief with these sections:\n\n1. CONCEPT: A catchy concept name and 2-3 sentence visual theme\n2. VISUAL APPROACH: Color palette, lens/camera plan, mood, key aesthetic decisions\n3. SCENE BREAKDOWN: Each location with costume suggestion, key actions, lighting notes\n4. SHOOTING SCHEDULE: Suggested time blocks for each scene\n\nBe creative but strictly within the constraints described. If real location photos are attached, base the visual approach and scene breakdown on what is actually visible in them. Write in the same language the user used. Keep it tight and actionable.'+stylePack('shots');
+  var briefSys='You are a professional film director and creative producer. Based on this project description, write a concise creative brief with these sections:\n\n1. CONCEPT: A catchy concept name and 2-3 sentence visual theme\n2. VISUAL APPROACH: Color palette, lens/camera plan, mood, key aesthetic decisions\n3. SCENE BREAKDOWN: Each location with costume suggestion, key actions, lighting notes\n4. SHOOTING SCHEDULE: Suggested time blocks for each scene\n\nBe creative but strictly within the constraints described. If real location photos are attached, base the visual approach and scene breakdown on what is actually visible in them. Write in the same language the user used. Keep it tight and actionable.'+stylePack('shots')+creatorDnaContext();
   var briefMsg='Project type: '+projectType+'\nDuration: '+durMin+'-'+durMax+' min\n\nProject description:\n'+topic+(projectConstraints?'\n\nEquipment & constraints:\n'+projectConstraints:'')+extra;
   // long plans: draft a beat outline then write segments in parallel instead
   // of one request at a time (much faster for 10+ min cut-by-cut videos)
@@ -3658,7 +3949,9 @@ function parseBlocks(text){
 /* Timeline blocks and things the camera crew must physically capture are not
    the same count. Calling both of them "shots" made a 70-shot film look like a
    120-shot day once voiceover, music and edit transitions were included. */
+function isGraphicsLed(){return projectType==='youtube'&&creatorDNA&&creatorDNA.carrier==='graphics';}
 function isCameraBlock(type){
+  if(isGraphicsLed()&&String(type||'').toLowerCase()==='broll')return false;
   return !{voiceover:1,music:1,transition:1}[String(type||'').toLowerCase()];
 }
 function planQualityReport(text,totalSec){
@@ -3677,6 +3970,10 @@ function planQualityReport(text,totalSec){
 function planStatsLabel(text){
   var n=parseBlocks(text||'');
   if(!n.length)return '0 blocks';
+  if(isGraphicsLed()){
+    var graphics=n.filter(function(b){return b.type==='broll';}).length;
+    return graphics+' graphic scene'+(graphics===1?'':'s')+' · '+n.length+' timeline blocks';
+  }
   var camera=n.filter(function(b){return isCameraBlock(b.type);}).length;
   return camera+' camera shot'+(camera===1?'':'s')+' · '+n.length+' timeline blocks';
 }
@@ -3846,7 +4143,7 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
     +'MOTIFS: choose at most 3 repeating images. For each, state the maximum number of uses and how every use changes its meaning or physical state. Text written on paper, windows, dust, hands and photographs are not free filler; if they repeat, they need a progression.\n\n'
     +'Then break it into exactly '+numSegments+' contiguous segments covering the full 00:00-'+fmtTime(totalSec)+' runtime, each about '+fmtTime(totalSec/numSegments)+' long.'+stylePack('script')+'\n\n'
     +'For each segment define: one short beat; the NEW INFORMATION only this segment contributes; its visual goal; opening and closing physical state; which fixed specifics it may use; which motif step it advances; and facts/phrases it must not repeat. The opening state of a segment must agree with the previous segment\'s closing state. A story where nothing costs anything has no middle. Keep every field brief.\n\n'
-    +'Return ONLY JSON: {"thesis":"...","specifics":["..."],"continuity":{"heroObject":"...","heroObjectAppearance":"...","performerVisibility":"...","locations":["..."],"props":["..."],"wardrobe":["..."],"timeProgression":"..."},"motifs":[{"name":"...","maxUses":2,"progression":["first use","changed second use"]}],"segments":[{"start":"mm:ss","end":"mm:ss","beat":"...","newInformation":"...","visualGoal":"...","openingState":"...","closingState":"...","usesSpecifics":["..."],"motifStep":"...","forbiddenRepeats":["..."]}]}'+(li?'\n\n'+li:'');
+    +'Return ONLY JSON: {"thesis":"...","specifics":["..."],"continuity":{"heroObject":"...","heroObjectAppearance":"...","performerVisibility":"...","locations":["..."],"props":["..."],"wardrobe":["..."],"timeProgression":"..."},"motifs":[{"name":"...","maxUses":2,"progression":["first use","changed second use"]}],"segments":[{"start":"mm:ss","end":"mm:ss","beat":"...","newInformation":"...","visualGoal":"...","openingState":"...","closingState":"...","usesSpecifics":["..."],"motifStep":"...","forbiddenRepeats":["..."]}]}'+creatorDnaContext()+(li?'\n\n'+li:'');
   var outlineMsg='Topic: '+topic+'. Tone: '+tone+'.';
   var evenSplit=[];
   for(var esi=0;esi<numSegments;esi++)evenSplit.push({start:fmtTime(esi*totalSec/numSegments),end:fmtTime((esi+1)*totalSec/numSegments),beat:''});
@@ -5624,11 +5921,14 @@ function buildPrintView(){
   var when=new Date().toLocaleDateString(undefined,{day:'numeric',month:'long',year:'numeric'});
   var total=0; nodes.forEach(function(n){var e=tcToSec(n.tcEnd);if(e>total)total=e;});
   var cameraTotal=nodes.filter(function(n){return isCameraBlock(n.type);}).length;
+  var graphicTotal=isGraphicsLed()?nodes.filter(function(n){return n.type==='broll';}).length:0;
 
   var h='<div class="pv-head">'
     +'<div class="pv-brand">HVNVSLS</div>'
     +'<h1>'+pesc(docTitle())+'</h1>'
-    +'<div class="pv-meta">'+pesc(projectType)+' &middot; '+cameraTotal+' camera shot'+(cameraTotal===1?'':'s')
+    +'<div class="pv-meta">'+pesc(projectType)+' &middot; '+(isGraphicsLed()
+      ? graphicTotal+' graphic scene'+(graphicTotal===1?'':'s')
+      : cameraTotal+' camera shot'+(cameraTotal===1?'':'s'))
     +' &middot; '+nodes.length+' timeline blocks &middot; '
     +fmtTime(total)+' &middot; '+pesc(when)+'</div>'
     +'</div>';
@@ -5777,7 +6077,7 @@ function buildPrintView(){
     h+='</section>';
   }else{
     // no breakdown - story order, beats with their cuts underneath
-    h+='<section><h2>Shot list</h2>';
+    h+='<section><h2>'+(isGraphicsLed()?'Scene &amp; asset plan':'Shot list')+'</h2>';
     scenes.forEach(function(s){
       h+='<article class="pv-sc">'+shotRow(s.label,s.head);
       if(s.kids.length){
@@ -5801,6 +6101,9 @@ function buildPrintView(){
 
 function doExport(){
   if(!nodes.length){ gdAsk({title:'Nothing to export',message:'Build a board first.',ok:'OK'}); return; }
+  // Graphics-led channels need a scene/asset document, not invented shooting
+  // locations. The story-order export already preserves every designed scene.
+  if(isGraphicsLed()){projectBreakdown=null;projectBreakdownKey=null;printNow();return;}
   // the breakdown is what makes this worth printing, so export produces one
   // rather than making it a separate thing to remember. It is kept with the
   // project, so this only costs a wait the first time - but only while it
@@ -6579,6 +6882,7 @@ document.addEventListener('mouseup',function(e){
   function serialize(){
     return {
       v:1, projectType:projectType, topic:topic, tone:tone, fmt:fmt, styleMode:styleMode, inputLang:inputLang,
+      creatorDNA:creatorDNA,
       durMin:durMin, durMax:durMax, projectBrief:projectBrief, projectConstraints:projectConstraints,
       projectBreakdown:projectBreakdown, projectBreakdownKey:projectBreakdownKey,
       aiMode:(typeof aiMode!=='undefined'?aiMode:true),
@@ -6593,6 +6897,8 @@ document.addEventListener('mouseup',function(e){
     d=d||{};
     resetLocationViewState();
     projectType=d.projectType||'youtube'; topic=d.topic||''; tone=d.tone||tone; fmt=d.fmt||fmt; styleMode=d.styleMode||'gawx';
+    creatorDNA=d.creatorDNA||loadCreatorDna()||creatorDNA;
+    if(d.creatorDNA)storeCreatorDna(d.creatorDNA);
     inputLang=d.inputLang||'en'; durMin=d.durMin||durMin; durMax=d.durMax||durMax;
     projectBrief=d.projectBrief||''; projectConstraints=d.projectConstraints||'';
     projectBreakdown=d.projectBreakdown||null; projectBreakdownKey=d.projectBreakdownKey||null;
@@ -6604,6 +6910,7 @@ document.addEventListener('mouseup',function(e){
     if(d.view){ scale=d.view.scale||1; px=(d.view.px==null?60:d.view.px); py=(d.view.py==null?80:d.view.py); }
     undoStack=[]; undoIdx=-1;
     show('s5');
+    renderCreatorDnaProfile();
     if(typeof renderAll==='function') renderAll();
     if(typeof renderRecceGrid==='function') renderRecceGrid();
     saveHistory();
@@ -6707,6 +7014,7 @@ document.addEventListener('mouseup',function(e){
     if(saveTimer){ clearTimeout(saveTimer); saveTimer=null; }
     token=null; userEmail=null;
     clearStoredSession();
+    creatorDNA=loadCreatorDna();
     window.gdNewProject();
     clearBoard();
     show('s0');
@@ -6764,6 +7072,7 @@ document.addEventListener('mouseup',function(e){
       token=d.token; userEmail=d.email;
       var remember=byId('gdRemember'); remember=!remember||remember.checked;
       writeStoredSession(token,userEmail,remember);
+      creatorDNA=loadCreatorDna();
       byId('gdAuthOv').classList.remove('show');
       byId('gdPass').value='';
       window.gdNewProject();
@@ -6855,6 +7164,7 @@ document.addEventListener('mouseup',function(e){
           .then(function(d){
             token=d.token; userEmail=d.email;
             writeStoredSession(token,userEmail,true);
+            creatorDNA=loadCreatorDna();
             renderAccount(); applyAuthGate(); updateHomePanel();
             gdAsk({title:'Password changed',message:'You are signed in again.',ok:'OK'});
           },function(e){
