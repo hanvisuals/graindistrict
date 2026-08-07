@@ -1966,24 +1966,21 @@ var PT_BLOCKS={youtube:['VOICEOVER','BROLL','MUSIC','TRANSITION'],music:['VERSE'
 var tone='introspective',fmt='voiceover',styleMode='gawx',topic='',inputLang='en',projectType='youtube';
 
 var STYLE_PACKS={
-gawx:{
+ gawx:{
   script:'STYLE MODE - GAWX (writing):\n'+
-    '- First person, past tense, confessional but never self-pitying.\n'+
-    '- Narrative arc: memory hook (3 tiny specific memories) -> one-sentence turning point ("it was time for change") -> naive first attempt that fails -> research rabbit hole -> admission of searching in the wrong place -> reframe ("instead of copying X, I would copy Y") -> numbered personal manifesto with half-joking rules -> process montage -> philosophical ending that CALLS BACK a line from the opening.\n'+
-    '- VOICEOVER montage moments use short comma-free list sentences: "two beds. one bed. the first desk." Each fragment implies one cut.\n'+
-    '- Insight lines use triple parallel constructions: "less of a routine, more of a ritual. less of an obligation, more of an experiment."\n'+
-    '- Admit flaws casually and in passing ("selfishness took over", "naively...").\n'+
-    '- Chapter transitions are exactly one sentence.\n'+
-    '- The example lines above are English but they only illustrate TECHNIQUE. When the topic is in another language, write everything in that language - translate the techniques, never the examples.',
+    '- First person, candid and observant, but never self-pitying or grandiose.\n'+
+    '- Build the arc from this project\'s actual events. Do not force a memory hook, failed first attempt, research rabbit hole, numbered manifesto or philosophical ending when the material does not earn it.\n'+
+    '- Prefer small verifiable details and honest admissions over slogans. Introduce a fact once; a later callback must change or complicate its meaning.\n'+
+    '- Vary sentence length with the thought. Short fragments are punctuation, not a repeating cadence or an instruction to add a cut for every fragment.\n'+
+    '- Preserve the creator\'s tactile, curious energy without copying signature phrases, rhetorical templates or the structure of a particular existing video.\n'+
+    '- Chapter transitions advance the argument. They never summarise the section that just ended.',
   shots:'STYLE MODE - GAWX (visuals):\n'+
-    '- Every abstract idea becomes a PHYSICAL metaphor built by hand: scale models, paper, cardboard, handwritten text on screen. Never CGI, never stock footage, never generic b-roll.\n'+
-    '- List sentences -> rapid jump cuts, one item per cut, fixed camera, only the object changes.\n'+
-    '- Turning-point lines -> single static wide shot, music stops.\n'+
-    '- Research sections -> screen recordings, macro shots of book covers and pages, accelerating cuts, overlapping images.\n'+
-    '- Montage sections -> handheld camera, over-the-shoulder or ceiling angle, no dialogue.\n'+
-    '- Narration pairs with macro detail shots: pencil tip, paint, paper texture, hands working.\n'+
-    '- The ending visually calls back to the opening shot.'
-}
+    '- Make ideas tangible with real, filmable actions and objects already present in the story. A handmade metaphor is a special beat, not the default coverage for every abstract sentence.\n'+
+    '- Use tactile materials, practical effects and imperfect analog texture where they support the subject. Never invent paper, cardboard or handwritten text merely to make a shot look styled.\n'+
+    '- Prioritise literal coverage of the object or action named in the voiceover. Generic hands, windows, dust, photographs, pages and screen recordings are filler unless the story specifically needs them.\n'+
+    '- Camera movement and shot size follow emotional change. Do not turn lists into mandatory jump cuts or research into an automatic macro montage.\n'+
+    '- Reuse an opening composition at the end only when the same canonical objects, wardrobe and framing can return, and something visible has changed.'
+ }
 };
 function stylePack(part){
   if(projectType!=='youtube')return '';
@@ -2119,7 +2116,7 @@ document.querySelectorAll('.pt-btn').forEach(function(card){
   });
 });
 document.getElementById('scriptTa').addEventListener('input',function(){
-  document.getElementById('wc').textContent=this.value.trim().split('\n').filter(function(l){return l.trim();}).length+' blocks';
+  document.getElementById('wc').textContent=planStatsLabel(this.value);
 });
 document.getElementById('modalTypes').querySelectorAll('.modal-type').forEach(function(b){
   b.onclick=function(){document.getElementById('modalTypes').querySelectorAll('.modal-type').forEach(function(x){x.classList.remove('on');});b.classList.add('on');modalType=b.dataset.t;};
@@ -3030,9 +3027,29 @@ function splitLongMusicBlocks(text){
   }).join('\n');
 }
 
+/* Cutting pace is a creative choice, not a fixed three-second tax. The old
+   rule demanded 2-5 images under every sentence and one cut every three
+   seconds. A seven-minute reflective essay therefore became 167 camera shots
+   before the model had made a single story decision: dense, repetitive and
+   unrealistic for one person to shoot. Keep one shared pacing budget in code
+   so the prompt, parallel segments and final guardrail all use the same math. */
+function ytPacingProfile(totalSec){
+  var fast=tone==='energetic';
+  var avgHold=fast?3:6;
+  var target=Math.max(8,Math.round(totalSec/avgHold));
+  return {
+    name:fast?'energetic':'reflective',
+    minHold:fast?2:4,
+    maxHold:fast?5:10,
+    avgHold:avgHold,
+    targetCuts:target,
+    minCuts:Math.max(6,Math.floor(target*.85)),
+    maxCuts:Math.max(9,Math.ceil(target*1.18))
+  };
+}
 function ytCutRules(totalSec){
-  var approxCuts=Math.round(totalSec/3);
-  return '\n\nTWO LAYERS:\nAUDIO LAYER = VOICEOVER (one block per sentence or breath-group; its timecode spans the time the line takes to say, ~2.3 words per second) and MUSIC (montage section, no talking).\nVISUAL LAYER = BROLL (one camera cut) and TRANSITION.\n\nCUTTING MATH:\n- One sentence is NEVER one image. While a VOICEOVER line plays, cover its timespan with 2-5 BROLL cuts. Write the VOICEOVER line first, then immediately the BROLL cuts that play under it - their timecodes OVERLAP the voiceover timecode.\n- Every BROLL block is ONE cut, 1-4 seconds, never longer. A detail moment (e.g. making an espresso) is never one 10-second shot - it is 3-4 different angles cut together.\n- Generate approximately '+approxCuts+' BROLL cuts in total across the video.\n- Vary shot sizes every cut. No two consecutive cuts with the same framing.\n- MUSIC sections still get full cut-by-cut BROLL coverage.\n- MUSIC sections are SHORT breathing-room interludes, max 15-20 seconds each. Never let a music-only stretch run longer than that or dominate the video - the viewer should not go a long stretch without a voice. If a montage needs to cover more time, break it into a MUSIC block plus VOICEOVER lines resuming partway through, not one long unbroken music section.';
+  var p=ytPacingProfile(totalSec);
+  return '\n\nTWO LAYERS:\nAUDIO LAYER = VOICEOVER (one block per sentence or breath-group; its timecode spans the time the line takes to say, ~2.3 words per second) and MUSIC (montage section, no talking).\nVISUAL LAYER = BROLL (one camera cut) and TRANSITION (an edit instruction, not another camera shot).\n\nPACING & COVERAGE BUDGET ('+p.name.toUpperCase()+'):\n- Let shots breathe. Most BROLL holds '+p.minHold+'-'+p.maxHold+' seconds; the average across the film is about '+p.avgHold+' seconds. A shorter insert is exceptional and must reveal new information.\n- Aim for '+p.minCuts+'-'+p.maxCuts+' BROLL camera shots across the WHOLE video (about '+p.targetCuts+'), not one cut every few seconds by default. This is a production budget, not a target to exceed.\n- A VOICEOVER line normally needs 1-2 BROLL shots. One strong shot may bridge two sentences. Use 3 only when the physical action genuinely changes; never create extra angles just to fill time.\n- Write the VOICEOVER line first, then the BROLL that plays under it; their timecodes overlap. Together those BROLL timecodes cover the audio span without gaps.\n- When the voice names a concrete object or action, at least one BROLL in that same span must show that exact object or action. Do not replace it with generic hands, dust, a window, or an unrelated photograph.\n- Repeating a motif is allowed only when its meaning or physical state changes. A second shot that communicates the same fact is not coverage; cut it.\n- Vary framing with intention, not mechanically. Continuity of object, wardrobe, performer visibility, location and time of day outranks variety.\n- MUSIC sections still get visual coverage, using the same hold lengths and shot budget.\n- MUSIC sections are SHORT breathing-room interludes, max 15-20 seconds each. Never let a music-only stretch dominate the video; if a montage needs more time, let voiceover resume partway through.';
 }
 
 function buildGenSys(totalSec,li){
@@ -3066,7 +3083,7 @@ function buildGenSys(totalSec,li){
       +'- Reusing any sentence shape you have already used. If two lines could be swapped without anyone noticing, cut one.\n'
       +'- Announcing structure you then abandon. If the narrator sets rules or makes a list, it has to matter later - one gets broken, one saves them - or do not set it up.\n'
       +'- Rhetorical questions the narrator immediately answers, and openers of the "these days" / "have you ever" family.'
-      +stylePack('script');
+      +stylePack('script')+stylePack('shots');
   }
   return (li?li+'\n\n':'')+base+(li?'\n\n'+li:'')+'\n\nLANGUAGE: Write ALL block content - voiceover words, visual descriptions, everything after the timecode - in the SAME LANGUAGE the user wrote the topic in. Keep the [TYPE] tags in English.\n\nReturn ONLY plain text. Each block is EXACTLY ONE line - never split a block across two lines, never repeat the timecode on its own line:\n[TYPE] 00:00-00:00 - content';
 }
@@ -3081,7 +3098,7 @@ var projectBreakdown=null;   // location-by-location shooting breakdown
    version of the code that made it, and either one changing throws it out.
    Bump the version whenever the breakdown prompt or its handling changes -
    that is what retires the copies already saved in people's projects. */
-var BREAKDOWN_V=10;
+var BREAKDOWN_V=11;
 var projectBreakdownKey=null;
 function breakdownKey(){
   var t=BREAKDOWN_V+'|'+planAsText(),h=5381;
@@ -3529,11 +3546,14 @@ function genScript(){
     // "please share the last blocks and topic...") instead of real blocks -
     // that text used to get shown to the user as if it were the plan
     if(!parseBlocks(planText).length)throw new Error('The AI could not produce a usable plan this time - please try again.');
-    if(projectType==='youtube')planText=splitLongMusicBlocks(planText);
+    if(projectType==='youtube'){
+      planText=splitLongMusicBlocks(planText);
+      planText=compactGeneratedYouTubePlan(planText,totalSec);
+    }
     projectBrief=results[0].trim();
     document.getElementById('briefContent').innerHTML=renderMarkdown(projectBrief);
     document.getElementById('scriptTa').value=planText;
-    document.getElementById('wc').textContent=planText.split('\n').filter(function(l){return l.trim();}).length+' blocks';
+    document.getElementById('wc').textContent=planStatsLabel(planText);
     show('s3');
   }).catch(function(e){stopLoad();alert('Error: '+e.message);show('s1');});
 }
@@ -3581,8 +3601,9 @@ function planHighlight(){
   }catch(e){ /* if this isn't allowed, 'input' still covers typing */ }
 })();
 
-// longer than any block the generator asks for: b-roll cuts are 1-4s, voiceover
-// lines under ten, and long music sections are split at twenty before parsing
+// longer than any block the generator asks for: even the slow pacing profile
+// holds b-roll under ten seconds, voiceover lines stay short, and long music
+// sections are split at twenty before parsing
 var MAX_BLOCK_SEC=30;
 function parseBlocks(text){
   var btypes=(PT_BLOCKS[projectType]||PT_BLOCKS.youtube).join('|');
@@ -3632,6 +3653,111 @@ function parseBlocks(text){
     out.push({type:tm[1].toLowerCase(),tcStart:tcStart,tcEnd:tcEnd,content:content,shots:[]});
   });
   return out.filter(function(b){return b.content;});
+}
+
+/* Timeline blocks and things the camera crew must physically capture are not
+   the same count. Calling both of them "shots" made a 70-shot film look like a
+   120-shot day once voiceover, music and edit transitions were included. */
+function isCameraBlock(type){
+  return !{voiceover:1,music:1,transition:1}[String(type||'').toLowerCase()];
+}
+function planQualityReport(text,totalSec){
+  var blocks=parseBlocks(text||''),camera=0,broll=0,seen={},duplicates=[];
+  blocks.forEach(function(b){
+    if(isCameraBlock(b.type))camera++;
+    if(b.type==='broll')broll++;
+    var k=b.type+'|'+String(b.content||'').toLowerCase()
+      .replace(/[^a-z0-9çğıöşü]+/gi,' ').replace(/\s+/g,' ').trim();
+    if(k.length>18){ if(seen[k]!=null)duplicates.push([seen[k],b.content]); else seen[k]=b.content; }
+  });
+  var p=projectType==='youtube'?ytPacingProfile(totalSec||0):null;
+  return {blocks:blocks.length,cameraShots:camera,brollCuts:broll,
+    overBudget:!!(p&&broll>p.maxCuts),duplicateCount:duplicates.length,duplicates:duplicates};
+}
+function planStatsLabel(text){
+  var n=parseBlocks(text||'');
+  if(!n.length)return '0 blocks';
+  var camera=n.filter(function(b){return isCameraBlock(b.type);}).length;
+  return camera+' camera shot'+(camera===1?'':'s')+' · '+n.length+' timeline blocks';
+}
+function fmtPlanTime(s){
+  var t=fmtTime(s);
+  return /^\d:/.test(t)?'0'+t:t;
+}
+function formatPlanBlock(b){
+  return '['+String(b.type||'').toUpperCase()+'] '+fmtPlanTime(tcToSec(b.tcStart))+'-'+fmtPlanTime(tcToSec(b.tcEnd))+' - '+b.content;
+}
+
+/* Prompt budgets are guidance; this is the seatbelt. If a model still returns
+   five near-identical angles under one seven-second line, keep an evenly
+   spaced selection and let those shots cover the whole line. The words and
+   story order remain untouched, but the plan can no longer silently balloon
+   back into an impossible shoot. This only runs on newly generated YouTube
+   plans - never on a person's hand-edited board. */
+function compactGeneratedYouTubePlan(text,totalSec){
+  var blocks=parseBlocks(text||'');
+  if(!blocks.length)return text;
+  var p=ytPacingProfile(totalSec),out=[];
+  function keepIndexes(n,want){
+    var keep={};
+    if(want>=n){for(var z=0;z<n;z++)keep[z]=1;return keep;}
+    if(want===1){keep[Math.floor((n-1)/2)]=1;return keep;}
+    for(var k=0;k<want;k++)keep[Math.round(k*(n-1)/(want-1))]=1;
+    return keep;
+  }
+  function wordSet(s){
+    var stop={with:1,from:1,into:1,that:1,this:1,then:1,ve:1,bir:1,icin:1,'için':1,
+      gibi:1,ama:1,sonra:1,plan:1,close:1,wide:1,shot:1,static:1,macro:1,
+      camera:1,kamera:1,yakin:1,'yakın':1,orta:1,genis:1,'geniş':1};
+    var out={};
+    String(s||'').toLowerCase().replace(/[^a-z0-9çğıöşü]+/gi,' ').split(/\s+/).forEach(function(w){
+      if(w.length<4||stop[w])return;
+      // A short stem makes literal coverage work in inflected languages too:
+      // "kaseti" and "kasetçalar", "kutuyu" and "kutunun" still meet.
+      out[w.slice(0,4)]=1;
+    });
+    return out;
+  }
+  function semanticKeepIndexes(cuts,want,voice){
+    if(want>=cuts.length)return keepIndexes(cuts.length,want);
+    var words=wordSet(voice),ranked=cuts.map(function(b,i){
+      var score=0,w=wordSet(b.content);
+      Object.keys(w).forEach(function(k){if(words[k])score++;});
+      return {i:i,score:score};
+    }).sort(function(a,b){return b.score-a.score||a.i-b.i;});
+    var keep={},used=0;
+    ranked.forEach(function(x){if(used<want&&x.score>0){keep[x.i]=1;used++;}});
+    // Fill any remaining seats with an even temporal spread, preserving story
+    // coverage when no literal word match is available.
+    var even=keepIndexes(cuts.length,want);
+    Object.keys(even).forEach(function(k){if(used<want&&!keep[k]){keep[k]=1;used++;}});
+    for(var i=0;used<want&&i<cuts.length;i++)if(!keep[i]){keep[i]=1;used++;}
+    return keep;
+  }
+  for(var i=0;i<blocks.length;){
+    var head=blocks[i];
+    if(!(head.type==='voiceover'||head.type==='music')){out.push(head);i++;continue;}
+    out.push(head);i++;
+    var tail=[];
+    while(i<blocks.length&&blocks[i].type!=='voiceover'&&blocks[i].type!=='music')tail.push(blocks[i++]);
+    var cuts=tail.filter(function(b){return b.type==='broll';});
+    var span=Math.max(1,tcToSec(head.tcEnd)-tcToSec(head.tcStart));
+    var want=Math.max(1,Math.ceil(span/p.avgHold));
+    var selected=semanticKeepIndexes(cuts,want,head.content),ci=0,kept=[];
+    tail.forEach(function(b){ if(b.type==='broll'&&selected[ci++])kept.push(b); });
+    // Keep the visual layer continuous after removing filler angles.
+    var hs=tcToSec(head.tcStart),he=tcToSec(head.tcEnd);
+    kept.forEach(function(b,j){
+      b.tcStart=fmtPlanTime(Math.round(hs+(he-hs)*j/kept.length));
+      b.tcEnd=fmtPlanTime(j===kept.length-1?he:Math.round(hs+(he-hs)*(j+1)/kept.length));
+    });
+    tail.forEach(function(b){ if(b.type!=='broll'||kept.indexOf(b)>=0)out.push(b); });
+  }
+  var result=out.map(formatPlanBlock).join('\n');
+  var audit=planQualityReport(result,totalSec);
+  if(audit.overBudget)console.warn('[plan] visual budget still exceeded after compaction',audit);
+  window.__lastPlanAudit=audit;
+  return result;
 }
 
 /* Long plans (>4min) used to be built by repeatedly asking for "the next chunk"
@@ -3693,8 +3819,8 @@ function runLimited(taskFns,limit){
 
 function genPlanChunked(planSys,planMsg,totalSec,li){
   // segment length drives how much text ONE request has to generate, which
-  // is the thing that actually decides whether it finishes in time. The cut
-  // rules ask for roughly one BROLL cut every 3s plus voiceover lines, so a
+  // is the thing that actually decides whether it finishes in time. Older cut
+  // rules asked for roughly one BROLL cut every 3s plus voiceover lines, so a
   // 180s segment meant ~90 blocks (~2500-3000 tokens) from a single
   // non-streamed call - 45-60s of generation, right at the timeout cliff.
   // That's why long videos failed while short ones (a single untimed call)
@@ -3702,6 +3828,7 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
   // window, and more of them run in parallel, so total time still drops.
   var segLen=110;
   var numSegments=Math.min(9,Math.max(2,Math.round(totalSec/segLen)));
+  var pace=projectType==='youtube'?ytPacingProfile(totalSec):null;
   // keep the beat short - this is a quick outline, not the script itself.
   // asking for "2-3 sentences" per segment used to make even this "fast"
   // structuring step take 20-30s+ on its own
@@ -3712,12 +3839,14 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
      version of the same thing. The outline now decides two things first - the
      one claim the video makes, and the handful of specifics everyone must use
      - and both are handed to every segment. */
-  var outlineSys=(li?li+'\n\n':'')+'You are a story editor. Before any of it is written you settle what the video is actually saying and what it is made of, then break it into segments so several writers can draft in parallel without drifting apart.\n\n'
+  var outlineSys=(li?li+'\n\n':'')+'You are a story editor and continuity supervisor. Before any of the video is written, settle what it says, what physically exists in its world, and which part of the argument belongs to each segment. Several writers will draft in parallel from this document; anything you leave ambiguous will be reinvented several incompatible ways.\n\n'
     +'THESIS: one sentence - the thing this video says that a generic video on the same topic would not. Not the subject, the claim. It has to be arguable: if nobody could disagree with it, it is a description, not a thesis.\n\n'
-    +'SPECIFICS: 4-6 concrete, checkable details the whole video will be built from and every writer must reuse verbatim - the actual object and what it looks like, a real place, a number, a named thing. Invent them if the topic does not supply them, but commit: they are facts now, not options. Concrete means somebody could photograph it or check it. "A hand-drawn design" is not a specific; "a crooked ink face, drawn in one line, on the left chest" is.\n\n'
+    +'SPECIFICS: 4-6 concrete, checkable facts available to the whole video - the actual object and what it looks like, a real place, a number, a named thing. Invent only when the topic leaves a harmless creative detail open, then commit: it is one fact, not a menu of options. A writer uses a specific only in the segment that owns it; consistency does NOT mean repeating every fact in every segment. "A hand-drawn design" is not specific; "a crooked ink face, drawn in one line, on the left chest" is.\n\n'
+    +'CONTINUITY: lock the physical world before drafting. Give one canonical hero object and appearance (a cardboard box cannot become a wooden box), performer visibility (face shown, partial, or never shown), locations, recurring props, wardrobe, and time/light progression. Use empty strings or arrays when something does not apply; never give alternatives with "or".\n\n'
+    +'MOTIFS: choose at most 3 repeating images. For each, state the maximum number of uses and how every use changes its meaning or physical state. Text written on paper, windows, dust, hands and photographs are not free filler; if they repeat, they need a progression.\n\n'
     +'Then break it into exactly '+numSegments+' contiguous segments covering the full 00:00-'+fmtTime(totalSec)+' runtime, each about '+fmtTime(totalSec/numSegments)+' long.'+stylePack('script')+'\n\n'
-    +'For each segment ONE short sentence: what happens narratively and visually, and what it costs - who is disappointed, what is thrown away, what does not work. A story where nothing costs anything has no middle. Keep it brief, this is an outline.\n\n'
-    +'Return ONLY JSON: {"thesis":"...","specifics":["...","..."],"segments":[{"start":"mm:ss","end":"mm:ss","beat":"..."}]}'+(li?'\n\n'+li:'');
+    +'For each segment define: one short beat; the NEW INFORMATION only this segment contributes; its visual goal; opening and closing physical state; which fixed specifics it may use; which motif step it advances; and facts/phrases it must not repeat. The opening state of a segment must agree with the previous segment\'s closing state. A story where nothing costs anything has no middle. Keep every field brief.\n\n'
+    +'Return ONLY JSON: {"thesis":"...","specifics":["..."],"continuity":{"heroObject":"...","heroObjectAppearance":"...","performerVisibility":"...","locations":["..."],"props":["..."],"wardrobe":["..."],"timeProgression":"..."},"motifs":[{"name":"...","maxUses":2,"progression":["first use","changed second use"]}],"segments":[{"start":"mm:ss","end":"mm:ss","beat":"...","newInformation":"...","visualGoal":"...","openingState":"...","closingState":"...","usesSpecifics":["..."],"motifStep":"...","forbiddenRepeats":["..."]}]}'+(li?'\n\n'+li:'');
   var outlineMsg='Topic: '+topic+'. Tone: '+tone+'.';
   var evenSplit=[];
   for(var esi=0;esi<numSegments;esi++)evenSplit.push({start:fmtTime(esi*totalSec/numSegments),end:fmtTime((esi+1)*totalSec/numSegments),beat:''});
@@ -3728,7 +3857,7 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
   // really is small (a few sentences of JSON) so it stays comparatively
   // tight, but 8s was cutting off a call that simply hadn't started yet
   return withTimeout(apiRetry(outlineSys,outlineMsg),25000,null).then(function(raw){
-    var segs=[],thesis='',specifics=[];
+    var segs=[],thesis='',specifics=[],continuity={},motifs=[];
     if(raw){
       // the outline used to be a bare array; accept either shape so a model
       // that answers the old way still produces a usable plan
@@ -3738,6 +3867,7 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
           var o=JSON.parse(mo[0]);
           segs=o.segments||[];thesis=o.thesis||'';
           specifics=(o.specifics||[]).filter(Boolean);
+          continuity=o.continuity||{};motifs=(o.motifs||[]).filter(Boolean);
         }
       }catch(e){}
       if(segs.length<2){try{var m=raw.match(/\[[\s\S]*\]/);if(m)segs=JSON.parse(m[0]);}catch(e2){}}
@@ -3747,12 +3877,27 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
     // the spine every segment writes against, so three writers working at
     // once produce one video instead of three versions of the same one
     var spine=(thesis?'\n\nWHAT THIS VIDEO SAYS (every block serves this - do not restate it in words, earn it):\n'+thesis:'')
-      +(specifics.length?'\n\nFIXED SPECIFICS - these are settled facts. Use them exactly as written wherever they belong, never a vaguer version, never a different version:\n- '+specifics.join('\n- '):'');
+      +(specifics.length?'\n\nFIXED SPECIFICS - settled facts, not recurring catchphrases. Use one only where the outline assigns or needs it; never repeat it merely to prove consistency, and never invent a different version:\n- '+specifics.join('\n- '):'')
+      +(Object.keys(continuity).length?'\n\nCONTINUITY BIBLE - this is canonical. Do not substitute, rename, offer alternatives, or contradict it:\n'+JSON.stringify(continuity):'')
+      +(motifs.length?'\n\nMOTIF LEDGER - use only the assigned step, never replay an earlier use:\n'+JSON.stringify(motifs):'');
     function buildSegSys(seg,idx){
       var prev=idx>0?segs[idx-1]:null;
+      var otherInfo=segs.filter(function(x,j){return j!==idx&&x.newInformation;}).map(function(x){return x.newInformation;});
+      var segSecs=Math.max(1,tcToSec(seg.end)-tcToSec(seg.start));
+      var shotBudget=pace?Math.max(1,Math.round(segSecs/pace.avgHold)):0;
       return planSys+spine
         +'\n\nSEGMENT WRITING TASK: You are writing ONLY the part of this video from '+seg.start+' to '+seg.end+' (segment '+(idx+1)+' of '+segs.length+').\n\nFull outline for context - do NOT repeat other segments, just stay consistent with this arc:\n'+outlineText
         +'\n\nTHIS SEGMENT\'S BEAT: '+(seg.beat||'continue the story')
+        +(seg.newInformation?'\nNEW INFORMATION THIS SEGMENT OWNS: '+seg.newInformation:'')
+        +(seg.visualGoal?'\nVISUAL GOAL: '+seg.visualGoal:'')
+        +(seg.openingState?'\nOPENING PHYSICAL STATE: '+seg.openingState:'')
+        +(seg.closingState?'\nCLOSING PHYSICAL STATE: '+seg.closingState:'')
+        +(seg.usesSpecifics&&seg.usesSpecifics.length?'\nFIXED SPECIFICS ALLOWED HERE: '+seg.usesSpecifics.join(' | '):'')
+        +(seg.motifStep?'\nMOTIF STEP ALLOWED HERE: '+seg.motifStep:'')
+        +(seg.forbiddenRepeats&&seg.forbiddenRepeats.length?'\nDO NOT REPEAT HERE: '+seg.forbiddenRepeats.join(' | '):'')
+        +(otherInfo.length?'\n\nINFORMATION OWNED BY OTHER SEGMENTS - context only. Do not explain, paraphrase or re-establish any of it here:\n- '+otherInfo.join('\n- '):'')
+        +(pace?'\n\nCAMERA-SHOT BUDGET FOR THIS SEGMENT: about '+shotBudget+' BROLL shots, hard maximum '+Math.max(shotBudget+1,Math.ceil(segSecs/pace.minHold))+'. This is part of the whole-film budget, so do not compensate for another segment or add alternate angles.':'')
+        +'\n\nSEMANTIC COVERAGE CHECK: every concrete object or action named by a VOICEOVER line must appear in at least one BROLL whose timecode overlaps that line. A thematically similar generic image is not coverage.'
         // segments are drafted in parallel, so a writer cannot read what came
         // before and two of them kept establishing the same moment twice in a
         // row. Naming the beat that is already spent stops the second one
@@ -5152,11 +5297,19 @@ function genLocationNames(li,lines){
     +'and that is the correct answer - it is what the day looks like. Do not invent distinctions to '
     +'make the list longer.\n\n'
     +'Name each one plainly and the same way every time it comes up.\n\n'
-    +'Return ONLY JSON: [{"name":"...","timeOfDay":"..."}]'
+    +'Also settle a CANONICAL production kit for the whole film. One real person, wardrobe item or '
+    +'prop gets one short noun phrase even if the plan describes it many ways. Keep props separate '
+    +'from locations, body parts, light, camera equipment and abstract visual directions. If the plan '
+    +'calls the same object a cardboard box in one place and a wooden box in another, choose the '
+    +'version established first and use that single name; do not list both contradictions as things to pack.\n\n'
+    +'Return ONLY JSON: {"locations":[{"name":"...","timeOfDay":"..."}],"cast":["..."],'
+    +'"wardrobe":["..."],"props":["..."]}'
     +(li?'\n\n'+li:'');
-  return withTimeout(apiRetry(sys,'Shot plan:\n'+brief).then(parseLocations),60000,null,'location names');
+  return withTimeout(apiRetry(sys,'Shot plan:\n'+brief).then(parseProductionBible),60000,null,'location names');
 }
-function breakdownSys(li,part,names){
+function breakdownSys(li,part,bible){
+  var names=Array.isArray(bible)?bible:((bible&&bible.locations)||[]);
+  var kit=bible&&!Array.isArray(bible)?bible:null;
   return (li?li+'\n\n':'')
     +(names&&names.length
       ? 'These are the locations of this film, already settled by someone who read all of it:\n'
@@ -5166,6 +5319,12 @@ function breakdownSys(li,part,names){
         +'meant. Only add one of your own if a shot plainly stands in front of something none of '
         +'these names covers.\n\n'
       : '')
+    +(kit?'The production kit has also been canonicalised across the WHOLE film:\n'
+      +'CAST: '+(kit.cast||[]).join(' | ')+'\nWARDROBE: '+(kit.wardrobe||[]).join(' | ')
+      +'\nPROPS: '+(kit.props||[]).join(' | ')+'\n\nUse these exact noun phrases when they apply. '
+      +'Do not create a second name for the same thing. Add a genuinely missing item only when a shot '
+      +'plainly cannot be made without it. Props never include body parts, locations, light, lenses, '
+      +'camera gear, empty frames, moods or abstract visual instructions.\n\n':'')
     +'You are a first assistant director turning a shot plan into a shooting breakdown.\n\n'
     +'Group the shots by LOCATION - the real place a crew has to travel to and set up in. Shots that '
     +'happen in the same place belong together even if they are far apart in the plan, because that is '
@@ -5244,16 +5403,17 @@ function genBreakdown(){
   var many=lines.length>BREAKDOWN_CHUNK;
   // a short plan goes to one writer, who has no one to disagree with
   var first=many?genLocationNames(li,lines):Promise.resolve(null);
-  return first.then(function(names){
-    if(many&&!(names&&names.length))console.warn('[breakdown] no agreed location list - pieces will name their own');
-    var sys=breakdownSys(li,many,names);
-    return runBreakdown(lines,sys);
+  return first.then(function(bible){
+    var names=Array.isArray(bible)?bible:((bible&&bible.locations)||[]);
+    if(many&&!names.length)console.warn('[breakdown] no agreed location list - pieces will name their own');
+    var sys=breakdownSys(li,many,bible);
+    return runBreakdown(lines,sys,bible);
   });
 }
-function runBreakdown(lines,sys){
+function runBreakdown(lines,sys,bible){
   return breakdownPass(lines,sys).then(function(parts){
     if(!parts.length)return null;
-    var merged=mergeLocations(parts);
+    var merged=mergeLocations(parts,bible);
     /* A piece that times out or comes back unusable takes its whole stretch of
        the film with it - eighty-three shots in a row, in one export, which
        reads as a gap rather than a shoot. Whatever is still missing gets one
@@ -5264,7 +5424,7 @@ function runBreakdown(lines,sys){
     var left=lines.filter(function(l){ return miss[labelOfLine(l)]; });
     console.warn('[breakdown] '+left.length+' shots came back unplaced - going round again');
     return breakdownPass(left,sys).then(function(more){
-      return accountForEveryShot(more.length?mergeLocations([merged].concat(more)):merged);
+      return accountForEveryShot(more.length?mergeLocations([merged].concat(more),bible):merged);
     });
   });
 }
@@ -5273,7 +5433,7 @@ function runBreakdown(lines,sys){
    kitchen. Joining them on the name keeps one kitchen with all its shots
    rather than two half-packed ones - and a shot that somehow came back in two
    places is kept once, because you only pack for it once. */
-function mergeLocations(parts){
+function mergeLocations(parts,bible){
   var byName={},order=[];
   function key(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9çğıöşü]+/gi,' ').trim(); }
   /* Handed the same agreed name, one piece writes "Baski Evi" and another
@@ -5331,8 +5491,36 @@ function mergeLocations(parts){
       if(claimed[k])return false;
       claimed[k]=1; return true;
     });
+    ['props','wardrobe','cast'].forEach(function(f){
+      l[f]=cleanProductionList(l[f],f,bible);
+    });
   });
   return out.filter(function(l){return l.shots.length;});
+}
+
+function kitKey(s){
+  return String(s||'').toLowerCase().replace(/[^a-z0-9çğıöşü]+/gi,' ').replace(/\s+/g,' ').trim();
+}
+function cleanProductionList(list,field,bible){
+  var canon=bible&&!Array.isArray(bible)&&Array.isArray(bible[field])?bible[field]:[];
+  var noProp={el:1,eller:1,hand:1,hands:1,'ışık':1,isik:1,light:1,kamera:1,camera:1,
+    lens:1,lensler:1,lenses:1,'boş kare':1,'bos kare':1,'empty frame':1,
+    'uzun gölge':1,'uzun golge':1,'long shadow':1};
+  var out=[],seen={};
+  (list||[]).forEach(function(raw){
+    var v=String(raw||'').trim(),vk=kitKey(v);
+    if(!vk||(field==='props'&&noProp[vk]))return;
+    for(var i=0;i<canon.length;i++){
+      var ck=kitKey(canon[i]);
+      // A global canonical noun phrase is allowed to absorb a longer local
+      // description of that same thing, but unrelated items sharing one word
+      // (red shirt / black shirt) remain separate.
+      if(vk===ck||(ck.length>=4&&(vk.indexOf(ck)>=0||ck.indexOf(vk)>=0))){v=canon[i];vk=ck;break;}
+    }
+    if(seen[vk])return;
+    seen[vk]=1;out.push(v);
+  });
+  return out;
 }
 
 /* A 243-shot plan needs around twenty locations, and that answer can run past
@@ -5357,6 +5545,22 @@ function parseLocations(raw){
   }
   console.warn('[breakdown] could not parse the reply');
   return null;
+}
+
+function parseProductionBible(raw){
+  var s=String(raw||''),a=s.indexOf('{'),b=s.lastIndexOf('}');
+  if(a>=0&&b>a){
+    try{
+      var o=JSON.parse(s.slice(a,b+1));
+      if(o&&Array.isArray(o.locations))return {
+        locations:o.locations,cast:Array.isArray(o.cast)?o.cast:[],
+        wardrobe:Array.isArray(o.wardrobe)?o.wardrobe:[],props:Array.isArray(o.props)?o.props:[]
+      };
+    }catch(e){}
+  }
+  // Older workers and test doubles return the former bare location array.
+  var locs=parseLocations(raw);
+  return locs&&locs.length?{locations:locs,cast:[],wardrobe:[],props:[]}:null;
 }
 
 /* A shot filed under no location is a shot nobody packs for, and the document
@@ -5419,11 +5623,13 @@ function buildPrintView(){
   var v=document.getElementById('printView');
   var when=new Date().toLocaleDateString(undefined,{day:'numeric',month:'long',year:'numeric'});
   var total=0; nodes.forEach(function(n){var e=tcToSec(n.tcEnd);if(e>total)total=e;});
+  var cameraTotal=nodes.filter(function(n){return isCameraBlock(n.type);}).length;
 
   var h='<div class="pv-head">'
     +'<div class="pv-brand">HVNVSLS</div>'
     +'<h1>'+pesc(docTitle())+'</h1>'
-    +'<div class="pv-meta">'+pesc(projectType)+' &middot; '+nodes.length+' blocks &middot; '
+    +'<div class="pv-meta">'+pesc(projectType)+' &middot; '+cameraTotal+' camera shot'+(cameraTotal===1?'':'s')
+    +' &middot; '+nodes.length+' timeline blocks &middot; '
     +fmtTime(total)+' &middot; '+pesc(when)+'</div>'
     +'</div>';
 
@@ -5527,7 +5733,7 @@ function buildPrintView(){
       return '<dt>'+label+'</dt><dd>'+pesc(arr.join(' &middot; ')).replace(/&amp;middot;/g,'&middot;')+'</dd>';
     }
     function locBlock(li,name,timeOfDay,cast,wardrobe,props,note,labels){
-      var rows='',count=0;
+      var rows='',count=0,cameraCount=0;
       var kit=(props||[]).map(propWords).filter(function(w){ return w.length; });
       var used={};
       (labels||[]).forEach(function(lab){
@@ -5536,13 +5742,15 @@ function buildPrintView(){
         if(!hit||used[hit.label])return;
         used[hit.label]=1;
         rows+=shotRow(hit.label,hit.node,kit); count++;
+        if(isCameraBlock(hit.node.type))cameraCount++;
       });
       var out='<article class="pv-loc">'
         +'<div class="pv-loc-head">'
         +'<span class="pv-loc-n">'+String(li+1).padStart(2,'0')+'</span>'
         +'<span class="pv-loc-name">'+pesc(name||'Location')+'</span>'
         +(timeOfDay?'<span class="pv-loc-tod">'+pesc(timeOfDay)+'</span>':'')
-        +'<span class="pv-loc-shots">'+count+' shot'+(count===1?'':'s')+'</span>'
+        +'<span class="pv-loc-shots">'+cameraCount+' camera shot'+(cameraCount===1?'':'s')
+        +' &middot; '+count+' blocks</span>'
         +'</div>';
       var dl=list('CAST',cast)+list('WARDROBE',wardrobe)+list('PROPS',props);
       if(dl)out+='<dl class="pv-loc-dl">'+dl+'</dl>';
@@ -5550,7 +5758,7 @@ function buildPrintView(){
       return out+'<div class="pv-loc-list">'+rows+'</div></article>';
     }
 
-    h+='<section class="pv-bd"><h2>Shot list by location &middot; '+projectBreakdown.length+'</h2>';
+    h+='<section class="pv-bd"><h2>Production plan by location &middot; '+projectBreakdown.length+'</h2>';
     var printed={};
     projectBreakdown.forEach(function(loc,li){
       (loc.shots||[]).forEach(function(lab){

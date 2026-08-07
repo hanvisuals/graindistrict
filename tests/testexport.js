@@ -56,6 +56,8 @@ const fs = require('fs');
   // the creative brief was replaced by the location breakdown - see testbreak.js
   ok('the brief is no longer in the document', !/Empty Rooms/.test(v.text));
   ok('the project title heads the document', /Neden New York/.test(v.text));
+  ok('the header separates physical camera shots from timeline blocks',
+     /3 camera shots · 5 timeline blocks/.test(v.text),v.text.slice(0,180));
   ok('block content is present', /Extreme close-up, macro lens/.test(v.text));
 
   // now actually render it to PDF the way the browser would
