@@ -2656,7 +2656,7 @@ var projectBreakdown=null;   // location-by-location shooting breakdown
    version of the code that made it, and either one changing throws it out.
    Bump the version whenever the breakdown prompt or its handling changes -
    that is what retires the copies already saved in people's projects. */
-var BREAKDOWN_V=6;
+var BREAKDOWN_V=7;
 var projectBreakdownKey=null;
 function breakdownKey(){
   var t=BREAKDOWN_V+'|'+planAsText(),h=5381;
@@ -4406,8 +4406,23 @@ function breakdownSys(li,part,names){
       +'the same time. Name each location plainly and by itself - "kitchen, morning", not "the kitchen '
       +'where the notebook scene happens" - so that a place appearing in someone else\'s stretch comes '
       +'back with the same name and the two can be joined.\n\n':'')
-    +'Do not invent shots that are not in the plan. Keep every list short and concrete - these are '
-    +'things somebody has to pack.\n\n'
+    +'Do not invent shots that are not in the plan.\n\n'
+    // Every shot in the plan arrives carrying its own prop line, written fresh
+    // for that shot, so the same object is described a different way each
+    // time. Collecting them gives a location a list of thirty-four items in
+    // which "hasta bitki (pothos veya ficus)", "yarı sararmis yaprak" and
+    // "tek sararmis yaprak" are three entries for one plant. That is a dump,
+    // not something anybody packs from.
+    +'The props list is what somebody loads into a bag before leaving the house, so write it that '
+    +'way. Name each thing ONCE, as a plain noun with only the detail needed to buy or find it: '
+    +'"hasta bitki", "yeni saksi", "makas". Not a sentence, not a description of how it appears on '
+    +'camera.\n\n'
+    +'The shots below each name their own props in their own words, and the same object is worded '
+    +'differently every time. Merge them. One plant that appears in eleven shots is one line. If two '
+    +'entries could be satisfied by the same trip to the same shop, they are one entry. A location '
+    +'needing more than about fifteen props is nearly always a list that was collected instead of '
+    +'consolidated - or a location that should have been split.\n\n'
+    +'Wardrobe and cast the same way: one person is one entry, however many shots they are in.\n\n'
     +'Return ONLY JSON: [{"name":"...","timeOfDay":"...","shots":["01","01a"],"props":["..."],'
     +'"wardrobe":["..."],"cast":["..."],"note":"..."}]'
     +(li?'\n\n'+li:'');
@@ -4589,6 +4604,11 @@ function accountForEveryShot(locs){
   }
   return locs;
 }
+/* "bir", "veya", "the", "and" - a prop entry made only of these names nothing,
+   and letting them match would suppress rows they have nothing to do with. */
+var PROP_STOP={bir:1,ve:1,veya:1,ya:1,da:1,de:1,ile:1,icin:1,'için':1,gibi:1,
+  ayni:1,'aynı':1,tercihen:1,olan:1,tek:1,her:1,cok:1,'çok':1,
+  the:1,and:1,or:1,'for':1,with:1,one:1,any:1,same:1};
 function pesc(t){ return String(t==null?'':t).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];}); }
 
 /* The topic is a sentence somebody typed - "custom tshirt designlarimi yapip
@@ -4643,29 +4663,69 @@ function buildPrintView(){
   // that list on every row says nothing. Only what the heading does not cover
   // is printed - which turns the line from noise into the one thing worth
   // seeing: this shot needs something the rest of the day does not.
-  function propKey(s){ return String(s||'').toLowerCase().replace(/\s+/g,' ').trim(); }
-  function details(n,covered){
+  // A shot's props and its location's props are written by the model at
+  // different moments and never come out word for word the same: the heading
+  // says "hasta bitki (pothos veya ficus)" and the shot says "sararmis,
+  // damarlari belirgin hasta yaprak, gercek bitki". Matching whole strings
+  // caught almost none of that - sixty-seven of eighty-four rows still
+  // repeated what the heading had already promised. So a shot's phrase counts
+  // as covered when the heading names the same thing inside it: every
+  // meaningful word of some heading entry appears in the shot's phrase.
+  function propWords(s){
+    return String(s||'').toLowerCase()
+      .replace(/[()\[\]{}.,;:!?"'\u2019\u201c\u201d\/]/g,' ')
+      .split(/\s+/)
+      .filter(function(w){ return w.length>2 && !PROP_STOP[w]; });
+  }
+  function coveredBy(phrase,kit){
+    var w=propWords(phrase);
+    if(!w.length)return false;
+    var have={}; w.forEach(function(x){ have[x]=1; });
+    for(var i=0;i<kit.length;i++){
+      var need=kit[i];
+      if(!need.length)continue;
+      var all=true;
+      for(var j=0;j<need.length;j++){ if(!have[need[j]]){ all=false; break; } }
+      if(all)return true;
+    }
+    return false;
+  }
+  // The commas in a shot's prop line mean two different things and there is no
+  // marker to tell them apart. "Tisort, makas, soguk kahve" is three props.
+  // "Sararmis, damarlari belirgin hasta yaprak, gercek bitki (pothos ya da
+  // ficus)" is one, described across three clauses - and no clause of it holds
+  // all of "hasta bitki (pothos veya ficus)" on its own.
+  //
+  // So: drop the clauses the heading names outright. Only if it named none of
+  // them, ask whether it names the phrase taken whole - which is the described
+  // single object. Doing that check first instead would swallow the real list
+  // in "hasta bitki, kirik ayna", where the mirror is the one thing worth
+  // printing.
+  function details(n,kit){
     var sh=shotsFor(n.id).filter(function(a){return a.k==='props';});
     if(!sh.length)return '';
+    var live=kit&&kit.length;
     var parts=[];
     sh.forEach(function(a){
-      var left=String(a.t||'').split(/\s*[,·]\s*/).filter(function(x){
-        return x.trim() && !(covered&&covered[propKey(x)]);
-      });
+      var whole=String(a.t||'').trim();
+      if(!whole)return;
+      var frags=whole.split(/\s*[,·]\s*/).filter(function(x){ return x.trim(); });
+      var left=live?frags.filter(function(x){ return !coveredBy(x,kit); }):frags;
+      if(live&&left.length===frags.length&&coveredBy(whole,kit))return;
       if(left.length)parts.push(left.join(', '));
     });
     if(!parts.length)return '';
     return '<div class="pv-det"><span class="pv-det-k">'+pesc(SK_LABEL.props)+'</span> '
       +pesc(parts.join(', '))+'</div>';
   }
-  function shotRow(label,n,covered){
+  function shotRow(label,n,kit){
     return '<div class="pv-row">'
       +'<div class="pv-idx">'
       +'<div class="pv-num">'+pesc(label)+'</div>'
       +'<div class="pv-tc">'+pesc(n.tcStart)+'&ndash;'+pesc(n.tcEnd)+'</div>'
       +'<div class="pv-type">'+pesc(n.type.toUpperCase())+'</div>'
       +'</div>'
-      +'<div class="pv-body"><div class="pv-content">'+pesc(n.content)+'</div>'+details(n,covered)+'</div>'
+      +'<div class="pv-body"><div class="pv-content">'+pesc(n.content)+'</div>'+details(n,kit)+'</div>'
       +frame(n)
       +'</div>';
   }
@@ -4689,15 +4749,15 @@ function buildPrintView(){
       return '<dt>'+label+'</dt><dd>'+pesc(arr.join(' &middot; ')).replace(/&amp;middot;/g,'&middot;')+'</dd>';
     }
     function locBlock(li,name,timeOfDay,cast,wardrobe,props,note,labels){
-      var rows='',count=0,covered={};
-      (props||[]).forEach(function(x){ covered[propKey(x)]=1; });
+      var rows='',count=0;
+      var kit=(props||[]).map(propWords).filter(function(w){ return w.length; });
       var used={};
       (labels||[]).forEach(function(lab){
         var hit=byLabel[labKey(lab)];
         // the same shot listed twice at one location prints once
         if(!hit||used[hit.label])return;
         used[hit.label]=1;
-        rows+=shotRow(hit.label,hit.node,covered); count++;
+        rows+=shotRow(hit.label,hit.node,kit); count++;
       });
       var out='<article class="pv-loc">'
         +'<div class="pv-loc-head">'
