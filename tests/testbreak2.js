@@ -43,7 +43,7 @@ server.listen(8921, async()=>{
      await page.evaluate(()=>projectBreakdown));
 
   // the recalculate button must throw the cached one away and ask again
-  await clickBarBtn(page,'#btnRebreak'); await page.waitForTimeout(1200);
+  await page.evaluate(()=>{window.gdAsk=()=>Promise.resolve(true);requestLocationRefresh();}); await page.waitForTimeout(1200);
   const after=await page.evaluate(()=>({name:projectBreakdown[0].name,text:document.getElementById('printView').textContent}));
   ok('recalculate asks for a fresh breakdown', after.name==='Location 2', after.name);
   ok('and the document shows the new one', /Location 2/.test(after.text)&&!/Location 1/.test(after.text));

@@ -584,7 +584,7 @@ body #s0{align-items:stretch;justify-content:flex-start;position:relative;isolat
 .guide-x{margin-left:auto;background:none;border:none;color:var(--text-3);font-size:15px;line-height:1;cursor:pointer;padding:0 2px;pointer-events:auto;}
 .guide-x:hover{color:#fff;}
 .guide.hidden{display:none;}
-.guide-show{position:fixed;bottom:80px;right:1rem;z-index:50;display:none;width:26px;height:26px;border-radius:50%;border:1px solid var(--border-hi);background:rgba(10,10,10,.9);color:var(--text-3);font-family:var(--sans);font-size:12px;cursor:pointer;backdrop-filter:blur(12px);}
+.guide-show{position:fixed;bottom:calc(var(--strip-h,52px) + 18px);right:1rem;z-index:50;display:none;width:auto;min-width:72px;height:38px;padding:0 12px;border-radius:999px;border:1px solid var(--border-hi);background:rgba(10,10,10,.9);color:var(--text-3);font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.03em;cursor:pointer;backdrop-filter:blur(12px);}
 .guide-show:hover{color:#fff;}
 .guide-show.show{display:block;}
 .guide-title::before{content:'⠿';font-size:12px;color:rgba(255,255,255,.25);letter-spacing:-2px;}
@@ -1055,7 +1055,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,label:focus-with
   content:'GRAIN / DISTRICT';position:fixed;left:-.03em;bottom:-.17em;z-index:-1;pointer-events:none;
   font-family:var(--sans);font-size:clamp(88px,15vw,240px);font-weight:700;letter-spacing:-.095em;white-space:nowrap;color:rgba(255,255,255,.012);
 }
-#s1>.topbar{height:62px;padding-left:clamp(18px,3vw,46px);padding-right:calc(clamp(18px,3vw,46px) + var(--gd-acct-w,0px));background:rgba(8,9,8,.7);border-color:rgba(255,255,255,.065);backdrop-filter:blur(20px);}
+#s1>.topbar{height:62px;padding-left:clamp(18px,3vw,46px);padding-right:calc(clamp(18px,3vw,46px) + var(--gd-acct-w,0px));display:flex;justify-content:flex-start;gap:12px;background:rgba(8,9,8,.7);border-color:rgba(255,255,255,.065);backdrop-filter:blur(20px);}
+#s1>.topbar .logo{padding-left:14px;border-left:1px solid rgba(255,255,255,.1);}
+.s1-back{min-height:36px;border-radius:999px;white-space:nowrap;}
 #s1 .iw{width:100%;max-width:1320px;min-height:calc(100dvh - 62px);margin:0 auto;padding:clamp(48px,7vh,84px) clamp(22px,4vw,58px) 64px;display:grid;grid-template-columns:minmax(290px,.72fr) minmax(560px,1.28fr);align-items:start;gap:clamp(48px,7vw,104px);}
 .s1-editorial{position:sticky;top:118px;padding-top:7px;}
 .s1-kicker{display:flex;align-items:center;gap:11px;margin-bottom:24px;font-family:var(--mono);font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.34);}
@@ -1079,6 +1081,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,label:focus-with
 #s1 .ilabel{margin-bottom:10px;font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:.16em;color:rgba(255,255,255,.3);}
 #s1 .ita{min-height:126px;border-radius:12px;border-color:rgba(255,255,255,.075);background:rgba(255,255,255,.025);font-size:16px;line-height:1.65;padding:15px 16px;}
 #s1 .ita:focus{border-color:rgba(215,185,88,.38);box-shadow:0 0 0 3px rgba(215,185,88,.045);}
+#s1 .ita.invalid{border-color:rgba(235,100,100,.58);box-shadow:0 0 0 3px rgba(235,100,100,.06);}
+.s1-error{display:none;margin-top:9px;font-family:var(--sans);font-size:12px;line-height:1.4;color:#ed9797;}
+.s1-error.show{display:block;}
 #s1 .dur-row{min-height:40px;}
 #s1 .dur-input{height:40px;border-radius:10px;background:rgba(255,255,255,.035);}
 #s1 .opts{gap:7px;}
@@ -1211,6 +1216,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,label:focus-with
 .tb-btn{width:38px;height:38px;border-radius:11px;}
 .tb-btn.on{border-color:rgba(215,185,88,.24);background:rgba(215,185,88,.1);color:#f5e8bd;}
 .tb-sep{background:rgba(255,255,255,.075);}
+#btnRebreak{display:none!important;}
+body.location-mode #btnRebreak{display:inline-flex!important;}
+#btnNewProject{margin-left:5px;border-color:rgba(255,255,255,.16);}
 .timeline{height:56px;background:#080908;border-color:rgba(255,255,255,.06);}
 .script-overlay{width:350px;background:rgba(9,10,9,.94);border-color:rgba(255,255,255,.075);backdrop-filter:blur(24px);}
 .guide,.recce-panel,.modal{border-radius:18px;background:rgba(14,15,14,.94);backdrop-filter:blur(26px);box-shadow:0 28px 80px rgba(0,0,0,.55);}
@@ -1226,6 +1234,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,label:focus-with
 }
 @media (max-width:759px),(max-height:500px){
   #s1>.topbar{height:56px;padding-left:14px;padding-right:calc(14px + var(--gd-acct-w,120px));}
+  #s1>.topbar .logo{padding-left:10px;font-size:9px;letter-spacing:.22em;}
+  .s1-back{min-height:44px;}
   .flow-mark{display:none;}
   #s1 .iw{min-height:auto;padding:34px 14px calc(44px + var(--safe-b));gap:30px;}
   .s1-kicker{margin-bottom:17px;}
@@ -1249,6 +1259,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,label:focus-with
   #s_equipment .kb-sub,#s_brief .kb-sub{font-size:13px;}
   #s_equipment .brief-ta{height:220px;}
   #s_brief .brief-display{min-height:260px;max-height:48vh;}
+  #s_equipment .brief-row .gobtn,#s_brief .brief-row .gobtn{order:-1;flex-basis:100%!important;}
   .load-stage{min-height:410px;padding:42px 24px;border-radius:24px;}
   .load-orbit{width:126px;height:126px;}
   .s3-topbar{height:auto;min-height:62px;padding:8px 10px;}
@@ -1267,6 +1278,12 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,label:focus-with
   .left-panel{width:min(326px,88vw);}
   .location-nav{left:6px;right:6px;top:6px;border-radius:14px;}
   .toolbar{border-radius:16px;}
+  .cbar-ic,.tb-btn{width:44px;height:44px;}
+  .location-tab{min-height:44px;}
+  .guide-show{display:none!important;}
+}
+@media (hover:none) and (pointer:coarse){
+  .btn,.opt,.bd-act,.bd-type-btn,.modal-type,.cf-act,.gd-pill,.bl-addbtn,.brief-skip-btn{min-height:44px;}
 }
 @media (prefers-reduced-motion:reduce){
   .load-stage::before,.load-orbit i,.load-track span{animation:none!important;}
@@ -1445,7 +1462,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,label:focus-with
 </div>
 
 <div id="s1" class="screen">
-  <div class="topbar"><span class="logo">HVNVSLS</span><span class="flow-mark"><i></i>Direction intake / 01</span><button class="btn" onclick="show('s0')">back</button></div>
+  <div class="topbar"><button class="btn s1-back" onclick="show('s0')">&larr; Back</button><span class="logo">HVNVSLS</span><span class="flow-mark"><i></i>Direction intake / 01</span></div>
   <div class="iw">
     <div class="s1-editorial">
       <div class="s1-kicker"><span>01</span> Shape the direction</div>
@@ -1459,6 +1476,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,label:focus-with
     <div>
       <div class="ilabel" id="s1TopicLabel">what is this video about?</div>
       <textarea class="ita" id="topicIn" placeholder="a rainy morning in NYC... or NYC'de yagmurlu bir sabah..." rows="3"></textarea>
+      <div class="s1-error" id="topicErr" role="alert" aria-live="polite"></div>
       <div class="mv-suggest" id="mvSuggest">
         <span class="mv-suggest-dot"></span>
         <span class="mv-hint-text" id="mvHintText">Describe the mood -- dark, romantic, euphoric?</span>
@@ -1535,7 +1553,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,label:focus-with
       <span class="ai-mode-sw"><span class="ai-mode-knob"></span></span>
       <span class="ai-mode-state" id="aiModeState">ON</span>
     </div>
-    <button class="gobtn" id="gobtn" onclick="goToChoice()"><span id="gobtnTxt">generate shot plan</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+    <button class="gobtn" id="gobtn" onclick="goToChoice()"><span id="gobtnTxt">continue to production details</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
     </div>
   </div>
 </div>
@@ -1543,7 +1561,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,label:focus-with
 <div id="s_equipment" class="screen" style="flex-direction:column;position:relative;">
   <div class="kb-prog-wrap"><div class="kb-prog-fill" style="width:40%"></div></div>
   <div class="flow-brand"><span>HVNVSLS</span><small>Production intelligence / 02</small></div>
-  <button class="kb-back" onclick="show('s1')">Back</button>
+  <button class="kb-back" onclick="show('s1')">&larr; Back</button>
   <div class="kb-wrap" style="gap:1.5rem">
     <div style="text-align:center">
       <span class="brief-label">production brief</span>
@@ -1552,8 +1570,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,label:focus-with
     </div>
     <textarea class="brief-ta" id="constraintsIn" placeholder="Sony a7S III, 24-70mm ve 12-24mm f2.8 lensler. Buğday tarlası, tenha yol, karavan. 9 kırmızı halı. Dolgu ışık var, dış mekan ağırlıklı. Sıfır bütçe. Soft akustik, aşk acısı..."></textarea>
     <div class="brief-row">
-      <button class="gobtn" style="flex:1;margin:0" onclick="generateBrief()">Generate Brief</button>
-      <button class="brief-skip-btn" onclick="skipBrief()">Skip</button>
+      <button class="brief-skip-btn" onclick="skipEquipment()">Skip details</button>
+      <button class="gobtn" style="flex:1;margin:0" onclick="generateBrief()">Generate brief</button>
     </div>
   </div>
 </div>
@@ -1561,7 +1579,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,label:focus-with
 <div id="s_brief" class="screen" style="flex-direction:column;position:relative;">
   <div class="kb-prog-wrap"><div class="kb-prog-fill" style="width:55%"></div></div>
   <div class="flow-brand"><span>HVNVSLS</span><small>Creative synthesis / 03</small></div>
-  <button class="kb-back" onclick="show('s_equipment')">Back</button>
+  <button class="kb-back" onclick="show('s_equipment')">&larr; Back</button>
   <div class="kb-wrap" style="gap:1.4rem">
     <div style="text-align:center">
       <span class="brief-label">production brief</span>
@@ -1569,9 +1587,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,label:focus-with
     </div>
     <div class="brief-display" id="briefDisplay"></div>
     <div class="brief-row">
-      <button class="gobtn" style="flex:1;margin:0" onclick="useBrief()">Use This Brief</button>
+      <button class="brief-skip-btn" onclick="skipBrief()">Skip brief</button>
       <button class="brief-skip-btn" onclick="generateBrief()">Regenerate</button>
-      <button class="brief-skip-btn" onclick="skipBrief()">Skip</button>
+      <button class="gobtn" style="flex:1;margin:0" onclick="useBrief()">Use this brief</button>
     </div>
   </div>
 </div>
@@ -1589,7 +1607,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,label:focus-with
 
 <div id="s3" class="screen s3-split-screen" data-tab="plan">
   <div class="s3-topbar">
-    <button class="s3-back-btn" onclick="show('s1')">Back</button>
+    <button class="s3-back-btn" onclick="show('s1')">&larr; Back</button>
     <div class="s3-brand"><span>GRAIN DISTRICT</span><small>Director's desk / 04</small></div>
     <div class="s3-topbar-labels">
       <span class="s3-col-label" onclick="s3Tab('brief')">Creative brief</span>
@@ -1633,16 +1651,16 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,label:focus-with
       <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>
     </button>
     <div class="tbar-r" id="cbarActions">
-      <button class="btn" onclick="undoAction()" title="Ctrl+Z">undo</button>
-      <button class="btn" onclick="redoAction()" title="Ctrl+Shift+Z / Ctrl+Y">redo</button>
-      <button class="btn" onclick="fitScreen()">fit</button>
-      <button class="btn on" id="scriptBtn" onclick="toggleScript()">script</button>
-      <button class="btn" id="recceBtn" onclick="toggleReccePanel()" style="display:none">recce</button>
-      <button class="btn" id="btnLocations" onclick="toggleLocationView()" title="Group the board by shooting location">locations</button>
-      <button class="btn" id="previewBtn" onclick="openPlayback()">▶ preview</button>
-      <button class="btn" id="btnExport" onclick="doExport()">export</button>
-      <button class="btn" id="btnRebreak" onclick="projectBreakdown=null;projectBreakdownKey=null;doExport()" title="Throw away the locations and work them out again">&#8635;<span class="btn-menu-t"> locations again</span></button>
-      <button class="btn" onclick="if(window.gdNewProject)gdNewProject();resetLocationViewState();projectBrief='';projectConstraints='';clearRecce();var rp=document.getElementById('reccePanel');if(rp)rp.classList.remove('open');show('s1')">new</button>
+      <button class="btn" onclick="undoAction()" title="Undo (Ctrl+Z)">Undo</button>
+      <button class="btn" onclick="redoAction()" title="Redo (Ctrl+Shift+Z / Ctrl+Y)">Redo</button>
+      <button class="btn" onclick="fitScreen()">Fit</button>
+      <button class="btn on" id="scriptBtn" onclick="toggleScript()">Script</button>
+      <button class="btn" id="recceBtn" onclick="toggleReccePanel()" style="display:none">Recce</button>
+      <button class="btn" id="btnLocations" onclick="toggleLocationView()" title="Group the board by shooting location">Locations</button>
+      <button class="btn" id="btnRebreak" onclick="requestLocationRefresh()" title="Recalculate the location groups">Recalculate</button>
+      <button class="btn" id="previewBtn" onclick="openPlayback()"><span aria-hidden="true">&#9654;</span> Preview</button>
+      <button class="btn" id="btnExport" onclick="doExport()">Export</button>
+      <button class="btn" id="btnNewProject" onclick="requestNewProject()">New project</button>
     </div>
   </div>
   <div class="canvas-body">
@@ -1726,27 +1744,27 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,label:focus-with
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="7" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="7" r="1.2" fill="currentColor" stroke="none"/><circle cx="9" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="9" cy="17" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="17" r="1.2" fill="currentColor" stroke="none"/></svg>
     </div>
     <div class="tb-sep"></div>
-    <button class="tb-btn on" id="btnSelect" onclick="setMode('select')" data-tip="Select">
+    <button class="tb-btn on" id="btnSelect" onclick="setMode('select')" data-tip="Select" aria-label="Select">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="m13 13 6 6"/></svg>
     </button>
     <div class="tb-sep"></div>
-    <button class="tb-btn" onclick="openModal()" data-tip="Add Block">
+    <button class="tb-btn" onclick="openModal()" data-tip="Add Block" aria-label="Add block">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg>
     </button>
-    <label class="tb-btn" data-tip="Add Image" style="cursor:pointer">
+    <label class="tb-btn" data-tip="Add Image" aria-label="Add image" style="cursor:pointer">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
       <input type="file" accept="image/*" style="display:none" onchange="addImgNode(event)">
     </label>
-    <button class="tb-btn" onclick="addNoteNode()" data-tip="Add Note">
+    <button class="tb-btn" onclick="addNoteNode()" data-tip="Add Note" aria-label="Add note">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>
     </button>
     <div class="tb-sep"></div>
-    <button class="tb-btn" onclick="clearConns()" data-tip="Clear Lines">
+    <button class="tb-btn" onclick="clearConns()" data-tip="Clear Lines" aria-label="Clear lines">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/><line x1="18" y1="3" x2="6" y2="21" stroke-width="2"/></svg>
     </button>
     <div class="tb-sep"></div>
     <div style="position:relative">
-      <button class="tb-btn" id="btnTranslate" onclick="toggleLangMenu()" data-tip="Translate Board">
+      <button class="tb-btn" id="btnTranslate" onclick="toggleLangMenu()" data-tip="Translate Board" aria-label="Translate board">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a13.5 13.5 0 0 1 0 18a13.5 13.5 0 0 1 0-18z"/></svg>
       </button>
       <div class="tb-menu" id="langMenu">
@@ -1760,7 +1778,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,label:focus-with
   </div>
   <div class="translate-bar" id="translateBar"><div class="translate-bar-fill" id="translateBarFill"></div></div>
   <div class="translate-toast" id="translateToast">Successfully translated</div>
-  <button class="guide-show" id="guideShow" title="Show legend">?</button>
+  <button class="guide-show" id="guideShow" title="Show legend" aria-expanded="false">Legend</button>
   <div class="guide" id="guidePanel">
     <div class="guide-title">legend<button class="guide-x" id="guideHide" title="Hide">&times;</button></div>
     <div class="guide-sec">block types</div>
@@ -2151,6 +2169,31 @@ document.addEventListener('keyup',function(e){
 });
 
 function show(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.getElementById(id).classList.add('active');document.body.classList.toggle('gd-processing',id==='s2'||id==='s4');}
+function performNewProject(){
+  if(window.gdNewProject)window.gdNewProject();
+  resetLocationViewState();
+  nodes=[];attShots=[];imgNodes=[];noteNodes=[];conns=[];nid=1;nodeDrawerClosed={};
+  topic='';projectBrief='';projectConstraints='';projectBreakdown=null;projectBreakdownKey=null;
+  clearRecce();songName='';songDuration=0;songAnalysis=null;songURL=null;
+  undoStack=[];undoIdx=-1;scale=1;px=60;py=180;selId=null;selImgId=null;selNoteId=null;
+  var topicEl=document.getElementById('topicIn'),scriptEl=document.getElementById('scriptTa');
+  if(topicEl)topicEl.value='';
+  if(scriptEl){scriptEl.value='';planHighlight();}
+  var briefEl=document.getElementById('briefContent');if(briefEl)briefEl.innerHTML='';
+  var reccePanel=document.getElementById('reccePanel');if(reccePanel)reccePanel.classList.remove('open');
+  if(typeof renderAll==='function')renderAll();
+  show('s0');
+}
+function requestNewProject(){
+  var prompt={title:'Start a new project?',message:'Your current project stays in Projects. You will return to a clean setup.',ok:'New project'};
+  var answer=window.gdAsk?window.gdAsk(prompt):Promise.resolve(window.confirm(prompt.message));
+  answer.then(function(ok){if(ok)performNewProject();});
+}
+function requestLocationRefresh(){
+  var prompt={title:'Recalculate locations?',message:'This replaces the current location grouping. Your story order and cards stay untouched.',ok:'Recalculate'};
+  var answer=window.gdAsk?window.gdAsk(prompt):Promise.resolve(window.confirm(prompt.message));
+  answer.then(function(ok){if(!ok)return;projectBreakdown=null;projectBreakdownKey=null;doExport();});
+}
 var MV_HINTS=['Describe the mood -- dark, romantic, euphoric?','What is the song title and artist?','Fast cuts or slow flowing shots?','Describe the visual aesthetic -- lo-fi, cinematic, 90s film?','What story does this music tell visually?','Indoor or outdoor? Any specific locations in mind?'];
 var mvHintIdx=0,mvHintTimer=null;
 function startMvHints(){
@@ -2477,18 +2520,15 @@ function msTick(t,dur){
 
 /* ===== DRAGGABLE LEGEND ===== */
 (function(){
-  // the legend earns its place the first few times and then just covers cards;
-  // dismissing it is remembered
   var panel=document.getElementById('guidePanel'), hideBtn=document.getElementById('guideHide'), showBtn=document.getElementById('guideShow');
-  function applyGuide(){
-    var hidden=false;
-    try{ hidden=localStorage.getItem('gd_guide_hidden')==='1'; }catch(e){}
-    if(panel) panel.classList.toggle('hidden',hidden);
-    if(showBtn) showBtn.classList.toggle('show',hidden);
+  function applyGuide(open){
+    open=!!open;
+    if(panel)panel.classList.toggle('hidden',!open);
+    if(showBtn){showBtn.classList.toggle('show',!open);showBtn.setAttribute('aria-expanded',open?'true':'false');}
   }
-  if(hideBtn) hideBtn.onclick=function(e){ e.stopPropagation(); try{localStorage.setItem('gd_guide_hidden','1');}catch(err){} applyGuide(); };
-  if(showBtn) showBtn.onclick=function(){ try{localStorage.removeItem('gd_guide_hidden');}catch(err){} applyGuide(); };
-  applyGuide();
+  if(hideBtn)hideBtn.onclick=function(e){e.stopPropagation();applyGuide(false);};
+  if(showBtn)showBtn.onclick=function(){applyGuide(true);};
+  applyGuide(false);
 
   var dragging=false,ox=0,oy=0;
   document.addEventListener('mousedown',function(e){
@@ -3086,7 +3126,7 @@ function syncLocationButton(){
   if(!btn)return;
   btn.disabled=locationViewBusy;
   btn.classList.toggle('on',canvasViewMode==='location');
-  btn.textContent=locationViewBusy?'working out locations...':(canvasViewMode==='location'?'story order':'locations');
+  btn.textContent=locationViewBusy?'Finding locations...':(canvasViewMode==='location'?'Story order':'Locations');
   btn.title=canvasViewMode==='location'?'Return to the hand-arranged story board':'Group the board by shooting location';
   btn.setAttribute('aria-pressed',canvasViewMode==='location'?'true':'false');
 }
@@ -3327,23 +3367,50 @@ function toggleLocationView(){
 }
 var projectConstraints='';
 
-function goToEquipment(){
-  topic=document.getElementById('topicIn').value.trim();
-  if(!topic)return;
+function captureSetup(){
+  var topicEl=document.getElementById('topicIn');
+  var topicError=document.getElementById('topicErr');
+  topic=topicEl.value.trim();
+  if(!topic){
+    topicEl.classList.add('invalid');
+    topicEl.setAttribute('aria-invalid','true');
+    topicError.textContent='Tell us what you want to make first.';
+    topicError.classList.add('show');
+    topicEl.focus();
+    return false;
+  }
+  topicEl.classList.remove('invalid');
+  topicEl.removeAttribute('aria-invalid');
+  topicError.textContent='';topicError.classList.remove('show');
   if(projectType==='music'){
     var mmss=document.getElementById('durMmss').value.trim()||'3:30';
     var parts=mmss.split(':');
-    var totalSec2=parseInt(parts[0]||3)*60+parseInt(parts[1]||0);
+    var totalSec2=Math.max(1,(parseInt(parts[0],10)||0)*60+(parseInt(parts[1],10)||0));
     durMin=Math.max(1,Math.floor(totalSec2/60));
     durMax=durMin+(totalSec2%60>0?1:0);
     stopMvHints();
   }else{
-    durMin=parseInt(document.getElementById('durMin').value)||2;
-    durMax=parseInt(document.getElementById('durMax').value)||4;
+    durMin=Math.max(1,parseInt(document.getElementById('durMin').value,10)||2);
+    durMax=Math.max(1,parseInt(document.getElementById('durMax').value,10)||4);
+    if(durMin>durMax){var swap=durMin;durMin=durMax;durMax=swap;}
+    document.getElementById('durMin').value=durMin;
+    document.getElementById('durMax').value=durMax;
   }
   inputLang=detectLang(topic);
+  return true;
+}
+document.getElementById('topicIn').addEventListener('input',function(){
+  if(!this.value.trim())return;
+  this.classList.remove('invalid');this.removeAttribute('aria-invalid');
+  var err=document.getElementById('topicErr');err.textContent='';err.classList.remove('show');
+});
+
+function goToEquipment(){
+  if(!captureSetup())return;
   if(projectConstraints)document.getElementById('constraintsIn').value=projectConstraints;
-  show('s_equipment');
+  var el=document.getElementById('s1');
+  el.classList.add('screen-blur-out');
+  setTimeout(function(){el.classList.remove('screen-blur-out');show('s_equipment');},270);
 }
 
 function renderMarkdown(text){
@@ -3370,6 +3437,7 @@ function generateBrief(){
   var sys='You are a professional film director and creative producer. Based on the project description, write a concise creative brief with these sections:\n\n1. CONCEPT: A catchy concept name and 2-3 sentence visual theme\n2. VISUAL APPROACH: Color palette, lens/camera plan, mood, key aesthetic decisions\n3. SCENE BREAKDOWN: Each location with costume suggestion, key actions, lighting notes\n4. SHOOTING SCHEDULE: Suggested time blocks for each scene\n\nBe creative but strictly within the constraints described. If real location photos are attached, base the visual approach and scene breakdown on what is actually visible in them. Write in the same language the user used. Keep it tight and actionable.'+stylePack('shots');
   var constraints=document.getElementById('constraintsIn');
   var cv=constraints?constraints.value.trim():'';
+  projectConstraints=cv;
   var userMsg='Project type: '+projectType+'\nDuration: '+durMin+'-'+durMax+' min\n\nProject description:\n'+topic+(cv?'\n\nEquipment & constraints:\n'+cv:'')+recceContext()+songAnalysisSummary();
   api(sys,buildUserContent(userMsg)).then(function(raw){
     stopLoad();
@@ -3387,29 +3455,20 @@ function useBrief(){
 
 function skipBrief(){
   projectBrief='';
-  show('s1');
+  genScript();
+}
+
+function skipEquipment(){
+  projectConstraints='';projectBrief='';
+  var constraints=document.getElementById('constraintsIn');if(constraints)constraints.value='';
+  genScript();
 }
 
 function goToChoice(){
-  topic=document.getElementById('topicIn').value.trim();
-  if(!topic)return;
-  if(projectType==='music'){
-    var mmss=document.getElementById('durMmss').value.trim()||'3:30';
-    var parts=mmss.split(':');
-    var totalSec2=parseInt(parts[0]||3)*60+parseInt(parts[1]||0);
-    durMin=Math.max(1,Math.floor(totalSec2/60));
-    durMax=durMin+(totalSec2%60>0?1:0);
-    stopMvHints();
-  }else{
-    durMin=parseInt(document.getElementById('durMin').value)||2;
-    durMax=parseInt(document.getElementById('durMax').value)||4;
-  }
-  inputLang=detectLang(topic);
   if(aiMode){
-    var el=document.getElementById('s1');
-    el.classList.add('screen-blur-out');
-    setTimeout(function(){el.classList.remove('screen-blur-out');genScript();},270);
+    goToEquipment();
   }else{
+    if(!captureSetup())return;
     document.getElementById('briefContent').innerHTML='';
     document.getElementById('scriptTa').value='';planHighlight();
     document.getElementById('wc').textContent='0 blocks';
@@ -3424,7 +3483,7 @@ function toggleAi(){
   sw.classList.toggle('on',aiMode);
   document.getElementById('aiModeState').textContent=aiMode?'ON':'OFF';
   document.getElementById('aiModeTxt').textContent=aiMode?'Generate with AI':'Write it yourself';
-  document.getElementById('gobtnTxt').textContent=aiMode?'generate shot plan':'open blank canvas';
+  document.getElementById('gobtnTxt').textContent=aiMode?'continue to production details':'open blank canvas';
 }
 
 function pcContinue(){
@@ -3446,9 +3505,13 @@ function genScript(){
   var li=langInstr(inputLang,'shot plan content');
   var planSys=buildGenSys(totalSec,li);
   var extra=recceContext()+songAnalysisSummary();
-  var planMsg='Create shot plan for: '+topic+'. Duration: '+durMin+'-'+durMax+' minutes. Tone: '+tone+extra;
+  var approvedBrief=(projectBrief||'').trim();
+  var productionContext='';
+  if(projectConstraints)productionContext+='\n\nAvailable production resources and constraints:\n'+projectConstraints;
+  if(approvedBrief)productionContext+='\n\nApproved creative brief (follow this direction):\n'+approvedBrief;
+  var planMsg='Create shot plan for: '+topic+'. Duration: '+durMin+'-'+durMax+' minutes. Tone: '+tone+productionContext+extra;
   var briefSys='You are a professional film director and creative producer. Based on this project description, write a concise creative brief with these sections:\n\n1. CONCEPT: A catchy concept name and 2-3 sentence visual theme\n2. VISUAL APPROACH: Color palette, lens/camera plan, mood, key aesthetic decisions\n3. SCENE BREAKDOWN: Each location with costume suggestion, key actions, lighting notes\n4. SHOOTING SCHEDULE: Suggested time blocks for each scene\n\nBe creative but strictly within the constraints described. If real location photos are attached, base the visual approach and scene breakdown on what is actually visible in them. Write in the same language the user used. Keep it tight and actionable.'+stylePack('shots');
-  var briefMsg='Project type: '+projectType+'\nDuration: '+durMin+'-'+durMax+' min\n\nProject description:\n'+topic+extra;
+  var briefMsg='Project type: '+projectType+'\nDuration: '+durMin+'-'+durMax+' min\n\nProject description:\n'+topic+(projectConstraints?'\n\nEquipment & constraints:\n'+projectConstraints:'')+extra;
   // long plans: draft a beat outline then write segments in parallel instead
   // of one request at a time (much faster for 10+ min cut-by-cut videos)
   var planPromise=totalSec>240
@@ -3456,7 +3519,7 @@ function genScript(){
     : api(planSys,buildUserContent(planMsg)).then(function(t){return ensureFullPlan(planSys,t);});
 
   Promise.all([
-    api(briefSys,buildUserContent(briefMsg)),
+    approvedBrief?Promise.resolve(approvedBrief):api(briefSys,buildUserContent(briefMsg)),
     planPromise
   ]).then(function(results){
     stopLoad();
@@ -5538,7 +5601,7 @@ function doExport(){
   if(projectBreakdown&&projectBreakdown.length&&projectBreakdownKey===key) return printNow();
   var btn=document.getElementById('btnExport');
   var label=btn?btn.textContent:'';
-  if(btn){ btn.textContent='working out locations...'; btn.disabled=true; }
+  if(btn){ btn.textContent='Finding locations...'; btn.disabled=true; }
   var why='';
   genBreakdown().then(function(bd){
     projectBreakdown=bd;
@@ -6261,8 +6324,8 @@ document.addEventListener('mouseup',function(e){
   +'  <p class="sub" id="gdProjSub"></p>'
   +'  <div class="cf-wrap" id="gdProjBody"></div>'
   +'  <div class="gd-row" style="margin-top:18px">'
-  +'    <button class="gd-btn" id="gdNewBtn">+ New project</button>'
   +'    <button class="gd-btn ghost" id="gdImportBtn" style="max-width:130px">Import</button>'
+  +'    <button class="gd-btn" id="gdNewBtn">+ New project</button>'
   +'  </div>'
   +'</div></div>'
   +'<div class="gd-ov" id="gdAskOv"><div class="gd-modal" style="max-width:400px">'
