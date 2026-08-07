@@ -135,6 +135,40 @@ const TOUCH_HELPERS=`
   ok('a tap selects the block it landed on',
      await page.evaluate(()=>selId===nodes[0].id), await page.evaluate(()=>selId));
 
+  // one finger on the bare grid pans it. This is the first thing anyone tries
+  // on a phone, and no mouse gesture maps to it: the board only pans on
+  // middle-drag or space+drag, and a phone has neither.
+  const g0=await page.evaluate(()=>({px:Math.round(px),py:Math.round(py),
+    nx:Math.round(nodes[0].x),ny:Math.round(nodes[0].y)}));
+  const bare=await page.evaluate(()=>{
+    // a point on the grid with nothing on it
+    const r=document.getElementById('vp').getBoundingClientRect();
+    return {x:Math.round(r.left+40), y:Math.round(r.bottom-r.height*0.28)};
+  });
+  await page.evaluate(p=>{
+    __t('touchstart',[{x:p.x,y:p.y,id:1}]);
+    for(var i=1;i<=8;i++) __t('touchmove',[{x:p.x+i*14,y:p.y-i*7,id:1}]);
+    __t('touchend',[{x:p.x+112,y:p.y-56,id:1}]);
+  },bare);
+  await page.waitForTimeout(250);
+  const g1=await page.evaluate(()=>({px:Math.round(px),py:Math.round(py),
+    nx:Math.round(nodes[0].x),ny:Math.round(nodes[0].y)}));
+  ok('one finger on the bare grid pans the board',
+     g1.px>g0.px+80&&g1.py<g0.py-30, {before:g0,after:g1});
+  ok('panning the grid does not drag a block with it',
+     g1.nx===g0.nx&&g1.ny===g0.ny, {before:g0,after:g1});
+
+  // a tap that never travelled is a tap, not a one-pixel pan - the board must
+  // not drift under a finger that only meant to touch it
+  await page.evaluate(p=>{
+    __t('touchstart',[{x:p.x,y:p.y,id:1}]);
+    __t('touchend',[{x:p.x,y:p.y,id:1}]);
+  },bare);
+  await page.waitForTimeout(250);
+  const g2=await page.evaluate(()=>({px:Math.round(px),py:Math.round(py)}));
+  ok('a tap on the bare grid leaves the view where it was',
+     g2.px===g1.px&&g2.py===g1.py, {after:g2,was:g1});
+
   // two fingers zoom - there is no wheel to do it with
   const z0=await page.evaluate(()=>scale);
   await page.evaluate(()=>{

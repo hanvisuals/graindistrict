@@ -4827,15 +4827,24 @@ vp.addEventListener('gestureend',function(e){e.preventDefault();});
    them arrive only for a tap, never for a drag, because the first unprevented
    touchmove hands the gesture to the page scroller and cancels them.
 
-   So translate here instead of rewriting twenty handlers. One finger becomes a
-   mouse; two fingers pinch to zoom and pan, which no mouse gesture maps to
-   anyway. Anything that scrolls on its own - the block list, the script
-   overlay, a textarea - is left alone. */
+   So translate here instead of rewriting twenty handlers. One finger on a card
+   becomes a mouse; two fingers pinch to zoom and pan.
+
+   One finger on the bare board pans it. That gesture has no mouse equivalent
+   to borrow - the board only pans on middle-drag or space+drag, and a phone
+   has neither - so it is handled here directly. It is also the first thing
+   anyone tries.
+
+   Anything that scrolls on its own - the block list, the script overlay, a
+   textarea - is left alone. */
 (function(){
   var SCROLLS='.block-list,.block-detail,.script-overlay,.sp-wrap,textarea,input,'
              +'[contenteditable="true"],.recce-panel,.sb-panel';
-  var tId=null,pinch=null,startX=0,startY=0,moved=false,lastTouch=null;
+  // everything the board puts on the canvas; a finger anywhere else is on the grid
+  var THINGS='.nc,.att-shot,.img-node,.note-node,.port-dot,.sb-panel,.sb-regen,.loc-panel';
+  var tId=null,pinch=null,startX=0,startY=0,moved=false,lastTouch=null,pan=null;
   function scrolly(t){ return !!(t&&t.closest&&t.closest(SCROLLS)); }
+  function onThing(t){ return !!(t&&t.closest&&t.closest(THINGS)); }
   function fire(kind,t,btn){
     t.target.dispatchEvent(new MouseEvent(kind,{
       bubbles:true,cancelable:true,view:window,button:btn||0,buttons:kind==='mouseup'?0:1,
@@ -4850,7 +4859,7 @@ vp.addEventListener('gestureend',function(e){e.preventDefault();});
       // a pinch starting mid-drag would leave the drag hanging - end it first
       if(tId!==null){ if(lastTouch)fire('mouseup',lastTouch); tId=null; }
       var a=e.touches[0],b=e.touches[1];
-      pinch={d:dist(a,b),c:mid(a,b)};
+      pinch={d:dist(a,b),c:mid(a,b)}; pan=null;
       e.preventDefault();
       return;
     }
@@ -4858,7 +4867,8 @@ vp.addEventListener('gestureend',function(e){e.preventDefault();});
     var t=e.touches[0];
     tId=t.identifier; startX=t.clientX; startY=t.clientY; moved=false;
     lastTouch=t;
-    fire('mousedown',t);
+    if(onThing(t.target)) fire('mousedown',t);
+    else pan={x:t.clientX,y:t.clientY};
     e.preventDefault();
   },{passive:false});
 
@@ -4880,7 +4890,8 @@ vp.addEventListener('gestureend',function(e){e.preventDefault();});
     var t=find(e.touches,tId); if(!t)return;
     lastTouch=t;
     if(!moved&&Math.hypot(t.clientX-startX,t.clientY-startY)>4)moved=true;
-    fire('mousemove',t);
+    if(pan){ px+=t.clientX-pan.x; py+=t.clientY-pan.y; pan={x:t.clientX,y:t.clientY}; updateT(); }
+    else fire('mousemove',t);
     e.preventDefault();
   },{passive:false});
 
@@ -4888,11 +4899,18 @@ vp.addEventListener('gestureend',function(e){e.preventDefault();});
     if(pinch&&e.touches.length<2)pinch=null;
     if(tId===null)return;
     if(find(e.touches,tId))return;      // other fingers lifted, ours is still down
-    var t=lastTouch;
-    tId=null;
+    var t=lastTouch,wasPan=!!pan;
+    tId=null; pan=null;
     if(!t)return;
-    fire('mousemove',t);
-    fire('mouseup',t);
+    if(wasPan){
+      // a pan that never travelled is a tap on the grid, not a pan - so it
+      // still has to land as a plain mouse click, whatever the board does
+      // with those
+      if(moved)return;
+      fire('mousedown',t); fire('mouseup',t);
+    }else{
+      fire('mousemove',t); fire('mouseup',t);
+    }
     // a tap has to land as a click too: the app opens the block detail, picks a
     // tool and closes menus on click, and no click follows a prevented touch
     if(!moved)t.target.dispatchEvent(new MouseEvent('click',{
