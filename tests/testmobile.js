@@ -87,7 +87,7 @@ const TOUCH_HELPERS=`
             exportSeen:getComputedStyle(document.getElementById('btnExport')).display!=='none'};
   });
   ok('the actions menu opens inside the screen', menu.open&&menu.fits, menu);
-  ok('every action is still reachable', menu.btns===9&&menu.exportSeen, menu);
+  ok('every action is still reachable', menu.btns===10&&menu.exportSeen, menu);
 
   // opening the drawer must not leave the menu hanging over it
   await page.click('#panelToggle');
