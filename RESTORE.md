@@ -29,6 +29,9 @@ are blank on purpose.
 3. Fill in the keys at the top: Anthropic, fal.ai, and optionally Resend for
    password reset. Or set them as environment variables of the same names,
    which the code prefers over the constants.
+   Set `ADMIN_EMAILS` to the comma-separated GrainDistrict account email(s)
+   allowed to open the private AI cost dashboard. Keep this in Cloudflare,
+   not in the repository.
 4. Settings → Bindings → Add → **KV namespace** *or* **D1 database**, variable
    name exactly `GD_KV`. Either type works; the code detects which it got.
 5. Deploy, then open the Worker's URL in a browser. It prints a plain-language
@@ -37,6 +40,10 @@ are blank on purpose.
 
 **Never commit the deployed copy back here.** The version running in Cloudflare
 has real keys pasted into it. This one does not, and must not.
+
+The cost dashboard writes one small, prompt-free usage record per successful AI
+request. For production traffic, prefer a D1 binding over KV: the Worker supports
+both, but D1 is a better fit once usage history grows beyond a small private beta.
 
 ## Running the tests
 

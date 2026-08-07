@@ -13,6 +13,11 @@ const FAL_KEY = 'BURAYA_FAL_ANAHTARINI_YAPISTIR';
 //  kapali kalir, gerisi normal calisir):  https://resend.com/api-keys
 const RESEND_KEY = '';
 
+// Comma-separated account emails allowed to open the private cost dashboard.
+// Prefer setting ADMIN_EMAILS as a Cloudflare environment variable so no
+// administrator identity has to live in the public repository.
+const ADMIN_EMAILS = '';
+
 //  Sifirlama baglantisinin isaret ettigi site adresi
 const APP_URL = 'https://hanvisuals.github.io/graindistrict/';
 
@@ -42,6 +47,20 @@ const MAIL_FROM = 'GrainDistrict <onboarding@resend.dev>';
 
 const PLACEHOLDER = 'BURAYA_';
 const TOKEN_DAYS = 90;
+const AI_PRICING = {
+  updated_at: '2026-08-07',
+  anthropic: {
+    'claude-sonnet-4-6': {
+      input_per_million: 3,
+      output_per_million: 15,
+      cache_write_per_million: 3.75,
+      cache_read_per_million: 0.30
+    }
+  },
+  fal: {
+    'fal-ai/flux/schnell': {unit: 'megapixel', usd_per_unit: 0.003}
+  }
+};
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -224,6 +243,150 @@ function keyStatus(key, label) {
   return label + ': tamam (' + key.length + ' karakter)';
 }
 
+/* ----------------------------------------------------------- AI metering --- */
+function emailSet(raw) {
+  const out = {};
+  String(raw || '').split(',').forEach(e => {
+    e = normEmail(e);
+    if (e) out[e] = true;
+  });
+  return out;
+}
+function isAdmin(me, admins) { return !!(me && admins[normEmail(me.email)]); }
+function cleanFeature(value, fallback) {
+  const s = String(value || fallback || 'ai_request').toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 64);
+  return s || 'ai_request';
+}
+function cleanContext(value) {
+  value = value && typeof value === 'object' ? value : {};
+  return {
+    project_id: String(value.projectId || '').slice(0, 80),
+    project_type: String(value.projectType || '').replace(/[^a-z0-9_-]+/gi, '').slice(0, 32)
+  };
+}
+function num(value) {
+  value = Number(value);
+  return Number.isFinite(value) && value > 0 ? value : 0;
+}
+function roundedCost(value) { return Math.round(num(value) * 1e8) / 1e8; }
+function anthropicCost(model, usage) {
+  const p = AI_PRICING.anthropic[model] || AI_PRICING.anthropic['claude-sonnet-4-6'];
+  return roundedCost(
+    num(usage.input_tokens) * p.input_per_million / 1e6 +
+    num(usage.output_tokens) * p.output_per_million / 1e6 +
+    num(usage.cache_creation_input_tokens) * p.cache_write_per_million / 1e6 +
+    num(usage.cache_read_input_tokens) * p.cache_read_per_million / 1e6
+  );
+}
+async function recordUsage(store, event) {
+  if (!store || !event || !event.user_id) return;
+  const ts = event.ts || Date.now();
+  const rec = Object.assign({
+    v: 1,
+    ts: ts,
+    day: new Date(ts).toISOString().slice(0, 10),
+    request_id: uid()
+  }, event);
+  rec.cost_usd = roundedCost(rec.cost_usd);
+  // One immutable key per request avoids aggregate races when a long plan
+  // generates several Claude segments concurrently. Everything the dashboard
+  // needs fits in metadata, so listing usage does not read prompt-sized values.
+  const key = 'usage:' + new Date(ts).toISOString() + ':' + rec.user_id + ':' + rec.request_id;
+  await store.put(key, JSON.stringify(rec), rec);
+}
+function metricBucket(id, label) {
+  return {id: id, label: label || id, requests: 0, cost_usd: 0, input_tokens: 0,
+    output_tokens: 0, cache_tokens: 0, images: 0, megapixels: 0, last_active: 0};
+}
+function addMetric(bucket, event) {
+  bucket.requests++;
+  bucket.cost_usd += num(event.cost_usd);
+  bucket.input_tokens += num(event.input_tokens);
+  bucket.output_tokens += num(event.output_tokens);
+  bucket.cache_tokens += num(event.cache_creation_input_tokens) + num(event.cache_read_input_tokens);
+  bucket.images += num(event.images);
+  bucket.megapixels += num(event.megapixels);
+  bucket.last_active = Math.max(bucket.last_active || 0, num(event.ts));
+}
+function finishMetric(bucket) {
+  bucket.cost_usd = roundedCost(bucket.cost_usd);
+  bucket.input_tokens = Math.round(bucket.input_tokens);
+  bucket.output_tokens = Math.round(bucket.output_tokens);
+  bucket.cache_tokens = Math.round(bucket.cache_tokens);
+  bucket.images = Math.round(bucket.images);
+  bucket.megapixels = Math.round(bucket.megapixels * 1000) / 1000;
+  return bucket;
+}
+async function usageReport(store, days) {
+  const now = Date.now();
+  const from = days >= 3650 ? 0 : now - days * 864e5;
+  const usageKeys = await store.list('usage:');
+  const events = (await Promise.all(usageKeys.map(async k => {
+    let event = k.metadata || {};
+    if (!event.service) {
+      try { event = JSON.parse(await store.get(k.name)) || {}; } catch (e) { event = {}; }
+    }
+    return event;
+  }))).filter(e => e && num(e.ts) >= from && e.service);
+  events.sort((a, b) => num(b.ts) - num(a.ts));
+
+  // Include registered accounts with zero usage as well, so "who has spent
+  // what" never silently hides users who have not generated anything yet.
+  const userKeys = await store.list('user:');
+  const users = {};
+  await Promise.all(userKeys.map(async k => {
+    let u = k.metadata || {};
+    if (!u.id || !u.email) {
+      try { u = JSON.parse(await store.get(k.name)) || {}; } catch (e) { u = {}; }
+    }
+    const id = u.id || k.name.slice(5);
+    const email = normEmail(u.email || k.name.slice(5));
+    const b = metricBucket(id, email);
+    b.email = email; b.created_at = num(u.created_at);
+    users[id] = b;
+  }));
+
+  const totals = metricBucket('total', 'Total');
+  const services = {}, features = {}, daily = {};
+  events.forEach(event => {
+    const uid = String(event.user_id || 'unknown');
+    if (!users[uid]) {
+      users[uid] = metricBucket(uid, normEmail(event.email) || 'Unknown');
+      users[uid].email = normEmail(event.email) || 'Unknown';
+      users[uid].created_at = 0;
+    }
+    addMetric(users[uid], event);
+    addMetric(totals, event);
+    const service = String(event.service || 'other');
+    if (!services[service]) services[service] = metricBucket(service, service === 'anthropic' ? 'Claude' : service === 'fal' ? 'fal.ai' : service);
+    addMetric(services[service], event);
+    const feature = cleanFeature(event.feature);
+    if (!features[feature]) features[feature] = metricBucket(feature, feature);
+    addMetric(features[feature], event);
+    const day = String(event.day || new Date(num(event.ts)).toISOString().slice(0, 10));
+    if (!daily[day]) daily[day] = metricBucket(day, day);
+    addMetric(daily[day], event);
+  });
+
+  return {
+    generated_at: now,
+    range: {days: days, from: from, to: now},
+    totals: finishMetric(totals),
+    users: Object.values(users).map(finishMetric).sort((a, b) => b.cost_usd - a.cost_usd || b.requests - a.requests),
+    services: Object.values(services).map(finishMetric).sort((a, b) => b.cost_usd - a.cost_usd),
+    features: Object.values(features).map(finishMetric).sort((a, b) => b.cost_usd - a.cost_usd),
+    daily: Object.values(daily).map(finishMetric).sort((a, b) => a.id.localeCompare(b.id)),
+    recent: events.slice(0, 100).map(e => ({
+      ts: num(e.ts), email: normEmail(e.email), service: e.service, model: e.model,
+      feature: cleanFeature(e.feature), project_type: e.project_type || '',
+      input_tokens: num(e.input_tokens), output_tokens: num(e.output_tokens),
+      images: num(e.images), megapixels: num(e.megapixels), cost_usd: roundedCost(e.cost_usd)
+    })),
+    pricing: AI_PRICING
+  };
+}
+
 export default {
   async fetch(request, env) {
     if (request.method === 'OPTIONS') return new Response(null, {headers: CORS});
@@ -233,6 +396,7 @@ export default {
 
     const anthropicKey = ((env && env.ANTHROPIC_KEY) || ANTHROPIC_KEY || '').trim();
     const falKey = ((env && env.FAL_KEY) || FAL_KEY || '').trim();
+    const admins = emailSet((env && env.ADMIN_EMAILS) || ADMIN_EMAILS);
     // Accepts either a KV namespace or a D1 database, whichever is bound.
     // A plain text variable is truthy but has neither interface, so it is
     // caught here with a message saying what to fix rather than blowing up
@@ -248,6 +412,8 @@ export default {
         '',
         keyStatus(anthropicKey, 'Anthropic anahtari'),
         keyStatus(falKey, 'fal.ai anahtari'),
+        Object.keys(admins).length ? ('Maliyet paneli adminleri: ' + Object.keys(admins).length + ' hesap')
+                                   : 'Maliyet paneli: KAPALI - ADMIN_EMAILS ayarlanmamis',
         RESEND_KEY ? 'Sifre sifirlama e-postasi: acik' : 'Sifre sifirlama e-postasi: kapali (istege bagli - RESEND_KEY bos)',
         hasKV ? ('Hesap deposu (GD_KV): tamam - ' + store.kind + ' kullaniliyor')
               : binding ? 'Hesap deposu (GD_KV): YANLIS TURDE - KV namespace veya D1 database olmali. Simdi duz metin degisken olarak eklenmis.'
@@ -282,7 +448,8 @@ export default {
 
           const {salt, hash} = await hashPassword(pass);
           const user = {id: uid(), email: email, salt: salt, hash: hash, pv: 1, created_at: Date.now()};
-          await store.put('user:' + email, JSON.stringify(user));
+          await store.put('user:' + email, JSON.stringify(user),
+            {id: user.id, email: user.email, created_at: user.created_at});
           const token = await makeToken(store, {uid: user.id, email: email, pv: user.pv, exp: Date.now() + TOKEN_DAYS * 864e5});
           return json({token: token, email: email});
         }
@@ -365,7 +532,8 @@ export default {
           const fresh = await hashPassword(pass);
           user.salt = fresh.salt; user.hash = fresh.hash;
           user.pv = (user.pv || 1) + 1;      // retires every existing session
-          await store.put('user:' + rec.email, JSON.stringify(user));
+          await store.put('user:' + rec.email, JSON.stringify(user),
+            {id: user.id, email: user.email, created_at: user.created_at});
           await store.del('reset:' + tok);   // single use
           const token = await makeToken(store, {uid: user.id, email: rec.email, pv: user.pv, exp: Date.now() + TOKEN_DAYS * 864e5});
           return json({token: token, email: rec.email});
@@ -374,6 +542,17 @@ export default {
         /* ---- buradan asagisi giris ister ---- */
         const me = await requireUser(request, store);
         if (!me) return json({error: 'Oturum gecersiz veya suresi dolmus. Tekrar giris yap.'}, 401);
+
+        /* ---- private usage + cost dashboard ---- */
+        if (request.method === 'GET' && path === '/api/admin/status') {
+          return json({admin: isAdmin(me, admins)});
+        }
+        if (request.method === 'GET' && path === '/api/admin/usage') {
+          if (!isAdmin(me, admins)) return json({error: 'Bu hesap admin degil.'}, 403);
+          let days = parseInt(url.searchParams.get('days') || '30', 10);
+          if ([7, 30, 90, 3650].indexOf(days) < 0) days = 30;
+          return json(await usageReport(store, days));
+        }
 
         const prefix = 'proj:' + me.uid + ':';
 
@@ -432,9 +611,15 @@ export default {
 
     /* ================================ AI =================================== */
     if (request.method !== 'POST') return new Response('Method not allowed', {status: 405, headers: CORS});
+    if (!hasKV) return json({error: 'AI kullanimini bir hesaba baglamak icin GD_KV gerekli.'}, 500);
+    const aiUser = await requireUser(request, store);
+    if (!aiUser) return json({error: 'AI kullanmak icin tekrar giris yap.'}, 401);
 
     try {
       const body = await request.json();
+      const feature = cleanFeature(body.feature, body.falPrompt ? 'storyboard_image' : 'ai_request');
+      const context = cleanContext(body.context);
+      const startedAt = Date.now();
 
       if (body.falPrompt) {
         if (!falKey || falKey.indexOf(PLACEHOLDER) === 0) {
@@ -447,7 +632,20 @@ export default {
         });
         const falData = await falRes.json();
         if (!falRes.ok) return json({error: falData.detail || falData.error || 'fal error'}, falRes.status);
-        return json({imageUrl: (falData.images && falData.images[0] && falData.images[0].url) || null});
+        const falImage = falData.images && falData.images[0];
+        const width = num(falImage && falImage.width) || 1024;
+        const height = num(falImage && falImage.height) || 768;
+        const megapixels = width * height / 1e6;
+        const falPrice = num(env && env.FAL_FLUX_SCHNELL_USD_PER_MP) ||
+          AI_PRICING.fal['fal-ai/flux/schnell'].usd_per_unit;
+        await recordUsage(store, {
+          ts: Date.now(), user_id: aiUser.uid, email: aiUser.email,
+          service: 'fal', model: 'fal-ai/flux/schnell', feature: feature,
+          project_id: context.project_id, project_type: context.project_type,
+          images: 1, megapixels: megapixels, cost_usd: megapixels * falPrice,
+          duration_ms: Date.now() - startedAt, status: 'success'
+        });
+        return json({imageUrl: (falImage && falImage.url) || null});
       }
 
       if (!anthropicKey || anthropicKey.indexOf(PLACEHOLDER) === 0) {
@@ -455,6 +653,7 @@ export default {
       }
 
       const {system, user} = body;
+      const model = 'claude-sonnet-4-6';
 
       // Uzun bir plan uretmek 100 saniyeyi asabiliyor. Cloudflare o sureye kadar
       // yanit vermeyen istegi kesip "error code: 524" donduruyordu. Stream ile
@@ -467,7 +666,7 @@ export default {
           'anthropic-version': '2023-06-01'
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
+          model: model,
           max_tokens: 8000,
           system,
           messages: [{role: 'user', content: user}],
@@ -485,6 +684,8 @@ export default {
         const writer = writable.getWriter();
         const reader = upstream.body.getReader();
         let buf = '';
+        const usage = {input_tokens: 0, output_tokens: 0,
+          cache_creation_input_tokens: 0, cache_read_input_tokens: 0};
         try {
           while (true) {
             const {done, value} = await reader.read();
@@ -499,6 +700,13 @@ export default {
               if (!payload || payload === '[DONE]') continue;
               try {
                 const ev = JSON.parse(payload);
+                const u = (ev.type === 'message_start' && ev.message && ev.message.usage) || ev.usage;
+                if (u) {
+                  if (u.input_tokens != null) usage.input_tokens = num(u.input_tokens);
+                  if (u.output_tokens != null) usage.output_tokens = num(u.output_tokens);
+                  if (u.cache_creation_input_tokens != null) usage.cache_creation_input_tokens = num(u.cache_creation_input_tokens);
+                  if (u.cache_read_input_tokens != null) usage.cache_read_input_tokens = num(u.cache_read_input_tokens);
+                }
                 if (ev.type === 'content_block_delta' && ev.delta && typeof ev.delta.text === 'string') {
                   await writer.write(enc.encode(ev.delta.text));
                 }
@@ -508,6 +716,18 @@ export default {
         } catch (e) {
           // uretim ortasinda koptu: eldekiyle kapat
         } finally {
+          try {
+            await recordUsage(store, {
+              ts: Date.now(), user_id: aiUser.uid, email: aiUser.email,
+              service: 'anthropic', model: model, feature: feature,
+              project_id: context.project_id, project_type: context.project_type,
+              input_tokens: usage.input_tokens, output_tokens: usage.output_tokens,
+              cache_creation_input_tokens: usage.cache_creation_input_tokens,
+              cache_read_input_tokens: usage.cache_read_input_tokens,
+              cost_usd: anthropicCost(model, usage),
+              duration_ms: Date.now() - startedAt, status: 'success'
+            });
+          } catch (e) { /* metering must never break the user's generation */ }
           try { await writer.close(); } catch (e) {}
         }
       })();

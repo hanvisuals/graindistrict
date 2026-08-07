@@ -2079,6 +2079,15 @@ var nodeDrawerClosed={};
 var sbSeed=null;
 var SB_PANEL_H=150;
 var SB_STYLE='crude rough pencil storyboard sketch on white paper, quick gestural thumbnail, loose scratchy wobbly lines, simple rough stick figure shapes, imperfect hand-drawn marks, crosshatching shading, film director working storyboard, black pencil only, no color, very rough unpolished unfinished quality, messy scribbled lines';
+function workerHeaders(){
+  var h={'Content-Type':'application/json'};
+  var t=typeof window.gdSessionToken==='function'?window.gdSessionToken():'';
+  if(t)h.Authorization='Bearer '+t;
+  return h;
+}
+function workerUsageContext(){
+  return typeof window.gdUsageContext==='function'?window.gdUsageContext():{};
+}
 
 function genNodeStoryboard(nodeId){
   var node=null;for(var i=0;i<nodes.length;i++){if(nodes[i].id===nodeId){node=nodes[i];break;}}
@@ -2092,7 +2101,7 @@ function genNodeStoryboard(nodeId){
   // goes through api() rather than fetching the Worker directly: the Worker
   // streams text now, so a bare r.json() here threw on every storyboard
   api('You are a storyboard artist. Convert this shot description into a short English visual description for a single rough storyboard frame. Rules: 1) If the shot is a montage or sequence of cuts, pick ONLY the single strongest visual moment to draw. 2) Always specify interior OR exterior. 3) Include the main human subject and their action. 4) If the text mentions a "gorsel", "fotograf", "photo" or "image" of someone as a prop, describe it as "a photograph of a woman" held by someone — NOT as a real person in the scene. 5) Keep it under 20 words. 6) Be literal and spatial — describe what is physically in the frame. Output ONLY the description.',
-      rawDesc)
+      rawDesc,'storyboard_prompt')
   .then(function(text){
     var eng=(text||rawDesc).trim().replace(/\n/g,' ');
     node.sbDesc=eng;
@@ -2110,8 +2119,8 @@ function callFal(prompt){
   if(!sbSeed)sbSeed=Math.floor(Math.random()*99999)+1;
   return fetch(WORKER,{
     method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({falPrompt:prompt+', '+SB_STYLE,falSeed:sbSeed})
+    headers:workerHeaders(),
+    body:JSON.stringify({falPrompt:prompt+', '+SB_STYLE,falSeed:sbSeed,feature:'storyboard_image',context:workerUsageContext()})
   }).then(function(r){
     if(!r.ok)return r.text().then(function(t){throw new Error('Worker '+r.status+': '+t.slice(0,100));});
     return r.json();
@@ -2129,7 +2138,7 @@ function editNodeStoryboard(nodeId,instruction){
   renderCanvas();
   // same reason as genNodeStoryboard: api() understands the streamed response
   api('You are a storyboard artist. You have an existing storyboard frame description and the director wants to modify it. Apply ONLY the requested change and output the new short English visual description (under 20 words). Keep everything else from the original the same. Output ONLY the description.',
-      'Current description: '+currentDesc+'\n\nDirector instruction: '+instruction)
+      'Current description: '+currentDesc+'\n\nDirector instruction: '+instruction,'storyboard_prompt_edit')
   .then(function(text){
     var newDesc=(text||currentDesc).trim().replace(/\n/g,' ');
     node.sbDesc=newDesc;
@@ -3431,8 +3440,10 @@ function langInstr(lang,type){
 // and the response may take as long as it needs.
 // Still understands the old single-JSON shape, so a Worker that hasn't been
 // updated yet keeps working exactly as before.
-function api(sys,usr){
-  return fetch(WORKER,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:sys,user:usr,stream:true})})
+function api(sys,usr,feature){
+  return fetch(WORKER,{method:'POST',headers:workerHeaders(),body:JSON.stringify({
+    system:sys,user:usr,stream:true,feature:feature||'ai_request',context:workerUsageContext()
+  })})
     .then(function(r){
       if(!r.ok)return r.text().then(function(t){throw new Error('API '+r.status+': '+t);});
       var ct=r.headers.get('content-type')||'';
@@ -3921,7 +3932,7 @@ function generateBrief(){
   var cv=constraints?constraints.value.trim():'';
   projectConstraints=cv;
   var userMsg='Project type: '+projectType+'\nDuration: '+durMin+'-'+durMax+' min\n\nProject description:\n'+topic+(cv?'\n\nEquipment & constraints:\n'+cv:'')+recceContext()+songAnalysisSummary();
-  api(sys,buildUserContent(userMsg)).then(function(raw){
+  api(sys,buildUserContent(userMsg),'creative_brief').then(function(raw){
     stopLoad();
     projectBrief=raw.trim();
     document.getElementById('briefDisplay').innerHTML=renderMarkdown(projectBrief);
@@ -3998,10 +4009,10 @@ function genScript(){
   // of one request at a time (much faster for 10+ min cut-by-cut videos)
   var planPromise=totalSec>240
     ? genPlanChunked(planSys,planMsg,totalSec,li)
-    : api(planSys,buildUserContent(planMsg)).then(function(t){return ensureFullPlan(planSys,t);});
+    : api(planSys,buildUserContent(planMsg),'shot_plan').then(function(t){return ensureFullPlan(planSys,t);});
 
   Promise.all([
-    approvedBrief?Promise.resolve(approvedBrief):api(briefSys,buildUserContent(briefMsg)),
+    approvedBrief?Promise.resolve(approvedBrief):api(briefSys,buildUserContent(briefMsg),'creative_brief'),
     planPromise
   ]).then(function(results){
     stopLoad();
@@ -4243,12 +4254,12 @@ function compactGeneratedYouTubePlan(text,totalSec){
 // 3min result, no error, no warning). Retry once before giving up, and if
 // it still fails, let it throw so the real error reaches the user instead
 // of a mysteriously short plan.
-function apiRetry(sys,usr,retries){
+function apiRetry(sys,usr,feature,retries){
   retries=retries==null?1:retries;
-  return api(sys,usr).catch(function(err){
+  return api(sys,usr,feature).catch(function(err){
     console.warn('[api] request failed'+(retries>0?', retrying in 1.2s':', giving up')+':',err&&err.message?err.message:err);
     if(retries<=0)throw err;
-    return new Promise(function(res){setTimeout(res,1200);}).then(function(){return apiRetry(sys,usr,retries-1);});
+    return new Promise(function(res){setTimeout(res,1200);}).then(function(){return apiRetry(sys,usr,feature,retries-1);});
   });
 }
 // some backend responses can hang far longer than a user will ever wait (one
@@ -4327,7 +4338,7 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
   // isn't back in time, just split the runtime evenly and move on. This one
   // really is small (a few sentences of JSON) so it stays comparatively
   // tight, but 8s was cutting off a call that simply hadn't started yet
-  return withTimeout(apiRetry(outlineSys,outlineMsg),25000,null).then(function(raw){
+  return withTimeout(apiRetry(outlineSys,outlineMsg,'plan_outline'),25000,null).then(function(raw){
     var segs=[],thesis='',specifics=[],continuity={},motifs=[];
     if(raw){
       // the outline used to be a bare array; accept either shape so a model
@@ -4387,7 +4398,7 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
     // short ones (one untimed call) kept working fine.
     setGenStage('writing '+segs.length+' segments (up to 3 at a time)');
     var segTasks=segs.map(function(seg,idx){
-      return function(){return withTimeout(apiRetry(buildSegSys(seg,idx),buildUserContent(planMsg)).then(function(t){return t.trim();}),90000,'','segment '+(idx+1));};
+      return function(){return withTimeout(apiRetry(buildSegSys(seg,idx),buildUserContent(planMsg),'shot_plan_segment').then(function(t){return t.trim();}),90000,'','segment '+(idx+1));};
     });
     return runLimited(segTasks,3).then(function(texts){
       // a segment can under-deliver (model stops early within its own
@@ -4406,7 +4417,7 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
       }
       setGenStage('redrafting '+shortfalls.length+' short segment'+(shortfalls.length>1?'s':''));
       var repairTasks=shortfalls.map(function(idx){
-        return function(){return withTimeout(apiRetry(buildSegSys(segs[idx],idx),buildUserContent(planMsg)).then(function(t){return t.trim();}),90000,texts[idx],'redraft '+(idx+1));};
+        return function(){return withTimeout(apiRetry(buildSegSys(segs[idx],idx),buildUserContent(planMsg),'shot_plan_redraft').then(function(t){return t.trim();}),90000,texts[idx],'redraft '+(idx+1));};
       });
       return runLimited(repairTasks,3).then(function(repaired){
         repaired.forEach(function(t,i){if(t)texts[shortfalls[i]]=t;});
@@ -4426,7 +4437,7 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
     // one request writing the WHOLE video is by far the biggest generation
     // we ever ask for - with a streaming Worker there's no 100s ceiling to
     // trip over any more, so give it a genuinely patient window
-    return withTimeout(apiRetry(planSys,buildUserContent(planMsg)),240000,'','single-pass fallback')
+    return withTimeout(apiRetry(planSys,buildUserContent(planMsg),'shot_plan_fallback'),240000,'','single-pass fallback')
       .then(function(t){return ensureFullPlan(planSys,(t||'').trim());});
   });
 }
@@ -4456,7 +4467,7 @@ function ensureFullPlan(planSys,text,tries,prevEnd,startTs){
   if(lines.length&&!/\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}/.test(lines[lines.length-1]))lines.pop();
   var tail=lines.slice(-6).join('\n');
   var contMsg='The shot plan below is INCOMPLETE - it stops at '+fmtTime(end)+' but the video must reach at least '+fmtTime(target)+'. Continue the SAME plan from '+fmtTime(end)+' onward. Do not repeat existing blocks. Keep the same style, layers and cutting math.\n\nLast blocks for context:\n'+tail+'\n\nWrite in the SAME LANGUAGE as the existing blocks. Return ONLY the new blocks, same plain text format, nothing else.';
-  return withTimeout(api(planSys,contMsg),25000,'').then(function(more){
+  return withTimeout(api(planSys,contMsg,'shot_plan_continuation'),25000,'').then(function(more){
     // drop lines the continuation repeated from the existing plan
     var seen={};
     lines.forEach(function(l){seen[l.trim()]=1;});
@@ -4568,7 +4579,7 @@ function buildCanvas(){
     for(var ci=0;ci<idxBlocks.length;ci+=CH)chunks.push(idxBlocks.slice(ci,ci+CH));
     var chunkPromises=chunks.map(function(chunk){
       var usr='Blocks:\n'+chunk.map(function(o){return o.i+': ['+o.b.type.toUpperCase()+'] '+o.b.tcStart+'-'+o.b.tcEnd+' - '+o.b.content;}).join('\n')+'\n\nReturn shot ideas for each block, using the same "i" indexes as given.';
-      return api(sys,usr).then(function(raw){
+      return api(sys,usr,'shot_details_batch').then(function(raw){
         try{var m=raw.match(/\[[\s\S]*\]/);if(m)return JSON.parse(m[0]);}catch(e){console.warn('Shot parse:',e);}
         return [];
       });
@@ -5517,7 +5528,7 @@ function translateBoard(lang){
   setTranslateProgress(0);
   var chunkPromises=chunks.map(function(chunk){
     var payload=chunk.map(function(it,j){return {i:j,t:it.ref[it.field]};});
-    return apiRetry(sys,JSON.stringify(payload)).then(function(raw){
+    return apiRetry(sys,JSON.stringify(payload),'translation').then(function(raw){
       var arr=[];try{var mm=raw.match(/\[[\s\S]*\]/);if(mm)arr=JSON.parse(mm[0]);}catch(e){}
       arr.forEach(function(o){
         var it=chunk[o.i];
@@ -5641,7 +5652,7 @@ function planNode(id){
     usr+='\n\nThis block is shot at the real location in the attached photo. Base the location, framing, lighting and blocking on what is actually visible in it.';
     userContent=[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:n.recceLoc.split(',')[1]}},{type:'text',text:usr}];
   }
-  api(sys,userContent).then(function(raw){
+  api(sys,userContent,'block_shot_details').then(function(raw){
     var shots=[];try{var m=raw.match(/\[[\s\S]*\]/);if(m)shots=JSON.parse(m[0]);}catch(e){}
     saveHistory();
     attShots=attShots.filter(function(a){return a.parentId!==n.id;});
@@ -5662,7 +5673,7 @@ function reviseBlock(nodeId,instruction){
   var li=langInstr(inputLang,'block content');
   var sys=(li?li+' ':'')+' You are a filmmaker. Revise this block content based on the instruction. Keep same block type. Keep the same language as the original content unless the instruction says otherwise. Return ONLY the revised content text, nothing else.'+(li?' '+li:'');
   var usr='Current content: '+n.content+'\nInstruction: '+instruction;
-  api(sys,usr).then(function(raw){
+  api(sys,usr,'block_revision').then(function(raw){
     saveHistory();
     n.content=raw.trim();
     renderBlockDetail();renderBlockList();
@@ -5808,7 +5819,7 @@ function genLocationNames(li,lines){
     +'Return ONLY JSON: {"locations":[{"name":"...","timeOfDay":"..."}],"cast":["..."],'
     +'"wardrobe":["..."],"props":["..."]}'
     +(li?'\n\n'+li:'');
-  return withTimeout(apiRetry(sys,'Shot plan:\n'+brief).then(parseProductionBible),60000,null,'location names');
+  return withTimeout(apiRetry(sys,'Shot plan:\n'+brief,'location_bible').then(parseProductionBible),60000,null,'location names');
 }
 function breakdownSys(li,part,bible){
   var names=Array.isArray(bible)?bible:((bible&&bible.locations)||[]);
@@ -5892,7 +5903,7 @@ function breakdownPass(lines,sys){
       var usr='Shots '+(idx+1)+' of '+chunks.length+' in this film:\n'+c.join('\n')
         +'\n\nYour answer must place every one of these '+want.length+' shots, exactly once each:\n'
         +want.join(', ');
-      return withTimeout(apiRetry(sys,usr).then(parseLocations),75000,null,'breakdown '+(idx+1));
+      return withTimeout(apiRetry(sys,usr,'location_breakdown').then(parseLocations),75000,null,'breakdown '+(idx+1));
     };
   });
   return runLimited(tasks,3).then(function(parts){
@@ -6747,6 +6758,14 @@ document.addEventListener('mouseup',function(e){
     }catch(e){}
   }
   (function(){ var s=readStoredSession(); token=s.t; userEmail=s.e; })();
+  // The AI proxy lives above this account module in the file, but every
+  // generation must carry the same signed session so the Worker can meter it
+  // to the right user. Only ids and feature names are sent for accounting;
+  // project text, prompts and images are never part of the usage record.
+  window.gdSessionToken=function(){ return token||''; };
+  window.gdUsageContext=function(){
+    return {projectId:currentProjectId||'',projectType:projectType||''};
+  };
 
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function uid(){ return 'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
@@ -6798,6 +6817,101 @@ document.addEventListener('mouseup',function(e){
           return d;
         });
       });
+  }
+
+  /* ---------- private AI cost observatory ---------- */
+  var adminAccess=false,adminChecked=false,adminDays=30,adminBusy=false;
+  function checkAdminAccess(force){
+    if(!token){adminAccess=false;adminChecked=true;return Promise.resolve(false);}
+    if(adminChecked&&!force)return Promise.resolve(adminAccess);
+    adminChecked=true;
+    return cloud('GET','/admin/status').then(function(d){
+      adminAccess=!!(d&&d.admin);renderAccount();return adminAccess;
+    },function(){
+      adminAccess=false;renderAccount();return false;
+    });
+  }
+  function money(v){
+    v=Number(v)||0;
+    if(v===0)return '$0.00';
+    if(v<.01)return '$'+v.toFixed(4);
+    return '$'+v.toFixed(2);
+  }
+  function compactNum(v){
+    v=Number(v)||0;
+    if(v>=1e6)return (v/1e6).toFixed(v>=1e7?0:1)+'M';
+    if(v>=1e3)return (v/1e3).toFixed(v>=1e4?0:1)+'K';
+    return String(Math.round(v));
+  }
+  function usageDate(ts,withTime){
+    if(!ts)return '—';
+    try{return new Date(ts).toLocaleString(undefined,withTime?{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}:{month:'short',day:'numeric'});}catch(e){return '—';}
+  }
+  function featureLabel(id){
+    var labels={creative_brief:'Creative brief',shot_plan:'Shot plan',plan_outline:'Plan outline',
+      shot_plan_segment:'Plan segment',shot_plan_redraft:'Segment redraft',shot_plan_fallback:'Plan fallback',
+      shot_plan_continuation:'Plan continuation',shot_details_batch:'Shot details',block_shot_details:'Block planning',
+      block_revision:'Block revision',translation:'Translation',location_bible:'Location bible',
+      location_breakdown:'Location breakdown',storyboard_prompt:'Storyboard prompt',
+      storyboard_prompt_edit:'Storyboard prompt edit',storyboard_image:'Storyboard image',ai_request:'Other AI'};
+    return labels[id]||String(id||'Other').replace(/_/g,' ');
+  }
+  function splitRows(items,max){
+    items=(items||[]).slice(0,max||items.length);
+    var top=Math.max.apply(null,[.000001].concat(items.map(function(x){return Number(x.cost_usd)||0;})));
+    if(!items.length)return '<div class="gd-empty">No usage in this period.</div>';
+    return '<div class="gd-admin-split">'+items.map(function(x){
+      return '<div class="gd-admin-split-row"><span class="gd-admin-split-name">'+esc(x.label||featureLabel(x.id))+'</span>'
+        +'<span class="gd-admin-split-val">'+money(x.cost_usd)+' · '+compactNum(x.requests)+'</span>'
+        +'<div class="gd-admin-track"><i style="width:'+Math.max(2,(Number(x.cost_usd)||0)/top*100).toFixed(1)+'%"></i></div></div>';
+    }).join('')+'</div>';
+  }
+  function renderAdmin(d){
+    var body=byId('gdAdminBody');if(!body)return;
+    var t=d.totals||{}, users=d.users||[], services=d.services||[], features=d.features||[], recent=d.recent||[], daily=d.daily||[];
+    var maxDay=Math.max.apply(null,[.000001].concat(daily.map(function(x){return Number(x.cost_usd)||0;})));
+    var chart=daily.length?'<div class="gd-admin-chart">'+daily.map(function(x){
+      var h=Math.max(3,(Number(x.cost_usd)||0)/maxDay*100);
+      return '<i class="gd-admin-bar" style="height:'+h.toFixed(1)+'%"><span>'+esc(usageDate(new Date(x.id+'T12:00:00Z').getTime(),false))+' · '+money(x.cost_usd)+'</span></i>';
+    }).join('')+'</div>':'<div class="gd-empty">No spend recorded in this period.</div>';
+    var userRows=users.map(function(u){
+      return '<tr><td class="email">'+esc(u.email||'Unknown')+'</td><td class="num">'+compactNum(u.requests)+'</td>'
+        +'<td class="num">'+compactNum(u.input_tokens)+'</td><td class="num">'+compactNum(u.output_tokens)+'</td>'
+        +'<td class="num">'+compactNum(u.images)+'</td><td>'+esc(usageDate(u.last_active,true))+'</td>'
+        +'<td class="money">'+money(u.cost_usd)+'</td></tr>';
+    }).join('');
+    var recentRows=recent.slice(0,30).map(function(e){
+      return '<tr><td>'+esc(usageDate(e.ts,true))+'</td><td class="email">'+esc(e.email||'Unknown')+'</td>'
+        +'<td>'+esc(e.service==='anthropic'?'Claude':'fal.ai')+'</td><td>'+esc(featureLabel(e.feature))+'</td>'
+        +'<td class="num">'+(e.service==='anthropic'?(compactNum(e.input_tokens)+' / '+compactNum(e.output_tokens)):(compactNum(e.images)+' img'))+'</td>'
+        +'<td class="money">'+money(e.cost_usd)+'</td></tr>';
+    }).join('');
+    body.innerHTML=''
+      +'<div class="gd-admin-kpis">'
+      +'<div class="gd-admin-kpi"><div class="gd-admin-label">Estimated spend</div><div class="gd-admin-value">'+money(t.cost_usd)+'</div><div class="gd-admin-note">selected period · USD</div></div>'
+      +'<div class="gd-admin-kpi"><div class="gd-admin-label">AI requests</div><div class="gd-admin-value">'+compactNum(t.requests)+'</div><div class="gd-admin-note">Claude + fal.ai</div></div>'
+      +'<div class="gd-admin-kpi"><div class="gd-admin-label">Claude tokens</div><div class="gd-admin-value">'+compactNum((t.input_tokens||0)+(t.output_tokens||0))+'</div><div class="gd-admin-note">'+compactNum(t.input_tokens)+' in · '+compactNum(t.output_tokens)+' out</div></div>'
+      +'<div class="gd-admin-kpi"><div class="gd-admin-label">Storyboard images</div><div class="gd-admin-value">'+compactNum(t.images)+'</div><div class="gd-admin-note">'+(Number(t.megapixels)||0).toFixed(1)+' megapixels</div></div>'
+      +'</div>'
+      +'<div class="gd-admin-grid"><section class="gd-admin-panel"><div class="gd-admin-panel-title"><span>Spend timeline</span><span>'+esc(String(d.range&&d.range.days>=3650?'All time':(d.range&&d.range.days||30)+' days'))+'</span></div>'+chart+'</section>'
+      +'<section class="gd-admin-panel"><div class="gd-admin-panel-title"><span>Providers</span><span>Cost / requests</span></div>'+splitRows(services,4)+'</section></div>'
+      +'<div class="gd-admin-grid"><section class="gd-admin-panel"><div class="gd-admin-panel-title"><span>Users</span><span>'+users.length+' accounts</span></div><div class="gd-admin-table-wrap"><table class="gd-admin-table"><thead><tr><th>User</th><th style="text-align:right">Calls</th><th style="text-align:right">Input</th><th style="text-align:right">Output</th><th style="text-align:right">Images</th><th>Last active</th><th style="text-align:right">Spend</th></tr></thead><tbody>'+userRows+'</tbody></table></div></section>'
+      +'<section class="gd-admin-panel"><div class="gd-admin-panel-title"><span>Features</span><span>Top cost</span></div>'+splitRows(features,10)+'</section></div>'
+      +'<section class="gd-admin-panel gd-admin-recent"><div class="gd-admin-panel-title"><span>Recent activity</span><span>Last '+Math.min(recent.length,30)+'</span></div><div class="gd-admin-table-wrap"><table class="gd-admin-table"><thead><tr><th>Time</th><th>User</th><th>Provider</th><th>Feature</th><th style="text-align:right">Usage</th><th style="text-align:right">Spend</th></tr></thead><tbody>'+recentRows+'</tbody></table></div></section>'
+      +'<div class="gd-admin-privacy">Prompts, scripts, uploaded images and passwords are never stored in the usage ledger.</div>';
+  }
+  function loadAdmin(days){
+    if(adminBusy)return;
+    adminBusy=true;adminDays=days||adminDays;
+    [].forEach.call(document.querySelectorAll('#gdAdminRanges [data-days]'),function(b){b.classList.toggle('on',Number(b.getAttribute('data-days'))===adminDays);});
+    byId('gdAdminBody').innerHTML='<div class="gd-admin-loading">Reading usage ledger…</div>';
+    cloud('GET','/admin/usage?days='+adminDays).then(function(d){adminBusy=false;renderAdmin(d);},function(e){
+      adminBusy=false;byId('gdAdminBody').innerHTML='<div class="gd-admin-loading">'+esc(e.message||'Could not load usage.')+'</div>';
+    });
+  }
+  function openAdmin(){
+    if(!adminAccess)return;
+    byId('gdAdminOv').classList.add('show');loadAdmin(adminDays);
   }
 
   /* ---------- one interface over both ---------- */
@@ -6922,6 +7036,50 @@ document.addEventListener('mouseup',function(e){
   +'.gd-home-tab{position:fixed;top:58px;left:0;z-index:9000;display:none;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-left:none;border-radius:0 9px 9px 0;color:var(--text-2);cursor:pointer;padding:9px 10px 9px 8px;font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;}'
   +'.gd-home-tab.show{display:flex;}'
   +'.gd-home-tab:hover{color:#fff;}'
+  +'.gd-pill.admin{border-color:rgba(109,155,211,.24);background:rgba(109,155,211,.06);color:rgba(186,211,241,.78);}'
+  +'.gd-pill.admin:hover{border-color:rgba(109,155,211,.48);background:rgba(109,155,211,.12);color:#fff;}'
+  +'.gd-admin-modal{width:min(1180px,calc(100vw - 32px));max-width:none;height:min(860px,calc(100dvh - 32px));padding:0;overflow:hidden;border-radius:24px;background:#0a0b0a;border-color:rgba(255,255,255,.1);}'
+  +'.gd-admin-head{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:24px 58px 21px 26px;border-bottom:1px solid rgba(255,255,255,.075);background:linear-gradient(110deg,rgba(109,155,211,.07),rgba(215,185,88,.035) 55%,transparent);}'
+  +'.gd-admin-kicker{font-family:var(--mono);font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:rgba(109,155,211,.8);margin-bottom:7px;}'
+  +'.gd-admin-title{font-size:23px;font-weight:600;letter-spacing:-.035em;}'
+  +'.gd-admin-sub{font-size:11px;line-height:1.5;color:rgba(255,255,255,.34);margin-top:5px;}'
+  +'.gd-admin-ranges{display:flex;gap:5px;align-items:center;padding-top:5px;}'
+  +'.gd-admin-range{min-width:47px;height:32px;border:1px solid rgba(255,255,255,.09);border-radius:999px;background:rgba(255,255,255,.025);color:rgba(255,255,255,.38);font-family:var(--mono);font-size:8px;letter-spacing:.05em;cursor:pointer;}'
+  +'.gd-admin-range:hover,.gd-admin-range.on{border-color:rgba(215,185,88,.32);background:rgba(215,185,88,.08);color:#f0dfaa;}'
+  +'.gd-admin-scroll{height:calc(100% - 91px);overflow:auto;padding:20px 22px 30px;}'
+  +'.gd-admin-loading{height:100%;min-height:320px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.28);}'
+  +'.gd-admin-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;}'
+  +'.gd-admin-kpi,.gd-admin-panel{border:1px solid rgba(255,255,255,.075);background:linear-gradient(145deg,rgba(255,255,255,.035),rgba(255,255,255,.012));border-radius:16px;}'
+  +'.gd-admin-kpi{position:relative;min-height:118px;padding:17px;overflow:hidden;}'
+  +'.gd-admin-kpi::after{content:"";position:absolute;width:110px;height:110px;right:-45px;bottom:-58px;border-radius:50%;background:radial-gradient(circle,rgba(109,155,211,.09),transparent 65%);}'
+  +'.gd-admin-label{font-family:var(--mono);font-size:7px;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.28);}'
+  +'.gd-admin-value{font-size:27px;font-weight:600;letter-spacing:-.055em;margin-top:18px;color:#f2efe7;}'
+  +'.gd-admin-note{font-family:var(--mono);font-size:8px;color:rgba(255,255,255,.28);margin-top:5px;}'
+  +'.gd-admin-grid{display:grid;grid-template-columns:minmax(0,1.38fr) minmax(300px,.62fr);gap:9px;margin-top:9px;align-items:start;}'
+  +'.gd-admin-panel{padding:17px;min-width:0;}'
+  +'.gd-admin-panel-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;font-family:var(--mono);font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.42);}'
+  +'.gd-admin-chart{height:126px;display:flex;align-items:flex-end;gap:4px;padding-top:12px;border-bottom:1px solid rgba(255,255,255,.07);}'
+  +'.gd-admin-bar{position:relative;flex:1;min-width:3px;border-radius:3px 3px 0 0;background:linear-gradient(180deg,rgba(109,155,211,.82),rgba(109,155,211,.15));}'
+  +'.gd-admin-bar:hover{background:linear-gradient(180deg,#d7b958,rgba(215,185,88,.18));}'
+  +'.gd-admin-bar span{display:none;position:absolute;left:50%;bottom:calc(100% + 7px);transform:translateX(-50%);z-index:4;padding:5px 7px;border:1px solid rgba(255,255,255,.1);border-radius:6px;background:#111;color:#fff;font-family:var(--mono);font-size:7px;white-space:nowrap;}'
+  +'.gd-admin-bar:hover span{display:block;}'
+  +'.gd-admin-split{display:flex;flex-direction:column;gap:13px;}'
+  +'.gd-admin-split-row{display:grid;grid-template-columns:minmax(90px,1fr) auto;gap:8px;align-items:end;}'
+  +'.gd-admin-split-name{font-size:11px;color:rgba(255,255,255,.65);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'
+  +'.gd-admin-split-val{font-family:var(--mono);font-size:9px;color:rgba(255,255,255,.52);}'
+  +'.gd-admin-track{grid-column:1/-1;height:3px;border-radius:2px;background:rgba(255,255,255,.05);overflow:hidden;}'
+  +'.gd-admin-track i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#6d9bd3,#d7b958);}'
+  +'.gd-admin-table-wrap{overflow:auto;margin:0 -3px;}'
+  +'.gd-admin-table{width:100%;border-collapse:collapse;min-width:700px;}'
+  +'.gd-admin-table th{padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.07);font-family:var(--mono);font-size:7px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.24);text-align:left;font-weight:400;}'
+  +'.gd-admin-table td{padding:11px 10px;border-bottom:1px solid rgba(255,255,255,.045);font-size:10px;color:rgba(255,255,255,.52);white-space:nowrap;}'
+  +'.gd-admin-table tbody tr:hover{background:rgba(255,255,255,.022);}'
+  +'.gd-admin-table .email{color:rgba(255,255,255,.78);max-width:260px;overflow:hidden;text-overflow:ellipsis;}'
+  +'.gd-admin-table .money{font-family:var(--mono);color:#ead68f;text-align:right;}'
+  +'.gd-admin-table .num{font-family:var(--mono);text-align:right;}'
+  +'.gd-admin-recent{margin-top:9px;}'
+  +'.gd-admin-privacy{display:flex;align-items:center;gap:8px;margin-top:12px;font-family:var(--mono);font-size:7px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.22);}'
+  +'.gd-admin-privacy::before{content:"";width:5px;height:5px;border-radius:50%;background:#65a779;box-shadow:0 0 8px rgba(101,167,121,.45);}'
   // the account widget is fixed on top of the page, so the app's own top bars
   // have to reserve room for it or their right-hand buttons end up sitting
   // underneath it. --gd-acct-w is measured from the widget itself, because its
@@ -6936,9 +7094,13 @@ document.addEventListener('mouseup',function(e){
   +'  .gd-email,.gd-save-state{display:none;}'
   +'  .gd-pill{padding:8px 11px;font-size:12px;}'
   +'  #gdProjBtn .gd-pill-t,#gdDnaBtn .gd-pill-t{display:none;}'
+  +'  #gdAdminBtn .gd-pill-t{display:none;}'
   +'  .cbar{padding-right:calc(.5rem + var(--gd-acct-w,120px));}'
   +'  .s3-topbar{padding-right:calc(10px + var(--gd-acct-w,120px));}'
   +'  .gd-modal.wide{max-width:100%;}'
+  +'  .gd-admin-modal{width:calc(100vw - 20px);height:calc(100dvh - 20px);}'
+  +'  .gd-admin-kpis{grid-template-columns:1fr 1fr;}'
+  +'  .gd-admin-grid{grid-template-columns:1fr;}'
   +'  .gd-ov{padding:14px;overflow-y:auto;}'
   +'}'
   +'@media (max-width:759px),(max-height:500px){'
@@ -6950,6 +7112,11 @@ document.addEventListener('mouseup',function(e){
   +'  .gd-home{width:min(280px,84vw);}'
   +'  #gdHomeCf{padding:0 10px;}'
   +'  .gd-modal{padding:20px;}'
+  +'  .gd-admin-modal{padding:0;}'
+  +'  .gd-admin-head{padding:18px 46px 16px 16px;flex-direction:column;gap:12px;}'
+  +'  .gd-admin-scroll{height:calc(100% - 132px);padding:12px;}'
+  +'  .gd-admin-kpi{min-height:100px;padding:13px;}'
+  +'  .gd-admin-value{font-size:22px;margin-top:15px;}'
   +'  #gdAuthOv{gap:20px;}'
   +'  .cf-wrap{--cf-card:clamp(148px,42vw,200px);}'
   +'  .cf-wrap::before,.cf-wrap::after{width:34px;}'
@@ -7048,6 +7215,14 @@ document.addEventListener('mouseup',function(e){
   +'    <button class="gd-btn" id="gdNewBtn">+ New project</button>'
   +'  </div>'
   +'</div></div>'
+  +'<div class="gd-ov" id="gdAdminOv"><div class="gd-modal gd-admin-modal">'
+  +'  <button class="gd-x" data-close>&times;</button>'
+  +'  <div class="gd-admin-head">'
+  +'    <div><div class="gd-admin-kicker">Private operations / AI ledger</div><div class="gd-admin-title">Cost Observatory</div><div class="gd-admin-sub">User, provider and feature-level spend — without storing prompts or project content.</div></div>'
+  +'    <div class="gd-admin-ranges" id="gdAdminRanges"><button class="gd-admin-range" data-days="7">7D</button><button class="gd-admin-range on" data-days="30">30D</button><button class="gd-admin-range" data-days="90">90D</button><button class="gd-admin-range" data-days="3650">ALL</button></div>'
+  +'  </div>'
+  +'  <div class="gd-admin-scroll" id="gdAdminBody"><div class="gd-admin-loading">Reading usage ledger…</div></div>'
+  +'</div></div>'
   +'<div class="gd-ov" id="gdAskOv"><div class="gd-modal" style="max-width:400px">'
   +'  <h2 id="gdAskTitle"></h2>'
   +'  <p class="sub" id="gdAskMsg"></p>'
@@ -7061,6 +7236,9 @@ document.addEventListener('mouseup',function(e){
   document.body.appendChild(root);
 
   function byId(id){ return document.getElementById(id); }
+  [].forEach.call(document.querySelectorAll('#gdAdminRanges [data-days]'),function(b){
+    b.onclick=function(){loadAdmin(Number(this.getAttribute('data-days'))||30);};
+  });
   function setSaveState(s){
     var el=byId('gdSaveState'); if(!el) return;
     el.textContent=(s==='saving'?'saving…':s==='saved'?(token?'✓ saved to cloud':'✓ saved'):s==='error'?'⚠ save failed':'');
@@ -7189,6 +7367,7 @@ document.addEventListener('mouseup',function(e){
       a.innerHTML='<span class="gd-save-state" id="gdSaveState"></span>'
         +'<button class="gd-pill" id="gdProjBtn" title="Projects">&#9636;<span class="gd-pill-t"> Projects</span></button>'
         +'<button class="gd-pill dna" id="gdDnaBtn" title="My Creator DNA"><svg class="gd-dna-mini" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M3 2c7 2 3 10 10 12M13 2C6 4 10 12 3 14M4.6 5.1h6.8M4.6 10.9h6.8"/></svg><span class="gd-pill-t"> My DNA</span></button>'
+        +(adminAccess?'<button class="gd-pill admin" id="gdAdminBtn" title="AI cost dashboard">&#9670;<span class="gd-pill-t"> Costs</span></button>':'')
         +'<span class="gd-email">'+esc(userEmail||'')+'</span>'
         +'<button class="gd-pill" id="gdSignOut">Sign out</button>';
       byId('gdSignOut').onclick=function(){ signOut(false); };
@@ -7201,6 +7380,7 @@ document.addEventListener('mouseup',function(e){
     }
     byId('gdProjBtn').onclick=openProjects;
     byId('gdDnaBtn').onclick=function(){ if(typeof openCreatorDnaHub==='function')openCreatorDnaHub(); };
+    if(byId('gdAdminBtn'))byId('gdAdminBtn').onclick=openAdmin;
     syncAcctSpace();
   }
   // wipe the board back to a blank slate. Signing out has to do this: leaving
@@ -7224,7 +7404,7 @@ document.addEventListener('mouseup',function(e){
     // drop any queued save first, or it fires after the token is gone and
     // quietly writes this account's project into local storage
     if(saveTimer){ clearTimeout(saveTimer); saveTimer=null; }
-    token=null; userEmail=null;
+    token=null; userEmail=null;adminAccess=false;adminChecked=false;
     clearStoredSession();
     creatorDNA=loadCreatorDna();
     window.gdNewProject();
@@ -7282,6 +7462,7 @@ document.addEventListener('mouseup',function(e){
       // clearBoard() that follows
       if(saveTimer) doSave();
       token=d.token; userEmail=d.email;
+      adminChecked=false;
       var remember=byId('gdRemember'); remember=!remember||remember.checked;
       writeStoredSession(token,userEmail,remember);
       creatorDNA=loadCreatorDna();
@@ -7293,6 +7474,7 @@ document.addEventListener('mouseup',function(e){
       clearBoard();
       show('s0');
       renderAccount();
+      checkAdminAccess(true);
       applyAuthGate();   // also drops the body class that hides the account pills
       updateHomePanel();
       offerUpload();
@@ -7375,9 +7557,10 @@ document.addEventListener('mouseup',function(e){
           });})
           .then(function(d){
             token=d.token; userEmail=d.email;
+            adminChecked=false;
             writeStoredSession(token,userEmail,true);
             creatorDNA=loadCreatorDna();
-            renderAccount(); applyAuthGate(); updateHomePanel();
+            renderAccount(); checkAdminAccess(true); applyAuthGate(); updateHomePanel();
             gdAsk({title:'Password changed',message:'You are signed in again.',ok:'OK'});
           },function(e){
             gdAsk({title:'Could not reset',message:e.message||'Failed.',ok:'OK'});
@@ -7824,6 +8007,7 @@ document.addEventListener('mouseup',function(e){
   };
 
   renderAccount();
+  checkAdminAccess(false);
   updateHomePanel();
   applyAuthGate();
   consumeResetLink();
