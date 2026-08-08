@@ -26,9 +26,12 @@ are blank on purpose.
 
 1. Cloudflare dashboard → Workers & Pages → Create → Worker.
 2. Paste `worker/worker.js` in whole.
-3. Fill in the keys at the top: Anthropic, fal.ai, and optionally Resend for
+3. Fill in the keys at the top: Anthropic, fal.ai, Gemini, and optionally Resend for
    password reset. Or set them as environment variables of the same names,
    which the code prefers over the constants.
+   `GEMINI_KEY` powers Creator DNA Reference Lab. It sends one public YouTube
+   link per request to Gemini 3.6 Flash and never stores the link or analysis
+   prompt in the cost ledger. Private and unlisted videos are not supported.
    Set `ADMIN_EMAILS` to the comma-separated GrainDistrict account email(s)
    allowed to open the private AI cost dashboard. Keep this in Cloudflare,
    not in the repository.
@@ -59,7 +62,7 @@ real without touching Cloudflare.
 
 ## The two things this repository cannot hold
 
-**Your API keys.** Anthropic, fal.ai, Resend. They exist only in Cloudflare.
+**Your API keys.** Anthropic, fal.ai, Gemini, Resend. They exist only in Cloudflare.
 If you lose them, generate new ones from each provider's dashboard — nothing
 here depends on the old values.
 
