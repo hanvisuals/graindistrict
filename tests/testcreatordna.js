@@ -26,7 +26,7 @@ const { pathToFileURL }=require('url');
   ok('YouTube and the blank canvas stay available',
     !formats.find(x=>x.type==='youtube').disabled&&!formats.find(x=>x.type==='other').disabled,formats);
   const english=await page.evaluate(()=>({recce:document.getElementById('recceHint').textContent,equipment:document.querySelector('#s_equipment .kb-sub').textContent}));
-  ok('production setup defaults are fully English',/Upload location photos/.test(english.recce)&&/real constraints/.test(english.equipment),english);
+  ok('production setup defaults are fully English',/Upload location photos/.test(english.recce)&&/details guide your script and production plan/i.test(english.equipment),english);
 
   await page.click('.pt-btn[data-type=youtube]');
   ok('a first-time YouTube creator enters the DNA interview',await page.evaluate(()=>document.querySelector('.screen.active').id==='s_dna'));

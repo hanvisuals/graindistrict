@@ -9,7 +9,7 @@ const { chromium } = require('./node_modules/playwright');
   const ok=(n,c,x)=>console.log((c?'PASS':'FAIL')+' - '+n+(x!==undefined&&!c?' '+JSON.stringify(x):''));
 
   const r = await page.evaluate(async () => {
-    show('s5'); projectType='youtube';
+    show('s5'); projectType='youtube';canvasViewMode='free';freeCanvasState=null;
     var parentText='Static wide shot from the corner of the room. The subject sits in an oversized coat while soft morning light crosses half of the face. The camera stays locked and the person remains still. This description is deliberately long enough to make the main block grow beyond the old fixed attachment offset.';
     nodes=[{id:1,type:'broll',tcStart:'00:00',tcEnd:'00:03',content:parentText,shots:[],x:100,y:100,grp:0}];
     var longText='A deliberately long shot note that wraps onto several lines so the card is much taller than a collapsed one and the stacking has to account for it.';

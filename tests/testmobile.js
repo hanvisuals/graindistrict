@@ -39,7 +39,7 @@ const TOUCH_HELPERS=`
   await page.evaluate(()=>{
     document.getElementById('gdAuthOv').classList.remove('show','gate');
     document.body.classList.remove('gd-gated');
-    show('s5'); topic='Telefon testi'; projectType='youtube';
+    show('s5'); topic='Telefon testi'; projectType='youtube';canvasViewMode='free';freeCanvasState=null;
     nodes=[];attShots=[];conns=[];imgNodes=[];noteNodes=[];nodeDrawerClosed={};
     var id=1;
     [['voiceover','00:00','00:07','Ilk blok.'],
@@ -87,7 +87,7 @@ const TOUCH_HELPERS=`
             exportSeen:getComputedStyle(document.getElementById('btnExport')).display!=='none'};
   });
   ok('the actions menu opens inside the screen', menu.open&&menu.fits, menu);
-  ok('every action is still reachable', menu.btns===10&&menu.exportSeen, menu);
+  ok('every top-bar action is still reachable', menu.btns===8&&menu.exportSeen, menu);
 
   // opening the drawer must not leave the menu hanging over it
   await page.click('#panelToggle');
@@ -218,20 +218,15 @@ const TOUCH_HELPERS=`
   ok('the legend is out of the way on a phone', fit.legendHidden);
   ok('nothing pushes the page sideways', fit.pageW<=fit.vw, fit);
 
-  /* ---------- brief and plan take turns ---------- */
+  /* ---------- Script Studio becomes one focused mobile editor ---------- */
   await page.evaluate(()=>show('s3'));
   await page.waitForTimeout(200);
   const tabs0=await page.evaluate(()=>({
-    brief:getComputedStyle(document.querySelector('.s3-col-left')).display!=='none',
-    plan:getComputedStyle(document.querySelector('.s3-col-right')).display!=='none'}));
-  ok('only one of brief and plan is shown at a time', tabs0.plan&&!tabs0.brief, tabs0);
-  await page.click('.s3-col-label:first-child');
-  await page.waitForTimeout(150);
-  const tabs1=await page.evaluate(()=>({
-    brief:getComputedStyle(document.querySelector('.s3-col-left')).display!=='none',
-    plan:getComputedStyle(document.querySelector('.s3-col-right')).display!=='none',
-    w:Math.round(document.querySelector('.s3-col-left').getBoundingClientRect().width)}));
-  ok('tapping BRIEF swaps to it, full width', tabs1.brief&&!tabs1.plan&&tabs1.w>340, tabs1);
+    intro:getComputedStyle(document.querySelector('.script-studio-intro')).display!=='none',
+    editor:getComputedStyle(document.querySelector('.s3-col-right')).display!=='none',
+    w:Math.round(document.querySelector('.s3-col-right').getBoundingClientRect().width)}));
+  ok('Script Studio keeps one full-width editor on a phone',
+     tabs0.editor&&!tabs0.intro&&tabs0.w>340, tabs0);
 
   /* ---------- and the desktop layout is untouched ---------- */
   const wide=await b.newPage({viewport:{width:1440,height:900}});
@@ -249,12 +244,16 @@ const TOUCH_HELPERS=`
     actionsInline:getComputedStyle(document.querySelector('.cbar .tbar-r')).display==='flex'
                   &&getComputedStyle(document.querySelector('.cbar .tbar-r')).position==='static',
     hamburgerHidden:getComputedStyle(document.getElementById('panelToggle')).display==='none',
-    moreHidden:getComputedStyle(document.getElementById('cbarMore')).display==='none',
-    briefAndPlan:getComputedStyle(document.querySelector('.s3-col-left')).display!=='none'}));
+    moreHidden:getComputedStyle(document.getElementById('cbarMore')).display==='none'}));
+  await wide.evaluate(()=>show('s3'));
+  await wide.waitForTimeout(80);
+  desk.studioSplit=await wide.evaluate(()=>(
+    getComputedStyle(document.querySelector('.script-studio-intro')).display!=='none' &&
+    getComputedStyle(document.querySelector('.s3-col-right')).display!=='none'));
   ok('the sidebar is still a column on a desktop', desk.panelInFlow&&desk.panelW===300, desk);
   ok('the top bar still shows its buttons on a desktop', desk.actionsInline, desk);
   ok('the phone-only buttons stay hidden on a desktop', desk.hamburgerHidden&&desk.moreHidden, desk);
-  ok('brief and plan still share the screen on a desktop', desk.briefAndPlan);
+  ok('Script Studio keeps its editorial split on a desktop', desk.studioSplit, desk);
 
   await b.close();
 })();
