@@ -38,9 +38,9 @@ const { pathToFileURL }=require('url');
     const d=loadCreatorDnaDraft();return !!d&&d.step===0&&d.draft.outcome==='learn';
   }));
   await page.click('#dnaBackBtn');
-  const draftHub=await page.evaluate(()=>({screen:document.querySelector('.screen.active').id,status:document.getElementById('dnaHubStatus').textContent,rungs:document.querySelectorAll('.dna-rung').length}));
+  const draftHub=await page.evaluate(()=>({screen:document.querySelector('.screen.active').id,status:document.getElementById('dnaHubStatus').textContent,strands:document.querySelectorAll('.dna-real-helix .dna-strand').length,bonds:document.querySelectorAll('.dna-real-helix .dna-bond').length}));
   ok('Back from the first question opens My Creator DNA instead of the home screen',draftHub.screen==='s_dna_hub'&&/Draft saved/.test(draftHub.status),draftHub);
-  ok('My Creator DNA has a live helix visual',draftHub.rungs===13,draftHub);
+  ok('My Creator DNA has a live double-helix visual',draftHub.strands===2&&draftHub.bonds>=12,draftHub);
   await page.click('#dnaHubEdit');
   ok('the saved draft resumes on the same answer',await page.evaluate(()=>dnaStep===0&&dnaDraft.outcome==='learn'&&document.querySelector('.screen.active').id==='s_dna'));
   await page.click('#dnaNext');
@@ -64,17 +64,19 @@ const { pathToFileURL }=require('url');
   ok('the summary exposes production boundaries and exclusions',/solo production/i.test(summary.text)&&/product close-ups/i.test(summary.text)&&/generic B-roll/i.test(summary.text),summary.text);
 
   await page.click('#dnaNext');
-  const reveal=await page.evaluate(()=>(
-    {screen:document.querySelector('.screen.active').id,title:document.getElementById('dnaRevealTitle').textContent,
-      manifesto:document.getElementById('dnaRevealManifesto').textContent,code:document.getElementById('dnaRevealCode').textContent,
-      proofs:document.querySelectorAll('#dnaRevealProof .dr-proof').length,bands:document.querySelectorAll('#dnaRevealSpectrum .dr-band').length,
-      text:document.getElementById('dnaRevealShell').innerText}
-  ));
-  await page.waitForTimeout(1100);
-  if(process.env.QA_DIR)await page.screenshot({path:path.join(process.env.QA_DIR,'creator-dna-reveal-desktop.png'),fullPage:true});
-  ok('finishing the interview opens a personal identity reveal',reveal.screen==='s_dna_reveal'&&reveal.title==='The Evidence-Led Educator.'&&/^GD-DM-LVB-/.test(reveal.code),reveal);
-  ok('the reveal mirrors real choices instead of inventing a personality score',reveal.proofs===4&&reveal.bands===5&&/Proof comes before opinion/.test(reveal.manifesto)&&!/%|percentile|top \d/i.test(reveal.text),reveal);
-  await page.click('#dnaRevealAccept');
+  await page.waitForTimeout(800);
+  const reveal=await page.evaluate(()=>{
+    const identity=document.getElementById('dnaHubIdentity').getBoundingClientRect(),start=document.getElementById('dnaHubStart').getBoundingClientRect(),profile=document.getElementById('dnaHubProfile').getBoundingClientRect();
+    return {screen:document.querySelector('.screen.active').id,title:document.getElementById('dnaHubIdentityTitle').textContent,
+      manifesto:document.getElementById('dnaHubIdentityManifesto').textContent,code:document.getElementById('dnaHubIdentityCode').textContent,
+      bands:document.querySelectorAll('#dnaHubIdentitySpectrum .dna-inline-signal').length,button:!!document.getElementById('dnaHubReveal'),
+      startBottom:Math.round(start.bottom),identityTop:Math.round(identity.top),identityBottom:Math.round(identity.bottom),profileTop:Math.round(profile.top),text:document.getElementById('dnaHubIdentity').innerText};
+  });
+  if(process.env.QA_DIR)await page.screenshot({path:path.join(process.env.QA_DIR,'creator-dna-inline-reveal-desktop.png'),fullPage:true});
+  ok('finishing the interview opens My Creator DNA with the identity reveal inline',reveal.screen==='s_dna_hub'&&reveal.title==='The Evidence-Led Educator.'&&/^GD-DM-LVB-/.test(reveal.code)&&!reveal.button,reveal);
+  ok('the identity sits below the project action and above the channel profile',reveal.startBottom<=reveal.identityTop&&reveal.identityBottom<=reveal.profileTop,reveal);
+  ok('the inline reveal mirrors real choices instead of inventing a personality score',reveal.bands===5&&/Proof comes before opinion/.test(reveal.manifesto)&&!/%|percentile|top \d/i.test(reveal.text),reveal);
+  await page.click('#dnaHubStart');
   const active=await page.evaluate(()=>{
     const sys=buildGenSys(180,'');
     return {screen:document.querySelector('.screen.active').id,profile:document.getElementById('dnaProfile').classList.contains('show'),
@@ -96,9 +98,7 @@ const { pathToFileURL }=require('url');
   await page.waitForTimeout(350);
   if(process.env.QA_DIR)await page.screenshot({path:path.join(process.env.QA_DIR,'creator-dna-hub-desktop.png'),fullPage:true});
   ok('My Creator DNA is a persistent profile destination in the main navigation',hub.screen==='s_dna_hub'&&hub.title==='Evidence-led Reviewer'&&hub.nav,hub);
-  await page.click('#dnaHubReveal');
-  ok('the saved identity reveal can be revisited from My Creator DNA',await page.evaluate(()=>document.querySelector('.screen.active').id==='s_dna_reveal'&&/Evidence-Led Educator/.test(document.getElementById('dnaRevealTitle').textContent)));
-  await page.click('#dnaRevealAccept');
+  ok('the saved identity is always visible without opening another screen',await page.evaluate(()=>!document.getElementById('dnaHubIdentity').hidden&&/Evidence-Led Educator/.test(document.getElementById('dnaHubIdentityTitle').textContent)&&!document.getElementById('dnaHubReveal')));
   await page.click('#dnaHubEdit');
   ok('Creator DNA remains editable from its own profile page',await page.evaluate(()=>document.querySelector('.screen.active').id==='s_dna'&&dnaDraft.carrier==='demo'));
 
@@ -122,17 +122,14 @@ const { pathToFileURL }=require('url');
   await page.evaluate(()=>{clearCreatorDnaDraft();creatorDNA=loadCreatorDna();openCreatorDnaHub();});
   await page.waitForTimeout(350);
   if(process.env.QA_DIR)await page.screenshot({path:path.join(process.env.QA_DIR,'creator-dna-hub-mobile.png'),fullPage:true});
-  const mobileHub=await page.evaluate(()=>({scrollW:document.documentElement.scrollWidth,vw:document.documentElement.clientWidth,visualH:Math.round(document.querySelector('.dna-visual').getBoundingClientRect().height),profileCols:getComputedStyle(document.getElementById('dnaHubProfile')).gridTemplateColumns}));
-  ok('My Creator DNA stays cinematic and readable on a phone',mobileHub.scrollW<=mobileHub.vw&&mobileHub.visualH>=300&&!/\s/.test(mobileHub.profileCols),mobileHub);
-  await page.click('#dnaHubReveal');await page.waitForTimeout(1100);
-  if(process.env.QA_DIR)await page.screenshot({path:path.join(process.env.QA_DIR,'creator-dna-reveal-mobile.png'),fullPage:true});
-  const mobileReveal=await page.evaluate(()=>{
-    const spectrum=document.getElementById('dnaRevealSpectrum'),accept=document.getElementById('dnaRevealAccept').getBoundingClientRect();
-    return {screen:document.querySelector('.screen.active').id,scrollW:document.documentElement.scrollWidth,vw:document.documentElement.clientWidth,
-      top:document.getElementById('s_dna_reveal').scrollTop,titleTop:Math.round(document.getElementById('dnaRevealTitle').getBoundingClientRect().top),
-      bands:document.querySelectorAll('#dnaRevealSpectrum .dr-band').length,spectrumW:spectrum.scrollWidth,spectrumClient:spectrum.clientWidth,acceptH:Math.round(accept.height),details:getComputedStyle(document.querySelector('.dr-details')).gridTemplateColumns};
-  });
-  ok('the reveal stays compact and touch-friendly on a phone',mobileReveal.screen==='s_dna_reveal'&&mobileReveal.top===0&&mobileReveal.titleTop>40&&mobileReveal.scrollW<=mobileReveal.vw&&mobileReveal.bands===5&&mobileReveal.spectrumW>=mobileReveal.spectrumClient&&mobileReveal.acceptH>=44&&!/\s/.test(mobileReveal.details),mobileReveal);
+  const mobileHub=await page.evaluate(()=>(
+    {scrollW:document.documentElement.scrollWidth,vw:document.documentElement.clientWidth,visualH:Math.round(document.querySelector('.dna-visual').getBoundingClientRect().height),
+      profileCols:getComputedStyle(document.getElementById('dnaHubProfile')).gridTemplateColumns,identityHidden:document.getElementById('dnaHubIdentity').hidden,
+      strands:document.querySelectorAll('.dna-real-helix .dna-strand').length,bonds:document.querySelectorAll('.dna-real-helix .dna-bond').length,
+      transform:document.querySelector('.dna-real-helix g').getAttribute('transform'),opacity:Number(getComputedStyle(document.querySelector('.dna-real-helix')).opacity)}
+  ));
+  ok('My Creator DNA keeps the inline identity compact and readable on a phone',mobileHub.scrollW<=mobileHub.vw&&mobileHub.visualH>=240&&!/\s/.test(mobileHub.profileCols)&&!mobileHub.identityHidden,mobileHub);
+  ok('the background visual is a subtle diagonal double helix',mobileHub.strands===2&&mobileHub.bonds>=12&&/rotate\(-32\)/.test(mobileHub.transform)&&mobileHub.opacity<.8,mobileHub);
   await page.evaluate(()=>{clearCreatorDnaDraft();creatorDNA=null;dnaDraft={};dnaStep=0;show('s_dna');renderDnaStep();});
   if(process.env.QA_DIR)await page.screenshot({path:path.join(process.env.QA_DIR,'creator-dna-question-mobile.png'),fullPage:true});
   const mobile=await page.evaluate(()=>{
