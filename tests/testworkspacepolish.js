@@ -79,7 +79,7 @@ const APP = process.env.APP || path.resolve(__dirname, '..', 'index.html');
   const board = await page.evaluate(()=>{
     const grid=getComputedStyle(document.querySelector('.vp'));
     return {
-      nodes:document.querySelectorAll('.story-shot-card').length,cues:document.querySelectorAll('.story-cue').length,lanes:document.querySelectorAll('.story-lane').length,
+      nodes:document.querySelectorAll('.story-shot-card').length,cues:document.querySelectorAll('.story-cue').length,lanes:document.querySelectorAll('.story-lane').length,links:document.querySelectorAll('.story-link').length,
       radius:getComputedStyle(document.querySelector('.story-shot-card')).borderRadius,
       live:/LIVE BOARD/.test(document.querySelector('.cbar-brand').textContent),
       controls:document.querySelectorAll('.board-view-switch .board-deck-btn').length,
@@ -87,7 +87,7 @@ const APP = process.env.APP || path.resolve(__dirname, '..', 'index.html');
       scrollW:document.documentElement.scrollWidth,vw:document.documentElement.clientWidth
     };
   });
-  ok('visual board uses the premium story hierarchy', board.nodes===3 && board.cues===1 && board.lanes===1 && board.controls===3 && parseFloat(board.radius)>=14 && board.live, board);
+  ok('visual board uses the compact connected-node hierarchy', board.nodes===3 && board.cues===1 && board.lanes===1 && board.links===3 && board.controls===3 && parseFloat(board.radius)>=10 && board.live, board);
   ok('production board uses the quiet line grid without a radial glow',
     Math.abs(board.gridUnit-24*board.zoom)<.1 && !/radial-gradient/.test(board.gridImage), board);
   ok('the polished board creates no horizontal page overflow', board.scrollW<=board.vw, board);
