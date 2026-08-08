@@ -60,28 +60,15 @@ const { pathToFileURL } = require('url');
   await page.fill('#topicIn','A quiet portrait of a night-shift baker');
   await page.click('#gobtn');await page.waitForTimeout(340);
   await page.fill('#constraintsIn','One camera, 35mm lens, bakery available after midnight');
-  await page.evaluate(()=>{api=function(){return Promise.resolve('## Concept\nNight flour');};});
-  await page.click('#s_equipment .gobtn');await page.waitForTimeout(120);
-  const brief=await page.evaluate(()=>({screen:document.querySelector('.screen.active').id,constraints:projectConstraints,brief:projectBrief}));
-  ok('Generated briefs remember the production constraints',brief.screen==='s_brief'&&/35mm/.test(brief.constraints)&&/Night flour/.test(brief.brief),brief);
-
-  await page.evaluate(()=>{window.__generated=0;genScript=function(){window.__generated++;show('s3');};});
-  await page.click('#s_brief .brief-skip-btn');
-  const skippedBrief=await page.evaluate(()=>({calls:window.__generated,screen:document.querySelector('.screen.active').id,brief:projectBrief}));
-  ok('Skipping the optional brief also moves forward',skippedBrief.calls===1&&skippedBrief.screen==='s3'&&skippedBrief.brief==='',skippedBrief);
-
   await page.evaluate(()=>{
-    genScript=window.__realGen;topic='Night baker';projectType='youtube';durMin=1;durMax=1;
-    projectConstraints='One camera and a 35mm lens';projectBrief='APPROVED NIGHT BAKERY BRIEF';
     window.__apiCalls=[];
-    api=function(sys,content){window.__apiCalls.push(JSON.stringify(content));return Promise.resolve('[VOICEOVER] 00:00-00:05 - The city sleeps.');};
+    api=function(sys,content,feature){window.__apiCalls.push({content:JSON.stringify(content),feature});return Promise.resolve('[VOICEOVER] 00:00-00:05 - The city sleeps.');};
     ensureFullPlan=function(sys,text){return Promise.resolve(text);};
-    genScript();
   });
-  await page.waitForTimeout(120);
-  const approved=await page.evaluate(()=>({calls:window.__apiCalls.length,payload:window.__apiCalls.join(' '),brief:projectBrief,screen:document.querySelector('.screen.active').id}));
-  ok('An approved brief is reused rather than regenerated',approved.calls===1&&approved.brief==='APPROVED NIGHT BAKERY BRIEF'&&approved.screen==='s3',approved);
-  ok('The approved direction and real constraints reach the shot-plan request',/APPROVED NIGHT BAKERY BRIEF/.test(approved.payload)&&/35mm lens/.test(approved.payload),approved.payload);
+  await page.click('#s_equipment .gobtn');await page.waitForTimeout(120);
+  const studio=await page.evaluate(()=>({screen:document.querySelector('.screen.active').id,constraints:projectConstraints,brief:projectBrief,calls:window.__apiCalls,briefScreen:!!document.getElementById('s_brief')}));
+  ok('Production details now open Script Studio directly',studio.screen==='s3'&&!studio.briefScreen&&studio.brief==='',studio);
+  ok('The real constraints reach one shot-plan request without a duplicate brief call',studio.calls.length===1&&studio.calls[0].feature==='shot_plan'&&/35mm lens/.test(studio.calls[0].content),studio.calls);
 
   await page.evaluate(()=>{
     show('s5');nodes=[{id:1,type:'broll',tcStart:'00:00',tcEnd:'00:03',content:'Bakery exterior',shots:[],x:60,y:80,grp:0}];

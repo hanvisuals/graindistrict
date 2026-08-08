@@ -43,18 +43,6 @@ const APP = process.env.APP || path.resolve(__dirname, '..', 'index.html');
   ok('production constraints read as a split director brief', equipment.titleRight < equipment.fieldLeft && equipment.fieldHeight >= 280, equipment);
   if(process.env.QA_DIR) await page.screenshot({ path:process.env.QA_DIR + '/workspace-equipment-desktop.png' });
 
-  await page.evaluate(()=>{
-    projectBrief='## Film thesis\nA quiet city portrait where routine slowly becomes ritual.\n\n## Visual language\n- cool morning exteriors\n- intimate handheld details\n- patient editorial rhythm';
-    document.getElementById('briefDisplay').innerHTML=renderMarkdown(projectBrief);
-    show('s_brief');
-  });
-  await page.waitForTimeout(100);
-  ok('creative brief has a tactile reading surface', await page.evaluate(()=>{
-    const el=document.getElementById('briefDisplay'),cs=getComputedStyle(el),r=el.getBoundingClientRect();
-    return r.height >= 300 && parseFloat(cs.borderRadius) >= 16;
-  }));
-  if(process.env.QA_DIR) await page.screenshot({ path:process.env.QA_DIR + '/workspace-brief-desktop.png' });
-
   await page.evaluate(()=>show('s2'));
   await page.waitForTimeout(320);
   ok('processing screen has the new cinematic orbit', await page.evaluate(()=>document.querySelectorAll('#s2 .load-orbit i').length===3));
@@ -63,18 +51,19 @@ const APP = process.env.APP || path.resolve(__dirname, '..', 'index.html');
   if(process.env.QA_DIR) await page.screenshot({ path:process.env.QA_DIR + '/workspace-loading-desktop.png' });
 
   await page.evaluate(()=>{
-    document.getElementById('briefContent').innerHTML=renderMarkdown('## Creative direction\nAn intimate film about finding momentum in ordinary mornings.\n\n## Camera language\n- slow wide frames\n- tactile macro inserts\n- one deliberate transition');
     document.getElementById('scriptTa').value='[VOICEOVER] 00:00-00:06 - Some mornings begin before the city wakes.\n[BROLL] 00:00-00:02 - Rain tracks across the window.\n[BROLL] 00:02-00:06 - Hands wrap around a warm cup.\n[TRANSITION] 00:06-00:07 - Match cut from steam to street fog.';
     document.getElementById('wc').textContent='4 blocks';
+    refreshScriptStudio();
     show('s3');
   });
   await page.waitForTimeout(100);
   const desk = await page.evaluate(()=>{
-    const left=document.querySelector('.s3-col-left').getBoundingClientRect();
+    const left=document.querySelector('.script-studio-intro').getBoundingClientRect();
     const right=document.querySelector('.s3-col-right').getBoundingClientRect();
-    return {leftRight:left.right,rightLeft:right.left,leftRadius:getComputedStyle(document.querySelector('.s3-col-left')).borderRadius};
+    const editor=document.querySelector('.s3-plan-wrap');
+    return {leftRight:left.right,rightLeft:right.left,editorRadius:getComputedStyle(editor).borderRadius,title:document.querySelector('.script-studio-title').textContent};
   });
-  ok('brief and editable plan become two distinct desk surfaces', desk.leftRight < desk.rightLeft && parseFloat(desk.leftRadius)>=18, desk);
+  ok('Script Studio gives the editable plan one focused tactile surface', desk.leftRight < desk.rightLeft && parseFloat(desk.editorRadius)>=20 && /every line/i.test(desk.title), desk);
   if(process.env.QA_DIR) await page.screenshot({ path:process.env.QA_DIR + '/workspace-desk-desktop.png' });
 
   await page.evaluate(()=>{

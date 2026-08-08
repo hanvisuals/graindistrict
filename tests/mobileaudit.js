@@ -73,14 +73,10 @@ const sizes=[
       +(setup.s1Content>setup.s1Box?(setup.s1Scrolls==='auto'||setup.s1Scrolls==='scroll'?'kayiyor, ok':'ULASILAMIYOR'):'sigiyor'));
     await page.screenshot({path:'mob-'+s.n+'-s1.png'});
 
-    // 2c. the two brief steps, which centre a tall column
-    for(const id of ['s_equipment','s_brief']){
+    // 2c. optional production details, which centre a tall column
+    for(const id of ['s_equipment']){
       const r=await page.evaluate(i=>{
         show(i);
-        if(i==='s_brief'){
-          const d=document.getElementById('briefDisplay');
-          d.textContent=Array.from({length:40},(_,n)=>'Satir '+(n+1)+' brief metni burada.').join('\n');
-        }
         const el=document.getElementById(i);
         return {content:el.scrollHeight, box:el.clientHeight,
                 ov:getComputedStyle(el).overflowY,
