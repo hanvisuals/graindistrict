@@ -16,7 +16,7 @@ const { pathToFileURL } = require('url');
     document.body.classList.remove('gd-gated');show('s5');
     projectType='youtube';topic='Location view test';canvasViewMode='free';freeCanvasState=null;
     nodes=[
-      {id:1,type:'voiceover',tcStart:'00:00',tcEnd:'00:05',content:'Opening narration',shots:[],x:70,y:90,grp:0},
+      {id:1,type:'voiceover',tcStart:'00:00',tcEnd:'00:05',content:'Opening narration stays fully readable even when it runs across several lines and gives the crew the story context behind every physical shot.',shots:[],x:70,y:90,grp:0},
       {id:2,type:'broll',tcStart:'00:00',tcEnd:'00:02',content:'Home close-up with enough detail to make the compact card useful',shots:[],x:410,y:330,grp:0},
       {id:7,type:'broll',tcStart:'00:01',tcEnd:'00:02',content:'Hands opening the drawer',shots:[],x:620,y:330,grp:0},
       {id:8,type:'broll',tcStart:'00:02',tcEnd:'00:03',content:'Shirt texture macro',shots:[],x:830,y:330,grp:0},
@@ -51,23 +51,26 @@ const { pathToFileURL } = require('url');
     cues:document.querySelectorAll('.location-cue').length,
     transitions:document.querySelectorAll('.location-transition').length,
     labels:[...document.querySelectorAll('.location-shot-card .nc-tag')].map(e=>e.textContent),
+    cueCopy:[...document.querySelectorAll('.location-cue-text')].map(e=>e.textContent),
+    cueFits:[...document.querySelectorAll('.location-cue-text')].every(e=>e.scrollHeight<=e.clientHeight+1),
+    rowHeights:[...document.querySelectorAll('.location-shot-row')].map(e=>e.getBoundingClientRect().height/scale),
     cardPos:Object.fromEntries([...document.querySelectorAll('.location-shot-card')].map(e=>[e.id,{left:parseFloat(e.style.left),top:parseFloat(e.style.top)}])),
     header:[...document.querySelectorAll('.location-head .location-chip')].map(e=>e.textContent),
     meta:document.querySelectorAll('.location-meta').length,
+    leftDisplay:getComputedStyle(document.getElementById('leftPanel')).display,
     images:document.querySelectorAll('.img-node').length,notes:document.querySelectorAll('.note-node').length,
     paths:document.querySelectorAll('.conn-path').length,
     captured:JSON.parse(captureState().nodes).map(n=>({id:n.id,x:n.x,y:n.y}))
   }));
-  console.log('TEST 1 - every location opens side by side on one canvas:',
-    home.mode==='location'&&/Locations/.test(home.button)&&JSON.stringify(home.lanes)===JSON.stringify(['Family Home','Photo Studio'])&&home.tabs.length===2&&home.active.startsWith('Family Home')?'PASS':'FAIL');
-  console.log('TEST 2 - Locations shows only things the crew physically shoots:',
-    home.cues===0&&home.shots===6&&home.transitions===0?'PASS':'FAIL');
-  console.log('TEST 3 - each compact node stays inside its own location frame:',
-    JSON.stringify(home.labels)===JSON.stringify(['01A','01B','01C','01D','01E','02A'])&&
-    home.cardPos['nc-2'].left>=home.laneBoxes[0].left&&home.cardPos['nc-9'].left<home.laneBoxes[0].left+home.laneBoxes[0].width&&
-    home.cardPos['nc-3'].left>=home.laneBoxes[1].left?'PASS':'FAIL');
-  console.log('TEST 4 - every frame states its own physical shot count:',
-    home.header.includes('5 shots')&&home.header.includes('1 shot')&&!home.header.some(x=>/VO cue/.test(x))?'PASS':'FAIL');
+  console.log('TEST 1 - Locations opens one selected production matrix:',
+    home.mode==='location'&&/Locations/.test(home.button)&&JSON.stringify(home.lanes)===JSON.stringify(['Family Home'])&&home.tabs.length===2&&home.active.startsWith('Family Home')&&home.leftDisplay==='none'?'PASS':'FAIL');
+  console.log('TEST 2 - voiceover stays open while physical shots stay compact:',
+    home.cues===2&&home.shots===5&&home.transitions===0&&home.cueCopy[0].startsWith('Opening narration stays fully readable')&&home.cueCopy[1]==='Second narration'&&home.cueFits&&home.rowHeights.every(h=>h<=45)?'PASS':'FAIL');
+  console.log('TEST 3 - compact rows keep their semantic voiceover numbering:',
+    JSON.stringify(home.labels)===JSON.stringify(['01A','01B','01C','01D','02A'])&&
+    home.cardPos['nc-2'].left>=home.laneBoxes[0].left&&home.cardPos['nc-9'].left<home.laneBoxes[0].left+home.laneBoxes[0].width?'PASS':'FAIL');
+  console.log('TEST 4 - the selected matrix states both shot and voiceover counts:',
+    home.header.includes('5 shots')&&home.header.includes('2 voiceovers')?'PASS':'FAIL');
   console.log('TEST 5 - freeform items and story connections stay out of production view:',
     home.images===0&&home.notes===0&&home.paths===0?'PASS':'FAIL');
   const captured=Object.fromEntries(home.captured.map(n=>[n.id,n]));
@@ -80,6 +83,11 @@ const { pathToFileURL } = require('url');
   console.log('TEST 7 - cast, wardrobe and props expand only when requested:',
     details.includes('Mia')&&details.includes('Blue shirt')&&details.includes('Coffee cup')?'PASS':'FAIL');
 
+  await page.click('#nc-2');await page.waitForTimeout(50);
+  const expanded=await page.locator('#nc-2').evaluate(el=>({expanded:el.classList.contains('location-expanded'),height:el.getBoundingClientRect().height/scale,details:[...el.querySelectorAll('.story-card-detail span')].map(x=>x.textContent)}));
+  console.log('TEST 8 - a shot opens only when requested:',expanded.expanded&&expanded.height>100&&expanded.details.includes('Coffee cup')?'PASS':'FAIL');
+  if(process.env.LOCATION_EXPANDED_SHOT)await page.screenshot({path:process.env.LOCATION_EXPANDED_SHOT});
+
   await page.getByRole('button',{name:/Photo Studio/}).click();await page.waitForTimeout(80);
   const studio=await page.evaluate(() => ({
     title:document.querySelector('.location-title')?.textContent,
@@ -87,14 +95,12 @@ const { pathToFileURL } = require('url');
     cues:document.querySelectorAll('.location-cue').length,
     transitions:document.querySelectorAll('.location-transition').length,
     details:document.querySelectorAll('.location-meta').length,
-    labels:[...document.querySelectorAll('.location-shot-card .nc-tag')].map(e=>e.textContent)
+    labels:[...document.querySelectorAll('.location-shot-card .nc-tag')].map(e=>e.textContent),
+    active:activeLocationIndex,lanes:document.querySelectorAll('.location-lane').length,activeClass:document.querySelector('.location-lane')?.classList.contains('active'),expanded:locationExpandedNodeId
   }));
-  console.log('TEST 8 - location tabs focus a frame without hiding the others:',
-    studio.title==='Family Home'&&studio.shots===6&&studio.cues===0&&studio.transitions===0&&studio.details===0&&studio.labels.includes('01E')&&
-    await page.evaluate(()=>activeLocationIndex===1&&document.querySelectorAll('.location-lane')[1].classList.contains('active'))?'PASS':'FAIL');
-  await page.click('#nc-3');await page.waitForTimeout(50);
-  const expanded=await page.locator('#nc-3').evaluate(el=>({expanded:el.classList.contains('location-expanded'),more:el.querySelector('.location-card-more')?.textContent}));
-  console.log('TEST 9 - clicking a compact card expands it in place:',expanded.expanded&&expanded.more==='less'?'PASS':'FAIL');
+  console.log('TEST 9 - location tabs replace the matrix without carrying open details:',
+    studio.title==='Photo Studio'&&studio.shots===1&&studio.cues>=1&&studio.transitions===0&&studio.details===0&&JSON.stringify(studio.labels)===JSON.stringify(['01E'])&&
+    studio.active===1&&studio.lanes===1&&studio.activeClass&&studio.expanded===null?'PASS':'FAIL '+JSON.stringify(studio));
 
   await page.click('#btnCanvasView');await page.waitForTimeout(80);
   const restored=await page.evaluate(() => ({
@@ -112,9 +118,10 @@ const { pathToFileURL } = require('url');
 
   await page.setViewportSize({width:390,height:760});await page.click('#cbarMore');await page.click('#btnLocations');await page.waitForTimeout(100);
   const mobile=await page.evaluate(() => ({scale,lanes:document.querySelectorAll('.location-lane').length,
-    tabs:document.querySelectorAll('.location-tab').length,nav:document.getElementById('locationNav').classList.contains('show')}));
-  console.log('TEST 11 - phone view keeps all frames on the horizontal canvas:',
-    mobile.lanes===2&&mobile.tabs===2&&mobile.nav&&mobile.scale>=.48&&mobile.scale<=.92?'PASS':'FAIL');
+    tabs:document.querySelectorAll('.location-tab').length,nav:document.getElementById('locationNav').classList.contains('show'),
+    cues:document.querySelectorAll('.location-cue').length,rows:document.querySelectorAll('.location-shot-row').length,pageW:document.documentElement.scrollWidth,vw:document.documentElement.clientWidth}));
+  console.log('TEST 11 - phone keeps one selected matrix and all location tabs:',
+    mobile.lanes===1&&mobile.tabs===2&&mobile.nav&&mobile.cues===2&&mobile.rows===5&&mobile.pageW<=mobile.vw&&mobile.scale>=.48&&mobile.scale<=.92?'PASS':'FAIL');
   console.log('TEST 12 - no page errors:',pageError===null?'PASS':'FAIL');
   if(process.env.LOCATION_SHOT)await page.screenshot({path:process.env.LOCATION_SHOT});
   await browser.close();
