@@ -33,7 +33,16 @@ const { chromium } = require('./node_modules/playwright');
     const bible=parseProductionBible('{"locations":[{"name":"Ev","timeOfDay":"day"}],"cast":["anlatıcı"],"wardrobe":["gri tişört"],"props":["karton kutu","kaset"]}');
     const old=parseProductionBible('[{"name":"Ev","timeOfDay":"day"}]');
     const cleaned=cleanProductionList(['el','ışık','eski karton kutu, kapağı yıpranmış','karton kutu','kaset'],'props',bible);
-    return {profile,prompt,compact,blocks,cuts,label:planStatsLabel(compact),audit:planQualityReport(compact,24),bible,old,cleaned};
+    const placeBible=parseProductionBible('{"locations":[{"name":"Brooklyn Bridge","timeOfDay":"day"}],"cast":[],"wardrobe":[],"props":["Backpack","Brooklyn Bridge postcard"]}');
+    const placeCleaned=cleanProductionList(['Bridge','Backpack','Brooklyn Bridge postcard','Wall clock'],'props',placeBible,['Brooklyn Bridge','School wall']);
+    const detailCleaned=cleanPropDetailText('Bridge, Backpack',["Wide shot at Brooklyn Bridge'te"]);
+    const generatedCleaned=cleanGeneratedShotDetails({content:'Wide shot at Brooklyn Bridge'},[
+      {k:'props',t:'Bridge, Backpack'},{k:'tech',t:'35mm, static'}
+    ]);
+    const mergedPlace=mergeLocations([[{name:'Brooklyn Bridge',timeOfDay:'day',shots:['01'],props:['Bridge','Backpack'],wardrobe:[],cast:[]}]],null);
+    nodes=[{id:991,content:'Wide shot at Brooklyn Bridge'}];projectBreakdown=null;
+    const savedDetail=shotDetailText({parentId:991,k:'props',t:'Bridge'});
+    return {profile,prompt,canvasPrompt:buildCanvasSys(''),compact,blocks,cuts,label:planStatsLabel(compact),audit:planQualityReport(compact,24),bible,old,cleaned,placeCleaned,detailCleaned,generatedCleaned,mergedPlace,savedDetail};
   });
 
   ok('a seven-minute reflective film aims near seventy camera shots',r.profile.targetCuts===70,r.profile);
@@ -56,5 +65,14 @@ const { chromium } = require('./node_modules/playwright');
   ok('the former bare location response still works',r.old.locations[0].name==='Ev',r.old);
   ok('non-props are filtered and a described prop folds into its canonical name',
     r.cleaned.length===2&&r.cleaned[0]==='karton kutu'&&r.cleaned[1]==='kaset',r.cleaned);
+  ok('shot-detail prompts define props as portable objects, not parts of a location',
+    /Brooklyn Bridge/.test(r.canvasPrompt)&&/LOCATION, not a prop/.test(r.canvasPrompt),r.canvasPrompt);
+  ok('a fixed word inside a named place is removed while real portable props remain',
+    r.detailCleaned==='Backpack'&&r.generatedCleaned[0].t==='Backpack'&&r.generatedCleaned[1].t==='35mm, static',r.generatedCleaned);
+  ok('production lists cannot turn the shooting location into something to pack',
+    r.mergedPlace[0].props.length===1&&r.mergedPlace[0].props[0]==='Backpack',r.mergedPlace);
+  ok('the same mistake is hidden on an already-saved board without regeneration',r.savedDetail==='',r.savedDetail);
+  ok('portable representations of a place remain valid props',
+    r.placeCleaned.length===3&&r.placeCleaned.includes('Backpack')&&r.placeCleaned.includes('Brooklyn Bridge postcard')&&r.placeCleaned.includes('Wall clock'),r.placeCleaned);
   await browser.close();
 })();
