@@ -1706,7 +1706,7 @@ body:not(.free-mode) .guide-show{display:none!important;}
 
 body.story-mode .left-panel,body.location-mode .left-panel{background:linear-gradient(180deg,rgba(13,14,13,.98),rgba(9,10,9,.985));}
 body.story-mode .nc-drawer,body.story-mode .nc-sb-btn{display:none!important;}
-body.free-mode .board-deck-group:not(.board-view-switch),body.free-mode .board-deck-sep{opacity:.38;pointer-events:none;}
+body.free-mode .board-deck-group:not(.board-view-switch),body.free-mode .board-deck-sep{display:none;}
 
 @keyframes story-lane-in{from{opacity:0;transform:translateY(15px);filter:blur(4px)}to{opacity:1;transform:none;filter:none}}
 @keyframes story-card-in{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
@@ -1739,7 +1739,8 @@ body.free-mode .board-deck-group:not(.board-view-switch),body.free-mode .board-d
 .board-deck{min-height:40px;justify-content:flex-start;gap:6px;padding:4px 12px;background:rgba(8,9,8,.9);box-shadow:0 9px 28px rgba(0,0,0,.14);}
 .board-deck::before{display:none;}
 .board-deck-group{gap:2px;padding:0;border:0;border-radius:8px;background:transparent;box-shadow:none;}
-.board-deck-label,.board-deck-sep{display:none;}
+.board-deck-label{display:inline-flex;height:18px;align-items:center;margin-left:5px;padding:0 5px 0 7px;border-left:1px solid rgba(255,255,255,.07);font-size:5px;letter-spacing:.12em;color:rgba(255,255,255,.25);}
+.board-view-switch .board-deck-label,.board-deck-sep{display:none;}
 .board-deck-btn{min-height:28px;gap:5px;padding:4px 8px;border-radius:7px;font-size:9px;}
 .board-deck-btn svg{width:12px;height:12px;}
 .board-deck-btn.is-text{font-size:6px;letter-spacing:.035em;}
@@ -2415,17 +2416,17 @@ body.free-mode .board-deck-group:not(.board-view-switch),body.free-mode .board-d
       </button>
     </div>
     <i class="board-deck-sep"></i>
-    <div class="board-deck-group" role="group" aria-label="Grid density">
-      <span class="board-deck-label">Density</span>
-      <button id="btnDensityCompact" class="board-deck-btn is-text on" onclick="setBoardDensity('compact')" aria-pressed="true">Compact</button>
-      <button id="btnDensityComfortable" class="board-deck-btn is-text" onclick="setBoardDensity('comfortable')" aria-pressed="false">Comfortable</button>
+    <div class="board-deck-group board-density-switch" role="group" aria-label="Node size">
+      <span class="board-deck-label">Size</span>
+      <button id="btnDensityCompact" class="board-deck-btn is-text on" onclick="setBoardDensity('compact')" aria-pressed="true" title="Smaller nodes — see more of the story">Compact</button>
+      <button id="btnDensityComfortable" class="board-deck-btn is-text" onclick="setBoardDensity('comfortable')" aria-pressed="false" title="Larger nodes with more breathing room">Comfortable</button>
     </div>
     <i class="board-deck-sep"></i>
-    <div class="board-deck-group" role="group" aria-label="Card detail">
-      <span class="board-deck-label">Cards</span>
-      <button id="btnDetailEssential" class="board-deck-btn is-text" onclick="setBoardDetail('essential')" aria-pressed="false">Focus</button>
-      <button id="btnDetailStandard" class="board-deck-btn is-text on" onclick="setBoardDetail('standard')" aria-pressed="true">Standard</button>
-      <button id="btnDetailFull" class="board-deck-btn is-text" onclick="setBoardDetail('full')" aria-pressed="false">Full</button>
+    <div class="board-deck-group board-detail-switch" role="group" aria-label="Node detail">
+      <span class="board-deck-label">Detail</span>
+      <button id="btnDetailEssential" class="board-deck-btn is-text" onclick="setBoardDetail('essential')" aria-pressed="false" title="Show only the essential line">Focus</button>
+      <button id="btnDetailStandard" class="board-deck-btn is-text on" onclick="setBoardDetail('standard')" aria-pressed="true" title="Show description and timing">Standard</button>
+      <button id="btnDetailFull" class="board-deck-btn is-text" onclick="setBoardDetail('full')" aria-pressed="false" title="Show all production details">Full</button>
     </div>
     <button class="board-recalculate" id="btnRebreak" onclick="requestLocationRefresh()" title="Recalculate the location groups">Recalculate locations</button>
   </div>
