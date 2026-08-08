@@ -64,6 +64,17 @@ const { pathToFileURL }=require('url');
   ok('the summary exposes production boundaries and exclusions',/solo production/i.test(summary.text)&&/product close-ups/i.test(summary.text)&&/generic B-roll/i.test(summary.text),summary.text);
 
   await page.click('#dnaNext');
+  const reveal=await page.evaluate(()=>(
+    {screen:document.querySelector('.screen.active').id,title:document.getElementById('dnaRevealTitle').textContent,
+      manifesto:document.getElementById('dnaRevealManifesto').textContent,code:document.getElementById('dnaRevealCode').textContent,
+      proofs:document.querySelectorAll('#dnaRevealProof .dr-proof').length,bands:document.querySelectorAll('#dnaRevealSpectrum .dr-band').length,
+      text:document.getElementById('dnaRevealShell').innerText}
+  ));
+  await page.waitForTimeout(1100);
+  if(process.env.QA_DIR)await page.screenshot({path:path.join(process.env.QA_DIR,'creator-dna-reveal-desktop.png'),fullPage:true});
+  ok('finishing the interview opens a personal identity reveal',reveal.screen==='s_dna_reveal'&&reveal.title==='The Evidence-Led Educator.'&&/^GD-DM-LVB-/.test(reveal.code),reveal);
+  ok('the reveal mirrors real choices instead of inventing a personality score',reveal.proofs===4&&reveal.bands===5&&/Proof comes before opinion/.test(reveal.manifesto)&&!/%|percentile|top \d/i.test(reveal.text),reveal);
+  await page.click('#dnaRevealAccept');
   const active=await page.evaluate(()=>{
     const sys=buildGenSys(180,'');
     return {screen:document.querySelector('.screen.active').id,profile:document.getElementById('dnaProfile').classList.contains('show'),
@@ -85,6 +96,9 @@ const { pathToFileURL }=require('url');
   await page.waitForTimeout(350);
   if(process.env.QA_DIR)await page.screenshot({path:path.join(process.env.QA_DIR,'creator-dna-hub-desktop.png'),fullPage:true});
   ok('My Creator DNA is a persistent profile destination in the main navigation',hub.screen==='s_dna_hub'&&hub.title==='Evidence-led Reviewer'&&hub.nav,hub);
+  await page.click('#dnaHubReveal');
+  ok('the saved identity reveal can be revisited from My Creator DNA',await page.evaluate(()=>document.querySelector('.screen.active').id==='s_dna_reveal'&&/Evidence-Led Educator/.test(document.getElementById('dnaRevealTitle').textContent)));
+  await page.click('#dnaRevealAccept');
   await page.click('#dnaHubEdit');
   ok('Creator DNA remains editable from its own profile page',await page.evaluate(()=>document.querySelector('.screen.active').id==='s_dna'&&dnaDraft.carrier==='demo'));
 
@@ -110,6 +124,15 @@ const { pathToFileURL }=require('url');
   if(process.env.QA_DIR)await page.screenshot({path:path.join(process.env.QA_DIR,'creator-dna-hub-mobile.png'),fullPage:true});
   const mobileHub=await page.evaluate(()=>({scrollW:document.documentElement.scrollWidth,vw:document.documentElement.clientWidth,visualH:Math.round(document.querySelector('.dna-visual').getBoundingClientRect().height),profileCols:getComputedStyle(document.getElementById('dnaHubProfile')).gridTemplateColumns}));
   ok('My Creator DNA stays cinematic and readable on a phone',mobileHub.scrollW<=mobileHub.vw&&mobileHub.visualH>=300&&!/\s/.test(mobileHub.profileCols),mobileHub);
+  await page.click('#dnaHubReveal');await page.waitForTimeout(1100);
+  if(process.env.QA_DIR)await page.screenshot({path:path.join(process.env.QA_DIR,'creator-dna-reveal-mobile.png'),fullPage:true});
+  const mobileReveal=await page.evaluate(()=>{
+    const spectrum=document.getElementById('dnaRevealSpectrum'),accept=document.getElementById('dnaRevealAccept').getBoundingClientRect();
+    return {screen:document.querySelector('.screen.active').id,scrollW:document.documentElement.scrollWidth,vw:document.documentElement.clientWidth,
+      top:document.getElementById('s_dna_reveal').scrollTop,titleTop:Math.round(document.getElementById('dnaRevealTitle').getBoundingClientRect().top),
+      bands:document.querySelectorAll('#dnaRevealSpectrum .dr-band').length,spectrumW:spectrum.scrollWidth,spectrumClient:spectrum.clientWidth,acceptH:Math.round(accept.height),details:getComputedStyle(document.querySelector('.dr-details')).gridTemplateColumns};
+  });
+  ok('the reveal stays compact and touch-friendly on a phone',mobileReveal.screen==='s_dna_reveal'&&mobileReveal.top===0&&mobileReveal.titleTop>40&&mobileReveal.scrollW<=mobileReveal.vw&&mobileReveal.bands===5&&mobileReveal.spectrumW>=mobileReveal.spectrumClient&&mobileReveal.acceptH>=44&&!/\s/.test(mobileReveal.details),mobileReveal);
   await page.evaluate(()=>{clearCreatorDnaDraft();creatorDNA=null;dnaDraft={};dnaStep=0;show('s_dna');renderDnaStep();});
   if(process.env.QA_DIR)await page.screenshot({path:path.join(process.env.QA_DIR,'creator-dna-question-mobile.png'),fullPage:true});
   const mobile=await page.evaluate(()=>{

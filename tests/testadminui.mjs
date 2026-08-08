@@ -62,6 +62,7 @@ server.listen(PORT,async()=>{
     vw:innerWidth
   }));
   ok('summary KPIs and the user ledger render',panel.values.length===4&&panel.users>=1&&/admin@test.com/.test(panel.text),panel);
+  ok('Gemini Free tier and paid-equivalent estimates are explained clearly',/Gemini Free tier is active/i.test(panel.text)&&/paid-tier equivalent estimates/i.test(panel.text)&&/current Google charge remains \$0/i.test(panel.text),panel.text.slice(0,500));
   ok('privacy promise is visible beside the ledger',/never stored/i.test(panel.text),panel.text.slice(-200));
   ok('desktop dashboard stays inside the viewport',panel.w<=panel.vw,panel);
   if(process.env.QA_DIR)await page.screenshot({path:process.env.QA_DIR+'/admin-cost-desktop.png'});
