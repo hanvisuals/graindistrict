@@ -41,7 +41,8 @@ server.listen(8934, async()=>{
   const shown=()=>page.evaluate(()=>document.getElementById('printView').textContent);
   const reset=()=>page.evaluate(()=>{projectBreakdown=null;projectBreakdownKey=null;});
 
-  // 40 beats, three cuts each = 160 plan lines, comfortably past one chunk
+  // 40 narration beats plus three cuts each = 160 timeline blocks and 120
+  // physical camera shots, comfortably past one breakdown reply.
   await page.evaluate(()=>{
     document.getElementById('gdAuthOv').classList.remove('show','gate');
     document.body.classList.remove('gd-gated');
@@ -61,7 +62,7 @@ server.listen(8934, async()=>{
   });
   const labels=await page.evaluate(()=>{
     var o=[];planScenes().forEach(function(s){o.push(s.label);s.kids.forEach(function(k){o.push(k.__label);});});return o;});
-  ok('the plan is 160 shots, past one reply', labels.length===160, labels.length);
+  ok('the plan is 160 timeline blocks', labels.length===160, labels.length);
 
   // every chunk finds "Mutfak"; each returns only the labels it was given
   handler=(user)=>{
@@ -73,7 +74,7 @@ server.listen(8934, async()=>{
   await clickBarBtn(page,'#btnExport'); await page.waitForTimeout(3000);
   ok('the places are named once, before anyone places a shot', named.length===1, named.length);
   ok('that pass sees the whole film, not a chunk',
-     (named[0]||'').split('\n').filter(l=>/^[0-9a-z.]+\./.test(l)).length===160,
+     (named[0]||'').split('\n').filter(l=>/^[0-9a-z.]+\./.test(l)).length===120,
      (named[0]||'').split('\n').length);
   ok('and every piece is handed that settled list',
      seenSys.length>0 && seenSys.every(x=>/- Mutfak \(day\)/.test(x)&&/- Sokak \(dawn\)/.test(x)),
@@ -106,7 +107,7 @@ server.listen(8934, async()=>{
      /different streets ARE two entries/.test(nsys));
   ok('a short list is the right answer, not a lazy one',
      /Expect few entries/.test(nsys)&&/Do not invent distinctions to make the list longer/.test(nsys));
-  ok('it was broken down in several pieces, not one', seen.length>=4, seen.length);
+  ok('it was broken down in several pieces, not one', seen.length===3, seen.length);
   ok('no piece was handed more than a chunk',
      seen.every(u=>u.split('\n').filter(l=>/^[0-9a-z.]+\./.test(l)).length<=45),
      seen.map(u=>u.split('\n').length));
@@ -128,7 +129,7 @@ server.listen(8934, async()=>{
   const covered=await page.evaluate(()=>{
     // count the rows actually printed, which is what a person ends up holding
     return document.querySelectorAll('.pv-loc-list .pv-num').length;});
-  ok('all 160 shots are accounted for exactly once', covered===160, covered);
+  ok('all 120 camera shots are accounted for exactly once', covered===120, covered);
 
   // a piece that fails once is asked again before anything is called unplaced
   let failed=0;
@@ -145,10 +146,10 @@ server.listen(8934, async()=>{
   const cov2=await page.evaluate(()=>{
     // count the rows actually printed, which is what a person ends up holding
     return document.querySelectorAll('.pv-loc-list .pv-num').length;});
-  ok('so the second time round every shot is placed', cov2===160, cov2);
+  ok('so the second time round every camera shot is placed', cov2===120, cov2);
 
   // a piece that never comes back is written down, not hidden
-  handler=(user,i)=>i%3===1?'sorry, no':JSON.stringify([loc('Mutfak',[...user.matchAll(/^([0-9a-z.]+)\./gm)].map(m=>m[1]))]);
+  handler=(user)=>/^16a\./m.test(user)?'sorry, no':JSON.stringify([loc('Mutfak',[...user.matchAll(/^([0-9a-z.]+)\./gm)].map(m=>m[1]))]);
   seen=[]; seenSys=[]; named=[]; namedSys=[]; await reset();
   await clickBarBtn(page,'#btnExport'); await page.waitForTimeout(5000);
   const t3b=await shown();
@@ -168,7 +169,7 @@ server.listen(8934, async()=>{
   const bc=await page.evaluate(()=>{
     // count the rows actually printed, which is what a person ends up holding
     return document.querySelectorAll('.pv-loc-list .pv-num').length;});
-  ok('with every shot from both spellings', bc===160, bc);
+  ok('with every camera shot from both spellings', bc===120, bc);
 
   // but two brackets with no bare twin are two places somebody meant
   handler=(user,i)=>{

@@ -38,13 +38,14 @@ const fs = require('fs');
   const v = await page.evaluate(()=>{
     var el=document.getElementById('printView');
     return {html:el.innerHTML, text:el.textContent,
-            beats:el.querySelectorAll('.pv-sc').length,
-            cuts:el.querySelectorAll('.pv-kid').length,
+            cameraRows:el.querySelectorAll('.pv-bd .pv-row').length,
+            voRows:el.querySelectorAll('.pv-vo-row').length,
+            editRows:el.querySelectorAll('.pv-edit-row').length,
             detTerms:el.querySelectorAll('.pv-det-k').length};
   });
 
-  // five blocks: two spine beats, three cuts filed underneath them
-  ok('every block is accounted for', v.beats===2&&v.cuts===3, {beats:v.beats,cuts:v.cuts});
+  // five blocks: narration once, three physical shots, one edit cue
+  ok('every block is accounted for exactly once',v.cameraRows===3&&v.voRows===1&&v.editRows===1,v);
   // Of the four shot cards only the prop list is printed. The other three -
   // action, emotion, tech - are direction, and they cost five pages of a
   // twenty-two page document to say what the description already says.

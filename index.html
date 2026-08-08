@@ -179,7 +179,7 @@ body #s0{align-items:stretch;justify-content:flex-start;position:relative;isolat
 .location-summary{display:flex;align-items:center;gap:6px;flex:1;justify-content:flex-end;min-width:0;padding-top:2px;}
 .location-detail-toggle{pointer-events:auto;font-family:var(--sans);font-size:10px;font-weight:600;color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.1);border-radius:7px;background:rgba(255,255,255,.025);padding:6px 9px;cursor:pointer;white-space:nowrap;}
 .location-detail-toggle:hover{color:#fff;background:rgba(255,255,255,.07);}
-.location-meta{position:absolute;left:24px;right:24px;top:92px;display:grid;grid-template-columns:repeat(3,minmax(130px,1fr));gap:10px 22px;padding:13px 0 2px;border-top:1px solid rgba(255,255,255,.065);}
+  .location-meta{position:absolute;left:24px;right:24px;top:92px;display:grid;grid-template-columns:repeat(4,minmax(110px,1fr));gap:10px 18px;padding:13px 0 2px;border-top:1px solid rgba(255,255,255,.065);}
 .location-meta-item{min-width:0;}
 .location-meta-k{display:block;font-family:var(--mono);font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.23);margin-bottom:5px;}
 .location-meta-v{display:block;font-family:var(--sans);font-size:11px;line-height:1.45;color:rgba(255,255,255,.6);white-space:normal;overflow-wrap:anywhere;}
@@ -1117,7 +1117,7 @@ body #s0{align-items:stretch;justify-content:flex-start;position:relative;isolat
   .btn-menu-t{display:inline;}
   .location-head{gap:14px;}
   .location-title-wrap{min-width:160px;max-width:240px;}
-  .location-meta{grid-template-columns:repeat(3,minmax(110px,1fr));gap:8px 12px;}
+  .location-meta{grid-template-columns:repeat(4,minmax(95px,1fr));gap:8px 12px;}
 
   .modal{width:min(420px,calc(100vw - 24px));max-height:88vh;overflow-y:auto;}
   .music-strip .ms-meta{flex-wrap:wrap;}
@@ -1630,6 +1630,15 @@ body.location-mode #btnRebreak{display:inline-flex!important;}
   .pv-vo-n{font-family:var(--mono);font-size:10pt;font-weight:700;color:#111;}
   .pv-vo-tc{font-family:var(--mono);font-size:7pt;color:#888;white-space:nowrap;}
   .pv-vo-text{font-size:9.5pt;line-height:1.45;color:#222;}
+  .pv-edit{margin:8mm 0 10mm;}
+  .pv-edit-list{border-bottom:1px solid #ececec;}
+  .pv-edit-row{display:grid;grid-template-columns:34mm 1fr;gap:5mm;padding:1.8mm 0;border-top:1px solid #ececec;
+               break-inside:avoid;page-break-inside:avoid;}
+  .pv-edit-id{display:flex;align-items:baseline;gap:2mm;}
+  .pv-edit-n{font-family:var(--mono);font-size:8.5pt;font-weight:700;color:#555;}
+  .pv-edit-tc{font-family:var(--mono);font-size:7pt;color:#999;white-space:nowrap;}
+  .pv-edit-type{font-family:var(--mono);font-size:6pt;font-weight:700;letter-spacing:.1em;color:#999;}
+  .pv-edit-text{font-size:9pt;line-height:1.4;color:#444;}
   /* a row must not be split across a page - half a shot on each side of a
      page break is useless to whoever is holding it */
 
@@ -1637,6 +1646,7 @@ body.location-mode #btnRebreak{display:inline-flex!important;}
   /* a location now carries its shots, so it can be many pages long - only its
      heading has to hold together, not the whole block */
   .pv-loc{padding:3.5mm 0;border-top:1px solid #ececec;}
+  .pv-loc-compact{break-inside:avoid;page-break-inside:avoid;}
   .pv-loc-head,.pv-loc-dl,.pv-loc-note{break-inside:avoid;page-break-inside:avoid;}
   .pv-loc-head{break-after:avoid;page-break-after:avoid;}
   .pv-loc-list{margin-top:2.5mm;}
@@ -4148,7 +4158,7 @@ function ytPacingProfile(totalSec){
 }
 function ytCutRules(totalSec){
   var p=ytPacingProfile(totalSec);
-  return '\n\nTWO LAYERS:\nAUDIO LAYER = VOICEOVER (one block per sentence or breath-group; its timecode spans the time the line takes to say, ~2.3 words per second) and MUSIC (montage section, no talking).\nVISUAL LAYER = BROLL (one camera cut) and TRANSITION (an edit instruction, not another camera shot).\n\nPACING & COVERAGE BUDGET ('+p.name.toUpperCase()+'):\n- Let shots breathe. Most BROLL holds '+p.minHold+'-'+p.maxHold+' seconds; the average across the film is about '+p.avgHold+' seconds. A shorter insert is exceptional and must reveal new information.\n- Aim for '+p.minCuts+'-'+p.maxCuts+' BROLL camera shots across the WHOLE video (about '+p.targetCuts+'), not one cut every few seconds by default. This is a production budget, not a target to exceed.\n- A VOICEOVER line normally needs 1-2 BROLL shots. One strong shot may bridge two sentences. Use 3 only when the physical action genuinely changes; never create extra angles just to fill time.\n- Write the VOICEOVER line first, then the BROLL that plays under it; their timecodes overlap. Together those BROLL timecodes cover the audio span without gaps.\n- When the voice names a concrete object or action, at least one BROLL in that same span must show that exact object or action. Do not replace it with generic hands, dust, a window, or an unrelated photograph.\n- Repeating a motif is allowed only when its meaning or physical state changes. A second shot that communicates the same fact is not coverage; cut it.\n- Vary framing with intention, not mechanically. Continuity of object, wardrobe, performer visibility, location and time of day outranks variety.\n- MUSIC sections still get visual coverage, using the same hold lengths and shot budget.\n- MUSIC sections are SHORT breathing-room interludes, max 15-20 seconds each. Never let a music-only stretch dominate the video; if a montage needs more time, let voiceover resume partway through.';
+  return '\n\nTWO LAYERS:\nAUDIO LAYER = VOICEOVER (one block per sentence or breath-group; its timecode spans the time the line takes to say, ~2.3 words per second) and MUSIC (montage section, no talking).\nVISUAL LAYER = BROLL (one camera cut) and TRANSITION (an edit instruction, not another camera shot).\n\nPACING & COVERAGE BUDGET ('+p.name.toUpperCase()+'):\n- Let shots breathe. Most BROLL holds '+p.minHold+'-'+p.maxHold+' seconds; the average across the film is about '+p.avgHold+' seconds. A shorter insert is exceptional and must reveal new information.\n- The timecode is the ONLY duration. Never write "holds N seconds", "shot holds", "three extra seconds" or any other duration claim inside BROLL content.\n- Aim for '+p.minCuts+'-'+p.maxCuts+' BROLL camera shots across the WHOLE video (about '+p.targetCuts+'), not one cut every few seconds by default. This is a production budget, not a target to exceed.\n- A VOICEOVER line normally needs 1-2 BROLL shots. One strong shot may bridge two sentences. Use 3 only when the physical action genuinely changes; never create extra angles just to fill time.\n- Write the VOICEOVER line first, then the BROLL that plays under it; their timecodes overlap. Together those BROLL timecodes cover the audio span without gaps.\n- When the voice names a concrete object or action, at least one BROLL in that same span must show that exact object or action. Do not replace it with generic hands, dust, a window, or an unrelated photograph.\n- Repeating a motif is allowed only when its meaning or physical state changes. A second shot that communicates the same fact is not coverage; cut it.\n- Vary framing with intention, not mechanically. Continuity of object, wardrobe, performer visibility, location and time of day outranks variety.\n- MUSIC sections still get visual coverage, using the same hold lengths and shot budget.\n- MUSIC sections are SHORT breathing-room interludes, max 15-20 seconds each. Never let a music-only stretch dominate the video; if a montage needs more time, let voiceover resume partway through.';
 }
 
 function buildGenSys(totalSec,li){
@@ -4197,7 +4207,7 @@ var projectBreakdown=null;   // location-by-location shooting breakdown
    version of the code that made it, and either one changing throws it out.
    Bump the version whenever the breakdown prompt or its handling changes -
    that is what retires the copies already saved in people's projects. */
-var BREAKDOWN_V=11;
+var BREAKDOWN_V=12;
 var projectBreakdownKey=null;
 function breakdownKey(){
   var t=BREAKDOWN_V+'|'+planAsText(),h=5381;
@@ -4295,7 +4305,8 @@ function buildLocationGroups(){
     scene.kids.forEach(function(k){byLabel[locationLabelKey(k.__label)]=k;});
   });
   locationNodeGroup={};
-  locationGroups=(projectBreakdown||[]).map(function(loc,groupIndex){
+  var usable=normalizeBreakdownForUse(projectBreakdown||[]);
+  locationGroups=usable.map(function(loc,groupIndex){
     var groupNodes=[];
     (loc.shots||[]).forEach(function(label){
       var n=byLabel[locationLabelKey(label)];
@@ -4305,11 +4316,11 @@ function buildLocationGroups(){
     groupNodes.sort(function(a,b){return order[a.id]-order[b.id];});
     return {location:loc,nodes:groupNodes,unplaced:String(loc.name||'').toLowerCase()==='unplaced'};
   });
-  var loose=nodes.filter(function(n){return !used[n.id];});
+  var loose=nodes.filter(function(n){return isCameraBlock(n.type)&&!used[n.id];});
   if(loose.length){
     var looseIndex=locationGroups.length;
     loose.forEach(function(n){locationNodeGroup[n.id]=looseIndex;});
-    locationGroups.push({location:{name:'Not placed yet',timeOfDay:'',props:[],wardrobe:[],cast:[],note:'Choose a location for these shots.'},nodes:loose,unplaced:true});
+    locationGroups.push({location:{name:'Not placed yet',timeOfDay:'',props:[],equipment:[],wardrobe:[],cast:[],note:'Choose a location for these shots.'},nodes:loose,unplaced:true});
   }
   /* If a location contains 01a but the VO cue 01 was filed elsewhere, repeat
      the cue as context here. It is still counted once, and never becomes a
@@ -4393,14 +4404,14 @@ function renderLocationLanes(cw){
     if(loc.timeOfDay)locationCountChip(sub,loc.timeOfDay);
     titleWrap.appendChild(title);titleWrap.appendChild(sub);
     var summary=document.createElement('div');summary.className='location-summary';
-    locationCountChip(summary,(loc.cast||[]).length+' cast');locationCountChip(summary,(loc.wardrobe||[]).length+' wardrobe');locationCountChip(summary,(loc.props||[]).length+' props');
+    locationCountChip(summary,(loc.cast||[]).length+' cast');locationCountChip(summary,(loc.wardrobe||[]).length+' wardrobe');locationCountChip(summary,(loc.props||[]).length+' props');locationCountChip(summary,(loc.equipment||[]).length+' equipment');
     var detailBtn=document.createElement('button');detailBtn.className='location-detail-toggle';detailBtn.textContent=locationDetailsOpen?'hide details':'details';
     detailBtn.onclick=function(e){e.stopPropagation();locationDetailsOpen=!locationDetailsOpen;renderAll();};
     summary.appendChild(detailBtn);
     head.appendChild(ix);head.appendChild(titleWrap);head.appendChild(summary);el.appendChild(head);
     if(locationDetailsOpen){
       var meta=document.createElement('div');meta.className='location-meta';
-      addLocationMeta(meta,'cast',loc.cast);addLocationMeta(meta,'wardrobe',loc.wardrobe);addLocationMeta(meta,'props',loc.props);el.appendChild(meta);
+      addLocationMeta(meta,'cast',loc.cast);addLocationMeta(meta,'wardrobe',loc.wardrobe);addLocationMeta(meta,'props',loc.props);addLocationMeta(meta,'equipment',loc.equipment);el.appendChild(meta);
     }
     cw.appendChild(el);
   });
@@ -4707,6 +4718,18 @@ function planHighlight(){
 // holds b-roll under ten seconds, voiceover lines stay short, and long music
 // sections are split at twenty before parsing
 var MAX_BLOCK_SEC=30;
+/* The timecode already says exactly how long a camera cut lasts. Models still
+   echo a guessed duration in prose, and those guesses drift after compaction
+   or editing. Remove only duration sentences from camera blocks; a person's
+   spoken words and edit/music notes are never touched. */
+function stripDurationClaims(type,text){
+  var out=String(text||'');
+  if(!isCameraBlock(type))return out.trim();
+  out=out.replace(/(?:^|\s)(?:the\s+)?shot\s+holds[^.?!]*(?:[.?!]|$)/gi,' ');
+  out=out.replace(/(?:^|\s)holds?(?:\s+(?:for\s+)?(?:the\s+full\s+)?\d+(?:\.\d+)?\s*seconds?)?\s*[.?!]?/gi,' ');
+  out=out.replace(/\s{2,}/g,' ').replace(/^\s+|\s+$/g,'');
+  return out;
+}
 function parseBlocks(text){
   var btypes=(PT_BLOCKS[projectType]||PT_BLOCKS.youtube).join('|');
   var typeRe=new RegExp('\\[?('+btypes+')\\]?','i');
@@ -4752,7 +4775,8 @@ function parseBlocks(text){
       var span=ts(tcEnd)-ts(guess);
       if(span>0&&span<=MAX_BLOCK_SEC)tcStart=guess;
     }
-    out.push({type:tm[1].toLowerCase(),tcStart:tcStart,tcEnd:tcEnd,content:content,shots:[]});
+    var type=tm[1].toLowerCase();
+    out.push({type:type,tcStart:tcStart,tcEnd:tcEnd,content:stripDurationClaims(type,content),shots:[]});
   });
   return out.filter(function(b){return b.content;});
 }
@@ -5254,6 +5278,9 @@ function buildCanvas(){
 
 
 function renderAll(){
+  // Saved boards created before duration prose was banned are repaired in
+  // memory as soon as they render; the operation is idempotent.
+  nodes.forEach(function(n){n.content=stripDurationClaims(n.type,n.content);});
   if(canvasViewMode==='location')layoutLocationView();
   renderLocationNav();renderBlockList();renderBlockDetail();renderCanvas();renderImgNodes();renderNoteNodes();renderConns();renderTL();renderMusicStrip();updateRecceBtn();updateT();
 }
@@ -6347,7 +6374,8 @@ function shotsFor(nodeId){
    model replies. Portable representations (a bridge postcard or model) stay. */
 function propSemanticsRule(){
   return ' A PROP is a portable or deliberately placed object the crew can bring or hand to a performer. '
-    +'Never list the location itself, fixed architecture, landscape, streets or parts of a place as props. '
+    +'Never list camera bodies, lenses, adapters, filters, tripods, microphones or other filmmaking equipment as props; those belong in TECH. '
+    +'Never list the location itself, fixed architecture, natural light, traffic, landscape, streets, people, body parts or parts of a place as props. '
     +'An object-like word inside a proper place name remains part of that location: in "Brooklyn Bridge", '
     +'Bridge is LOCATION, not a prop. A postcard, photo, map, toy or miniature of a place is a prop. '
     +'Write — when no real prop is needed.';
@@ -6365,6 +6393,52 @@ var PORTABLE_PLACE_REPRESENTATIONS={
   poster:1,map:1,book:1,'maket':1,oyuncak:1,'fotoğraf':1,fotograf:1,kartpostal:1,
   'baskı':1,baski:1,tablo:1,'harita':1,kitap:1
 };
+var EQUIPMENT_WORDS={
+  camera:1,kamera:1,lens:1,lenses:1,lensler:1,adapter:1,adaptör:1,adaptor:1,
+  tripod:1,tripodlar:1,gimbal:1,rig:1,microphone:1,mikrofon:1,recorder:1,
+  kaydedici:1,monitor:1,battery:1,batarya:1,filter:1,filtre:1,mattebox:1,
+  'matte box':1
+};
+function hasPortableRepresentation(words){
+  for(var i=0;i<words.length;i++)if(PORTABLE_PLACE_REPRESENTATIONS[words[i]])return true;
+  return false;
+}
+function isEquipmentItem(value,bible){
+  var key=kitKey(value),words=key.split(' ').filter(Boolean);
+  if(!key||hasPortableRepresentation(words))return false;
+  var canon=bible&&!Array.isArray(bible)&&Array.isArray(bible.equipment)?bible.equipment:[];
+  for(var i=0;i<canon.length;i++){
+    var ck=kitKey(canon[i]);
+    if(ck&&(key===ck||key.indexOf(ck)>=0||ck.indexOf(key)>=0))return true;
+  }
+  if(/\b(?:sony|canon|nikon|fujifilm|fuji|panasonic|lumix|blackmagic|red|arri)\b.*\b(?:body|gövde|govde)\b/.test(key))return true;
+  if(/\b(?:camera|kamera)\b.*\b(?:body|gövde|govde)\b|\b(?:body|gövde|govde)\b.*\b(?:camera|kamera)\b/.test(key))return true;
+  for(var j=0;j<words.length;j++)if(EQUIPMENT_WORDS[words[j]])return true;
+  return false;
+}
+function compactEquipmentItem(value){
+  var raw=String(value||'').trim(),key=kitKey(raw),words=key.split(' ').filter(Boolean);
+  if(words.length<=6)return raw;
+  if(/\banamorphic\b.*\badapt(?:er|or)\b|\badapt(?:er|or)\b.*\banamorphic\b/.test(key))return 'Anamorphic adapter';
+  if(/\banamorfik\b.*\badaptör\b|\badaptör\b.*\banamorfik\b/.test(key))return 'Anamorfik adaptör';
+  if(/\bcamera\b.*\bbody\b|\bbody\b.*\bcamera\b/.test(key))return 'Camera body';
+  if(/\bkamera\b.*\b(?:gövde|govde)\b|\b(?:gövde|govde)\b.*\bkamera\b/.test(key))return 'Kamera gövdesi';
+  var model=raw.match(/\b((?:Sony|Canon|Nikon|Fujifilm|Fuji|Panasonic|Lumix|Blackmagic|RED|ARRI)\s+[A-Za-z0-9-]+\s+body)\b/i);
+  if(model)return model[1];
+  return raw;
+}
+function nonPortablePropPhrase(value){
+  var key=kitKey(value),words=key.split(' ').filter(Boolean);
+  if(!key)return true;
+  if(hasPortableRepresentation(words))return false;
+  if(/^(?:none|nothing|no props?|no objects?|no additional|cut itself|the cut|dead air|brief pause|natural pause|same (?:block|street|stoop|location)|aynı (?:mekan|mekân|sokak))\b/.test(key))return true;
+  if(/\b(?:creator|performer|subject|pedestrian|passersby|passerby|anlatıcı|anlatici)\b.*\b(?:face|hands?|eyes?|shadow|clothing|wardrobe|position|yüz|yuz|eller?|göz|goz|gölge|golge|kıyafet|kiyafet)\b/.test(key))return true;
+  if(/\b(?:sun|sunlight|shade|shadow|sky|bokeh|reflection|pavement|sidewalk|storefront|building|street|foot traffic|background|geography|time of day|car|bus|vehicle|güneş|gunes|ışık|isik|gölge|golge|gökyüzü|gokyuzu|yansıma|yansima|kaldırım|kaldirim|sokak|bina|arka plan|trafik|araba|otobüs|otobus)\b/.test(key))return true;
+  // The model was asked for a noun phrase. A paragraph is a location or
+  // direction dump, never something somebody can tick off a packing list.
+  if(words.length>9)return true;
+  return false;
+}
 function fixedPlaceProp(value,contexts){
   var item=kitKey(value),words=item.split(' ').filter(Boolean),place=[];
   if(!item)return false;
@@ -6387,8 +6461,10 @@ function fixedPlaceProp(value,contexts){
 function cleanPropDetailText(text,contexts){
   var whole=String(text||'').trim();
   if(!whole||kitKey(whole)==='')return '';
-  var parts=whole.split(/\s*[,;·•\n]\s*/).filter(function(x){return x.trim();});
-  return parts.filter(function(part){return !fixedPlaceProp(part,contexts);}).join(', ');
+  var parts=whole.split(/\s*(?:[,;·•\n]|\.\s+)\s*/).filter(function(x){return x.trim();});
+  return parts.filter(function(part){
+    return !isEquipmentItem(part,null)&&!nonPortablePropPhrase(part)&&!fixedPlaceProp(part,contexts);
+  }).join(', ');
 }
 function propContextsForNode(node){
   var out=[];
@@ -6446,10 +6522,11 @@ function planScenes(){
   });
   return out;
 }
-function planAsText(){
+function planAsText(onlyCamera){
   var lines=[];
   planScenes().forEach(function(s){
     function one(n,label){
+      if(onlyCamera&&!isCameraBlock(n.type))return;
       var sh=shotsFor(n.id).map(function(a){var t=shotDetailText(a);return t?((SK_LABEL[a.k]||a.k)+': '+t):'';}).filter(Boolean).join('; ');
       lines.push(label+'. ['+n.type.toUpperCase()+'] '+n.tcStart+'-'+n.tcEnd+' - '+n.content+(sh?'  ('+sh+')':''));
     }
@@ -6513,13 +6590,14 @@ function genLocationNames(li,lines){
     +'and that is the correct answer - it is what the day looks like. Do not invent distinctions to '
     +'make the list longer.\n\n'
     +'Name each one plainly and the same way every time it comes up.\n\n'
-    +'Also settle a CANONICAL production kit for the whole film. One real person, wardrobe item or '
-    +'prop gets one short noun phrase even if the plan describes it many ways. Keep props separate '
-    +'from locations, body parts, light, camera equipment and abstract visual directions. If the plan '
+    +'Also settle a CANONICAL production kit for the whole film. One real person, wardrobe item, prop or '
+    +'equipment item gets one short noun phrase even if the plan describes it many ways. Keep props separate '
+    +'from EQUIPMENT (camera bodies, lenses, adapters, tripods, microphones), locations, body parts, light '
+    +'and abstract visual directions. If the plan '
     +'calls the same object a cardboard box in one place and a wooden box in another, choose the '
     +'version established first and use that single name; do not list both contradictions as things to pack.\n\n'
     +'Return ONLY JSON: {"locations":[{"name":"...","timeOfDay":"..."}],"cast":["..."],'
-    +'"wardrobe":["..."],"props":["..."]}'
+    +'"wardrobe":["..."],"props":["..."],"equipment":["..."]}'
     +(li?'\n\n'+li:'');
   return withTimeout(apiRetry(sys,'Shot plan:\n'+brief,'location_bible').then(parseProductionBible),60000,null,'location names');
 }
@@ -6537,7 +6615,7 @@ function breakdownSys(li,part,bible){
       : '')
     +(kit?'The production kit has also been canonicalised across the WHOLE film:\n'
       +'CAST: '+(kit.cast||[]).join(' | ')+'\nWARDROBE: '+(kit.wardrobe||[]).join(' | ')
-      +'\nPROPS: '+(kit.props||[]).join(' | ')+'\n\nUse these exact noun phrases when they apply. '
+      +'\nPROPS: '+(kit.props||[]).join(' | ')+'\nEQUIPMENT: '+(kit.equipment||[]).join(' | ')+'\n\nUse these exact noun phrases when they apply. '
       +'Do not create a second name for the same thing. Add a genuinely missing item only when a shot '
       +'plainly cannot be made without it. Props never include body parts, locations, light, lenses, '
     +'camera gear, empty frames, moods or abstract visual instructions.'+propSemanticsRule()+'\n\n':'')
@@ -6546,13 +6624,13 @@ function breakdownSys(li,part,bible){
     +'happen in the same place belong together even if they are far apart in the plan, because that is '
     +'the order they will actually be shot in.\n\n'
     +'For each location give: a short specific name, the time of day it needs, which shots happen there, '
-    +'and everything that must be brought or arranged - props, wardrobe, and who is needed on camera. '
+    +'and everything that must be brought or arranged - props, equipment, wardrobe, and who is needed on camera. '
     +'Add one short practical note: access, permission, light, noise, whatever would actually catch '
     +'someone out on the day.\n\n'
     +'Shot labels look like 01, 01a, 02b. Copy them exactly as they appear in the plan.\n\n'
-    +'EVERY shot listed below belongs to exactly one location, including the VOICEOVER and MUSIC ones. '
-    +'A voiceover is still recorded somewhere - a quiet room, a booth - and that is its location. None '
-    +'may be left out, none may appear twice. Before you answer, count the shots you were given and '
+    +'Every item listed below is a PHYSICAL CAMERA SHOT and belongs to exactly one shooting location. '
+    +'VOICEOVER, MUSIC and TRANSITION cues have already been removed and must never be invented here. None '
+    +'of the camera shots may be left out or appear twice. Before you answer, count the shots you were given and '
     +'count the shots across your locations; they must be the same number.\n\n'
     +'A location is a place you travel to, not a room, a setup or a scene. Everything shot inside one '
     +'building belongs to that building\'s entry, however different the rooms are.\n\n'
@@ -6575,17 +6653,27 @@ function breakdownSys(li,part,bible){
     +'differently every time. Merge them. One plant that appears in eleven shots is one line. If two '
     +'entries could be satisfied by the same trip to the same shop, they are one entry. A whole house '
     +'genuinely needs a long list; a list of the same six things worded thirty ways does not.\n\n'
-    +'Wardrobe and cast the same way: one person is one entry, however many shots they are in.\n\n'
+    +'Wardrobe, equipment and cast the same way: one item or person is one entry, however many shots it appears in. '
+    +'Camera bodies, lenses, anamorphic adapters, filters, tripods, gimbals, monitors and audio gear belong in '
+    +'equipment, NEVER props. Natural sun, existing streetlights, architecture, traffic and access requirements '
+    +'belong in the practical note, not in props or equipment. Do not put a shot count in the note because parallel '
+    +'pieces are merged later.\n\n'
     +propSemanticsRule()+'\n\n'
     +'Return ONLY JSON: [{"name":"...","timeOfDay":"...","shots":["01","01a"],"props":["..."],'
-    +'"wardrobe":["..."],"cast":["..."],"note":"..."}]'
+    +'"equipment":["..."],"wardrobe":["..."],"cast":["..."],"note":"..."}]'
     +(li?'\n\n'+li:'');
 }
 function labelOfLine(line){ var m=String(line).match(/^([0-9a-z.]+)\./); return m?m[1]:''; }
 function allShotLabels(){
   var out=[];
-  planScenes().forEach(function(s){ out.push(s.label); s.kids.forEach(function(k){ out.push(k.__label); }); });
+  planScenes().forEach(function(s){
+    if(isCameraBlock(s.head.type))out.push(s.label);
+    s.kids.forEach(function(k){if(isCameraBlock(k.type))out.push(k.__label);});
+  });
   return out;
+}
+function shotLabelOrder(){
+  var out={};allShotLabels().forEach(function(label,i){out[String(label).trim().toLowerCase()]=i;});return out;
 }
 function labelsMissingFrom(locs){
   var seen={};
@@ -6616,7 +6704,8 @@ function breakdownPass(lines,sys){
 function genBreakdown(){
   if(!nodes.length)return Promise.resolve(null);
   var li=langInstr(inputLang,'the breakdown');
-  var lines=planAsText().split('\n');
+  var lines=planAsText(true).split('\n').filter(Boolean);
+  if(!lines.length)return Promise.resolve([]);
   var many=lines.length>BREAKDOWN_CHUNK;
   // a short plan goes to one writer, who has no one to disagree with
   var first=many?genLocationNames(li,lines):Promise.resolve(null);
@@ -6665,14 +6754,14 @@ function mergeLocations(parts,bible){
       if(!loc||!loc.name)return;
       var k=key(loc.name);
       if(!byName[k]){
-        byName[k]={name:loc.name,timeOfDay:loc.timeOfDay||'',shots:[],props:[],wardrobe:[],cast:[],
+        byName[k]={name:loc.name,timeOfDay:loc.timeOfDay||'',shots:[],props:[],equipment:[],wardrobe:[],cast:[],
                    note:loc.note||''};
         order.push(k);
       }
       var t=byName[k];
       if(!t.timeOfDay&&loc.timeOfDay)t.timeOfDay=loc.timeOfDay;
       if(!t.note&&loc.note)t.note=loc.note;
-      ['shots','props','wardrobe','cast'].forEach(function(f){
+      ['shots','props','equipment','wardrobe','cast'].forEach(function(f){
         (loc[f]||[]).forEach(function(v){
           v=String(v).trim();
           if(!v)return;
@@ -6690,7 +6779,7 @@ function mergeLocations(parts,bible){
     var from=byName[k],to=byName[bare];
     if(!to.timeOfDay&&from.timeOfDay)to.timeOfDay=from.timeOfDay;
     if(!to.note&&from.note)to.note=from.note;
-    ['shots','props','wardrobe','cast'].forEach(function(f){
+    ['shots','props','equipment','wardrobe','cast'].forEach(function(f){
       from[f].forEach(function(v){
         for(var i=0;i<to[f].length;i++)if(to[f][i].toLowerCase()===v.toLowerCase())return;
         to[f].push(v);
@@ -6705,16 +6794,23 @@ function mergeLocations(parts,bible){
     bible.locations.forEach(function(l){if(l&&l.name)locationNames.push(l.name);});
   }
   // a shot can only be packed for once, so the first location claiming it wins
-  var claimed={};
+  var claimed={},labelOrder=shotLabelOrder();
   out.forEach(function(l){
     l.shots=l.shots.filter(function(s){
-      var k=s.toLowerCase();
+      var k=String(s).trim().toLowerCase();
       if(claimed[k])return false;
       claimed[k]=1; return true;
     });
-    ['props','wardrobe','cast'].forEach(function(f){
-      l[f]=cleanProductionList(l[f],f,bible,locationNames);
+    l.shots.sort(function(a,b){
+      var ak=String(a).trim().toLowerCase(),bk=String(b).trim().toLowerCase();
+      return (labelOrder[ak]==null?1e9:labelOrder[ak])-(labelOrder[bk]==null?1e9:labelOrder[bk]);
     });
+    var moved=(l.props||[]).filter(function(v){return isEquipmentItem(v,bible);});
+    l.props=(l.props||[]).filter(function(v){return !isEquipmentItem(v,bible);});
+    l.equipment=cleanProductionList((l.equipment||[]).concat(moved),'equipment',bible,locationNames);
+    l.props=cleanProductionList(l.props,'props',bible,locationNames);
+    l.wardrobe=cleanProductionList(l.wardrobe,'wardrobe',bible,locationNames);
+    l.cast=cleanProductionList(l.cast,'cast',bible,locationNames);
   });
   return out.filter(function(l){return l.shots.length;});
 }
@@ -6733,8 +6829,9 @@ function cleanProductionList(list,field,bible,locationNames){
     'uzun gölge':1,'uzun golge':1,'long shadow':1};
   var out=[],seen={};
   (list||[]).forEach(function(raw){
-    var v=String(raw||'').trim(),vk=kitKey(v);
-    if(!vk||(field==='props'&&(noProp[vk]||fixedPlaceProp(v,locationContext))))return;
+    var v=String(raw||'').trim();if(field==='equipment')v=compactEquipmentItem(v);
+    var vk=kitKey(v);
+    if(!vk||(field==='props'&&(noProp[vk]||nonPortablePropPhrase(v)||fixedPlaceProp(v,locationContext))))return;
     for(var i=0;i<canon.length;i++){
       var ck=kitKey(canon[i]);
       // A global canonical noun phrase is allowed to absorb a longer local
@@ -6746,6 +6843,62 @@ function cleanProductionList(list,field,bible,locationNames){
     seen[vk]=1;out.push(v);
   });
   return out;
+}
+
+/* Cached projects can carry a breakdown made by an older schema. Never trust
+   that cache directly in the UI or PDF: keep only physical camera shots,
+   restore story order, promote camera gear out of props, and fold any real
+   shot-level props into the location packing list. */
+function normalizeBreakdownForUse(locs){
+  var scenes=planScenes(),byLabel={},order=shotLabelOrder();
+  function key(x){return String(x==null?'':x).trim().toLowerCase();}
+  scenes.forEach(function(s){
+    byLabel[key(s.label)]=s.head;
+    s.kids.forEach(function(k){byLabel[key(k.__label)]=k;});
+  });
+  var names=(locs||[]).map(function(l){return l&&l.name||'';});
+  return (locs||[]).map(function(loc){
+    loc=loc||{};
+    var seen={},shots=[];
+    (loc.shots||[]).forEach(function(label){
+      var k=key(label),node=byLabel[k];
+      if(!node||!isCameraBlock(node.type)||seen[k])return;
+      seen[k]=1;shots.push(node.__label||label);
+    });
+    shots.sort(function(a,b){return (order[key(a)]==null?1e9:order[key(a)])-(order[key(b)]==null?1e9:order[key(b)]);});
+    var props=(loc.props||[]).slice(),equipment=(loc.equipment||[]).slice();
+    props=props.filter(function(v){if(isEquipmentItem(v,null)){equipment.push(v);return false;}return true;});
+    function coveredByLocationKit(phrase){
+      var have=kitKey(phrase).split(' ').filter(function(w){return w.length>2&&!PROP_STOP[w];});
+      for(var i=0;i<props.length;i++){
+        var need=kitKey(props[i]).split(' ').filter(function(w){return w.length>2&&!PROP_STOP[w];});
+        if(!need.length)continue;
+        var all=true;for(var j=0;j<need.length;j++)if(have.indexOf(need[j])<0){all=false;break;}
+        if(all)return true;
+      }
+      return false;
+    }
+    shots.forEach(function(label){
+      var node=byLabel[key(label)];if(!node)return;
+      shotsFor(node.id).filter(function(a){return a.k==='props';}).forEach(function(a){
+        String(a.t||'').split(/\s*(?:[,;·•\n]|\.\s+)\s*/).forEach(function(part){
+          part=part.trim();if(!part)return;
+          if(isEquipmentItem(part,null)){equipment.push(part);return;}
+          var clean=cleanPropDetailText(part,propContextsForNode(node));
+          var meaningful=kitKey(clean).split(' ').filter(function(w){return w.length>2&&!PROP_STOP[w];});
+          // Only rescue compact, unmistakable nouns the location answer
+          // omitted. Descriptive camera prose belongs on the shot, not in a
+          // packing header.
+          if(clean&&meaningful.length>=2&&meaningful.length<=3&&!coveredByLocationKit(clean))props.push(clean);
+        });
+      });
+    });
+    return {name:loc.name||'Location',timeOfDay:loc.timeOfDay||'',shots:shots,
+      props:cleanProductionList(props,'props',null,names),
+      equipment:cleanProductionList(equipment,'equipment',null,names),
+      wardrobe:cleanProductionList(loc.wardrobe||[],'wardrobe',null,names),
+      cast:cleanProductionList(loc.cast||[],'cast',null,names),note:loc.note||''};
+  }).filter(function(loc){return loc.shots.length;});
 }
 
 /* A 243-shot plan needs around twenty locations, and that answer can run past
@@ -6779,13 +6932,14 @@ function parseProductionBible(raw){
       var o=JSON.parse(s.slice(a,b+1));
       if(o&&Array.isArray(o.locations))return {
         locations:o.locations,cast:Array.isArray(o.cast)?o.cast:[],
-        wardrobe:Array.isArray(o.wardrobe)?o.wardrobe:[],props:Array.isArray(o.props)?o.props:[]
+        wardrobe:Array.isArray(o.wardrobe)?o.wardrobe:[],props:Array.isArray(o.props)?o.props:[],
+        equipment:Array.isArray(o.equipment)?o.equipment:[]
       };
     }catch(e){}
   }
   // Older workers and test doubles return the former bare location array.
   var locs=parseLocations(raw);
-  return locs&&locs.length?{locations:locs,cast:[],wardrobe:[],props:[]}:null;
+  return locs&&locs.length?{locations:locs,cast:[],wardrobe:[],props:[],equipment:[]}:null;
 }
 
 /* A shot filed under no location is a shot nobody packs for, and the document
@@ -6795,18 +6949,14 @@ function parseProductionBible(raw){
    prompt helps but cannot be trusted, so count them here and put the strays
    somewhere visible. A gap you can see is a gap you can close. */
 function accountForEveryShot(locs){
-  var all=[],seen={};
-  planScenes().forEach(function(s){
-    all.push(s.label);
-    s.kids.forEach(function(k){ all.push(k.__label); });
-  });
+  var all=allShotLabels(),seen={};
   locs.forEach(function(l){
     (l.shots||[]).forEach(function(x){ seen[String(x).trim().toLowerCase()]=1; });
   });
   var missing=all.filter(function(l){ return !seen[l.toLowerCase()]; });
   if(missing.length){
     console.warn('[breakdown] '+missing.length+' of '+all.length+' shots came back unplaced');
-    locs.push({name:'Unplaced',timeOfDay:'',shots:missing,props:[],wardrobe:[],cast:[],
+    locs.push({name:'Unplaced',timeOfDay:'',shots:missing,props:[],equipment:[],wardrobe:[],cast:[],
       note:'The breakdown left these out. Decide where they happen before you pack.'});
   }
   return locs;
@@ -6864,7 +7014,7 @@ function buildPrintView(){
   // a frame next to a shot is worth a paragraph of description on set;
   // if the image can't be fetched the cell simply collapses
   function frame(n){
-    return n.sbUrl?'<div class="pv-frame"><img src="'+pesc(n.sbUrl)+'" alt="" onerror="this.parentNode.style.display=\'none\'"></div>':'';
+    return isCameraBlock(n.type)&&n.sbUrl?'<div class="pv-frame"><img src="'+pesc(n.sbUrl)+'" alt="" onerror="this.parentNode.style.display=\'none\'"></div>':'';
   }
   // Only the prop list survives into print. Four labelled fields per two-second
   // cut cost five pages of a twenty-two page document, and of the four only
@@ -6930,14 +7080,14 @@ function buildPrintView(){
     return '<div class="pv-det"><span class="pv-det-k">'+pesc(SK_LABEL.props)+'</span> '
       +pesc(parts.join(', '))+'</div>';
   }
-  function shotRow(label,n,kit){
+  function shotRow(label,n,kit,withDetails){
     return '<div class="pv-row">'
       +'<div class="pv-idx">'
       +'<div class="pv-num">'+pesc(label)+'</div>'
       +'<div class="pv-tc">'+pesc(n.tcStart)+'&ndash;'+pesc(n.tcEnd)+'</div>'
       +'<div class="pv-type">'+pesc(n.type.toUpperCase())+'</div>'
       +'</div>'
-      +'<div class="pv-body"><div class="pv-content">'+pesc(n.content)+'</div>'+details(n,kit)+'</div>'
+      +'<div class="pv-body"><div class="pv-content">'+pesc(stripDurationClaims(n.type,n.content))+'</div>'+(withDetails?details(n,kit):'')+'</div>'
       +frame(n)
       +'</div>';
   }
@@ -6948,10 +7098,12 @@ function buildPrintView(){
      which makes a complete script look incomplete when the PDF is scanned by
      story order. This section is built directly from the board and therefore
      cannot lose a cue during grouping. */
-  var voiceovers=[];
+  var voiceovers=[],editCues=[];
   scenes.forEach(function(s){
     [s.head].concat(s.kids).forEach(function(n){
-      if(String(n.type||'').trim().toLowerCase()==='voiceover')voiceovers.push(n);
+      var type=String(n.type||'').trim().toLowerCase();
+      if(type==='voiceover')voiceovers.push(n);
+      else if(type==='music'||type==='transition')editCues.push(n);
     });
   });
   if(voiceovers.length){
@@ -6963,86 +7115,65 @@ function buildPrintView(){
     });
     h+='</div></section>';
   }
-  if(projectBreakdown&&projectBreakdown.length){
-    // The model does not always give a label back exactly as it was handed
-    // out - "01A", " 01 " - and accountForEveryShot already forgives that when
-    // it decides whether a shot was placed. If the lookup here were stricter
-    // than that check, a shot could be counted as placed and still never be
-    // printed: gone from the document with nothing to show it was ever there.
-    // So match the same way, and print the plan's own spelling of the label.
-    var byLabel={};
-    function labKey(x){ return String(x==null?'':x).trim().toLowerCase(); }
-    scenes.forEach(function(s){
-      byLabel[labKey(s.label)]={label:s.label,node:s.head};
-      s.kids.forEach(function(k){ byLabel[labKey(k.__label)]={label:k.__label,node:k}; });
+  // Location output has one responsibility: what the camera crew captures at
+  // each real place. Audio and edit cues are printed elsewhere and cannot be
+  // duplicated into a booth or dressed up as physical production blocks.
+  var byLabel={};
+  function labKey(x){ return String(x==null?'':x).trim().toLowerCase(); }
+  scenes.forEach(function(s){
+    byLabel[labKey(s.label)]={label:s.label,node:s.head};
+    s.kids.forEach(function(k){ byLabel[labKey(k.__label)]={label:k.__label,node:k}; });
+  });
+  function list(label,arr){
+    if(!arr||!arr.length)return '';
+    return '<dt>'+label+'</dt><dd>'+pesc(arr.join(' &middot; ')).replace(/&amp;middot;/g,'&middot;')+'</dd>';
+  }
+  function locBlock(li,loc){
+    var rows='',count=0,used={};
+    (loc.shots||[]).forEach(function(lab){
+      var hit=byLabel[labKey(lab)];
+      if(!hit||!isCameraBlock(hit.node.type)||used[hit.label])return;
+      used[hit.label]=1;rows+=shotRow(hit.label,hit.node,null,false);count++;
     });
-    function list(label,arr){
-      if(!arr||!arr.length)return '';
-      return '<dt>'+label+'</dt><dd>'+pesc(arr.join(' &middot; ')).replace(/&amp;middot;/g,'&middot;')+'</dd>';
-    }
-    function locBlock(li,name,timeOfDay,cast,wardrobe,props,note,labels){
-      var rows='',count=0,cameraCount=0;
-      var kit=(props||[]).map(propWords).filter(function(w){ return w.length; });
-      var used={};
-      (labels||[]).forEach(function(lab){
-        var hit=byLabel[labKey(lab)];
-        // the same shot listed twice at one location prints once
-        if(!hit||used[hit.label])return;
-        used[hit.label]=1;
-        rows+=shotRow(hit.label,hit.node,kit); count++;
-        if(isCameraBlock(hit.node.type))cameraCount++;
-      });
-      var out='<article class="pv-loc">'
-        +'<div class="pv-loc-head">'
-        +'<span class="pv-loc-n">'+String(li+1).padStart(2,'0')+'</span>'
-        +'<span class="pv-loc-name">'+pesc(name||'Location')+'</span>'
-        +(timeOfDay?'<span class="pv-loc-tod">'+pesc(timeOfDay)+'</span>':'')
-        +'<span class="pv-loc-shots">'+cameraCount+' camera shot'+(cameraCount===1?'':'s')
-        +' &middot; '+count+' blocks</span>'
-        +'</div>';
-      var dl=list('CAST',cast)+list('WARDROBE',wardrobe)+list('PROPS',props);
-      if(dl)out+='<dl class="pv-loc-dl">'+dl+'</dl>';
-      if(note)out+='<p class="pv-loc-note">'+pesc(note)+'</p>';
-      return out+'<div class="pv-loc-list">'+rows+'</div></article>';
-    }
-
-    h+='<section class="pv-bd"><h2>Production plan by location &middot; '+projectBreakdown.length+'</h2>';
+    if(!count)return '';
+    var out='<article class="pv-loc'+(count<=12?' pv-loc-compact':'')+'">'
+      +'<div class="pv-loc-head">'
+      +'<span class="pv-loc-n">'+String(li+1).padStart(2,'0')+'</span>'
+      +'<span class="pv-loc-name">'+pesc(loc.name||'Location')+'</span>'
+      +(loc.timeOfDay?'<span class="pv-loc-tod">'+pesc(loc.timeOfDay)+'</span>':'')
+      +'<span class="pv-loc-shots">'+count+' camera shot'+(count===1?'':'s')+'</span>'
+      +'</div>';
+    var dl=list('CAST',loc.cast)+list('WARDROBE',loc.wardrobe)+list('PROPS',loc.props)+list('EQUIPMENT',loc.equipment);
+    if(dl)out+='<dl class="pv-loc-dl">'+dl+'</dl>';
+    if(loc.note)out+='<p class="pv-loc-note">'+pesc(loc.note)+'</p>';
+    return out+'<div class="pv-loc-list">'+rows+'</div></article>';
+  }
+  var usableBreakdown=normalizeBreakdownForUse(projectBreakdown||[]);
+  if(cameraTotal&&usableBreakdown.length){
+    h+='<section class="pv-bd"><h2>Production plan by location &middot; '+usableBreakdown.length+'</h2>';
     var printed={};
-    projectBreakdown.forEach(function(loc,li){
-      (loc.shots||[]).forEach(function(lab){
-        var hit=byLabel[labKey(lab)];
-        if(hit)printed[labKey(hit.label)]=1;
-      });
-      h+=locBlock(li,loc.name,loc.timeOfDay,loc.cast,loc.wardrobe,loc.props,loc.note,loc.shots);
+    usableBreakdown.forEach(function(loc,li){
+      (loc.shots||[]).forEach(function(lab){printed[labKey(lab)]=1;});
+      h+=locBlock(li,loc);
     });
-    // a shot the breakdown never placed still has to be shot, so it cannot
-    // simply fall out of the document
-    var left=allShotLabels().filter(function(l){ return !printed[labKey(l)]; });
+    var left=allShotLabels().filter(function(l){return !printed[labKey(l)];});
     if(left.length){
-      h+=locBlock(projectBreakdown.length,'Not placed yet','',null,null,null,
-        'These have no location. Decide where they happen before you pack.',left);
+      h+=locBlock(usableBreakdown.length,{name:'Not placed yet',timeOfDay:'',shots:left,props:[],equipment:[],wardrobe:[],cast:[],note:'These camera shots have no location. Decide where they happen before you pack.'});
     }
     h+='</section>';
-  }else{
-    // no breakdown - story order, beats with their cuts underneath
-    h+='<section><h2>'+(isGraphicsLed()?'Scene &amp; asset plan':'Shot list')+'</h2>';
-    scenes.forEach(function(s){
-      h+='<article class="pv-sc">'+shotRow(s.label,s.head);
-      if(s.kids.length){
-        h+='<div class="pv-kids">';
-        s.kids.forEach(function(k){
-          h+='<div class="pv-kid">'
-            +'<div class="pv-kid-n">'+pesc(k.__label)+'</div>'
-            +'<div class="pv-kid-tc">'+pesc(k.tcStart)+'&ndash;'+pesc(k.tcEnd)+'</div>'
-            +'<div class="pv-kid-body"><div class="pv-kid-content">'+pesc(k.content)+'</div>'+details(k)+'</div>'
-            +frame(k)
-            +'</div>';
-        });
-        h+='</div>';
-      }
-      h+='</article>';
+  }else if(cameraTotal){
+    h+='<section class="pv-bd"><h2>'+(isGraphicsLed()?'Scene &amp; asset plan':'Shot list')+' &middot; '+cameraTotal+'</h2><div class="pv-loc-list">';
+    allShotLabels().forEach(function(label){var hit=byLabel[labKey(label)];if(hit)h+=shotRow(hit.label,hit.node,null,true);});
+    h+='</div></section>';
+  }
+  if(editCues.length){
+    h+='<section class="pv-edit"><h2>Edit notes &middot; '+editCues.length+' cue'+(editCues.length===1?'':'s')+'</h2><div class="pv-edit-list">';
+    editCues.forEach(function(n){
+      h+='<div class="pv-edit-row"><div class="pv-edit-id"><span class="pv-edit-n">'+pesc(n.__label||'')+'</span>'
+        +'<span class="pv-edit-tc">'+pesc(n.tcStart)+'&ndash;'+pesc(n.tcEnd)+'</span><span class="pv-edit-type">'+pesc(n.type.toUpperCase())+'</span></div>'
+        +'<div class="pv-edit-text">'+pesc(n.content)+'</div></div>';
     });
-    h+='</section>';
+    h+='</div></section>';
   }
   v.innerHTML=h;
 }
@@ -7084,7 +7215,23 @@ function doExport(){
     printNow();
   });
 }
-function printNow(){
+function printNow(cleanSettingConfirmed){
+  // Chrome owns the native print dialog; a website cannot toggle its header
+  // and footer checkbox. Explain the one setting that otherwise stamps the
+  // date, page URL and browser title across every exported page, once.
+  var reminded=false;
+  try{reminded=localStorage.getItem('gd-clean-pdf-reminder')==='1';}catch(e){}
+  var nativePrint=false;
+  try{nativePrint=/\[native code\]/.test(Function.prototype.toString.call(window.print));}catch(e){}
+  if(nativePrint&&!cleanSettingConfirmed&&!reminded){
+    return gdAsk({title:'One setting for a clean PDF',
+      message:'In the print window, open More settings and turn off Headers and footers. This removes the date, URL and browser title from every page.',
+      ok:'Open print window'}).then(function(ok){
+        if(!ok)return;
+        try{localStorage.setItem('gd-clean-pdf-reminder','1');}catch(e){}
+        printNow(true);
+      });
+  }
   buildPrintView();
   // browsers name the PDF after the document title
   var prev=document.title;

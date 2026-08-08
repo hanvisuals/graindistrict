@@ -88,7 +88,7 @@ const { pathToFileURL } = require('url');
     labels:[...document.querySelectorAll('.location-shot-card .nc-tag')].map(e=>e.textContent)
   }));
   console.log('TEST 8 - switching tabs replaces the board instead of extending it:',
-    studio.title==='Photo Studio'&&studio.shots===1&&studio.cues===2&&studio.transitions===1&&studio.details===0&&studio.labels[0]==='01e'?'PASS':'FAIL');
+    studio.title==='Photo Studio'&&studio.shots===1&&studio.cues===1&&studio.transitions===0&&studio.details===0&&studio.labels[0]==='01e'?'PASS':'FAIL');
   await page.click('#nc-3');await page.waitForTimeout(50);
   const expanded=await page.locator('#nc-3').evaluate(el=>({expanded:el.classList.contains('location-expanded'),more:el.querySelector('.location-card-more')?.textContent}));
   console.log('TEST 9 - clicking a compact card expands it in place:',expanded.expanded&&expanded.more==='less'?'PASS':'FAIL');
