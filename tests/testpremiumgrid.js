@@ -53,37 +53,34 @@ const APP = process.env.APP || path.resolve(__dirname, '..', 'index.html');
      titles:[...document.querySelectorAll('.location-title')].map(x=>x.textContent),cards:document.querySelectorAll('.location-shot-card').length,
      cues:document.querySelectorAll('.location-cue').length,transitions:document.querySelectorAll('.location-transition').length,
      labels:[...document.querySelectorAll('.location-shot-card .nc-tag')].map(x=>x.textContent.trim()),images:document.querySelectorAll('.img-node').length,notes:document.querySelectorAll('.note-node').length,
-     controls:[...document.querySelectorAll('.board-density-switch .board-deck-label,.board-detail-switch .board-deck-label')].map(x=>x.textContent.trim()),recalc:getComputedStyle(document.getElementById('btnRebreak')).display}));
-  ok('Locations lays every shoot frame side by side',location.mode==='location'&&location.lanes.length===2&&location.lanes[1].left>location.lanes[0].left+location.lanes[0].width&&location.titles.join(',')==='Apartment,City Street',location);
-  ok('Locations is a physical shot view, not a second story screen',location.cards===3&&location.cues===0&&location.transitions===0&&location.labels.join(',')==='01A,01B,02A'&&location.images===0&&location.notes===0,location);
-  ok('Location-only controls remain available where they have an effect',location.controls.join('/')==='Size/Detail'&&location.recalc!=='none',location);
+     densityDisplay:getComputedStyle(document.querySelector('.board-density-switch')).display,detailDisplay:getComputedStyle(document.querySelector('.board-detail-switch')).display,
+     leftDisplay:getComputedStyle(document.getElementById('leftPanel')).display,recalc:getComputedStyle(document.getElementById('btnRebreak')).display}));
+  ok('Locations opens one selected production matrix',location.mode==='location'&&location.lanes.length===1&&location.lanes[0].active&&location.titles.join(',')==='Apartment'&&location.leftDisplay==='none',location);
+  ok('Voiceover stays visible above compact physical-shot rows',location.cards===2&&location.cues===1&&location.transitions===0&&location.labels.join(',')==='01A,01B'&&location.images===0&&location.notes===0,location);
+  ok('Redundant size and detail controls stay out of the production matrix',location.densityDisplay==='none'&&location.detailDisplay==='none'&&location.recalc!=='none',location);
 
   const compact=await page.locator('#nc-2').evaluate(el=>({w:el.getBoundingClientRect().width,h:el.getBoundingClientRect().height}));
-  await page.click('#btnDensityComfortable');await page.waitForTimeout(80);
-  const comfortable=await page.locator('#nc-2').evaluate(el=>({w:el.getBoundingClientRect().width,h:el.getBoundingClientRect().height}));
-  ok('Comfortable density makes every location node roomier',comfortable.w>compact.w&&comfortable.h>compact.h,{compact,comfortable});
-  await page.click('#btnDetailEssential');await page.waitForTimeout(70);
-  const focus=await page.locator('#nc-2').evaluate(el=>({h:el.getBoundingClientRect().height,tc:getComputedStyle(el.querySelector('.nc-tc')).display}));
-  await page.click('#btnDetailFull');await page.waitForTimeout(70);
-  const full=await page.locator('#nc-2').evaluate(el=>({h:el.getBoundingClientRect().height,details:el.querySelectorAll('.story-card-detail').length,tc:getComputedStyle(el.querySelector('.nc-tc')).display}));
-  ok('Focus and Full alter node information without changing views',focus.h<comfortable.h&&focus.tc==='none'&&full.h>comfortable.h&&full.details===2&&full.tc!=='none',{focus,full});
+  await page.click('#nc-2');await page.waitForTimeout(80);
+  const expanded=await page.locator('#nc-2').evaluate(el=>({w:el.getBoundingClientRect().width,h:el.getBoundingClientRect().height,details:el.querySelectorAll('.story-card-detail').length,open:el.classList.contains('location-expanded')}));
+  const sibling=await page.locator('#nc-3').evaluate(el=>({h:el.getBoundingClientRect().height,open:el.classList.contains('location-expanded')}));
+  ok('Every shot is closed by default and only the chosen row opens',compact.h<50&&expanded.open&&expanded.h>compact.h&&expanded.details===2&&!sibling.open&&sibling.h<50,{compact,expanded,sibling});
 
   await page.getByRole('button',{name:/City Street/}).click();await page.waitForTimeout(100);
-  const focused=await page.evaluate(()=>({lanes:document.querySelectorAll('.location-lane').length,cards:document.querySelectorAll('.location-shot-card').length,active:activeLocationIndex,activeClass:document.querySelectorAll('.location-lane')[1].classList.contains('active')}));
-  ok('Navigator focuses a location without filtering the canvas',focused.lanes===2&&focused.cards===3&&focused.active===1&&focused.activeClass,focused);
+  const focused=await page.evaluate(()=>({lanes:document.querySelectorAll('.location-lane').length,cards:document.querySelectorAll('.location-shot-card').length,cues:document.querySelectorAll('.location-cue').length,title:document.querySelector('.location-title').textContent,active:activeLocationIndex,activeClass:document.querySelector('.location-lane').classList.contains('active'),expanded:locationExpandedNodeId}));
+  ok('Navigator swaps to a clean selected-location matrix',focused.lanes===1&&focused.cards===1&&focused.cues>=1&&focused.title==='City Street'&&focused.active===1&&focused.activeClass&&focused.expanded===null,focused);
 
   await page.evaluate(()=>window.gdAutosaveProject(true));await page.waitForTimeout(650);
   await page.evaluate(()=>show('s0'));await page.waitForTimeout(550);await page.click('#gdProjBtn');await page.waitForTimeout(650);await page.click('#gdProjBody .cf-card.cf-cur');await page.waitForTimeout(900);
-  const restored=await page.evaluate(()=>({mode:canvasViewMode,density:boardDensity,detail:boardCardDetail,base:itemsAtStoryPositions(nodes,'nodes').find(n=>n.id===1),lanes:document.querySelectorAll('.location-lane').length}));
-  ok('Location view and original Canvas coordinates survive reopen',restored.mode==='location'&&restored.density==='comfortable'&&restored.detail==='full'&&restored.base.x===85&&restored.base.y===110&&restored.lanes===2,restored);
+  const restored=await page.evaluate(()=>({mode:canvasViewMode,density:boardDensity,detail:boardCardDetail,base:itemsAtStoryPositions(nodes,'nodes').find(n=>n.id===1),lanes:document.querySelectorAll('.location-lane').length,cues:document.querySelectorAll('.location-cue').length}));
+  ok('Location matrix and original Canvas coordinates survive reopen',restored.mode==='location'&&restored.base.x===85&&restored.base.y===110&&restored.lanes===1&&restored.cues>=1,restored);
 
   await page.click('#btnCanvasView');await page.waitForTimeout(100);
   const back=await page.evaluate(()=>({mode:canvasViewMode,nodes:Object.fromEntries(nodes.map(n=>[n.id,{x:n.x,y:n.y}])),images:document.querySelectorAll('.img-node').length,notes:document.querySelectorAll('.note-node').length}));
   ok('Returning to Canvas restores the hand-arranged board exactly',back.mode==='free'&&Object.keys(canvas.manual).every(id=>back.nodes[id].x===canvas.manual[id].x&&back.nodes[id].y===canvas.manual[id].y)&&back.images===1&&back.notes===1,back);
 
   await page.setViewportSize({width:390,height:844});await page.click('#btnLocations');await page.waitForTimeout(220);
-  const mobile=await page.evaluate(()=>({pageW:document.documentElement.scrollWidth,vw:document.documentElement.clientWidth,views:document.querySelectorAll('.board-view-switch .board-deck-btn').length,lanes:document.querySelectorAll('.location-lane').length,tabs:document.querySelectorAll('.location-tab').length}));
-  ok('Phone keeps the two-view system and all location frames without page overflow',mobile.pageW<=mobile.vw&&mobile.views===2&&mobile.lanes===2&&mobile.tabs===2,mobile);
+  const mobile=await page.evaluate(()=>({pageW:document.documentElement.scrollWidth,vw:document.documentElement.clientWidth,views:document.querySelectorAll('.board-view-switch .board-deck-btn').length,lanes:document.querySelectorAll('.location-lane').length,tabs:document.querySelectorAll('.location-tab').length,rows:document.querySelectorAll('.location-shot-row').length,cues:document.querySelectorAll('.location-cue').length}));
+  ok('Phone keeps one compact selected matrix without page overflow',mobile.pageW<=mobile.vw&&mobile.views===2&&mobile.lanes===1&&mobile.tabs===2&&mobile.rows===2&&mobile.cues===1,mobile);
   ok('Simplified workspace creates no page errors',errors.length===0,errors);
 
   if(process.env.QA_DIR){await page.setViewportSize({width:1440,height:930});await page.waitForTimeout(220);await page.screenshot({path:path.join(process.env.QA_DIR,'location-canvas-desktop.png')});}

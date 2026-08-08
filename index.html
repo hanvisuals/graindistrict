@@ -153,8 +153,8 @@ body #s0{align-items:stretch;justify-content:flex-start;position:relative;isolat
 .vp.panning{cursor:grabbing;}
 .vp.connecting{cursor:crosshair;}
 .cw{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform;}
-/* Locations is the same board regrouped into side-by-side shoot frames. The
-   navigator only focuses a frame; it never hides the other locations. */
+/* Locations is a production matrix: one selected shoot location, its open
+   voiceover context and compact physical-shot rows. */
 .location-nav{display:none;position:absolute;left:14px;right:14px;top:12px;z-index:55;align-items:center;gap:8px;padding:7px;background:rgba(14,14,14,.92);border:1px solid rgba(255,255,255,.1);border-radius:13px;box-shadow:0 12px 38px rgba(0,0,0,.55);backdrop-filter:blur(18px);}
 .location-nav.show{display:flex;}
 .location-nav-label{font-family:var(--mono);font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.25);padding:0 6px;white-space:nowrap;}
@@ -1710,6 +1710,41 @@ body:not(.free-mode) .guide-show{display:none!important;}
 .location-nav{border-radius:17px;background:rgba(11,12,11,.84);box-shadow:0 16px 54px rgba(0,0,0,.42),inset 0 1px rgba(255,255,255,.035);}
 .location-tab.on{box-shadow:0 7px 20px rgba(0,0,0,.18),inset 0 1px rgba(255,255,255,.035);}
 
+/* Production Matrix: one calm shoot location at a time. Voiceover stays open
+   as narrative context; every physical shot is a closed, single-line record
+   until the user asks for its production details. */
+.cw.location-view .location-lane{border-radius:24px;background:linear-gradient(145deg,rgba(23,25,24,.91),rgba(10,11,11,.975) 58%,rgba(34,47,60,.12));box-shadow:0 30px 90px rgba(0,0,0,.34),inset 0 1px rgba(255,255,255,.03);}
+.cw.location-view .location-lane::before{content:'';position:absolute;left:23px;right:23px;top:103px;height:1px;background:linear-gradient(90deg,rgba(255,255,255,.08),rgba(255,255,255,.015));}
+.cw.location-view .location-lane .location-head{left:24px;right:24px;top:20px;align-items:flex-start;}
+.cw.location-view .location-lane .location-title{font-size:22px;letter-spacing:-.02em;}
+.cw.location-view .location-lane .location-index{padding-top:6px;color:rgba(224,194,95,.78);}
+.cw.location-view .location-lane .location-meta{left:24px;right:24px;top:103px;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 22px;padding-top:15px;}
+.cw.location-view .location-cue{grid-template-columns:88px minmax(0,1fr) 78px;align-items:start;gap:18px;padding:16px 18px;border:1px solid rgba(224,194,95,.17);border-left:2px solid rgba(224,194,95,.84);border-radius:12px;background:linear-gradient(100deg,rgba(224,194,95,.085),rgba(224,194,95,.025) 58%,rgba(255,255,255,.018));box-shadow:inset 0 1px rgba(255,255,255,.025);}
+.cw.location-view .location-cue:hover{transform:translateX(2px);background:linear-gradient(100deg,rgba(224,194,95,.12),rgba(224,194,95,.035) 58%,rgba(255,255,255,.025));}
+.cw.location-view .location-cue-label{padding-top:2px;font-size:8px;line-height:1.45;letter-spacing:.13em;}
+.cw.location-view .location-cue-text{font-size:13px;line-height:1.55;color:rgba(255,255,255,.78);white-space:normal;overflow:visible;text-overflow:clip;}
+.cw.location-view .location-cue-time{padding-top:2px;text-align:right;font-size:8px;line-height:1.45;}
+.cw.location-view .location-shot-card.location-shot-row{display:block;padding:0;border:1px solid rgba(255,255,255,.065);border-radius:10px;background:linear-gradient(90deg,rgba(116,169,232,.045),rgba(255,255,255,.018) 18%,rgba(255,255,255,.01));box-shadow:none;overflow:hidden;cursor:pointer;text-align:left;color:inherit;transition:border-color .16s,background .16s,transform .16s,box-shadow .16s;}
+.cw.location-view .location-shot-card.location-shot-row:hover{transform:translateX(3px);border-color:rgba(116,169,232,.24);background:linear-gradient(90deg,rgba(116,169,232,.085),rgba(255,255,255,.025) 22%,rgba(255,255,255,.014));box-shadow:0 9px 28px rgba(0,0,0,.22);}
+.cw.location-view .location-shot-card.location-shot-row.sel{border-color:rgba(116,169,232,.38);box-shadow:0 0 0 1px rgba(116,169,232,.1),0 12px 32px rgba(0,0,0,.24);}
+.location-row-main{display:grid;grid-template-columns:48px 58px minmax(0,1fr) 82px 54px 22px;align-items:center;gap:10px;width:100%;height:43px;padding:0 13px;}
+.location-row-id{position:static!important;font-family:var(--mono);font-size:9px!important;font-weight:700;letter-spacing:.12em;color:rgba(116,169,232,.96)!important;}
+.location-row-kind{font-family:var(--mono);font-size:7px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(116,169,232,.62);}
+.location-row-text{min-width:0;font-family:var(--sans);font-size:11px!important;line-height:1.35!important;color:rgba(255,255,255,.72);white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;display:block!important;}
+.location-row-time{margin:0!important;padding:0!important;border:0!important;font-size:7px!important;text-align:right;color:rgba(255,255,255,.25);white-space:nowrap;}
+.location-row-signals{display:flex!important;justify-content:flex-end;align-items:center;gap:4px;margin:0!important;padding:0!important;}
+.location-row-signals i{display:block;width:5px;height:5px;border-radius:50%;box-shadow:0 0 8px currentColor;}
+.location-row-chevron{font-family:var(--mono);font-size:13px;line-height:1;color:rgba(255,255,255,.28);text-align:right;}
+.location-shot-row.location-expanded .location-row-main{height:auto;min-height:43px;align-items:start;padding-top:12px;padding-bottom:11px;border-bottom:1px solid rgba(255,255,255,.055);}
+.location-shot-row.location-expanded .location-row-text{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;}
+.location-shot-row.location-expanded .location-row-chevron{color:rgba(224,194,95,.75);}
+.location-row-details{display:block;padding:11px 16px 14px 116px;}
+.location-row-details .story-card-details{margin:0;padding-top:0;border-top:0;gap:7px;}
+.location-row-details .story-card-detail{grid-template-columns:62px minmax(0,1fr);font-size:10px;line-height:1.45;}
+.location-row-details .story-card-detail b{font-size:7px;}
+body.location-mode .board-deck-group:not(.board-view-switch),body.location-mode .board-deck-sep{display:none;}
+body.location-mode .left-panel,body.location-mode .panel-scrim,body.location-mode #panelToggle,body.location-mode .toolbar{display:none!important;}
+
 body.story-mode .left-panel,body.location-mode .left-panel{background:linear-gradient(180deg,rgba(13,14,13,.98),rgba(9,10,9,.985));}
 body.story-mode .nc-drawer,body.story-mode .nc-sb-btn{display:none!important;}
 body.free-mode .board-deck-group:not(.board-view-switch),body.free-mode .board-deck-sep{display:none;}
@@ -1736,6 +1771,18 @@ body.free-mode .board-deck-group:not(.board-view-switch),body.free-mode .board-d
   .story-cue-id{grid-column:1/-1;}
   .story-cue-copy{font-size:12px;}
   .story-cue-meta{align-self:end;}
+  .cw.location-view .location-lane .location-head{left:16px;right:16px;top:17px;gap:9px;}
+  .cw.location-view .location-lane .location-title{font-size:18px;}
+  .cw.location-view .location-lane::before{left:16px;right:16px;top:113px;}
+  .cw.location-view .location-lane .location-meta{left:16px;right:16px;top:113px;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 14px;}
+  .cw.location-view .location-cue{grid-template-columns:1fr auto;gap:8px 12px;padding:14px;}
+  .cw.location-view .location-cue-label{grid-column:1;}
+  .cw.location-view .location-cue-time{grid-column:2;grid-row:1;}
+  .cw.location-view .location-cue-text{grid-column:1 / -1;font-size:12px;}
+  .location-row-main{grid-template-columns:42px minmax(0,1fr) 18px;gap:8px;height:51px;padding:0 11px;}
+  .location-row-kind,.location-row-time,.location-row-signals{display:none!important;}
+  .location-row-text{font-size:10.5px!important;}
+  .location-row-details{padding:10px 12px 13px;}
 }
 @media (prefers-reduced-motion:reduce){.story-lane,.cw.story-view .story-shot-card{animation:none!important}.story-cue,.board-deck-btn{transition:none!important}}
 
@@ -4791,45 +4838,49 @@ function buildLocationGroups(){
     group.displayNodes=display;
   });
 }
-function expandedLocationCardHeight(node){
-  var metric=boardCardMetrics(node,'location');
-  if(locationExpandedNodeId!==node.id)return metric.height;
-  var lines=String(node.content||'').split('\n').reduce(function(total,line){return total+Math.max(1,Math.ceil(line.length/(boardDensity==='compact'?23:30)));},0);
-  var details=attShots.filter(function(a){return a.parentId===node.id&&shotDetailText(a);}).length;
-  return Math.max(metric.height,105+lines*15+details*34);
+function locationCueHeight(node,contentWidth,phone){
+  var copyWidth=Math.max(180,contentWidth-(phone?30:190));
+  var lineChars=Math.max(28,Math.floor(copyWidth/(phone?6.2:6.8)));
+  var lines=Math.max(1,Math.ceil(String(node.content||'').length/lineChars));
+  return Math.max(phone?82:68,(phone?54:48)+lines*(phone?16:15));
+}
+function expandedLocationCardHeight(node,phone){
+  if(locationExpandedNodeId!==node.id)return phone?52:44;
+  var lineChars=phone?34:92;
+  var lines=Math.max(1,Math.ceil(String(node.content||'').length/lineChars));
+  var details=attShots.filter(function(a){return a.parentId===node.id&&shotDetailText(a);});
+  var detailLines=details.reduce(function(total,a){return total+Math.max(1,Math.ceil(shotDetailText(a).length/(phone?30:78)));},0);
+  return Math.max(phone?126:112,(phone?82:74)+lines*16+details.length*(phone?17:13)+detailLines*(phone?17:15));
 }
 function layoutLocationView(){
   if(canvasViewMode!=='location'||!projectBreakdown)return;
   ensureLocationStoryPositions();buildLocationGroups();
   if(!locationGroups.length){locationLanes=[];locationVisibleNodeIds={};return;}
   activeLocationIndex=Math.max(0,Math.min(activeLocationIndex,locationGroups.length-1));
-  var vpEl=document.getElementById('vp');
+  var group=locationGroups[activeLocationIndex],vpEl=document.getElementById('vp');
   var vpWidth=(vpEl&&vpEl.clientWidth)||1000;
   var phone=vpWidth<600;
-  var laneWidth=phone?Math.max(326,Math.min(360,vpWidth-28)):(boardDensity==='compact'?430:510);
-  var startX=phone?18:46,startY=phone?78:64,pad=phone?16:22,laneGap=phone?18:28;
-  var locationCardW=phone?laneWidth-pad*2:(boardDensity==='compact'?176:214),locationGap=boardDensity==='compact'?13:17;
-  var cols=phone?1:2,x=startX;
-  locationVisibleNodeIds={};locationLanes=[];
-  locationGroups.forEach(function(group,groupIndex){
-    var contentWidth=laneWidth-pad*2,gridWidth=cols*locationCardW+(cols-1)*locationGap;
-    var gridX=x+pad+Math.max(0,Math.floor((contentWidth-gridWidth)/2));
-    var detailsOpen=locationDetailsOpen&&groupIndex===activeLocationIndex;
-    var headerHeight=detailsOpen?184:112,y=startY+headerHeight,col=0,rowHeight=0;
-    function flushRow(){if(!col)return;y+=rowHeight+30;col=0;rowHeight=0;}
-    var visuals=locationVisualNodes(group.nodes);
-    visuals.forEach(function(n){
-      locationVisibleNodeIds[n.id]=1;n.__locationKind='shot';n.__locationWidth=locationCardW;n.__locationHeight=expandedLocationCardHeight(n);
-      n.x=gridX+col*(locationCardW+locationGap);n.y=y;rowHeight=Math.max(rowHeight,n.__locationHeight);col++;
-      if(col>=cols)flushRow();
-    });
-    flushRow();
-    var laneHeight=Math.max(286,y-startY+4);
-    locationLanes.push({x:x,y:startY,width:laneWidth,height:laneHeight,index:groupIndex+1,
-      location:group.location,nodes:group.nodes,unplaced:group.unplaced,detailsOpen:detailsOpen,
-      visualCount:visuals.length,cueCount:0,transitionCount:0});
-    x+=laneWidth+laneGap;
+  var laneWidth=phone?Math.max(334,Math.min(370,vpWidth-24)):Math.max(700,Math.min(960,vpWidth-96));
+  var startX=phone?16:48,startY=phone?78:64,pad=phone?14:24;
+  var contentWidth=laneWidth-pad*2,detailsOpen=locationDetailsOpen;
+  var headerHeight=detailsOpen?(phone?238:188):(phone?118:108),y=startY+headerHeight;
+  var display=(group.displayNodes||group.nodes).filter(function(n){return !isLocationTransitionNode(n);});
+  locationVisibleNodeIds={};
+  var cueCount=0,visualCount=0;
+  display.forEach(function(n,displayIndex){
+    locationVisibleNodeIds[n.id]=1;n.__locationWidth=contentWidth;n.x=startX+pad;
+    if(isLocationCueNode(n)){
+      cueCount++;n.__locationKind='cue';n.__locationHeight=locationCueHeight(n,contentWidth,phone);
+      if(displayIndex)y+=phone?8:10;
+    }else{
+      visualCount++;n.__locationKind='shot';n.__locationHeight=expandedLocationCardHeight(n,phone);
+    }
+    n.y=y;y+=n.__locationHeight+(isLocationCueNode(n)?8:6);
   });
+  var laneHeight=Math.max(phone?330:300,y-startY+pad);
+  locationLanes=[{x:startX,y:startY,width:laneWidth,height:laneHeight,index:activeLocationIndex+1,
+    location:group.location,nodes:group.nodes,unplaced:group.unplaced,detailsOpen:detailsOpen,
+    visualCount:visualCount,cueCount:cueCount,transitionCount:0}];
 }
 function locationCountChip(parent,text){var chip=document.createElement('span');chip.className='location-chip';chip.textContent=text;parent.appendChild(chip);}
 function addLocationMeta(parent,key,values){
@@ -4850,6 +4901,7 @@ function renderLocationLanes(cw){
     var title=document.createElement('div');title.className='location-title';title.textContent=loc.name||'Unnamed location';title.title=title.textContent;
     var sub=document.createElement('div');sub.className='location-sub';
     locationCountChip(sub,lane.visualCount+(lane.visualCount===1?' shot':' shots'));
+    if(lane.cueCount)locationCountChip(sub,lane.cueCount+(lane.cueCount===1?' voiceover':' voiceovers'));
     if(loc.timeOfDay)locationCountChip(sub,loc.timeOfDay);
     titleWrap.appendChild(title);titleWrap.appendChild(sub);
     var summary=document.createElement('div');summary.className='location-summary';
@@ -4887,7 +4939,7 @@ function selectLocationIndex(index){
 }
 function focusActiveLocation(){
   if(!locationLanes.length)return;
-  var vpEl=document.getElementById('vp'),r=vpEl.getBoundingClientRect(),lane=locationLanes[activeLocationIndex]||locationLanes[0];
+  var vpEl=document.getElementById('vp'),r=vpEl.getBoundingClientRect(),lane=locationLanes[0];
   var sc=Math.min(.92,(r.width-28)/lane.width);
   scale=Math.max(.48,sc);px=r.width/2-(lane.x+lane.width/2)*scale;py=72-lane.y*scale;updateT();
 }
@@ -4898,11 +4950,32 @@ function selectLocationCanvasNode(node){
 }
 function renderLocationCue(cw,node){
   var el=document.createElement('button');el.className='location-cue'+(node.id===selId?' sel':'');el.id='nc-'+node.id;
-  el.style.cssText='left:'+node.x+'px;top:'+node.y+'px;width:'+node.__locationWidth+'px;';
+  el.style.cssText='left:'+node.x+'px;top:'+node.y+'px;width:'+node.__locationWidth+'px;height:'+node.__locationHeight+'px;';
   var label=document.createElement('span');label.className='location-cue-label';label.textContent=(node.__label||'')+' '+(node.type==='music'?'music':'voiceover');
   var text=document.createElement('span');text.className='location-cue-text';text.textContent=node.content;
   var time=document.createElement('span');time.className='location-cue-time';time.textContent=node.tcStart+' – '+node.tcEnd;
   el.appendChild(label);el.appendChild(text);el.appendChild(time);el.onclick=function(e){e.stopPropagation();selectLocationCanvasNode(node);};cw.appendChild(el);
+}
+function renderLocationShotRow(cw,node){
+  var expanded=locationExpandedNodeId===node.id;
+  var el=document.createElement('div');el.className='nc location-shot-card location-shot-row'+(expanded?' location-expanded detail-full':'')+(node.id===selId?' sel':'');el.id='nc-'+node.id;el.setAttribute('data-t',node.type);el.setAttribute('role','button');el.tabIndex=0;
+  el.style.cssText='left:'+node.x+'px;top:'+node.y+'px;width:'+node.__locationWidth+'px;height:'+node.__locationHeight+'px;';
+  var main=document.createElement('div');main.className='location-row-main';
+  var id=document.createElement('span');id.className='nc-tag location-row-id';id.textContent=storyLabelText(node);
+  var kind=document.createElement('span');kind.className='location-row-kind';kind.textContent=TL[node.type]||node.type;
+  var text=document.createElement('span');text.className='nc-text location-row-text';text.textContent=node.content;
+  var time=document.createElement('span');time.className='nc-tc location-row-time';time.textContent=node.tcStart+' – '+node.tcEnd;
+  var signals=document.createElement('span');signals.className='nc-footer location-row-signals';
+  attShots.filter(function(a){return a.parentId===node.id&&shotDetailText(a);}).forEach(function(a){var dot=document.createElement('i');dot.style.background=SK[a.k]||'#555';signals.appendChild(dot);});
+  var toggle=document.createElement('span');toggle.className='location-row-chevron';toggle.textContent=expanded?'−':'+';
+  main.appendChild(id);main.appendChild(kind);main.appendChild(text);main.appendChild(time);main.appendChild(signals);main.appendChild(toggle);el.appendChild(main);
+  if(expanded){
+    var detail=document.createElement('div');detail.className='location-row-details';
+    renderCardDetails(detail,node);el.appendChild(detail);
+  }
+  function toggleRow(e){e.stopPropagation();selId=node.id;selImgId=null;selNoteId=null;locationExpandedNodeId=expanded?null:node.id;renderAll();}
+  el.onclick=toggleRow;el.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleRow(e);}};
+  cw.appendChild(el);
 }
 function renderLocationTransition(cw,node){
   var el=document.createElement('button');el.className='location-transition'+(node.id===selId?' sel':'');el.id='nc-'+node.id;
@@ -6249,7 +6322,15 @@ function renderCanvas(){
   cw.classList.toggle('location-view',canvasViewMode==='location');
   cw.classList.toggle('story-view',canvasViewMode==='story');
   if(canvasViewMode==='story')renderStoryLanes(cw);
-  if(canvasViewMode==='location')renderLocationLanes(cw);
+  if(canvasViewMode==='location'){
+    renderLocationLanes(cw);
+    nodes.forEach(function(node){
+      if(!locationVisibleNodeIds[node.id])return;
+      if(node.__locationKind==='cue')renderLocationCue(cw,node);
+      else renderLocationShotRow(cw,node);
+    });
+    return;
+  }
   nodes.forEach(function(node,idx){
     if(canvasViewMode==='story'&&!storyVisibleNodeIds[node.id])return;
     if(canvasViewMode==='story'&&node.__storyKind==='cue'){renderStoryCue(cw,node);return;}
