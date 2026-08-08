@@ -46,6 +46,7 @@ const APP = process.env.APP || path.resolve(__dirname, '..', 'index.html');
     active:[...document.querySelectorAll('.board-view-switch .board-deck-btn.on')].map(x=>x.textContent.trim()),
     controlLabels:[...document.querySelectorAll('.board-density-switch .board-deck-label,.board-detail-switch .board-deck-label')].map(x=>x.textContent.trim()),
     controlsClickable:[...document.querySelectorAll('.board-density-switch .board-deck-btn,.board-detail-switch .board-deck-btn')].every(x=>getComputedStyle(x).pointerEvents!=='none'),
+    visibleLabels:[...document.querySelectorAll('.story-cue,.story-shot-card')].map(x=>x.querySelector('.story-cue-id,.nc-tag').textContent.trim()),
     laneBoxes:[...document.querySelectorAll('.story-lane')].map(x=>({left:parseFloat(x.style.left),top:parseFloat(x.style.top),width:parseFloat(x.style.width),height:parseFloat(x.style.height)})),
     nodeTops:[...document.querySelectorAll('.story-cue,.story-shot-card')].map(x=>parseFloat(x.style.top)),
     links:document.querySelectorAll('.story-link').length,scale:scale,
@@ -54,6 +55,7 @@ const APP = process.env.APP || path.resolve(__dirname, '..', 'index.html');
   ok('Story is the deliberate default production hierarchy',story.mode==='story'&&story.lanes===2&&story.cues===2&&story.cards===4&&story.voiceCards===0,story);
   ok('Voiceover is context while freeform objects stay out of Story',story.images===0&&story.notes===0&&story.connections===0&&story.toolbar==='none',story);
   ok('Size and Detail controls are labelled and clickable where they apply',story.controlLabels.join('/')==='Size/Detail'&&story.controlsClickable,story);
+  ok('Visual nodes inherit their parent voiceover number',JSON.stringify(story.visibleLabels)===JSON.stringify(['01 / voiceover','01A','01B','01C','02 / voiceover','02A']),story.visibleLabels);
   ok('Story scenes form one compact horizontal node flow',story.laneBoxes[1].left>story.laneBoxes[0].left+story.laneBoxes[0].width&&story.laneBoxes.every(x=>x.top===story.laneBoxes[0].top&&x.height<250)&&new Set(story.nodeTops).size===1&&story.links===4&&story.scale>=.88&&story.active[0]==='Story'&&/story-mode/.test(story.body),story);
 
   const compact=await page.locator('#nc-2').evaluate(el=>({w:el.getBoundingClientRect().width,h:el.getBoundingClientRect().height,tc:getComputedStyle(el.querySelector('.nc-tc')).display}));
@@ -72,11 +74,13 @@ const APP = process.env.APP || path.resolve(__dirname, '..', 'index.html');
     mode:canvasViewMode,nodes:Object.fromEntries(nodes.map(n=>[n.id,{x:n.x,y:n.y}])),manual:Object.fromEntries(window.__manual.map(n=>[n.id,{x:n.x,y:n.y}])),
     images:document.querySelectorAll('.img-node').length,notes:document.querySelectorAll('.note-node').length,connections:document.querySelectorAll('.conn-path').length,
     toolbar:getComputedStyle(document.getElementById('toolbar')).pointerEvents,body:document.body.className,
-    densityDisplay:getComputedStyle(document.querySelector('.board-density-switch')).display,detailDisplay:getComputedStyle(document.querySelector('.board-detail-switch')).display
+    densityDisplay:getComputedStyle(document.querySelector('.board-density-switch')).display,detailDisplay:getComputedStyle(document.querySelector('.board-detail-switch')).display,
+    cardLabels:[...document.querySelectorAll('.nc-tag')].map(x=>x.textContent.trim()),listLabels:[...document.querySelectorAll('.bl-num')].map(x=>x.textContent.trim())
   }));
   ok('Canvas restores every hand-positioned coordinate exactly',canvas.mode==='free'&&Object.keys(canvas.manual).every(id=>canvas.nodes[id].x===canvas.manual[id].x&&canvas.nodes[id].y===canvas.manual[id].y),canvas);
   ok('Freeform images, notes, links and creation tools only return in Canvas',canvas.images===1&&canvas.notes===1&&canvas.connections===1&&canvas.toolbar==='auto'&&/free-mode/.test(canvas.body),canvas);
   ok('Canvas hides controls that do not affect freeform nodes',canvas.densityDisplay==='none'&&canvas.detailDisplay==='none',canvas);
+  ok('Canvas and the block list keep the same parent-child numbering',JSON.stringify(canvas.cardLabels)===JSON.stringify(['01','01A','01B','01C','02','02A'])&&JSON.stringify(canvas.listLabels)===JSON.stringify(canvas.cardLabels),canvas);
 
   await page.click('#btnStoryView');await page.waitForTimeout(70);await page.click('#btnLocations');await page.waitForTimeout(120);
   const location=await page.evaluate(()=>({mode:canvasViewMode,tabs:document.querySelectorAll('.location-tab').length,lanes:document.querySelectorAll('.location-lane').length,cues:document.querySelectorAll('.location-cue').length,cards:document.querySelectorAll('.location-shot-card').length,recalc:getComputedStyle(document.getElementById('btnRebreak')).display}));

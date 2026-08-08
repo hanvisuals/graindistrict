@@ -62,7 +62,7 @@ const { pathToFileURL } = require('url');
   console.log('TEST 2 - VO becomes context and only visual shots become cards:',
     home.cues===2&&home.shots===5&&home.transitions===0?'PASS':'FAIL');
   console.log('TEST 3 - production labels stay on compact cards:',
-    JSON.stringify(home.labels)===JSON.stringify(['01a','01b','01c','01d','02a'])&&
+    JSON.stringify(home.labels)===JSON.stringify(['01A','01B','01C','01D','02A'])&&
     new Set(home.cardPos.slice(0,4).map(p=>p.top)).size===1&&new Set(home.cardPos.slice(0,4).map(p=>p.left)).size===4?'PASS':'FAIL');
   console.log('TEST 4 - the compact header separates shot count from VO context:',
     home.header.includes('5 shots')&&home.header.includes('2 VO cues')&&!home.header.some(x=>x.includes('7 shots'))?'PASS':'FAIL');
@@ -88,7 +88,7 @@ const { pathToFileURL } = require('url');
     labels:[...document.querySelectorAll('.location-shot-card .nc-tag')].map(e=>e.textContent)
   }));
   console.log('TEST 8 - switching tabs replaces the board instead of extending it:',
-    studio.title==='Photo Studio'&&studio.shots===1&&studio.cues===1&&studio.transitions===0&&studio.details===0&&studio.labels[0]==='01e'?'PASS':'FAIL');
+    studio.title==='Photo Studio'&&studio.shots===1&&studio.cues===1&&studio.transitions===0&&studio.details===0&&studio.labels[0]==='01E'?'PASS':'FAIL');
   await page.click('#nc-3');await page.waitForTimeout(50);
   const expanded=await page.locator('#nc-3').evaluate(el=>({expanded:el.classList.contains('location-expanded'),more:el.querySelector('.location-card-more')?.textContent}));
   console.log('TEST 9 - clicking a compact card expands it in place:',expanded.expanded&&expanded.more==='less'?'PASS':'FAIL');

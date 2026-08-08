@@ -1833,7 +1833,7 @@ body.free-mode .board-deck-group:not(.board-view-switch),body.free-mode .board-d
   .pv-vo-row{display:grid;grid-template-columns:25mm 1fr;gap:5mm;padding:2.2mm 0;border-top:1px solid #ececec;
              break-inside:avoid;page-break-inside:avoid;}
   .pv-vo-id{display:flex;align-items:baseline;gap:2mm;flex-wrap:wrap;}
-  .pv-vo-n{font-family:var(--mono);font-size:10pt;font-weight:700;color:#111;}
+.pv-vo-n{font-family:var(--mono);font-size:10pt;font-weight:700;color:#111;text-transform:uppercase;}
   .pv-vo-tc{font-family:var(--mono);font-size:7pt;color:#888;white-space:nowrap;}
   .pv-vo-text{font-size:9.5pt;line-height:1.45;color:#222;}
   .pv-edit{margin:8mm 0 10mm;}
@@ -1841,7 +1841,7 @@ body.free-mode .board-deck-group:not(.board-view-switch),body.free-mode .board-d
   .pv-edit-row{display:grid;grid-template-columns:34mm 1fr;gap:5mm;padding:1.8mm 0;border-top:1px solid #ececec;
                break-inside:avoid;page-break-inside:avoid;}
   .pv-edit-id{display:flex;align-items:baseline;gap:2mm;}
-  .pv-edit-n{font-family:var(--mono);font-size:8.5pt;font-weight:700;color:#555;}
+.pv-edit-n{font-family:var(--mono);font-size:8.5pt;font-weight:700;color:#555;text-transform:uppercase;}
   .pv-edit-tc{font-family:var(--mono);font-size:7pt;color:#999;white-space:nowrap;}
   .pv-edit-type{font-family:var(--mono);font-size:6pt;font-weight:700;letter-spacing:.1em;color:#999;}
   .pv-edit-text{font-size:9pt;line-height:1.4;color:#444;}
@@ -5814,6 +5814,9 @@ function renderAll(){
   // Saved boards created before duration prose was banned are repaired in
   // memory as soon as they render; the operation is idempotent.
   nodes.forEach(function(n){n.content=stripDurationClaims(n.type,n.content);});
+  // Story labels are semantic IDs, not canvas positions: keep 01 / 01A / 01B
+  // consistent in every view, including a hand-arranged free Canvas.
+  storyScenes();
   if(canvasViewMode==='story')layoutStoryView();
   if(canvasViewMode==='location')layoutLocationView();
   syncBoardViewControls();renderLocationNav();renderBlockList();renderBlockDetail();renderCanvas();renderImgNodes();renderNoteNodes();renderConns();renderTL();renderMusicStrip();updateRecceBtn();updateT();
@@ -5827,7 +5830,7 @@ function renderBlockList(){
     var item=document.createElement('div');
     item.className='bl-item'+(node.id===selId?' sel':'');
     var dot=document.createElement('div');dot.className='bl-dot';dot.style.background=DC[node.type]||'#555';
-    var num=document.createElement('span');num.className='bl-num';num.textContent=String(idx+1).padStart(2,'0');
+    var num=document.createElement('span');num.className='bl-num';num.textContent=storyLabelText(node,String(idx+1).padStart(2,'0'));
     var txt=document.createElement('span');txt.className='bl-text';txt.textContent=node.content;
     var tc=document.createElement('span');tc.className='bl-tc';tc.textContent=node.tcStart;
     item.appendChild(dot);item.appendChild(num);item.appendChild(txt);item.appendChild(tc);
@@ -5855,7 +5858,7 @@ function renderBlockDetail(){
 
   // Header
   var row=document.createElement('div');row.className='bd-row';
-  var num=document.createElement('span');num.className='bd-num';num.textContent='block '+String(idx+1).padStart(2,'0');
+  var num=document.createElement('span');num.className='bd-num';num.textContent='block '+storyLabelText(node,String(idx+1).padStart(2,'0'));
   var acts=document.createElement('div');acts.className='bd-acts';
   var dupBtn=document.createElement('button');dupBtn.className='bd-act';dupBtn.textContent='duplicate';
   dupBtn.onclick=function(){saveHistory();dupNode(node.id);};
@@ -6205,7 +6208,7 @@ function renderCanvas(){
     var cardHeight=locationCard?node.__locationHeight:(storyCard?node.__storyHeight:null);
     el.style.cssText+=';left:'+node.x+'px;top:'+node.y+'px;width:'+cardWidth+'px;'+(cardHeight?'height:'+cardHeight+'px;':'');
     var stripe=document.createElement('div');stripe.className='nc-stripe';
-    var tag=document.createElement('div');tag.className='nc-tag';tag.textContent=canvasViewMode!=='free'?(node.__label||String(idx+1).padStart(2,'0')):String(idx+1).padStart(2,'0');
+    var tag=document.createElement('div');tag.className='nc-tag';tag.textContent=storyLabelText(node,String(idx+1).padStart(2,'0'));
     var inner=document.createElement('div');inner.className='nc-inner';
     var badge=document.createElement('div');badge.className='nc-badge';badge.textContent=TL[node.type]||node.type;
     var txt=document.createElement('div');txt.className='nc-text';txt.textContent=node.content;
@@ -7060,11 +7063,13 @@ function cleanGeneratedShotDetails(node,list){
    simply have no spine and stay flat. */
 var SPINE={voiceover:1,music:1,scene:1,main:1,segment:1};
 function subLabel(n,j){ return j<26 ? n+String.fromCharCode(97+j) : n+'.'+(j+1); }
+function storyLabelText(node,fallback){ return String(node&&node.__label||fallback||'').toUpperCase(); }
 function planScenes(){
   var out=[],cur=null;
   nodes.forEach(function(n){
     if(SPINE[n.type]){ cur={head:n,kids:[]}; out.push(cur); return; }
-    if(cur&&tcToSec(n.tcStart)<tcToSec(cur.head.tcEnd)){ cur.kids.push(n); return; }
+    var sameGroup=cur&&n.grp!=null&&cur.head.grp!=null&&n.grp===cur.head.grp;
+    if(cur&&(sameGroup||tcToSec(n.tcStart)<tcToSec(cur.head.tcEnd))){ cur.kids.push(n); return; }
     out.push({head:n,kids:[]});          // nothing to belong to, so it is its own beat
   });
   out.forEach(function(s,i){
