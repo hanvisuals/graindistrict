@@ -1598,7 +1598,8 @@ body.location-mode #btnRebreak{display:inline-flex!important;}
   #printView{display:block!important;color:#111;font-family:var(--sans);}
   #printView h1{font-size:22pt;font-weight:600;letter-spacing:-.01em;margin:2mm 0 1mm;}
   #printView h2{font-size:8pt;font-weight:700;letter-spacing:.2em;text-transform:uppercase;
-                color:#999;margin:0 0 5mm;padding-bottom:2mm;border-bottom:1px solid #e6e6e6;}
+                color:#999;margin:0 0 5mm;padding-bottom:2mm;border-bottom:1px solid #e6e6e6;
+                break-after:avoid;page-break-after:avoid;}
   .pv-head{margin-bottom:11mm;}
   .pv-brand{font-family:var(--mono);font-size:8pt;letter-spacing:.4em;color:#888;}
   .pv-meta{font-family:var(--mono);font-size:8pt;color:#777;letter-spacing:.04em;text-transform:uppercase;}
@@ -1618,6 +1619,17 @@ body.location-mode #btnRebreak{display:inline-flex!important;}
   .pv-brief-body .bd-li::before{content:'—';position:absolute;left:0;color:#aaa;}
   .pv-brief-body .bd-bold{color:#111!important;font-weight:700!important;}
   .pv-brief-body .bd-hr{border:none!important;border-top:1px solid #ddd!important;margin:3mm 0!important;display:block;}
+  /* Narration is its own deliverable. Location grouping can move a cue away
+     from the images it covers, so the complete script is printed once in
+     story order before the production breakdown. */
+  .pv-vo{margin-bottom:10mm;}
+  .pv-vo-list{border-bottom:1px solid #ececec;}
+  .pv-vo-row{display:grid;grid-template-columns:25mm 1fr;gap:5mm;padding:2.2mm 0;border-top:1px solid #ececec;
+             break-inside:avoid;page-break-inside:avoid;}
+  .pv-vo-id{display:flex;align-items:baseline;gap:2mm;flex-wrap:wrap;}
+  .pv-vo-n{font-family:var(--mono);font-size:10pt;font-weight:700;color:#111;}
+  .pv-vo-tc{font-family:var(--mono);font-size:7pt;color:#888;white-space:nowrap;}
+  .pv-vo-text{font-size:9.5pt;line-height:1.45;color:#222;}
   /* a row must not be split across a page - half a shot on each side of a
      page break is useless to whoever is holding it */
 
@@ -6846,6 +6858,26 @@ function buildPrintView(){
   }
 
   var scenes=planScenes();
+  /* Never ask the location model to be the sole keeper of narration. It can
+     file a voiceover under a booth, a room or the unplaced safety bucket,
+     which makes a complete script look incomplete when the PDF is scanned by
+     story order. This section is built directly from the board and therefore
+     cannot lose a cue during grouping. */
+  var voiceovers=[];
+  scenes.forEach(function(s){
+    [s.head].concat(s.kids).forEach(function(n){
+      if(String(n.type||'').trim().toLowerCase()==='voiceover')voiceovers.push(n);
+    });
+  });
+  if(voiceovers.length){
+    h+='<section class="pv-vo"><h2>Voiceover script &middot; '+voiceovers.length+' cue'+(voiceovers.length===1?'':'s')+'</h2><div class="pv-vo-list">';
+    voiceovers.forEach(function(n){
+      h+='<div class="pv-vo-row" data-voiceover-id="'+pesc(n.id)+'">'
+        +'<div class="pv-vo-id"><span class="pv-vo-n">'+pesc(n.__label||'')+'</span><span class="pv-vo-tc">'+pesc(n.tcStart)+'&ndash;'+pesc(n.tcEnd)+'</span></div>'
+        +'<div class="pv-vo-text">'+pesc(n.content)+'</div></div>';
+    });
+    h+='</div></section>';
+  }
   if(projectBreakdown&&projectBreakdown.length){
     // The model does not always give a label back exactly as it was handed
     // out - "01A", " 01 " - and accountForEveryShot already forgives that when
