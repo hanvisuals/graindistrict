@@ -9,6 +9,10 @@ const ANTHROPIC_KEY = 'BURAYA_ANTHROPIC_ANAHTARINI_YAPISTIR';
 //  fal.ai anahtari:     https://fal.ai/dashboard/keys
 const FAL_KEY = 'BURAYA_FAL_ANAHTARINI_YAPISTIR';
 
+//  Gemini anahtari:    https://aistudio.google.com/apikey
+//  Creator DNA Reference Lab public YouTube videolarini bu anahtarla analiz eder.
+const GEMINI_KEY = 'BURAYA_GEMINI_ANAHTARINI_YAPISTIR';
+
 //  Sifre sifirlama e-postasi icin (istege bagli - bos birakirsan sifirlama
 //  kapali kalir, gerisi normal calisir):  https://resend.com/api-keys
 const RESEND_KEY = '';
@@ -59,6 +63,9 @@ const AI_PRICING = {
   },
   fal: {
     'fal-ai/flux/schnell': {unit: 'megapixel', usd_per_unit: 0.003}
+  },
+  gemini: {
+    'gemini-3.6-flash': {input_per_million: 1.50, output_per_million: 7.50}
   }
 };
 
@@ -279,6 +286,146 @@ function anthropicCost(model, usage) {
     num(usage.cache_read_input_tokens) * p.cache_read_per_million / 1e6
   );
 }
+function geminiCost(model, usage) {
+  const p = AI_PRICING.gemini[model] || AI_PRICING.gemini['gemini-3.6-flash'];
+  return roundedCost(
+    num(usage.input_tokens) * p.input_per_million / 1e6 +
+    num(usage.output_tokens) * p.output_per_million / 1e6
+  );
+}
+
+/* ---------------------------------------------------- YouTube Reference Lab --- */
+function youtubeVideo(value) {
+  let u;
+  try { u = new URL(String(value || '').trim()); } catch (e) { return null; }
+  if (u.protocol !== 'https:' && u.protocol !== 'http:') return null;
+  const host = u.hostname.toLowerCase().replace(/^www\./, '');
+  let id = '';
+  if (host === 'youtu.be') id = u.pathname.split('/').filter(Boolean)[0] || '';
+  if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'music.youtube.com') {
+    if (u.pathname === '/watch') id = u.searchParams.get('v') || '';
+    else {
+      const m = u.pathname.match(/^\/(?:shorts|embed|live)\/([A-Za-z0-9_-]{11})(?:\/|$)/);
+      if (m) id = m[1];
+    }
+  }
+  if (!/^[A-Za-z0-9_-]{11}$/.test(id)) return null;
+  return {
+    id: id,
+    url: 'https://www.youtube.com/watch?v=' + id,
+    thumbnail: 'https://i.ytimg.com/vi/' + id + '/hqdefault.jpg'
+  };
+}
+function textLimit(value, max) {
+  return String(value == null ? '' : value).replace(/\s+/g, ' ').trim().slice(0, max);
+}
+function stringList(value, maxItems, maxLength) {
+  return (Array.isArray(value) ? value : []).map(x => textLimit(x, maxLength))
+    .filter(Boolean).slice(0, maxItems);
+}
+function enumValue(value, allowed, fallback) {
+  value = String(value || '').toLowerCase();
+  return allowed.indexOf(value) >= 0 ? value : fallback;
+}
+function normalizeReferenceAnalysis(raw) {
+  raw = raw && typeof raw === 'object' ? raw : {};
+  const out = {
+    title: textLimit(raw.title, 140) || 'YouTube reference',
+    channel: textLimit(raw.channel, 100),
+    summary: textLimit(raw.summary, 420),
+    dimensions: {},
+    signals: [],
+    profileHints: {
+      outcome: enumValue(raw.profileHints && raw.profileHints.outcome,
+        ['feel', 'learn', 'decide', 'understand'], 'understand'),
+      carrier: enumValue(raw.profileHints && raw.profileHints.carrier,
+        ['story', 'presenter', 'demo', 'graphics', 'hybrid'], 'hybrid'),
+      pace: enumValue(raw.profileHints && raw.profileHints.pace,
+        ['reflective', 'balanced', 'energetic'], 'balanced')
+    }
+  };
+  ['story', 'visual', 'edit', 'voice', 'sound'].forEach(name => {
+    const d = raw.dimensions && raw.dimensions[name] && typeof raw.dimensions[name] === 'object'
+      ? raw.dimensions[name] : {};
+    out.dimensions[name] = {
+      label: textLimit(d.label, 90) || name,
+      score: Math.max(0, Math.min(100, Math.round(num(d.score)))),
+      principles: stringList(d.principles, 3, 180),
+      evidence: (Array.isArray(d.evidence) ? d.evidence : []).slice(0, 3).map(e => ({
+        time: textLimit(e && e.time, 12), note: textLimit(e && e.note, 180)
+      })).filter(e => e.note)
+    };
+  });
+  out.signals = (Array.isArray(raw.signals) ? raw.signals : []).slice(0, 10).map((s, i) => ({
+    id: textLimit(s && s.id, 50).toLowerCase().replace(/[^a-z0-9_-]+/g, '_') || ('signal_' + (i + 1)),
+    label: textLimit(s && s.label, 90),
+    principle: textLimit(s && s.principle, 220),
+    dimension: enumValue(s && s.dimension, ['story', 'visual', 'edit', 'voice', 'sound'], 'visual'),
+    evidenceTime: textLimit(s && s.evidenceTime, 12)
+  })).filter(s => s.label && s.principle);
+  return out;
+}
+function interactionText(data) {
+  if (!data || typeof data !== 'object') return '';
+  if (typeof data.output_text === 'string') return data.output_text;
+  const steps = Array.isArray(data.steps) ? data.steps : [];
+  for (let i = steps.length - 1; i >= 0; i--) {
+    if (steps[i] && steps[i].type === 'model_output') {
+      const parts = Array.isArray(steps[i].content) ? steps[i].content : [];
+      const text = parts.filter(p => p && p.type === 'text' && typeof p.text === 'string')
+        .map(p => p.text).join('');
+      if (text) return text;
+    }
+  }
+  return '';
+}
+function parseInteractionJson(data) {
+  let raw = interactionText(data).trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+  try { return JSON.parse(raw); } catch (e) {
+    const a = raw.indexOf('{'), b = raw.lastIndexOf('}');
+    if (a >= 0 && b > a) return JSON.parse(raw.slice(a, b + 1));
+    throw new Error('Gemini analiz sonucunu okunabilir JSON olarak dondurmedi.');
+  }
+}
+function geminiUsage(data) {
+  const u = data && data.usage || {};
+  return {
+    input_tokens: num(u.total_input_tokens || u.input_tokens),
+    // Gemini prices visible output and thinking tokens at the same output rate.
+    output_tokens: num(u.total_output_tokens || u.output_tokens) + num(u.total_thought_tokens)
+  };
+}
+const REFERENCE_SCHEMA = {
+  type: 'object',
+  properties: {
+    title: {type: 'string'}, channel: {type: 'string'}, summary: {type: 'string'},
+    dimensions: {
+      type: 'object',
+      properties: Object.fromEntries(['story', 'visual', 'edit', 'voice', 'sound'].map(k => [k, {
+        type: 'object',
+        properties: {
+          label: {type: 'string'}, score: {type: 'integer'},
+          principles: {type: 'array', items: {type: 'string'}},
+          evidence: {type: 'array', items: {type: 'object', properties: {
+            time: {type: 'string'}, note: {type: 'string'}
+          }, required: ['time', 'note']}}
+        }, required: ['label', 'score', 'principles', 'evidence']
+      }])),
+      required: ['story', 'visual', 'edit', 'voice', 'sound']
+    },
+    signals: {type: 'array', items: {type: 'object', properties: {
+      id: {type: 'string'}, label: {type: 'string'}, principle: {type: 'string'},
+      dimension: {type: 'string', enum: ['story', 'visual', 'edit', 'voice', 'sound']},
+      evidenceTime: {type: 'string'}
+    }, required: ['id', 'label', 'principle', 'dimension', 'evidenceTime']}},
+    profileHints: {type: 'object', properties: {
+      outcome: {type: 'string', enum: ['feel', 'learn', 'decide', 'understand']},
+      carrier: {type: 'string', enum: ['story', 'presenter', 'demo', 'graphics', 'hybrid']},
+      pace: {type: 'string', enum: ['reflective', 'balanced', 'energetic']}
+    }, required: ['outcome', 'carrier', 'pace']}
+  },
+  required: ['title', 'channel', 'summary', 'dimensions', 'signals', 'profileHints']
+};
 async function recordUsage(store, event) {
   if (!store || !event || !event.user_id) return;
   const ts = event.ts || Date.now();
@@ -359,7 +506,8 @@ async function usageReport(store, days) {
     addMetric(users[uid], event);
     addMetric(totals, event);
     const service = String(event.service || 'other');
-    if (!services[service]) services[service] = metricBucket(service, service === 'anthropic' ? 'Claude' : service === 'fal' ? 'fal.ai' : service);
+    if (!services[service]) services[service] = metricBucket(service,
+      service === 'anthropic' ? 'Claude' : service === 'fal' ? 'fal.ai' : service === 'gemini' ? 'Gemini' : service);
     addMetric(services[service], event);
     const feature = cleanFeature(event.feature);
     if (!features[feature]) features[feature] = metricBucket(feature, feature);
@@ -396,6 +544,7 @@ export default {
 
     const anthropicKey = ((env && env.ANTHROPIC_KEY) || ANTHROPIC_KEY || '').trim();
     const falKey = ((env && env.FAL_KEY) || FAL_KEY || '').trim();
+    const geminiKey = ((env && env.GEMINI_KEY) || GEMINI_KEY || '').trim();
     const admins = emailSet((env && env.ADMIN_EMAILS) || ADMIN_EMAILS);
     // Accepts either a KV namespace or a D1 database, whichever is bound.
     // A plain text variable is truthy but has neither interface, so it is
@@ -412,6 +561,7 @@ export default {
         '',
         keyStatus(anthropicKey, 'Anthropic anahtari'),
         keyStatus(falKey, 'fal.ai anahtari'),
+        keyStatus(geminiKey, 'Gemini anahtari'),
         Object.keys(admins).length ? ('Maliyet paneli adminleri: ' + Object.keys(admins).length + ' hesap')
                                    : 'Maliyet paneli: KAPALI - ADMIN_EMAILS ayarlanmamis',
         RESEND_KEY ? 'Sifre sifirlama e-postasi: acik' : 'Sifre sifirlama e-postasi: kapali (istege bagli - RESEND_KEY bos)',
@@ -552,6 +702,56 @@ export default {
           let days = parseInt(url.searchParams.get('days') || '30', 10);
           if ([7, 30, 90, 3650].indexOf(days) < 0) days = 30;
           return json(await usageReport(store, days));
+        }
+
+        /* ---- Creator DNA: public YouTube reference analysis ---- */
+        if (request.method === 'POST' && path === '/api/creator-dna/analyze') {
+          if (!geminiKey || geminiKey.indexOf(PLACEHOLDER) === 0) {
+            return json({error: 'Reference Lab is not connected yet. Add GEMINI_KEY to the Worker secrets.'}, 503);
+          }
+          const b = await request.json();
+          const video = youtubeVideo(b && b.url);
+          if (!video) return json({error: 'Paste a valid public YouTube video link.'}, 400);
+
+          const model = 'gemini-3.6-flash';
+          const startedAt = Date.now();
+          const prompt = 'Study this public YouTube video as a creative director. Analyze the actual picture, edit, spoken delivery, sound and structure across the full video. Extract transferable principles for the viewer\'s own Creator DNA. Do not imitate the creator\'s identity, signature phrases, branding, recurring catchphrases, exact shot sequences or copyrighted wording. Evidence must be concrete and use timestamps. Scores are 0-100 prominence scores. Return 6-10 distinct signals. Keep every principle practical, specific and concise.';
+          const upstream = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'x-goog-api-key': geminiKey},
+            body: JSON.stringify({
+              model: model,
+              input: [
+                {type: 'video', uri: video.url},
+                {type: 'text', text: prompt}
+              ],
+              response_format: [{type: 'text', mime_type: 'application/json', schema: REFERENCE_SCHEMA}],
+              store: false
+            })
+          });
+          let data;
+          try { data = await upstream.json(); } catch (e) { data = {}; }
+          if (!upstream.ok) {
+            const detail = textLimit(data && (data.error && (data.error.message || data.error) || data.message), 260);
+            const unavailable = /private|unlisted|permission|not found|unavailable|youtube/i.test(detail);
+            return json({error: unavailable
+              ? 'This video could not be read. Use a public YouTube video with captions available.'
+              : ('Gemini could not analyse this video' + (detail ? ': ' + detail : '.'))}, upstream.status || 502);
+          }
+          const analysis = normalizeReferenceAnalysis(parseInteractionJson(data));
+          const usage = geminiUsage(data);
+          await recordUsage(store, {
+            ts: Date.now(), user_id: me.uid, email: me.email,
+            service: 'gemini', model: model, feature: 'creator_dna_reference',
+            project_id: '', project_type: 'youtube',
+            input_tokens: usage.input_tokens, output_tokens: usage.output_tokens,
+            cost_usd: geminiCost(model, usage),
+            duration_ms: Date.now() - startedAt, status: 'success'
+          });
+          return json({
+            videoId: video.id, url: video.url, thumbnail: video.thumbnail,
+            analysis: analysis
+          });
         }
 
         const prefix = 'proj:' + me.uid + ':';

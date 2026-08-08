@@ -768,6 +768,69 @@ body #s0{align-items:stretch;justify-content:flex-start;position:relative;isolat
 .dna-hub-profile{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(280px,.88fr);gap:12px;margin-top:clamp(32px,6vh,70px);}
 .dna-hub-profile .dna-card{min-height:220px;}
 .dna-hub-empty{grid-column:1/-1;border:1px dashed rgba(255,255,255,.12);border-radius:20px;padding:30px;font-family:var(--sans);font-size:13px;line-height:1.6;color:rgba(255,255,255,.42);}
+.dna-hub-reference{min-height:48px;border:1px solid rgba(223,188,77,.42);border-radius:999px;padding:0 22px;background:rgba(223,188,77,.09);color:#ead17e;font-family:var(--sans);font-size:12px;font-weight:650;cursor:pointer;box-shadow:inset 0 0 22px rgba(223,188,77,.025);}
+.dna-hub-reference:hover{border-color:rgba(223,188,77,.75);background:rgba(223,188,77,.14);color:#f7df8a;}
+.dna-reference-card{grid-column:1/-1!important;min-height:0!important;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:24px;border-color:rgba(223,188,77,.16)!important;background:linear-gradient(100deg,rgba(223,188,77,.055),rgba(109,155,211,.025))!important;}
+.dna-reference-card .dna-chips{margin-top:14px;}.dna-reference-card button{white-space:nowrap;}
+
+/* REFERENCE LAB — link-in, selective principles-out. */
+#s_dna_lab{overflow-y:auto;background:
+  radial-gradient(circle at 14% 22%,rgba(109,155,211,.09),transparent 30%),
+  radial-gradient(circle at 78% 16%,rgba(223,188,77,.08),transparent 30%),
+  linear-gradient(rgba(255,255,255,.016) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(255,255,255,.016) 1px,transparent 1px),#090a09;
+  background-size:auto,auto,52px 52px,52px 52px;}
+.dna-lab-shell{width:min(1180px,calc(100% - 40px));margin:0 auto;padding:clamp(46px,7vh,82px) 0 calc(70px + var(--safe-b));}
+.dna-lab-head{display:grid;grid-template-columns:minmax(0,1fr) minmax(270px,.58fr);align-items:end;gap:40px;padding-bottom:34px;border-bottom:1px solid rgba(255,255,255,.08);}
+.dna-lab-k{font-family:var(--mono);font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:rgba(109,155,211,.82);margin-bottom:18px;}
+.dna-lab-title{font-family:var(--sans);font-size:clamp(46px,6vw,82px);font-weight:590;line-height:.9;letter-spacing:-.06em;color:#f4f1e9;}
+.dna-lab-title em{font-style:normal;color:#dfbc4d;}
+.dna-lab-copy{font-family:var(--sans);font-size:13px;line-height:1.7;color:rgba(255,255,255,.43);max-width:46ch;}
+.dna-lab-copy b{font-weight:600;color:rgba(255,255,255,.76);}
+.dna-lab-intake{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:16px;margin-top:30px;}
+.dna-lab-links{display:grid;gap:8px;}
+.dna-lab-link{display:grid;grid-template-columns:34px minmax(0,1fr) 30px;align-items:center;gap:10px;min-height:58px;padding:0 13px;border:1px solid rgba(255,255,255,.1);border-radius:14px;background:rgba(255,255,255,.03);transition:border-color .16s,background .16s;}
+.dna-lab-link:focus-within{border-color:rgba(223,188,77,.5);background:rgba(223,188,77,.035);}
+.dna-lab-no{font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:rgba(255,255,255,.25);}
+.dna-lab-link input{width:100%;border:0;outline:0;background:transparent;color:#eee;font-family:var(--sans);font-size:13px;}
+.dna-lab-link input::placeholder{color:rgba(255,255,255,.2);}
+.dna-lab-link-state{width:8px;height:8px;border-radius:50%;justify-self:center;background:rgba(255,255,255,.12);}
+.dna-lab-link.loading .dna-lab-link-state{border:1px solid rgba(109,155,211,.25);border-top-color:#6d9bd3;background:transparent;animation:dna-lab-spin .75s linear infinite;}
+.dna-lab-link.done .dna-lab-link-state{background:#78a984;box-shadow:0 0 10px rgba(120,169,132,.5);}
+.dna-lab-link.error .dna-lab-link-state{background:#b56464;box-shadow:0 0 10px rgba(181,100,100,.35);}
+@keyframes dna-lab-spin{to{transform:rotate(360deg)}}
+.dna-lab-runbox{border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:18px;background:rgba(0,0,0,.22);display:flex;flex-direction:column;justify-content:space-between;gap:16px;}
+.dna-lab-runmeta{font-family:var(--mono);font-size:8px;letter-spacing:.09em;text-transform:uppercase;line-height:1.7;color:rgba(255,255,255,.3);}
+.dna-lab-run{min-height:50px;border:0;border-radius:11px;background:#f4f1e9;color:#090a09;font-family:var(--sans);font-size:12px;font-weight:700;cursor:pointer;}
+.dna-lab-run:disabled{cursor:wait;opacity:.48;}
+.dna-lab-message{min-height:18px;margin-top:12px;font-family:var(--mono);font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.34);}
+.dna-lab-message.error{color:#d48989;}.dna-lab-message.good{color:#82b28d;}
+.dna-lab-results{display:none;margin-top:48px;}.dna-lab-results.show{display:block;}
+.dna-lab-sectionhead{display:flex;align-items:end;justify-content:space-between;gap:18px;margin-bottom:17px;}
+.dna-lab-sectionhead h2{font-family:var(--sans);font-size:25px;font-weight:590;letter-spacing:-.035em;color:#eee;}
+.dna-lab-sectionhead p{font-family:var(--mono);font-size:8px;line-height:1.6;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.28);text-align:right;}
+.dna-lab-videos{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:10px;margin-bottom:38px;}
+.dna-lab-video{overflow:hidden;border:1px solid rgba(255,255,255,.09);border-radius:16px;background:rgba(255,255,255,.028);}
+.dna-lab-video:only-child{max-width:390px;}
+.dna-lab-thumb{position:relative;aspect-ratio:16/8;overflow:hidden;background:#111;}
+.dna-lab-thumb img{width:100%;height:100%;object-fit:cover;filter:saturate(.72) contrast(1.06);opacity:.78;}
+.dna-lab-thumb::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent,rgba(9,10,9,.52));}
+.dna-lab-video-copy{padding:16px 17px 18px;}.dna-lab-video-k{font-family:var(--mono);font-size:7px;letter-spacing:.12em;text-transform:uppercase;color:#6d9bd3;margin-bottom:9px;}
+.dna-lab-video h3{font-family:var(--sans);font-size:14px;line-height:1.35;font-weight:650;color:rgba(255,255,255,.82);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dna-lab-video p{margin-top:8px;font-family:var(--sans);font-size:11px;line-height:1.55;color:rgba(255,255,255,.37);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+.dna-lab-dims{display:flex;gap:5px;margin-top:14px;}.dna-lab-dim{height:3px;flex:1;border-radius:2px;background:rgba(255,255,255,.07);overflow:hidden;}.dna-lab-dim i{display:block;height:100%;background:#dfbc4d;opacity:.72;}
+.dna-lab-traits{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+.dna-lab-trait{display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:14px;align-items:start;padding:17px;border:1px solid rgba(255,255,255,.09);border-radius:14px;background:rgba(255,255,255,.025);cursor:pointer;text-align:left;color:inherit;transition:border-color .15s,background .15s,opacity .15s;}
+.dna-lab-trait:hover{border-color:rgba(255,255,255,.18);}.dna-lab-trait.off{opacity:.4;background:transparent;}
+.dna-lab-trait-code{padding-top:3px;font-family:var(--mono);font-size:8px;letter-spacing:.09em;text-transform:uppercase;color:#dfbc4d;}
+.dna-lab-trait h3{font-family:var(--sans);font-size:13px;font-weight:650;color:rgba(255,255,255,.82);}.dna-lab-trait p{margin-top:5px;font-family:var(--sans);font-size:11px;line-height:1.55;color:rgba(255,255,255,.37);}
+.dna-lab-trait-source{margin-top:8px;font-family:var(--mono);font-size:7px;letter-spacing:.06em;text-transform:uppercase;color:rgba(109,155,211,.55);}
+.dna-lab-toggle{width:34px;height:20px;border-radius:999px;background:rgba(255,255,255,.12);position:relative;}.dna-lab-toggle::after{content:'';position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.42);transition:left .15s,background .15s;}
+.dna-lab-trait:not(.off) .dna-lab-toggle{background:rgba(223,188,77,.28);}.dna-lab-trait:not(.off) .dna-lab-toggle::after{left:17px;background:#dfbc4d;box-shadow:0 0 9px rgba(223,188,77,.45);}
+.dna-lab-savebar{position:sticky;bottom:10px;z-index:4;display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:22px;padding:12px 13px 12px 18px;border:1px solid rgba(255,255,255,.12);border-radius:16px;background:rgba(13,14,13,.9);box-shadow:0 18px 50px rgba(0,0,0,.5);backdrop-filter:blur(20px);}
+.dna-lab-savecopy{font-family:var(--mono);font-size:8px;line-height:1.6;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.33);}.dna-lab-savecopy b{color:#dfbc4d;font-weight:500;}
+.dna-lab-saveactions{display:flex;gap:7px;}.dna-lab-clear,.dna-lab-save{min-height:45px;border-radius:10px;padding:0 18px;font-family:var(--sans);font-size:11px;font-weight:650;cursor:pointer;}
+.dna-lab-clear{border:1px solid rgba(255,255,255,.1);background:transparent;color:rgba(255,255,255,.43);}.dna-lab-save{border:0;background:#f4f1e9;color:#0a0a0a;}
 /* KREA-STYLE PLAN CHOICE + S3 */
 .kb-prog-wrap{position:absolute;top:0;left:0;right:0;height:2px;background:rgba(255,255,255,.07);z-index:10;}
 .kb-prog-fill{height:100%;background:rgba(255,255,255,.35);transition:width .35s;}
@@ -1048,6 +1111,20 @@ body #s0{align-items:stretch;justify-content:flex-start;position:relative;isolat
   .dna-visual-code{right:2px;bottom:2px;}
   .dna-hub-profile{grid-template-columns:1fr;margin-top:26px;}
   .dna-hub-profile .dna-card{min-height:0;}
+  .dna-reference-card{grid-template-columns:1fr;gap:18px;}
+  .dna-reference-card button{width:100%;}
+  .dna-lab-shell{width:calc(100% - 28px);padding:38px 0 calc(44px + var(--safe-b));}
+  .dna-lab-head{grid-template-columns:1fr;gap:18px;padding-bottom:26px;}
+  .dna-lab-title{font-size:clamp(45px,14vw,65px);}
+  .dna-lab-intake{grid-template-columns:1fr;}
+  .dna-lab-runbox{padding:14px;}.dna-lab-runmeta{display:none;}
+  .dna-lab-videos{grid-template-columns:1fr;margin-bottom:30px;}
+  .dna-lab-thumb{aspect-ratio:16/7;}
+  .dna-lab-traits{grid-template-columns:1fr;}
+  .dna-lab-trait{grid-template-columns:36px minmax(0,1fr) auto;padding:15px;gap:10px;}
+  .dna-lab-sectionhead{align-items:start;}.dna-lab-sectionhead p{display:none;}
+  .dna-lab-savebar{bottom:8px;align-items:stretch;flex-direction:column;padding:12px;}
+  .dna-lab-saveactions{display:grid;grid-template-columns:auto 1fr;}.dna-lab-save{width:100%;}
   #panelToggle{display:flex;}
   .cbar{padding-left:.25rem;}
   .ctopic{font-size:12px;}
@@ -1608,6 +1685,7 @@ body.location-mode #btnRebreak{display:inline-flex!important;}
         <p class="dna-hub-intro" id="dnaHubIntro">Your channel should feel like you before a project even begins. This profile becomes the standing direction behind every YouTube brief, script and production plan.</p>
         <div class="dna-hub-actions">
           <button class="dna-hub-primary" id="dnaHubEdit" onclick="editCreatorDnaFromHub()">Edit my DNA &rarr;</button>
+          <button class="dna-hub-reference" id="dnaHubReference" onclick="openCreatorDnaLab()">Learn from YouTube &#8599;</button>
           <button class="dna-hub-secondary" id="dnaHubStart" onclick="startYouTubeFromDnaHub()">Start a YouTube project</button>
         </div>
         <div class="dna-hub-status" id="dnaHubStatus">Profile saved automatically</div>
@@ -1632,6 +1710,45 @@ body.location-mode #btnRebreak{display:inline-flex!important;}
       </div>
     </section>
     <section class="dna-hub-profile" id="dnaHubProfile"></section>
+  </main>
+</div>
+
+<div id="s_dna_lab" class="screen">
+  <div class="dna-top">
+    <button class="dna-back" onclick="closeCreatorDnaLab()">&larr; My Creator DNA</button>
+    <span class="dna-brand">GRAIN DISTRICT</span>
+    <span class="dna-top-meta">Reference intelligence / YouTube</span>
+  </div>
+  <main class="dna-lab-shell">
+    <section class="dna-lab-head">
+      <div>
+        <div class="dna-lab-k">Creator DNA / Reference Lab</div>
+        <h1 class="dna-lab-title">Paste the link.<br><em>Keep the signal.</em></h1>
+      </div>
+      <p class="dna-lab-copy"><b>No downloads. No imitation.</b> Add up to three public YouTube videos. Grain District studies their story, visual language, edit, voice and sound, then lets you choose the principles that belong in your own DNA.</p>
+    </section>
+    <section class="dna-lab-intake">
+      <div class="dna-lab-links" id="dnaLabLinks">
+        <label class="dna-lab-link" data-lab-row="0"><span class="dna-lab-no">01</span><input id="dnaLabUrl0" type="url" inputmode="url" autocomplete="off" placeholder="https://youtube.com/watch?v=..." aria-label="First YouTube reference"><span class="dna-lab-link-state"></span></label>
+        <label class="dna-lab-link" data-lab-row="1"><span class="dna-lab-no">02</span><input id="dnaLabUrl1" type="url" inputmode="url" autocomplete="off" placeholder="Optional second reference" aria-label="Second YouTube reference"><span class="dna-lab-link-state"></span></label>
+        <label class="dna-lab-link" data-lab-row="2"><span class="dna-lab-no">03</span><input id="dnaLabUrl2" type="url" inputmode="url" autocomplete="off" placeholder="Optional third reference" aria-label="Third YouTube reference"><span class="dna-lab-link-state"></span></label>
+      </div>
+      <aside class="dna-lab-runbox">
+        <div class="dna-lab-runmeta">Public videos only<br>Best with 5&ndash;20 minute references<br>Longer videos use more AI credits</div>
+        <button class="dna-lab-run" id="dnaLabRun" onclick="analyzeCreatorReferences()">Analyse references &rarr;</button>
+      </aside>
+    </section>
+    <div class="dna-lab-message" id="dnaLabMessage" role="status" aria-live="polite">Your current Creator DNA stays unchanged until you save.</div>
+    <section class="dna-lab-results" id="dnaLabResults">
+      <div class="dna-lab-sectionhead"><h2>What the system saw</h2><p>Visual + audio + structure<br>Each video analysed separately</p></div>
+      <div class="dna-lab-videos" id="dnaLabVideos"></div>
+      <div class="dna-lab-sectionhead"><h2>Choose what becomes yours</h2><p>Switch off anything that feels borrowed<br>Only selected principles enter your DNA</p></div>
+      <div class="dna-lab-traits" id="dnaLabTraits"></div>
+      <div class="dna-lab-savebar">
+        <div class="dna-lab-savecopy" id="dnaLabSaveCopy"><b>0 principles selected</b><br>Your original profile and production limits stay intact.</div>
+        <div class="dna-lab-saveactions"><button class="dna-lab-clear" id="dnaLabClear" onclick="clearCreatorReferences()">Clear layer</button><button class="dna-lab-save" onclick="saveCreatorReferences()">Save to my DNA &rarr;</button></div>
+      </div>
+    </section>
   </main>
 </div>
 
@@ -2200,6 +2317,7 @@ function stylePack(part){
   return p?'\n\n'+p[part]:'';
 }
 var creatorDNA=null,dnaDraft=null,dnaStep=0,dnaReturnScreen='s1',dnaHubReturnScreen='s0';
+var dnaLabState={videos:[],traits:[],selected:{},busy:false};
 var DNA_QS=[
   {key:'outcome',title:'What should viewers leave with?',help:'Choose the result your videos should create most often.',options:[
     {v:'feel',t:'A feeling',d:'Connection, atmosphere or a personal shift.'},
@@ -2308,6 +2426,10 @@ function creatorDnaVisual(d){
 function creatorDnaContext(){
   var d=creatorDNA;if(projectType!=='youtube'||!d)return '';
   var caps=dnaList('capabilities',d.capabilities),avoid=dnaList('avoid',d.avoid).filter(function(x){return x!=='no fixed exclusions';});
+  var ref=d.referenceLab&&Array.isArray(d.referenceLab.principles)?d.referenceLab.principles:[];
+  var refContext=ref.length?'\n\nREFERENCE-LEARNED PRINCIPLES — USE AS INSPIRATION, NEVER AS IMITATION:\n'
+    +ref.slice(0,14).map(function(x){return '- '+String(x.dimension||'style').toUpperCase()+': '+String(x.principle||'').slice(0,240);}).join('\n')
+    +'\nApply these transferable principles in the creator\'s own voice. Never copy source phrases, branding, exact shot sequences, recurring signature devices or identity.':'';
   return '\n\nCREATOR DNA — THIS IS THE CHANNEL\'S STANDING PRODUCTION CONTRACT:\n'
     +'- Primary mode: '+dnaValueLabel('carrier',d.carrier)+'\n'
     +'- Viewer outcome: '+dnaValueLabel('outcome',d.outcome)+'\n'
@@ -2317,7 +2439,7 @@ function creatorDnaContext(){
     +'- Never default to: '+(avoid.join(', ')||'none specified')+'\n\n'
     +'STRUCTURE: '+creatorDnaStructure(d)+'\n'
     +'VISUAL GRAMMAR: '+creatorDnaVisual(d)+'\n'
-    +'Do not override this profile with a generic cinematic essay formula. Project-specific instructions may narrow it, but may not contradict creator visibility, available production methods, or exclusions.';
+    +'Do not override this profile with a generic cinematic essay formula. Project-specific instructions may narrow it, but may not contradict creator visibility, available production methods, or exclusions.'+refContext;
 }
 function creatorDnaStyle(part){
   var d=creatorDNA||balancedCreatorDna(),mode=d.carrier;
@@ -2366,7 +2488,7 @@ function openCreatorDna(force,returnTo){
 function editCreatorDna(){openCreatorDna(true,'s1');}
 function openCreatorDnaHub(){
   var active=document.querySelector('.screen.active');
-  if(active&&active.id!=='s_dna_hub'&&active.id!=='s_dna')dnaHubReturnScreen=active.id;
+  if(active&&active.id!=='s_dna_hub'&&active.id!=='s_dna'&&active.id!=='s_dna_lab')dnaHubReturnScreen=active.id;
   else if(active&&active.id==='s_dna')dnaHubReturnScreen=dnaReturnScreen||'s0';
   creatorDNA=loadCreatorDna()||creatorDNA;
   renderCreatorDnaHub();show('s_dna_hub');
@@ -2379,28 +2501,149 @@ function startYouTubeFromDnaHub(){
   applyCreatorDnaDefaults();show('s1');
 }
 function renderCreatorDnaHub(){
-  var profile=document.getElementById('dnaHubProfile'),edit=document.getElementById('dnaHubEdit'),start=document.getElementById('dnaHubStart'),status=document.getElementById('dnaHubStatus');
-  if(!profile||!edit||!start||!status)return;
+  var profile=document.getElementById('dnaHubProfile'),edit=document.getElementById('dnaHubEdit'),start=document.getElementById('dnaHubStart'),reference=document.getElementById('dnaHubReference'),status=document.getElementById('dnaHubStatus');
+  if(!profile||!edit||!start||!reference||!status)return;
   var d=loadCreatorDna()||creatorDNA,saved=loadCreatorDnaDraft();
   creatorDNA=d||null;
   if(!d){
     profile.innerHTML='<div class="dna-hub-empty">Your Creator DNA is not finished yet. The interview takes six focused questions, and every choice is saved as you go.</div>';
     edit.textContent=saved?'Continue building my DNA \u2192':'Build my Creator DNA \u2192';
     start.style.display='none';
+    reference.style.display='none';
     status.textContent=saved?'Draft saved \u00b7 question '+(Math.min(DNA_QS.length,(Number(saved.step)||0)+1))+' of '+DNA_QS.length:'Ready when you are';
     return;
   }
   var caps=dnaList('capabilities',d.capabilities),avoid=dnaList('avoid',d.avoid).filter(function(x){return x!=='no fixed exclusions';});
+  var ref=d.referenceLab&&Array.isArray(d.referenceLab.principles)?d.referenceLab:null;
+  var refDims=ref?ref.principles.map(function(x){return x.dimension;}).filter(function(x,i,a){return x&&a.indexOf(x)===i;}):[];
+  var refCard='<article class="dna-card dna-reference-card"><div><div class="dna-card-k">Reference layer</div>'
+    +(ref?'<h2>'+dnaEsc(String((ref.videos||[]).length))+' videos · '+dnaEsc(String(ref.principles.length))+' selected signals</h2><p>Your chosen reference principles now guide new YouTube projects without copying the original creators.</p><div class="dna-chips">'+refDims.map(function(x){return '<span class="dna-chip">'+dnaEsc(x)+'</span>';}).join('')+'</div>'
+      :'<h2>No references learned yet</h2><p>Paste the YouTube videos whose rhythm, storytelling or visual language you admire. You decide what becomes part of your DNA.</p>')
+    +'</div><button class="dna-hub-reference" onclick="openCreatorDnaLab()">'+(ref?'Edit reference layer':'Open Reference Lab')+' \u2197</button></article>';
   profile.innerHTML='<article class="dna-card hero"><div class="dna-card-k">Your channel profile</div><h2>'+creatorDnaName(d)+'</h2><p>'+creatorDnaStructure(d)+'</p><div class="dna-chips">'
     +[dnaValueLabel('outcome',d.outcome),dnaValueLabel('presence',d.presence),dnaValueLabel('pace',d.pace)].concat(caps).map(function(x){return '<span class="dna-chip">'+x+'</span>';}).join('')+'</div></article>'
     +'<article class="dna-card"><div class="dna-card-k">Standing direction</div><div class="dna-rules">'
     +'<div class="dna-rule"><b>01</b><span>'+creatorDnaVisual(d)+'</span></div>'
     +'<div class="dna-rule"><b>02</b><span>Available: '+(caps.join(', ')||'not specified')+'.</span></div>'
     +'<div class="dna-rule"><b>03</b><span>Avoid: '+(avoid.join(', ')||'no fixed exclusions')+'.</span></div>'
-    +'</div></article>';
+    +'</div></article>'+refCard;
   edit.textContent=saved?'Continue editing \u2192':'Edit my DNA \u2192';
   start.style.display='';
+  reference.style.display='';
   status.textContent=saved?'Changes saved as a draft':'Profile saved automatically';
+}
+function dnaEsc(value){return String(value==null?'':value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function dnaLabMessage(text,type){
+  var el=document.getElementById('dnaLabMessage');if(!el)return;
+  el.textContent=text||'';el.className='dna-lab-message'+(type?' '+type:'');
+}
+function dnaLabRowState(row,state){
+  var el=document.querySelector('[data-lab-row="'+row+'"]');if(!el)return;
+  el.classList.remove('loading','done','error');if(state)el.classList.add(state);
+}
+function dnaLabResetRows(){for(var i=0;i<3;i++)dnaLabRowState(i,'');}
+function dnaLabStoredVideo(v){
+  return {videoId:v.videoId||'',url:v.url||'',thumbnail:v.thumbnail||'',analysis:{
+    title:v.title||'YouTube reference',channel:v.channel||'',summary:v.summary||'',
+    dimensions:v.dimensions||{},profileHints:v.profileHints||{}
+  }};
+}
+function openCreatorDnaLab(){
+  creatorDNA=loadCreatorDna()||creatorDNA;
+  if(!creatorDNA){openCreatorDna(true,'s_dna_hub');return;}
+  var saved=creatorDNA.referenceLab;
+  dnaLabState={videos:[],traits:[],selected:{},busy:false};
+  dnaLabResetRows();
+  for(var i=0;i<3;i++){var input=document.getElementById('dnaLabUrl'+i);if(input)input.value='';}
+  if(saved){
+    dnaLabState.videos=(saved.videos||[]).map(dnaLabStoredVideo);
+    dnaLabState.traits=(saved.principles||[]).map(function(x,i){return Object.assign({},x,{id:x.id||('saved_'+i)});});
+    dnaLabState.traits.forEach(function(x){dnaLabState.selected[x.id]=true;});
+    dnaLabState.videos.slice(0,3).forEach(function(v,i){var input=document.getElementById('dnaLabUrl'+i);if(input)input.value=v.url||'';dnaLabRowState(i,'done');});
+  }
+  renderCreatorDnaLab();show('s_dna_lab');
+}
+function closeCreatorDnaLab(){renderCreatorDnaHub();show('s_dna_hub');}
+function dnaLabTraitsFromVideos(videos){
+  var all=[];
+  videos.forEach(function(v,vi){
+    var a=v.analysis||{},signals=Array.isArray(a.signals)?a.signals:[];
+    signals.forEach(function(s,si){
+      all.push({id:(v.videoId||('v'+vi))+'_'+(s.id||si),dimension:s.dimension||'visual',label:s.label||'Creative signal',principle:s.principle||'',evidenceTime:s.evidenceTime||'',sourceTitle:a.title||('Reference '+(vi+1)),sourceIndex:vi});
+    });
+    if(!signals.length){
+      ['story','visual','edit','voice','sound'].forEach(function(dim){
+        var d=a.dimensions&&a.dimensions[dim]||{};
+        (d.principles||[]).forEach(function(p,pi){all.push({id:(v.videoId||('v'+vi))+'_'+dim+'_'+pi,dimension:dim,label:d.label||dim,principle:p,evidenceTime:d.evidence&&d.evidence[0]&&d.evidence[0].time||'',sourceTitle:a.title||('Reference '+(vi+1)),sourceIndex:vi});});
+      });
+    }
+  });
+  var result=[],seen={};
+  ['story','visual','edit','voice','sound'].forEach(function(dim){
+    var pool=all.filter(function(x){var k=String(x.principle).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();if(x.dimension!==dim||!k||seen[k])return false;x._key=k;return true;});
+    var chosen=[];
+    videos.forEach(function(v,vi){var hit=pool.find(function(x){return x.sourceIndex===vi&&chosen.indexOf(x)<0;});if(hit&&chosen.length<3)chosen.push(hit);});
+    pool.forEach(function(x){if(chosen.length<3&&chosen.indexOf(x)<0)chosen.push(x);});
+    chosen.forEach(function(x){seen[x._key]=true;delete x._key;result.push(x);});
+  });
+  return result.slice(0,15);
+}
+function dnaLabDimBars(a){
+  return '<div class="dna-lab-dims" title="Story · visual · edit · voice · sound">'+['story','visual','edit','voice','sound'].map(function(k){var n=a.dimensions&&a.dimensions[k]&&Number(a.dimensions[k].score)||0;return '<span class="dna-lab-dim"><i style="width:'+Math.max(2,Math.min(100,n))+'%"></i></span>';}).join('')+'</div>';
+}
+function renderCreatorDnaLab(){
+  var results=document.getElementById('dnaLabResults'),videos=document.getElementById('dnaLabVideos'),traits=document.getElementById('dnaLabTraits'),clear=document.getElementById('dnaLabClear');
+  if(!results||!videos||!traits)return;
+  var has=dnaLabState.videos.length>0||dnaLabState.traits.length>0;
+  results.classList.toggle('show',has);
+  videos.innerHTML=dnaLabState.videos.map(function(v,i){var a=v.analysis||{};return '<article class="dna-lab-video"><div class="dna-lab-thumb"><img src="'+dnaEsc(v.thumbnail||'')+'" alt=""></div><div class="dna-lab-video-copy"><div class="dna-lab-video-k">Reference '+String(i+1).padStart(2,'0')+(a.channel?' · '+dnaEsc(a.channel):'')+'</div><h3 title="'+dnaEsc(a.title||'YouTube reference')+'">'+dnaEsc(a.title||'YouTube reference')+'</h3><p>'+dnaEsc(a.summary||'Reference analysed.')+'</p>'+dnaLabDimBars(a)+'</div></article>';}).join('');
+  traits.innerHTML=dnaLabState.traits.map(function(t,i){var on=dnaLabState.selected[t.id]!==false;return '<button type="button" class="dna-lab-trait'+(on?'':' off')+'" aria-pressed="'+(on?'true':'false')+'" onclick="toggleDnaLabTrait('+i+')"><span class="dna-lab-trait-code">'+dnaEsc(t.dimension||'style')+'</span><span><h3>'+dnaEsc(t.label||'Creative signal')+'</h3><p>'+dnaEsc(t.principle||'')+'</p><span class="dna-lab-trait-source">'+dnaEsc(t.sourceTitle||'Reference')+(t.evidenceTime?' · '+dnaEsc(t.evidenceTime):'')+'</span></span><span class="dna-lab-toggle"></span></button>';}).join('');
+  if(clear)clear.style.display=(creatorDNA&&creatorDNA.referenceLab)?'':'none';
+  renderDnaLabCount();
+}
+function renderDnaLabCount(){
+  var n=dnaLabState.traits.filter(function(t){return dnaLabState.selected[t.id]!==false;}).length;
+  var el=document.getElementById('dnaLabSaveCopy');if(el)el.innerHTML='<b>'+n+' principle'+(n===1?'':'s')+' selected</b><br>Your original profile and production limits stay intact.';
+}
+function toggleDnaLabTrait(i){var t=dnaLabState.traits[i];if(!t)return;dnaLabState.selected[t.id]=dnaLabState.selected[t.id]===false;renderCreatorDnaLab();}
+function requestDnaReference(url){
+  var endpoint=WORKER.replace(/\/$/,'')+'/api/creator-dna/analyze';
+  return fetch(endpoint,{method:'POST',headers:workerHeaders(),body:JSON.stringify({url:url})}).then(function(r){return r.text().then(function(text){var data={};try{data=JSON.parse(text);}catch(e){}if(!r.ok)throw new Error(data.error||('Reference analysis failed ('+r.status+')'));return data;});});
+}
+function analyzeCreatorReferences(){
+  if(dnaLabState.busy)return;
+  var refs=[];
+  for(var i=0;i<3;i++){var input=document.getElementById('dnaLabUrl'+i),url=input&&input.value.trim();if(url)refs.push({url:url,row:i});}
+  if(!refs.length){dnaLabMessage('Paste at least one public YouTube link.','error');return;}
+  if(!(typeof window.gdSessionToken==='function'&&window.gdSessionToken())){dnaLabMessage('Sign in first so the analysis and its cost can be tied to your account.','error');return;}
+  var unique={};refs=refs.filter(function(x){var k=x.url.toLowerCase().trim();if(unique[k])return false;unique[k]=true;return true;});
+  dnaLabState={videos:[],traits:[],selected:{},busy:true};dnaLabResetRows();
+  var run=document.getElementById('dnaLabRun');if(run){run.disabled=true;run.textContent='Reading the videos…';}
+  dnaLabMessage('Analysing picture, edit, voice and sound · 0 of '+refs.length+' complete');
+  var complete=0,errors=[];
+  Promise.all(refs.map(function(item){
+    dnaLabRowState(item.row,'loading');
+    return requestDnaReference(item.url).then(function(data){complete++;dnaLabRowState(item.row,'done');dnaLabMessage('Analysing picture, edit, voice and sound · '+complete+' of '+refs.length+' complete');return data;},function(err){complete++;errors.push(err.message||'Video could not be read.');dnaLabRowState(item.row,'error');dnaLabMessage('Continuing with the readable videos · '+complete+' of '+refs.length+' complete');return null;});
+  })).then(function(all){
+    dnaLabState.videos=all.filter(Boolean);dnaLabState.traits=dnaLabTraitsFromVideos(dnaLabState.videos);dnaLabState.traits.forEach(function(t){dnaLabState.selected[t.id]=true;});dnaLabState.busy=false;
+    if(run){run.disabled=false;run.textContent='Analyse references →';}
+    renderCreatorDnaLab();
+    if(!dnaLabState.videos.length)dnaLabMessage(errors[0]||'None of these videos could be read.','error');
+    else if(errors.length)dnaLabMessage(dnaLabState.videos.length+' reference'+(dnaLabState.videos.length===1?'':'s')+' analysed · '+errors.length+' skipped','good');
+    else dnaLabMessage('Reference map ready · choose the signals that feel like you.','good');
+  });
+}
+function saveCreatorReferences(){
+  if(!dnaLabState.videos.length)return;
+  var chosen=dnaLabState.traits.filter(function(t){return dnaLabState.selected[t.id]!==false;}).map(function(t){return {id:t.id,dimension:t.dimension,label:t.label,principle:t.principle,evidenceTime:t.evidenceTime,sourceTitle:t.sourceTitle};});
+  if(!chosen.length){dnaLabMessage('Keep at least one principle, or use Clear layer to remove the references.','error');return;}
+  creatorDNA=loadCreatorDna()||creatorDNA||balancedCreatorDna();
+  creatorDNA.referenceLab={v:1,updatedAt:Date.now(),videos:dnaLabState.videos.map(function(v){var a=v.analysis||{};return {videoId:v.videoId,url:v.url,thumbnail:v.thumbnail,title:a.title||'YouTube reference',channel:a.channel||'',summary:a.summary||'',dimensions:a.dimensions||{},profileHints:a.profileHints||{}};}),principles:chosen};
+  creatorDNA.updatedAt=Date.now();storeCreatorDna(creatorDNA);renderCreatorDnaHub();show('s_dna_hub');
+}
+function clearCreatorReferences(){
+  creatorDNA=loadCreatorDna()||creatorDNA;if(creatorDNA&&creatorDNA.referenceLab){delete creatorDNA.referenceLab;creatorDNA.updatedAt=Date.now();storeCreatorDna(creatorDNA);}
+  dnaLabState={videos:[],traits:[],selected:{},busy:false};for(var i=0;i<3;i++){var input=document.getElementById('dnaLabUrl'+i);if(input)input.value='';}dnaLabResetRows();renderCreatorDnaLab();dnaLabMessage('Reference layer cleared. Your original Creator DNA is unchanged.','good');
 }
 function dnaOptionClick(value){
   var q=DNA_QS[dnaStep];if(!q)return;
@@ -6853,7 +7096,8 @@ document.addEventListener('mouseup',function(e){
       shot_plan_continuation:'Plan continuation',shot_details_batch:'Shot details',block_shot_details:'Block planning',
       block_revision:'Block revision',translation:'Translation',location_bible:'Location bible',
       location_breakdown:'Location breakdown',storyboard_prompt:'Storyboard prompt',
-      storyboard_prompt_edit:'Storyboard prompt edit',storyboard_image:'Storyboard image',ai_request:'Other AI'};
+      storyboard_prompt_edit:'Storyboard prompt edit',storyboard_image:'Storyboard image',
+      creator_dna_reference:'DNA video analysis',ai_request:'Other AI'};
     return labels[id]||String(id||'Other').replace(/_/g,' ');
   }
   function splitRows(items,max){
@@ -6882,15 +7126,15 @@ document.addEventListener('mouseup',function(e){
     }).join('');
     var recentRows=recent.slice(0,30).map(function(e){
       return '<tr><td>'+esc(usageDate(e.ts,true))+'</td><td class="email">'+esc(e.email||'Unknown')+'</td>'
-        +'<td>'+esc(e.service==='anthropic'?'Claude':'fal.ai')+'</td><td>'+esc(featureLabel(e.feature))+'</td>'
-        +'<td class="num">'+(e.service==='anthropic'?(compactNum(e.input_tokens)+' / '+compactNum(e.output_tokens)):(compactNum(e.images)+' img'))+'</td>'
+        +'<td>'+esc(e.service==='anthropic'?'Claude':e.service==='gemini'?'Gemini':'fal.ai')+'</td><td>'+esc(featureLabel(e.feature))+'</td>'
+        +'<td class="num">'+(e.service==='anthropic'||e.service==='gemini'?(compactNum(e.input_tokens)+' / '+compactNum(e.output_tokens)):(compactNum(e.images)+' img'))+'</td>'
         +'<td class="money">'+money(e.cost_usd)+'</td></tr>';
     }).join('');
     body.innerHTML=''
       +'<div class="gd-admin-kpis">'
       +'<div class="gd-admin-kpi"><div class="gd-admin-label">Estimated spend</div><div class="gd-admin-value">'+money(t.cost_usd)+'</div><div class="gd-admin-note">selected period · USD</div></div>'
-      +'<div class="gd-admin-kpi"><div class="gd-admin-label">AI requests</div><div class="gd-admin-value">'+compactNum(t.requests)+'</div><div class="gd-admin-note">Claude + fal.ai</div></div>'
-      +'<div class="gd-admin-kpi"><div class="gd-admin-label">Claude tokens</div><div class="gd-admin-value">'+compactNum((t.input_tokens||0)+(t.output_tokens||0))+'</div><div class="gd-admin-note">'+compactNum(t.input_tokens)+' in · '+compactNum(t.output_tokens)+' out</div></div>'
+      +'<div class="gd-admin-kpi"><div class="gd-admin-label">AI requests</div><div class="gd-admin-value">'+compactNum(t.requests)+'</div><div class="gd-admin-note">Claude + Gemini + fal.ai</div></div>'
+      +'<div class="gd-admin-kpi"><div class="gd-admin-label">AI tokens</div><div class="gd-admin-value">'+compactNum((t.input_tokens||0)+(t.output_tokens||0))+'</div><div class="gd-admin-note">'+compactNum(t.input_tokens)+' in · '+compactNum(t.output_tokens)+' out</div></div>'
       +'<div class="gd-admin-kpi"><div class="gd-admin-label">Storyboard images</div><div class="gd-admin-value">'+compactNum(t.images)+'</div><div class="gd-admin-note">'+(Number(t.megapixels)||0).toFixed(1)+' megapixels</div></div>'
       +'</div>'
       +'<div class="gd-admin-grid"><section class="gd-admin-panel"><div class="gd-admin-panel-title"><span>Spend timeline</span><span>'+esc(String(d.range&&d.range.days>=3650?'All time':(d.range&&d.range.days||30)+' days'))+'</span></div>'+chart+'</section>'
