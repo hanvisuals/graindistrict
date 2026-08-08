@@ -218,8 +218,8 @@ const sizes=[
         if(r.width===0)return;
         if(r.right>vw+1||r.left<-1||r.bottom>vh+1)bad.push((el.className||el.tagName).toString().split(' ')[0]);
       });
-      const f=document.querySelector('.pb-frame').getBoundingClientRect();
-      const c=document.querySelector('.pb-close').getBoundingClientRect();
+      const f=document.getElementById('pbFrame').getBoundingClientRect();
+      const c=document.querySelector('.pb-back').getBoundingClientRect();
       const a=document.getElementById('gdAcct').getBoundingClientRect();
       return {bad:[...new Set(bad)].slice(0,5),
               frame:Math.round(f.width)+'x'+Math.round(f.height)+' ('+(f.width/f.height).toFixed(2)+')',
@@ -236,11 +236,11 @@ const sizes=[
     const s3=await page.evaluate(()=>{
       const vis=id=>{const e=document.querySelector(id);const r=e.getBoundingClientRect();
         return {w:Math.round(r.width),shown:getComputedStyle(e).display!=='none'};};
-      return {plan:vis('.s3-col-right'), brief:vis('.s3-col-left'),
+      return {plan:vis('.s3-col-right'), brief:vis('.script-studio-intro'),
               scrollW:document.documentElement.scrollWidth,
               vw:document.documentElement.clientWidth};
     });
-    console.log('  s3: brief '+(s3.brief.shown?s3.brief.w+'px':'gizli')+'  plan '+(s3.plan.shown?s3.plan.w+'px':'gizli')
+    console.log('  s3: studio intro '+(s3.brief.shown?s3.brief.w+'px':'gizli')+'  editor '+(s3.plan.shown?s3.plan.w+'px':'gizli')
                 +'  tasma '+(s3.scrollW>s3.vw?'VAR':'yok'));
     await page.screenshot({path:'mob-'+s.n+'-s3.png'});
     await page.close();

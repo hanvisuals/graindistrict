@@ -24,7 +24,7 @@ const { chromium } = require('./node_modules/playwright');
 
   // --- signed out, canvas screen ---
   await page.evaluate(() => {
-    show('s5'); projectType='youtube'; topic='test';
+    show('s5'); projectType='youtube';canvasViewMode='free';freeCanvasState=null;topic='test';
     nodes=[{id:1,type:'broll',tcStart:'00:00',tcEnd:'00:03',content:'x',shots:[],x:60,y:80}];
     attShots=[];imgNodes=[];noteNodes=[];conns=[];
     renderAll();
@@ -47,7 +47,7 @@ const { chromium } = require('./node_modules/playwright');
   await page.reload();
   await page.waitForTimeout(400);
   await page.evaluate(() => {
-    show('s5'); projectType='youtube'; topic='test';
+    show('s5'); projectType='youtube';canvasViewMode='free';freeCanvasState=null;topic='test';
     nodes=[{id:1,type:'broll',tcStart:'00:00',tcEnd:'00:03',content:'x',shots:[],x:60,y:80}];
     attShots=[];imgNodes=[];noteNodes=[];conns=[];
     renderAll();

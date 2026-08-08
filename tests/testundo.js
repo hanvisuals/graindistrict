@@ -14,7 +14,7 @@ const { chromium } = require('./node_modules/playwright');
   await page.waitForTimeout(100);
 
   await page.evaluate(() => {
-    show('s5'); projectType='youtube'; nid=500;
+    show('s5'); projectType='youtube';canvasViewMode='free';freeCanvasState=null;nid=500;
     nodes=[{id:1,type:'broll',tcStart:'00:00',tcEnd:'00:03',content:'A',shots:[],x:60,y:80,grp:0},
            {id:2,type:'broll',tcStart:'00:03',tcEnd:'00:06',content:'B',shots:[],x:296,y:80,grp:0},
            {id:3,type:'broll',tcStart:'00:06',tcEnd:'00:09',content:'C',shots:[],x:532,y:80,grp:0}];

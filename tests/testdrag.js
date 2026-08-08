@@ -9,7 +9,7 @@ const { chromium } = require('./node_modules/playwright');
   const ok=(n,c,x)=>console.log((c?'PASS':'FAIL')+' - '+n+(x!==undefined&&!c?' '+JSON.stringify(x):''));
 
   const r = await page.evaluate(async () => {
-    show('s5'); projectType='youtube';
+    show('s5'); projectType='youtube';canvasViewMode='free';freeCanvasState=null;
     nodes=[
       {id:1,type:'broll',tcStart:'00:00',tcEnd:'00:03',content:'A',shots:[],x:100,y:100,grp:0},
       {id:2,type:'broll',tcStart:'00:03',tcEnd:'00:06',content:'B',shots:[],x:500,y:100,grp:0}

@@ -14,7 +14,7 @@ const { pathToFileURL } = require('url');
   await page.evaluate(() => {
     document.getElementById('gdAuthOv').classList.remove('show','gate');
     document.body.classList.remove('gd-gated');show('s5');
-    projectType='youtube';topic='Location view test';
+    projectType='youtube';topic='Location view test';canvasViewMode='free';freeCanvasState=null;
     nodes=[
       {id:1,type:'voiceover',tcStart:'00:00',tcEnd:'00:05',content:'Opening narration',shots:[],x:70,y:90,grp:0},
       {id:2,type:'broll',tcStart:'00:00',tcEnd:'00:02',content:'Home close-up with enough detail to make the compact card useful',shots:[],x:410,y:330,grp:0},
@@ -58,7 +58,7 @@ const { pathToFileURL } = require('url');
     captured:JSON.parse(captureState().nodes).map(n=>({id:n.id,x:n.x,y:n.y}))
   }));
   console.log('TEST 1 - one focused location opens with a two-place navigator:',
-    home.mode==='location'&&home.button==='Story order'&&home.lanes[0]==='Family Home'&&home.tabs.length===2&&home.active.startsWith('Family Home')?'PASS':'FAIL');
+    home.mode==='location'&&/Locations/.test(home.button)&&home.lanes[0]==='Family Home'&&home.tabs.length===2&&home.active.startsWith('Family Home')?'PASS':'FAIL');
   console.log('TEST 2 - VO becomes context and only visual shots become cards:',
     home.cues===2&&home.shots===5&&home.transitions===0?'PASS':'FAIL');
   console.log('TEST 3 - production labels stay on compact cards:',
@@ -93,7 +93,7 @@ const { pathToFileURL } = require('url');
   const expanded=await page.locator('#nc-3').evaluate(el=>({expanded:el.classList.contains('location-expanded'),more:el.querySelector('.location-card-more')?.textContent}));
   console.log('TEST 9 - clicking a compact card expands it in place:',expanded.expanded&&expanded.more==='less'?'PASS':'FAIL');
 
-  await page.click('#btnLocations');await page.waitForTimeout(80);
+  await page.click('#btnCanvasView');await page.waitForTimeout(80);
   const restored=await page.evaluate(() => ({
     mode:canvasViewMode,button:document.getElementById('btnLocations').textContent,
     nodes:Object.fromEntries(nodes.map(n=>[n.id,{x:n.x,y:n.y}])),att:{x:attShots[0].x,y:attShots[0].y},scale,px,py,
@@ -101,8 +101,8 @@ const { pathToFileURL } = require('url');
     notes:document.querySelectorAll('.note-node').length,paths:document.querySelectorAll('.conn-path').length,
     expectedAttY:window.__storyAttY
   }));
-  console.log('TEST 10 - story layout, camera and story-only items restore exactly:',
-    restored.mode==='story'&&restored.button==='Locations'&&!restored.nav&&restored.nodes[1].x===70&&restored.nodes[5].y===820&&
+  console.log('TEST 10 - free Canvas layout, camera and freeform items restore exactly:',
+    restored.mode==='free'&&/Locations/.test(restored.button)&&!restored.nav&&restored.nodes[1].x===70&&restored.nodes[5].y===820&&
     restored.att.x===410&&restored.att.y===restored.expectedAttY&&restored.scale===.82&&restored.px===123&&restored.py===77&&
     restored.images===1&&restored.notes===1&&restored.paths===1?'PASS':'FAIL');
 

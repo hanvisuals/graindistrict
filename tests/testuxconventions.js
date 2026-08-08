@@ -75,7 +75,8 @@ const { pathToFileURL } = require('url');
     attShots=[];imgNodes=[];noteNodes=[];conns=[];renderAll();
   });
   const legendClosed=await page.evaluate(()=>({panel:getComputedStyle(document.getElementById('guidePanel')).display,button:getComputedStyle(document.getElementById('guideShow')).display,expanded:document.getElementById('guideShow').getAttribute('aria-expanded')}));
-  ok('The canvas opens without the legend covering work',legendClosed.panel==='none'&&legendClosed.button!=='none'&&legendClosed.expanded==='false',legendClosed);
+  ok('Story opens without free-canvas instructions covering work',legendClosed.panel==='none'&&legendClosed.button==='none'&&legendClosed.expanded==='false',legendClosed);
+  await page.click('#btnCanvasView');await page.waitForTimeout(40);
   await page.click('#guideShow');
   const legendOpen=await page.evaluate(()=>({panel:getComputedStyle(document.getElementById('guidePanel')).display,expanded:document.getElementById('guideShow').getAttribute('aria-expanded')}));
   ok('Legend remains easy to reveal',legendOpen.panel!=='none'&&legendOpen.expanded==='true',legendOpen);
@@ -89,18 +90,18 @@ const { pathToFileURL } = require('url');
   ok('Confirming New project returns to a clean project chooser',fresh.nodes===0&&fresh.screen==='s0',fresh);
 
   await page.evaluate(()=>{
-    window.__exports=0;projectBreakdown=[{name:'Old grouping'}];projectBreakdownKey='old';
-    doExport=function(){window.__exports++;};window.gdAsk=()=>Promise.resolve(false);requestLocationRefresh();
+    window.__locationRefreshes=0;projectBreakdown=[{name:'Old grouping'}];projectBreakdownKey='old';
+    requestLocationView=function(){window.__locationRefreshes++;};window.gdAsk=()=>Promise.resolve(false);requestLocationRefresh();
   });
   await page.waitForTimeout(20);
-  ok('Cancelling location recalculation keeps the current grouping',await page.evaluate(()=>window.__exports===0&&projectBreakdown.length===1));
+  ok('Cancelling location recalculation keeps the current grouping',await page.evaluate(()=>window.__locationRefreshes===0&&projectBreakdown.length===1));
   await page.evaluate(()=>{window.gdAsk=()=>Promise.resolve(true);requestLocationRefresh();});await page.waitForTimeout(20);
-  ok('Confirmed recalculation clears only the grouping and continues',await page.evaluate(()=>window.__exports===1&&projectBreakdown===null&&projectBreakdownKey===null));
+  ok('Confirmed recalculation clears only the grouping and continues',await page.evaluate(()=>window.__locationRefreshes===1&&projectBreakdown===null&&projectBreakdownKey===null));
 
   await page.setViewportSize({width:390,height:844});
   await page.evaluate(()=>{show('s5');document.body.classList.remove('location-mode');});
   const touch=await page.evaluate(()=>{
-    const rects=[...document.querySelectorAll('.cbar-ic,.tb-btn')].filter(el=>getComputedStyle(el).display!=='none').map(el=>({w:el.getBoundingClientRect().width,h:el.getBoundingClientRect().height,label:el.getAttribute('aria-label')}));
+    const rects=[...document.querySelectorAll('.cbar-ic,.tb-btn')].filter(el=>{const s=getComputedStyle(el);return s.display!=='none'&&s.visibility!=='hidden'&&s.opacity!=='0'&&s.pointerEvents!=='none';}).map(el=>({w:el.getBoundingClientRect().width,h:el.getBoundingClientRect().height,label:el.getAttribute('aria-label')}));
     return {rects,minW:Math.min(...rects.map(r=>r.w)),minH:Math.min(...rects.map(r=>r.h))};
   });
   ok('Core phone controls use comfortable 44px touch targets',touch.minW>=44&&touch.minH>=44,touch);
