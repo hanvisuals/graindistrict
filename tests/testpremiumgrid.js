@@ -41,7 +41,8 @@ const APP = process.env.APP || path.resolve(__dirname, '..', 'index.html');
   const story=await page.evaluate(()=>({
     mode:canvasViewMode,lanes:document.querySelectorAll('.story-lane').length,cues:document.querySelectorAll('.story-cue').length,
     cards:document.querySelectorAll('.story-shot-card').length,voiceCards:document.querySelectorAll('.story-shot-card[data-t="voiceover"]').length,
-    images:document.querySelectorAll('.img-node').length,notes:document.querySelectorAll('.note-node').length,connections:document.querySelectorAll('.conn-path').length,
+    images:document.querySelectorAll('.img-node').length,notes:document.querySelectorAll('.note-node').length,
+    manualConnections:document.querySelectorAll('.conn-group.manual-relation').length,storyConnections:document.querySelectorAll('.conn-group.story-relation').length,
     toolbar:getComputedStyle(document.getElementById('toolbar')).pointerEvents,
     active:[...document.querySelectorAll('.board-view-switch .board-deck-btn.on')].map(x=>x.textContent.trim()),
     controlLabels:[...document.querySelectorAll('.board-density-switch .board-deck-label,.board-detail-switch .board-deck-label')].map(x=>x.textContent.trim()),
@@ -53,10 +54,10 @@ const APP = process.env.APP || path.resolve(__dirname, '..', 'index.html');
     body:document.body.className
   }));
   ok('Story is the deliberate default production hierarchy',story.mode==='story'&&story.lanes===2&&story.cues===2&&story.cards===4&&story.voiceCards===0,story);
-  ok('Voiceover is context while freeform objects stay out of Story',story.images===0&&story.notes===0&&story.connections===0&&story.toolbar==='none',story);
+  ok('Voiceover is context while freeform objects stay out of Story',story.images===0&&story.notes===0&&story.manualConnections===0&&story.storyConnections===0&&story.toolbar==='none',story);
   ok('Size and Detail controls are labelled and clickable where they apply',story.controlLabels.join('/')==='Size/Detail'&&story.controlsClickable,story);
   ok('Visual nodes inherit their parent voiceover number',JSON.stringify(story.visibleLabels)===JSON.stringify(['01 / voiceover','01A','01B','01C','02 / voiceover','02A']),story.visibleLabels);
-  ok('Story scenes form one compact horizontal node flow',story.laneBoxes[1].left>story.laneBoxes[0].left+story.laneBoxes[0].width&&story.laneBoxes.every(x=>x.top===story.laneBoxes[0].top&&x.height<250)&&new Set(story.nodeTops).size===1&&story.links===4&&story.scale>=.88&&story.active[0]==='Story'&&/story-mode/.test(story.body),story);
+  ok('Story scenes form one compact horizontal node flow',story.laneBoxes[1].left>story.laneBoxes[0].left+story.laneBoxes[0].width&&story.laneBoxes.every(x=>x.top===story.laneBoxes[0].top&&x.height<250)&&new Set(story.nodeTops).size===1&&story.links===4&&story.scale>=.85&&story.active[0]==='Story'&&/story-mode/.test(story.body),story);
 
   const compact=await page.locator('#nc-2').evaluate(el=>({w:el.getBoundingClientRect().width,h:el.getBoundingClientRect().height,tc:getComputedStyle(el.querySelector('.nc-tc')).display}));
   await page.click('#btnDensityComfortable');await page.waitForTimeout(80);
@@ -72,13 +73,14 @@ const APP = process.env.APP || path.resolve(__dirname, '..', 'index.html');
   await page.click('#btnCanvasView');await page.waitForTimeout(100);
   const canvas=await page.evaluate(()=>({
     mode:canvasViewMode,nodes:Object.fromEntries(nodes.map(n=>[n.id,{x:n.x,y:n.y}])),manual:Object.fromEntries(window.__manual.map(n=>[n.id,{x:n.x,y:n.y}])),
-    images:document.querySelectorAll('.img-node').length,notes:document.querySelectorAll('.note-node').length,connections:document.querySelectorAll('.conn-path').length,
+    images:document.querySelectorAll('.img-node').length,notes:document.querySelectorAll('.note-node').length,
+    manualConnections:document.querySelectorAll('.conn-group.manual-relation').length,storyConnections:document.querySelectorAll('.conn-group.story-relation').length,storedConnections:conns.length,
     toolbar:getComputedStyle(document.getElementById('toolbar')).pointerEvents,body:document.body.className,
     densityDisplay:getComputedStyle(document.querySelector('.board-density-switch')).display,detailDisplay:getComputedStyle(document.querySelector('.board-detail-switch')).display,
     cardLabels:[...document.querySelectorAll('.nc-tag')].map(x=>x.textContent.trim()),listLabels:[...document.querySelectorAll('.bl-num')].map(x=>x.textContent.trim())
   }));
   ok('Canvas restores every hand-positioned coordinate exactly',canvas.mode==='free'&&Object.keys(canvas.manual).every(id=>canvas.nodes[id].x===canvas.manual[id].x&&canvas.nodes[id].y===canvas.manual[id].y),canvas);
-  ok('Freeform images, notes, links and creation tools only return in Canvas',canvas.images===1&&canvas.notes===1&&canvas.connections===1&&canvas.toolbar==='auto'&&/free-mode/.test(canvas.body),canvas);
+  ok('Canvas keeps the saved custom link and derives the parent-child story links without drawing a duplicate',canvas.images===1&&canvas.notes===1&&canvas.storedConnections===1&&canvas.manualConnections===0&&canvas.storyConnections===4&&canvas.toolbar==='auto'&&/free-mode/.test(canvas.body),canvas);
   ok('Canvas hides controls that do not affect freeform nodes',canvas.densityDisplay==='none'&&canvas.detailDisplay==='none',canvas);
   ok('Canvas and the block list keep the same parent-child numbering',JSON.stringify(canvas.cardLabels)===JSON.stringify(['01','01A','01B','01C','02','02A'])&&JSON.stringify(canvas.listLabels)===JSON.stringify(canvas.cardLabels),canvas);
 

@@ -1791,6 +1791,49 @@ body.free-mode .board-deck-group:not(.board-view-switch),body.free-mode .board-d
   .story-cue-meta{left:14px;right:10px;bottom:8px;}
 }
 
+/* ===== DARK RESEARCH CANVAS =====
+   A quiet working surface: hierarchy comes from spacing and relationships,
+   while motion is reserved for a connection the creator is inspecting. */
+body.free-mode .vp{background-color:#080908;background-image:linear-gradient(rgba(255,255,255,.011) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.011) 1px,transparent 1px);}
+body.free-mode .cw .nc{border-color:rgba(255,255,255,.075);border-radius:12px;background:linear-gradient(145deg,rgba(23,24,23,.97),rgba(12,13,12,.985));box-shadow:0 8px 26px rgba(0,0,0,.28),inset 0 1px rgba(255,255,255,.025);transition:border-color .2s var(--gd-ease),box-shadow .24s var(--gd-ease),opacity .2s var(--gd-ease);}
+body.free-mode .cw .nc:hover{border-color:rgba(255,255,255,.14);box-shadow:0 15px 36px rgba(0,0,0,.38),inset 0 1px rgba(255,255,255,.035);}
+body.free-mode .cw .nc.sel,body.free-mode .cw .nc.relation-hover{border-color:rgba(222,192,95,.32);box-shadow:0 0 0 1px rgba(222,192,95,.09),0 18px 42px rgba(0,0,0,.42),0 0 32px rgba(222,192,95,.045);}
+body.free-mode .cw .nc.relation-dim{opacity:.38;}
+body.free-mode .cw .nc-tag{color:rgba(255,255,255,.28);}
+body.free-mode .port-dot{width:8px;height:8px;border-color:rgba(222,192,95,.42);background:#0c0d0c;box-shadow:0 0 0 3px rgba(222,192,95,.055),0 0 12px rgba(222,192,95,.1);}
+body.free-mode .port-dot:hover{background:var(--board-gold);border-color:#f8e8a8;box-shadow:0 0 0 4px rgba(222,192,95,.09),0 0 18px rgba(222,192,95,.28);}
+
+.conn-group{pointer-events:none;}
+.conn-path{fill:none;stroke:rgba(201,168,76,.48);stroke-width:1.15;vector-effect:non-scaling-stroke;transition:stroke-width .18s,opacity .18s,filter .18s;}
+.conn-group.story-relation .conn-path{stroke:url(#storyConnGradient);opacity:.7;}
+.conn-flow{fill:none;stroke:rgba(230,207,131,.58);stroke-width:.75;stroke-dasharray:2 10;stroke-linecap:round;vector-effect:non-scaling-stroke;opacity:0;}
+.conn-hit{fill:none;stroke:transparent;stroke-width:16;pointer-events:stroke;cursor:pointer;}
+.conn-label{pointer-events:none;opacity:0;transition:opacity .16s;}
+.conn-label rect{fill:rgba(10,11,10,.94);stroke:rgba(255,255,255,.09);stroke-width:1;rx:5;}
+.conn-label text{fill:rgba(255,255,255,.5);font-family:var(--mono);font-size:7px;letter-spacing:.06em;text-anchor:middle;dominant-baseline:middle;}
+.conn-group:hover .conn-path,.conn-group.active .conn-path{stroke-width:1.8;opacity:1;filter:drop-shadow(0 0 5px rgba(222,192,95,.28));}
+.conn-group:hover .conn-flow,.conn-group.active .conn-flow{opacity:1;animation:research-flow 1.8s linear infinite;}
+.conn-group:hover .conn-label,.conn-group.active .conn-label{opacity:1;}
+
+.story-link{transition:stroke .18s,stroke-width .18s,opacity .18s;}
+.story-link-flow{fill:none;stroke:rgba(222,192,95,.5);stroke-width:.7;stroke-dasharray:2 9;vector-effect:non-scaling-stroke;opacity:0;}
+.story-link-hit{fill:none;stroke:transparent;stroke-width:14;pointer-events:stroke;cursor:pointer;}
+.story-link-label{opacity:0;fill:rgba(255,255,255,.42);font-family:var(--mono);font-size:6px;letter-spacing:.05em;text-anchor:middle;transition:opacity .16s;pointer-events:none;}
+.story-link-group:hover .story-link,.story-link-group.active .story-link{stroke:rgba(222,192,95,.68);stroke-width:1.65;}
+.story-link-group:hover .story-link-flow,.story-link-group.active .story-link-flow{opacity:1;animation:research-flow 1.8s linear infinite;}.story-link-group:hover .story-link-label,.story-link-group.active .story-link-label{opacity:1;}
+.relation-hover{border-color:rgba(222,192,95,.34)!important;}
+
+.timeline-wrap{background:#070807;}
+.timeline{background:linear-gradient(180deg,#090a09,#070807);}
+.tl-block{border:1px solid rgba(255,255,255,.025);box-shadow:inset 0 1px rgba(255,255,255,.025);}
+.tl-block.tl-reordered{animation:timeline-settle .62s var(--gd-ease);}
+.tl-sync-hint{position:absolute;z-index:7;right:12px;top:8px;display:flex;align-items:center;gap:6px;padding:5px 8px;border:1px solid rgba(222,192,95,.18);border-radius:999px;background:rgba(12,13,12,.92);color:rgba(222,192,95,.72);font-family:var(--mono);font-size:6px;letter-spacing:.07em;text-transform:uppercase;opacity:0;transform:translateY(4px);pointer-events:none;transition:opacity .2s,transform .22s;}
+.tl-sync-hint::before{content:'';width:4px;height:4px;border-radius:50%;background:#75c694;box-shadow:0 0 8px rgba(117,198,148,.5);}
+.tl-sync-hint.show{opacity:1;transform:none;}
+@keyframes research-flow{to{stroke-dashoffset:-24}}
+@keyframes timeline-settle{0%{filter:brightness(1.7);box-shadow:0 0 0 1px rgba(222,192,95,.55),0 0 18px rgba(222,192,95,.28)}100%{filter:none;box-shadow:inset 0 1px rgba(255,255,255,.025)}}
+@media (prefers-reduced-motion:reduce){.conn-flow,.story-link-flow{animation:none}.tl-block.tl-reordered{animation:none}}
+
 /* ===== PRINTABLE SHOT LIST =====
    Hidden on screen; on paper it is the only thing there. Light ground and
    black text because this is meant to be printed and carried, not looked at
@@ -2449,7 +2492,11 @@ body.free-mode .board-deck-group:not(.board-view-switch),body.free-mode .board-d
     </div>
     <div class="vp" id="vp">
       <svg class="conn-svg" id="connSvg" width="9999" height="9999">
-        <defs><marker id="arr" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="rgba(201,168,76,.7)"/></marker></defs>
+        <defs>
+          <linearGradient id="storyConnGradient"><stop offset="0" stop-color="#d9b956"/><stop offset=".38" stop-color="#879d82"/><stop offset="1" stop-color="#6699d0"/></linearGradient>
+          <marker id="arr" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="rgba(201,168,76,.7)"/></marker>
+          <marker id="storyArr" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="rgba(102,153,208,.82)"/></marker>
+        </defs>
         <path id="drawLine" d="" fill="none" stroke="rgba(201,168,76,.5)" stroke-width="1.5" stroke-dasharray="5 4" style="display:none"/>
       </svg>
       <div class="cw" id="cw"></div>
@@ -2505,6 +2552,7 @@ body.free-mode .board-deck-group:not(.board-view-switch),body.free-mode .board-d
   <div class="timeline-wrap" id="tlWrap" style="position:relative">
     <div class="timeline" id="tl"></div>
     <div class="tl-playhead" id="tlHead" style="display:none"></div>
+    <div class="tl-sync-hint" id="tlSyncHint">Timeline synced</div>
   </div>
   <div class="toolbar" id="toolbar">
     <div class="tb-drag" id="tbDragHandle" title="Drag to move">
@@ -3349,6 +3397,7 @@ var dragN=null,dragAtt=null,dragImg=null,dragNote=null,dragSb=null,dox=0,doy=0,d
 var spaceDown=false;
 var canvasMode='select';
 var connFrom=null;
+var timelineFlashIds=[],timelineHintTimer=null;
 var modalType='voiceover';
 var resizing=null,rsX=0,rsY=0,rsW=0,rsH=0,rsCorner='se',rsOX=0,rsOY=0,rsAspect=1;
 var undoStack=[],undoIdx=-1;
@@ -4610,11 +4659,26 @@ function renderStoryLanes(cw){
     var seq=lane.sequence||[],ns='http://www.w3.org/2000/svg';
     if(seq.length>1){
       var svg=document.createElementNS(ns,'svg');svg.setAttribute('class','story-link-map');svg.setAttribute('viewBox','0 0 '+lane.width+' '+lane.height);
-      for(var j=0;j<seq.length-1;j++){
-        var from=seq[j],to=seq[j+1],x1=from.x+(from.__storyWidth||0)-lane.x,y1=from.y+(from.__storyHeight||0)/2-lane.y,x2=to.x-lane.x,y2=to.y+(to.__storyHeight||0)/2-lane.y;
-        var bend=Math.max(12,(x2-x1)*.48),path=document.createElementNS(ns,'path');path.setAttribute('class','story-link'+(j===0&&lane.cue?' is-first':''));path.setAttribute('d','M '+x1+' '+y1+' C '+(x1+bend)+' '+y1+', '+(x2-bend)+' '+y2+', '+x2+' '+y2);svg.appendChild(path);
-        var dot=document.createElementNS(ns,'circle');dot.setAttribute('class','story-link-dot'+(j===0&&lane.cue?' is-first':''));dot.setAttribute('cx',x2);dot.setAttribute('cy',y2);dot.setAttribute('r','2.6');svg.appendChild(dot);
-      }
+      var pairs=[];
+      // A scene is a relationship, not a queue: every visual belongs to the
+      // voice/music cue. Draw that hierarchy directly instead of implying
+      // that 01B belongs to 01A just because the cards sit side by side.
+      if(lane.cue){lane.cards.forEach(function(card){pairs.push({from:lane.cue,to:card,primary:true});});}
+      else for(var p=0;p<seq.length-1;p++)pairs.push({from:seq[p],to:seq[p+1],primary:p===0});
+      pairs.forEach(function(pair){
+        var from=pair.from,to=pair.to,x1=from.x+(from.__storyWidth||0)-lane.x,y1=from.y+(from.__storyHeight||0)/2-lane.y,x2=to.x-lane.x,y2=to.y+(to.__storyHeight||0)/2-lane.y;
+        var bend=Math.max(12,(x2-x1)*.48),d='M '+x1+' '+y1+' C '+(x1+bend)+' '+y1+', '+(x2-bend)+' '+y2+', '+x2+' '+y2;
+        var g=document.createElementNS(ns,'g');g.setAttribute('class','story-link-group'+(selId===from.id||selId===to.id?' active':''));
+        var path=document.createElementNS(ns,'path');path.setAttribute('class','story-link'+(pair.primary?' is-first':''));path.setAttribute('d',d);g.appendChild(path);
+        var flow=document.createElementNS(ns,'path');flow.setAttribute('class','story-link-flow');flow.setAttribute('d',d);g.appendChild(flow);
+        var label=document.createElementNS(ns,'text');label.setAttribute('class','story-link-label');label.setAttribute('x',(x1+x2)/2);label.setAttribute('y',Math.min(y1,y2)-5);label.textContent=storyLabelText(from)+' → '+storyLabelText(to);g.appendChild(label);
+        var hit=document.createElementNS(ns,'path');hit.setAttribute('class','story-link-hit');hit.setAttribute('d',d);
+        hit.addEventListener('mouseenter',function(){document.getElementById('nc-'+from.id)?.classList.add('relation-hover');document.getElementById('nc-'+to.id)?.classList.add('relation-hover');});
+        hit.addEventListener('mouseleave',function(){document.getElementById('nc-'+from.id)?.classList.remove('relation-hover');document.getElementById('nc-'+to.id)?.classList.remove('relation-hover');});
+        hit.addEventListener('click',function(e){e.stopPropagation();svg.querySelectorAll('.story-link-group').forEach(function(x){x.classList.remove('active');});g.classList.add('active');selectRelationTarget({toType:'node',toId:to.id});});g.appendChild(hit);
+        var dot=document.createElementNS(ns,'circle');dot.setAttribute('class','story-link-dot'+(pair.primary?' is-first':''));dot.setAttribute('cx',x2);dot.setAttribute('cy',y2);dot.setAttribute('r','2.6');g.appendChild(dot);
+        svg.appendChild(g);
+      });
       el.appendChild(svg);
     }
     cw.appendChild(el);
@@ -6125,6 +6189,11 @@ function renderAttShots(){
     if(nodeDrawerClosed[att.parentId])return;
     var el=document.createElement('div');
     el.className='att-shot'+(att.collapsed?' collapsed':'')+(wasPresent['att-'+att.id]?' att-noanim':'');
+    // Some Chromium builds can keep the short compositor entrance animation
+    // alive after its declared duration when the card is repositioned during
+    // font/layout settling. End it explicitly so its transformed box never
+    // drifts back over the parent card.
+    if(!wasPresent['att-'+att.id])setTimeout(function(card){if(card.isConnected)card.classList.add('att-noanim');},180,el);
     el.setAttribute('data-k',att.k);el.id='att-'+att.id;
     el.style.cssText='left:'+att.x+'px;top:'+att.y+'px;width:'+NC_W+'px;z-index:1;';
     var stripe=document.createElement('div');stripe.className='att-stripe';
@@ -6158,7 +6227,7 @@ function renderAttShots(){
     el.addEventListener('mouseup',function(e){
       if(connFrom&&connFrom.id!==att.id){
         saveHistory();
-        conns.push({id:nid++,fromType:connFrom.type,fromId:connFrom.id,toType:'att',toId:att.id});
+        addCanvasConnection({fromType:connFrom.type,fromId:connFrom.id,toType:'att',toId:att.id});
         renderConns();cancelConn();
       }
     });
@@ -6367,7 +6436,7 @@ function renderCanvas(){
     el.addEventListener('mouseup',function(e){
       if(connFrom&&connFrom.id!==node.id){
         saveHistory();
-        conns.push({id:nid++,fromType:connFrom.type,fromId:connFrom.id,toType:'node',toId:node.id});
+        addCanvasConnection({fromType:connFrom.type,fromId:connFrom.id,toType:'node',toId:node.id});
         renderConns();cancelConn();
       }
     });
@@ -6451,7 +6520,7 @@ function renderImgNodes(){
     el.addEventListener('mouseup',function(e){
       if(connFrom&&connFrom.id!==img.id){
         saveHistory();
-        conns.push({id:nid++,fromType:connFrom.type,fromId:connFrom.id,toType:'img',toId:img.id});
+        addCanvasConnection({fromType:connFrom.type,fromId:connFrom.id,toType:'img',toId:img.id});
         renderConns();cancelConn();
       }
     });
@@ -6497,7 +6566,7 @@ function renderNoteNodes(){
     el.addEventListener('mouseup',function(e){
       if(connFrom&&connFrom.id!==note.id){
         saveHistory();
-        conns.push({id:nid++,fromType:connFrom.type,fromId:connFrom.id,toType:'note',toId:note.id});
+        addCanvasConnection({fromType:connFrom.type,fromId:connFrom.id,toType:'note',toId:note.id});
         renderConns();cancelConn();
       }
     });
@@ -6529,28 +6598,70 @@ function getPos(type,id,side){
   return null;
 }
 
+function addCanvasConnection(conn){
+  var duplicate=conns.some(function(c){return c.fromType===conn.fromType&&c.fromId===conn.fromId&&c.toType===conn.toType&&c.toId===conn.toId;});
+  if(duplicate)return false;
+  conn.id=nid++;conns.push(conn);return true;
+}
+function autoStoryConnections(){
+  var out=[];
+  planScenes().forEach(function(scene){
+    if(!scene.head||!SPINE[scene.head.type])return;
+    scene.kids.forEach(function(kid){
+      out.push({key:'story-'+scene.head.id+'-'+kid.id,auto:true,fromType:'node',fromId:scene.head.id,toType:'node',toId:kid.id,label:storyLabelText(scene.head)+' → '+storyLabelText(kid)});
+    });
+  });
+  return out;
+}
+function relationEndpointClass(type,id,on){
+  var prefix=type==='node'?'nc-':type==='img'?'img-':type==='note'?'note-':'att-';
+  var el=document.getElementById(prefix+id);if(el)el.classList.toggle('relation-hover',on);
+}
+function selectRelationTarget(conn){
+  selId=null;selImgId=null;selNoteId=null;
+  if(conn.toType==='node')selId=conn.toId;
+  else if(conn.toType==='img')selImgId=conn.toId;
+  else if(conn.toType==='note')selNoteId=conn.toId;
+  else if(conn.toType==='att'){
+    var att=attShots.filter(function(a){return a.id===conn.toId;})[0];if(att)selId=att.parentId;
+  }
+  renderBlockList();renderBlockDetail();renderTL();
+  document.querySelectorAll('.nc,.story-cue,.location-cue,.location-transition,.img-node,.note-node').forEach(function(el){el.classList.remove('sel');});
+  var prefix=conn.toType==='node'?'nc-':conn.toType==='img'?'img-':conn.toType==='note'?'note-':'nc-';
+  var targetId=conn.toType==='att'?selId:conn.toId,target=document.getElementById(prefix+targetId);if(target)target.classList.add('sel');
+}
 function renderConns(){
   var svg=document.getElementById('connSvg');
-  svg.querySelectorAll('.conn-path').forEach(function(el){el.remove();});
+  svg.querySelectorAll('.conn-group').forEach(function(el){el.remove();});
   if(canvasViewMode!=='free')return;
-  conns.forEach(function(conn){
-    var fp=getPos(conn.fromType,conn.fromId,'right');
-    var tp=getPos(conn.toType,conn.toId,'left');
+  var auto=autoStoryConnections(),autoPairs={};
+  auto.forEach(function(c){autoPairs[c.fromType+':'+c.fromId+'>'+c.toType+':'+c.toId]=1;});
+  var all=auto.concat(conns.filter(function(c){return !autoPairs[c.fromType+':'+c.fromId+'>'+c.toType+':'+c.toId];}));
+  all.forEach(function(conn){
+    var fl=getPos(conn.fromType,conn.fromId,'left'),fr=getPos(conn.fromType,conn.fromId,'right');
+    var tl=getPos(conn.toType,conn.toId,'left'),tr=getPos(conn.toType,conn.toId,'right');
+    if(!fl||!fr||!tl||!tr)return;
+    var forward=(fl.x+fr.x)/2<=(tl.x+tr.x)/2,fp=forward?fr:fl,tp=forward?tl:tr;
     if(!fp||!tp)return;
     var fx=fp.x*scale+px,fy=fp.y*scale+py;
     var tx=tp.x*scale+px,ty=tp.y*scale+py;
-    var cx1=fx+(tx-fx)*0.5,cx2=tx-(tx-fx)*0.5;
-    var path=document.createElementNS('http://www.w3.org/2000/svg','path');
-    path.setAttribute('class','conn-path');
-    path.setAttribute('d','M'+fx+','+fy+' C'+cx1+','+fy+' '+cx2+','+ty+' '+tx+','+ty);
-    path.setAttribute('stroke','rgba(201,168,76,.55)');path.setAttribute('stroke-width','1.5');
-    path.setAttribute('fill','none');path.setAttribute('opacity','1');
-    path.setAttribute('marker-end','url(#arr)');
-    path.style.cursor='pointer';
-    (function(cid){
-      path.addEventListener('click',function(){saveHistory();conns=conns.filter(function(c){return c.id!==cid;});renderConns();});
-    })(conn.id);
-    svg.appendChild(path);
+    var dir=forward?1:-1,bend=Math.max(48,Math.abs(tx-fx)*.42),cx1=fx+dir*bend,cx2=tx-dir*bend,d='M'+fx+','+fy+' C'+cx1+','+fy+' '+cx2+','+ty+' '+tx+','+ty;
+    var ns='http://www.w3.org/2000/svg',g=document.createElementNS(ns,'g');
+    g.setAttribute('class','conn-group '+(conn.auto?'story-relation':'manual-relation')+((selId===conn.fromId&&conn.fromType==='node')||(selId===conn.toId&&conn.toType==='node')?' active':''));
+    g.setAttribute('data-key',conn.auto?conn.key:String(conn.id));
+    var path=document.createElementNS(ns,'path');path.setAttribute('class','conn-path');path.setAttribute('d',d);path.setAttribute('marker-end',conn.auto?'url(#storyArr)':'url(#arr)');g.appendChild(path);
+    var flow=document.createElementNS(ns,'path');flow.setAttribute('class','conn-flow');flow.setAttribute('d',d);g.appendChild(flow);
+    var labelText=conn.label||(String(conn.fromType).toUpperCase()+' → '+String(conn.toType).toUpperCase());
+    var mx=(fx+tx)/2,my=(fy+ty)/2-8,lw=Math.max(38,labelText.length*4.5+12);
+    var label=document.createElementNS(ns,'g');label.setAttribute('class','conn-label');
+    var rect=document.createElementNS(ns,'rect');rect.setAttribute('x',mx-lw/2);rect.setAttribute('y',my-7);rect.setAttribute('width',lw);rect.setAttribute('height',14);label.appendChild(rect);
+    var text=document.createElementNS(ns,'text');text.setAttribute('x',mx);text.setAttribute('y',my+.5);text.textContent=labelText;label.appendChild(text);g.appendChild(label);
+    var hit=document.createElementNS(ns,'path');hit.setAttribute('class','conn-hit');hit.setAttribute('d',d);
+    hit.addEventListener('mouseenter',function(){relationEndpointClass(conn.fromType,conn.fromId,true);relationEndpointClass(conn.toType,conn.toId,true);});
+    hit.addEventListener('mouseleave',function(){relationEndpointClass(conn.fromType,conn.fromId,false);relationEndpointClass(conn.toType,conn.toId,false);});
+    hit.addEventListener('click',function(e){e.stopPropagation();svg.querySelectorAll('.conn-group').forEach(function(x){x.classList.remove('active');});g.classList.add('active');selectRelationTarget(conn);});
+    if(!conn.auto)hit.addEventListener('dblclick',function(e){e.preventDefault();e.stopPropagation();saveHistory();conns=conns.filter(function(c){return c.id!==conn.id;});renderConns();});
+    g.appendChild(hit);svg.appendChild(g);
   });
 }
 
@@ -6575,7 +6686,7 @@ function renderTL(){
       var s=tcToSec(node.tcStart),e=tcToSec(node.tcEnd);
       var w=Math.max(4,Math.round(Math.max(e-s,0.5)*pxPerSec));
       var b=document.createElement('div');
-      b.className='tl-block tl-abs'+(selId===node.id?' sel':'');
+      b.className='tl-block tl-abs'+(selId===node.id?' sel':'')+(timelineFlashIds.indexOf(node.id)>=0?' tl-reordered':'');
       b.id='tlb-'+node.id;
       b.style.left=Math.round(s*pxPerSec)+'px';
       b.style.top=AUDIO_TYPES[node.type]?'0':'40px';
@@ -6584,7 +6695,7 @@ function renderTL(){
       b.title=(TL[node.type]||node.type).toUpperCase()+' '+node.tcStart+'-'+node.tcEnd+'\n'+node.content.slice(0,80);
       if(w>20){
         var sp=document.createElement('span');sp.className='tl-abbr';
-        sp.textContent=ABBR[node.type]||node.type.slice(0,2).toUpperCase();
+        sp.textContent=storyLabelText(node,ABBR[node.type]||node.type.slice(0,2).toUpperCase());
         b.appendChild(sp);
       }
       b.addEventListener('click',function(){selId=node.id;renderAll();panToNode(node);});
@@ -6598,14 +6709,14 @@ function renderTL(){
     var dur=Math.max(tcToSec(node.tcEnd)-tcToSec(node.tcStart),0.5);
     var w=Math.max(4,Math.round(dur*pxPerSec));
     var b=document.createElement('div');
-    b.className='tl-block'+(selId===node.id?' sel':'');
+    b.className='tl-block'+(selId===node.id?' sel':'')+(timelineFlashIds.indexOf(node.id)>=0?' tl-reordered':'');
     b.id='tlb-'+node.id;
     b.style.width=w+'px';
     b.style.background=DC[node.type]||'#555';
     b.title=(TL[node.type]||node.type).toUpperCase()+' '+node.tcStart+'-'+node.tcEnd+'\n'+node.content.slice(0,80);
     if(w>20){
       var sp=document.createElement('span');sp.className='tl-abbr';
-      sp.textContent=ABBR[node.type]||node.type.slice(0,2).toUpperCase();
+      sp.textContent=storyLabelText(node,ABBR[node.type]||node.type.slice(0,2).toUpperCase());
       b.appendChild(sp);
     }
     b.addEventListener('click',function(){selId=node.id;renderAll();panToNode(node);});
@@ -7078,6 +7189,66 @@ function planScenes(){
     s.head.__label=s.label;
   });
   return out;
+}
+function secToTc(sec){
+  sec=Math.max(0,Math.round(Number(sec)||0));
+  return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');
+}
+function sceneMembers(scene){return [scene.head].concat(scene.kids||[]);}
+function sameIdOrder(a,b){return a.length===b.length&&a.every(function(id,i){return id===b[i];});}
+function flattenPlanScenes(scenes){
+  var ordered=[],seen={};
+  scenes.forEach(function(scene){sceneMembers(scene).forEach(function(n){if(n&&!seen[n.id]){seen[n.id]=1;ordered.push(n);}});});
+  nodes.forEach(function(n){if(!seen[n.id])ordered.push(n);});
+  return ordered;
+}
+// Free Canvas doubles as an edit surface for story order. Moving a visual
+// left/right inside its cue changes that cue's cut order; moving a cue past
+// another cue changes the order of the complete sections. The timeline is
+// rebuilt from those relationships, while every card keeps its duration.
+function syncTimelineFromCanvasDrag(nodeId){
+  if(canvasViewMode!=='free')return false;
+  var scenes=planScenes(),scene=null,dragged=null;
+  for(var i=0;i<scenes.length;i++){
+    if(scenes[i].head.id===nodeId){scene=scenes[i];dragged='head';break;}
+    if(scenes[i].kids.some(function(k){return k.id===nodeId;})){scene=scenes[i];dragged='kid';break;}
+  }
+  if(!scene)return false;
+  if(dragged==='kid'){
+    var before=scene.kids.map(function(k){return k.id;});
+    var sorted=scene.kids.slice().sort(function(a,b){return a.x-b.x||a.y-b.y||a.id-b.id;});
+    if(sameIdOrder(before,sorted.map(function(k){return k.id;})))return false;
+    scene.kids=sorted;
+    var start=tcToSec(scene.head.tcStart),limit=Math.max(start,tcToSec(scene.head.tcEnd));
+    var durations=sorted.map(function(k){return Math.max(1,tcToSec(k.tcEnd)-tcToSec(k.tcStart));});
+    var total=durations.reduce(function(sum,n){return sum+n;},0),span=limit-start,cursor=start,cumulative=0;
+    sorted.forEach(function(k,index){
+      var end;
+      if(span>0&&total>span){cumulative+=durations[index];end=start+Math.round(span*cumulative/total);end=Math.max(cursor+1,end);}
+      else end=cursor+durations[index];
+      k.tcStart=secToTc(cursor);k.tcEnd=secToTc(end);cursor=end;
+    });
+    nodes=flattenPlanScenes(scenes);storyScenes();timelineFlashIds=sorted.map(function(k){return k.id;});
+    return true;
+  }
+  var beforeScenes=scenes.map(function(s){return s.head.id;});
+  var sortedScenes=scenes.slice().sort(function(a,b){return a.head.x-b.head.x||a.head.y-b.head.y||a.head.id-b.head.id;});
+  if(sameIdOrder(beforeScenes,sortedScenes.map(function(s){return s.head.id;})))return false;
+  var earliest=Math.min.apply(null,scenes.map(function(s){return Math.min.apply(null,sceneMembers(s).map(function(n){return tcToSec(n.tcStart);}));}));
+  var sectionCursor=Math.max(0,earliest),flashed=[];
+  sortedScenes.forEach(function(s){
+    var members=sceneMembers(s),oldStart=Math.min.apply(null,members.map(function(n){return tcToSec(n.tcStart);}));
+    var oldEnd=Math.max.apply(null,members.map(function(n){return tcToSec(n.tcEnd);})),sectionDuration=Math.max(1,oldEnd-oldStart),shift=sectionCursor-oldStart;
+    members.forEach(function(n){n.tcStart=secToTc(tcToSec(n.tcStart)+shift);n.tcEnd=secToTc(tcToSec(n.tcEnd)+shift);flashed.push(n.id);});
+    sectionCursor+=sectionDuration;
+  });
+  nodes=flattenPlanScenes(sortedScenes);storyScenes();timelineFlashIds=flashed;return true;
+}
+function showTimelineSync(){
+  var hint=document.getElementById('tlSyncHint');if(!hint)return;
+  hint.classList.remove('show');requestAnimationFrame(function(){hint.classList.add('show');});
+  if(timelineHintTimer)clearTimeout(timelineHintTimer);
+  timelineHintTimer=setTimeout(function(){hint.classList.remove('show');timelineFlashIds=[];document.querySelectorAll('.tl-reordered').forEach(function(el){el.classList.remove('tl-reordered');});},1350);
 }
 function planAsText(onlyCamera){
   var lines=[];
@@ -8122,13 +8293,13 @@ document.addEventListener('mouseup',function(e){
     // was about to dispatch its native 'click' event to, silently breaking
     // card selection (and any button click bubbling through it) entirely
     if(dragNMoved){
-      // positions are already written; only this block's chain lines and the
-      // connections between blocks actually depend on where it ended up
-      saveHistory();
-      updateAttLines(dragN.id);
-      renderConns();
-    }
-    dragN=null;dragNMoved=false;
+      // Horizontal position is the creator's cut order in Free Canvas. Once
+      // the drop lands, make that same order authoritative everywhere else.
+      var droppedId=dragN.id,timelineChanged=syncTimelineFromCanvasDrag(droppedId);
+      saveHistory();dragN=null;dragNMoved=false;
+      if(timelineChanged){renderAll();showTimelineSync();}
+      else{updateAttLines(droppedId);renderConns();}
+    }else{dragN=null;dragNMoved=false;}
   }
   if(e.button===0&&dragSb){
     var sbpEl=document.getElementById('sbp-'+dragSb.id);
