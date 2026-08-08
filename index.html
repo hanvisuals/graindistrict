@@ -2404,7 +2404,7 @@ function genNodeStoryboard(nodeId){
   renderCanvas();
   var parts=['['+((node.type||'').toUpperCase())+'] '+(node.content||'')];
   var nodeAtts=attShots.filter(function(a){return a.parentId===node.id;});
-  nodeAtts.forEach(function(a){if(a.t)parts.push(a.k+': '+a.t);});
+  nodeAtts.forEach(function(a){var t=shotDetailText(a);if(t)parts.push(a.k+': '+t);});
   var rawDesc=parts.join('. ');
   // goes through api() rather than fetching the Worker directly: the Worker
   // streams text now, so a bare r.json() here threw on every storyboard
@@ -5142,12 +5142,12 @@ function buildCanvasSys(li){
       'acting = what the performer does (write -- if no performer).\n'+
       'shot = camera lens, movement, framing, angle.\n'+
       'lighting = quality and direction of light.\n'+
-      'props = list key props visible in frame.'+(li?'\n'+li:'');
+      'props = list key props visible in frame.'+propSemanticsRule()+(li?'\n'+li:'');
   }
   return briefCtx+(li?li+'\n':'')+
     'You are a cinematographer. Return ONLY a valid JSON array. No explanation, no markdown.\n'+
     'Format: [{"i":0,"shots":[{"k":"props","t":"..."},{"k":"action","t":"..."},{"k":"emotion","t":"..."},{"k":"tech","t":"..."}]}]\n'+
-    'k must be: props, action, emotion, or tech. props = a concrete list of key props/objects needed in this scene (the block itself already covers lens, framing and camera movement, do not repeat that here). tech = lens, lighting, movement, grain, analog film stock.\n'+
+    'k must be: props, action, emotion, or tech. props = a concrete list of key props/objects needed in this scene (the block itself already covers lens, framing and camera movement, do not repeat that here).'+propSemanticsRule()+' tech = lens, lighting, movement, grain, analog film stock.\n'+
     'Write all "t" values in the same language as the script blocks.'+stylePack('shots')+(li?'\n'+li:'');
 }
 
@@ -5227,7 +5227,7 @@ function buildCanvas(){
       // card already expanded is an overwhelming wall of text to land on
       sd.forEach(function(entry){
         var node=nodes[entry.i];if(!node)return;
-        (entry.shots||[]).forEach(function(sh,si){
+        cleanGeneratedShotDetails(node,entry.shots||[]).forEach(function(sh,si){
           attShots.push({id:nid++,parentId:node.id,k:sh.k||'shot',t:sh.t||'',x:node.x,y:node.y+190+si*(NC_GAP+120),collapsed:true});
         });
       });
@@ -5576,7 +5576,9 @@ function renderAttShots(){
       reflowAttShots(a.parentId);
       updateAttLines(a.parentId);
     });})(att,el);
-    var body=document.createElement('div');body.className='att-body';body.textContent=att.t||'(empty)';
+    var body=document.createElement('div');body.className='att-body';
+    var visibleText=shotDetailText(att);
+    body.textContent=visibleText||(att.k==='props'?'—':'(empty)');
     el.appendChild(stripe);el.appendChild(head);el.appendChild(body);
     el.addEventListener('mousedown',function(e){
       if(e.target.closest('button'))return;
@@ -6270,7 +6272,7 @@ function planNode(id){
        "fragmented identity". Nobody on a set can shoot that. Asking instead
        for the one visible thing that carries the feeling gets an instruction
        somebody can actually follow, and the feeling arrives anyway. */
-    sys=(li?li+' ':'')+' You are a cinematographer. Give 4 ideas for this block: a prop list, an action beat, an emotional note, and a technical note. Grain, analog. Write all "t" values in the same language as the block content.'+stylePack('shots')+' Return ONLY JSON: [{"k":"props","t":"..."},{"k":"action","t":"..."},{"k":"emotion","t":"..."},{"k":"tech","t":"..."}]. props = concrete key props/objects needed in the scene (the block itself already covers lens, framing, camera movement - do not repeat that here). emotion = the ONE visible thing in frame that carries the feeling - a held breath, a hand that stops short, light going out of a face. Name what is seen, never the mood itself: "quiet resignation" and "the weight of absence" are useless on a set. tech = lens, lighting, movement, grain, analog film stock.'+(li?' '+li:'');
+    sys=(li?li+' ':'')+' You are a cinematographer. Give 4 ideas for this block: a prop list, an action beat, an emotional note, and a technical note. Grain, analog. Write all "t" values in the same language as the block content.'+stylePack('shots')+' Return ONLY JSON: [{"k":"props","t":"..."},{"k":"action","t":"..."},{"k":"emotion","t":"..."},{"k":"tech","t":"..."}]. props = concrete key props/objects needed in the scene (the block itself already covers lens, framing, camera movement - do not repeat that here).'+propSemanticsRule()+' emotion = the ONE visible thing in frame that carries the feeling - a held breath, a hand that stops short, light going out of a face. Name what is seen, never the mood itself: "quiet resignation" and "the weight of absence" are useless on a set. tech = lens, lighting, movement, grain, analog film stock.'+(li?' '+li:'');
   }
   usr='Block: ['+n.type.toUpperCase()+'] '+n.tcStart+'-'+n.tcEnd+' - '+n.content;
   var userContent=usr;
@@ -6283,7 +6285,7 @@ function planNode(id){
     saveHistory();
     attShots=attShots.filter(function(a){return a.parentId!==n.id;});
     delete nodeDrawerClosed[n.id];
-    shots.forEach(function(s,si){
+    cleanGeneratedShotDetails(n,shots).forEach(function(s,si){
       attShots.push({id:nid++,parentId:n.id,k:s.k||'shot',t:s.t||'',x:n.x,y:n.y+190+si*(NC_GAP+120),collapsed:true});
     });
     n.shots=[];
@@ -6337,6 +6339,80 @@ function fitScreen(){
 function shotsFor(nodeId){
   return attShots.filter(function(a){return a.parentId===nodeId;});
 }
+
+/* A prop is something the crew can bring, place or hand to a performer. An
+   object-shaped word inside a place name is still part of the location:
+   Brooklyn Bridge is not a request to pack a bridge. The prompt prevents new
+   mistakes; the deterministic pass also protects saved boards and imperfect
+   model replies. Portable representations (a bridge postcard or model) stay. */
+function propSemanticsRule(){
+  return ' A PROP is a portable or deliberately placed object the crew can bring or hand to a performer. '
+    +'Never list the location itself, fixed architecture, landscape, streets or parts of a place as props. '
+    +'An object-like word inside a proper place name remains part of that location: in "Brooklyn Bridge", '
+    +'Bridge is LOCATION, not a prop. A postcard, photo, map, toy or miniature of a place is a prop. '
+    +'Write — when no real prop is needed.';
+}
+var FIXED_PLACE_WORDS={
+  bridge:1,'köprü':1,kopru:1,road:1,yol:1,street:1,sokak:1,avenue:1,cadde:1,
+  park:1,plaza:1,'meydan':1,building:1,bina:1,wall:1,duvar:1,room:1,oda:1,
+  house:1,home:1,ev:1,school:1,okul:1,shop:1,store:1,'mağaza':1,magaza:1,
+  studio:1,'stüdyo':1,studyo:1,station:1,'istasyon':1,platform:1,peron:1,
+  beach:1,plaj:1,forest:1,orman:1,field:1,tarla:1,rooftop:1,'çatı':1,cati:1,
+  tunnel:1,'tünel':1,tunel:1
+};
+var PORTABLE_PLACE_REPRESENTATIONS={
+  model:1,miniature:1,toy:1,photo:1,photograph:1,postcard:1,print:1,painting:1,
+  poster:1,map:1,book:1,'maket':1,oyuncak:1,'fotoğraf':1,fotograf:1,kartpostal:1,
+  'baskı':1,baski:1,tablo:1,'harita':1,kitap:1
+};
+function fixedPlaceProp(value,contexts){
+  var item=kitKey(value),words=item.split(' ').filter(Boolean),place=[];
+  if(!item)return false;
+  for(var i=0;i<words.length;i++){
+    if(PORTABLE_PLACE_REPRESENTATIONS[words[i]])return false;
+    if(FIXED_PLACE_WORDS[words[i]])place.push(words[i]);
+  }
+  if(!place.length)return false;
+  var meaningful=words.filter(function(w){return !{the:1,a:1,an:1,bir:1}[w];});
+  var phrase=meaningful.join(' ');
+  return (contexts||[]).some(function(raw){
+    var context=kitKey(raw),cw=context.split(' ');
+    if(!context)return false;
+    // A bare "Bridge" can be matched to "Brooklyn Bridge". A longer item
+    // must occur as a phrase: sharing only "wall" must not erase "wall clock".
+    if(meaningful.length===1)return cw.indexOf(meaningful[0])>=0;
+    return (' '+context+' ').indexOf(' '+phrase+' ')>=0;
+  });
+}
+function cleanPropDetailText(text,contexts){
+  var whole=String(text||'').trim();
+  if(!whole||kitKey(whole)==='')return '';
+  var parts=whole.split(/\s*[,;·•\n]\s*/).filter(function(x){return x.trim();});
+  return parts.filter(function(part){return !fixedPlaceProp(part,contexts);}).join(', ');
+}
+function propContextsForNode(node){
+  var out=[];
+  if(node&&node.content)out.push(node.content);
+  if(projectBrief)out.push(projectBrief);
+  if(typeof projectBreakdown!=='undefined'&&projectBreakdown){
+    projectBreakdown.forEach(function(loc){if(loc&&loc.name)out.push(loc.name);});
+  }
+  return out;
+}
+function shotDetailText(att){
+  if(!att||att.k!=='props')return att&&att.t?String(att.t).trim():'';
+  var node=null;
+  for(var i=0;i<nodes.length;i++)if(nodes[i].id===att.parentId){node=nodes[i];break;}
+  return cleanPropDetailText(att.t,propContextsForNode(node));
+}
+function cleanGeneratedShotDetails(node,list){
+  return (list||[]).map(function(sh){
+    if(!sh||sh.k!=='props')return sh;
+    var copy={};for(var k in sh)copy[k]=sh[k];
+    copy.t=cleanPropDetailText(sh.t,propContextsForNode(node))||'—';
+    return copy;
+  });
+}
 /* Built as a document and handed to the browser's own print engine rather
    than generated with a PDF library: no dependency to ship, the browser
    handles pagination and font rendering, and "Save as PDF" is one step in a
@@ -6374,7 +6450,7 @@ function planAsText(){
   var lines=[];
   planScenes().forEach(function(s){
     function one(n,label){
-      var sh=shotsFor(n.id).map(function(a){return (SK_LABEL[a.k]||a.k)+': '+a.t;}).join('; ');
+      var sh=shotsFor(n.id).map(function(a){var t=shotDetailText(a);return t?((SK_LABEL[a.k]||a.k)+': '+t):'';}).filter(Boolean).join('; ');
       lines.push(label+'. ['+n.type.toUpperCase()+'] '+n.tcStart+'-'+n.tcEnd+' - '+n.content+(sh?'  ('+sh+')':''));
     }
     one(s.head,s.label);
@@ -6464,7 +6540,7 @@ function breakdownSys(li,part,bible){
       +'\nPROPS: '+(kit.props||[]).join(' | ')+'\n\nUse these exact noun phrases when they apply. '
       +'Do not create a second name for the same thing. Add a genuinely missing item only when a shot '
       +'plainly cannot be made without it. Props never include body parts, locations, light, lenses, '
-      +'camera gear, empty frames, moods or abstract visual instructions.\n\n':'')
+    +'camera gear, empty frames, moods or abstract visual instructions.'+propSemanticsRule()+'\n\n':'')
     +'You are a first assistant director turning a shot plan into a shooting breakdown.\n\n'
     +'Group the shots by LOCATION - the real place a crew has to travel to and set up in. Shots that '
     +'happen in the same place belong together even if they are far apart in the plan, because that is '
@@ -6500,6 +6576,7 @@ function breakdownSys(li,part,bible){
     +'entries could be satisfied by the same trip to the same shop, they are one entry. A whole house '
     +'genuinely needs a long list; a list of the same six things worded thirty ways does not.\n\n'
     +'Wardrobe and cast the same way: one person is one entry, however many shots they are in.\n\n'
+    +propSemanticsRule()+'\n\n'
     +'Return ONLY JSON: [{"name":"...","timeOfDay":"...","shots":["01","01a"],"props":["..."],'
     +'"wardrobe":["..."],"cast":["..."],"note":"..."}]'
     +(li?'\n\n'+li:'');
@@ -6623,6 +6700,10 @@ function mergeLocations(parts,bible){
     order.splice(order.indexOf(k),1);
   });
   var out=order.map(function(k){return byName[k];});
+  var locationNames=out.map(function(l){return l.name;});
+  if(bible&&!Array.isArray(bible)&&(bible.locations||[]).length){
+    bible.locations.forEach(function(l){if(l&&l.name)locationNames.push(l.name);});
+  }
   // a shot can only be packed for once, so the first location claiming it wins
   var claimed={};
   out.forEach(function(l){
@@ -6632,7 +6713,7 @@ function mergeLocations(parts,bible){
       claimed[k]=1; return true;
     });
     ['props','wardrobe','cast'].forEach(function(f){
-      l[f]=cleanProductionList(l[f],f,bible);
+      l[f]=cleanProductionList(l[f],f,bible,locationNames);
     });
   });
   return out.filter(function(l){return l.shots.length;});
@@ -6641,15 +6722,19 @@ function mergeLocations(parts,bible){
 function kitKey(s){
   return String(s||'').toLowerCase().replace(/[^a-z0-9çğıöşü]+/gi,' ').replace(/\s+/g,' ').trim();
 }
-function cleanProductionList(list,field,bible){
+function cleanProductionList(list,field,bible,locationNames){
   var canon=bible&&!Array.isArray(bible)&&Array.isArray(bible[field])?bible[field]:[];
+  var locationContext=(locationNames||[]).slice();
+  if(bible&&!Array.isArray(bible)&&Array.isArray(bible.locations)){
+    bible.locations.forEach(function(l){if(l&&l.name)locationContext.push(l.name);});
+  }
   var noProp={el:1,eller:1,hand:1,hands:1,'ışık':1,isik:1,light:1,kamera:1,camera:1,
     lens:1,lensler:1,lenses:1,'boş kare':1,'bos kare':1,'empty frame':1,
     'uzun gölge':1,'uzun golge':1,'long shadow':1};
   var out=[],seen={};
   (list||[]).forEach(function(raw){
     var v=String(raw||'').trim(),vk=kitKey(v);
-    if(!vk||(field==='props'&&noProp[vk]))return;
+    if(!vk||(field==='props'&&(noProp[vk]||fixedPlaceProp(v,locationContext))))return;
     for(var i=0;i<canon.length;i++){
       var ck=kitKey(canon[i]);
       // A global canonical noun phrase is allowed to absorb a longer local
@@ -6834,7 +6919,7 @@ function buildPrintView(){
     var live=kit&&kit.length;
     var parts=[];
     sh.forEach(function(a){
-      var whole=String(a.t||'').trim();
+      var whole=shotDetailText(a);
       if(!whole)return;
       var frags=whole.split(/\s*[,·]\s*/).filter(function(x){ return x.trim(); });
       var left=live?frags.filter(function(x){ return !coveredBy(x,kit); }):frags;
