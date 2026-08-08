@@ -916,24 +916,32 @@ body #s0{align-items:stretch;justify-content:flex-start;position:relative;isolat
 .kb-card-desc{font-family:var(--sans);font-size:.85rem;color:rgba(255,255,255,.38);line-height:1.45;}
 .kb-cont{font-family:var(--sans);font-size:.95rem;font-weight:600;color:#111;background:#fff;border:none;border-radius:8px;padding:.7rem 2.4rem;cursor:pointer;transition:background .15s;letter-spacing:.01em;}
 .kb-cont:hover{background:rgba(255,255,255,.88);}
-/* S3 SPLIT LAYOUT */
+/* SCRIPT STUDIO */
 .s3-split-screen{flex-direction:column!important;overflow:hidden;padding:0!important;}
 .s3-topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;position:relative;}
 .s3-back-btn{font-family:var(--sans);font-size:.88rem;font-weight:500;color:rgba(255,255,255,.4);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:7px;padding:.35rem .85rem;cursor:pointer;transition:all .15s;}
 .s3-back-btn:hover{color:#fff;background:rgba(255,255,255,.1);}
-.s3-topbar-labels{position:absolute;left:50%;transform:translateX(-50%);display:flex;gap:60px;}
 .s3-acts{display:flex;align-items:center;gap:16px;}
-.s3-col-label{font-family:var(--mono);font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.18);}
-.s3-body{display:flex;flex:1;overflow:hidden;min-height:0;}
-.s3-col-left{flex:0 0 44%;overflow-y:auto;padding:44px 48px;scroll-behavior:smooth;}
-.s3-col-left>*{max-width:62ch;}
-.s3-col-left::-webkit-scrollbar{width:3px;}
-.s3-col-left::-webkit-scrollbar-track{background:transparent;}
-.s3-col-left::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px;}
-.s3-col-divider{width:1px;background:rgba(255,255,255,.06);flex-shrink:0;}
-.s3-col-right{flex:1;overflow:hidden;display:flex;flex-direction:column;padding:44px 48px;}
-.s3-plan-wrap{position:relative;flex:1;min-height:0;}
-.s3-plan-hl,.s3-plan-ta{position:absolute;inset:0;margin:0;padding:0;border:none;font-family:var(--mono);font-size:12.5px;font-weight:400;line-height:1.95;white-space:pre-wrap;overflow-wrap:break-word;word-break:normal;tab-size:4;overflow-y:auto;}
+.script-line-btn{border:1px solid rgba(255,255,255,.09);border-radius:8px;background:rgba(255,255,255,.035);color:rgba(255,255,255,.42);font-family:var(--mono);font-size:8px;letter-spacing:.08em;text-transform:uppercase;padding:8px 10px;cursor:pointer;}
+.script-line-btn:hover{color:#fff;background:rgba(255,255,255,.08);}
+.s3-body{display:flex;flex:1;overflow:hidden;min-height:0;padding:clamp(20px,3vw,42px);}
+.script-studio-shell{width:min(1320px,100%);margin:0 auto;display:grid;grid-template-columns:minmax(250px,.38fr) minmax(0,1fr);gap:clamp(28px,4vw,64px);min-height:0;}
+.script-studio-intro{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;min-width:0;}
+.script-studio-kicker{font-family:var(--mono);font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:rgba(215,185,88,.72);display:flex;align-items:center;gap:9px;}
+.script-studio-kicker::before{content:'';width:20px;height:1px;background:currentColor;}
+.script-studio-title{font-family:var(--sans);font-size:clamp(34px,4.6vw,70px);line-height:.91;letter-spacing:-.065em;color:#f5f3ee;margin:22px 0 18px;max-width:520px;}
+.script-studio-copy{font-family:var(--sans);font-size:13px;line-height:1.7;color:rgba(255,255,255,.4);max-width:410px;}
+.script-direction{display:flex;flex-wrap:wrap;gap:7px;margin-top:25px;}
+.script-direction span{font-family:var(--mono);font-size:7px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.38);border:1px solid rgba(255,255,255,.1);border-radius:999px;padding:7px 10px;background:rgba(255,255,255,.025);}
+.script-autosave{display:flex;align-items:center;gap:7px;margin-top:18px;font-family:var(--mono);font-size:7px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.24);}
+.script-autosave::before{content:'';width:5px;height:5px;border-radius:50%;background:#78a984;box-shadow:0 0 9px rgba(120,169,132,.55);}
+.script-version-btn{display:none;margin-top:13px;border:0;background:none;padding:0;color:rgba(109,155,211,.72);font-family:var(--mono);font-size:8px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;}
+.script-version-btn.show{display:block;}
+.script-version-btn:hover{color:#8cb9eb;}
+.s3-col-right{min-width:0;overflow:hidden;display:flex;flex-direction:column;}
+.s3-plan-wrap{position:relative;flex:1;min-height:0;border:1px solid rgba(255,255,255,.085);border-radius:24px;background:linear-gradient(145deg,rgba(255,255,255,.045),rgba(255,255,255,.014));box-shadow:0 30px 90px rgba(0,0,0,.34);overflow:hidden;}
+.s3-plan-wrap::before{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(135deg,rgba(215,185,88,.025),transparent 34%,rgba(109,155,211,.018));}
+.s3-plan-hl,.s3-plan-ta{position:absolute;inset:0;margin:0;padding:24px 25px 126px;box-sizing:border-box;border:none;font-family:var(--mono);font-size:12.5px;font-weight:400;line-height:1.95;white-space:pre-wrap;overflow-wrap:break-word;word-break:normal;tab-size:4;overflow-y:auto;}
 .s3-plan-hl{pointer-events:none;color:rgba(255,255,255,.62);}
 .s3-plan-ta{background:none;outline:none;resize:none;user-select:text;color:transparent;caret-color:#fff;}
 .s3-plan-ta::selection{background:rgba(255,255,255,.22);}
@@ -948,6 +956,34 @@ body #s0{align-items:stretch;justify-content:flex-start;position:relative;isolat
 .s3-plan-ta::-webkit-scrollbar{width:3px;}
 .s3-plan-ta::-webkit-scrollbar-track{background:transparent;}
 .s3-plan-ta::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px;}
+.script-ai-bar{position:absolute;z-index:8;left:50%;bottom:18px;transform:translateX(-50%) translateY(8px);width:min(760px,calc(100% - 36px));display:flex;align-items:center;gap:9px;padding:9px;border:1px solid rgba(215,185,88,.22);border-radius:15px;background:rgba(12,13,12,.94);box-shadow:0 18px 52px rgba(0,0,0,.62),0 0 34px rgba(215,185,88,.055);backdrop-filter:blur(22px);opacity:0;pointer-events:none;transition:opacity .16s,transform .16s;}
+.script-ai-bar.show{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0);}
+.script-ai-selected{min-width:120px;max-width:190px;padding:0 7px;border-right:1px solid rgba(255,255,255,.08);}
+.script-ai-selected b{display:block;font-family:var(--mono);font-size:7px;letter-spacing:.13em;text-transform:uppercase;color:rgba(215,185,88,.72);margin-bottom:4px;}
+.script-ai-selected span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--sans);font-size:11px;color:rgba(255,255,255,.6);}
+.script-ai-actions{display:flex;align-items:center;gap:6px;flex:1;}
+.script-ai-actions button,.script-custom button,.script-rev-actions button{border:1px solid rgba(255,255,255,.09);border-radius:9px;background:rgba(255,255,255,.045);color:rgba(255,255,255,.62);font-family:var(--sans);font-size:10px;white-space:nowrap;padding:8px 10px;cursor:pointer;transition:.15s;}
+.script-ai-actions button:hover,.script-custom button:hover,.script-rev-actions button:hover{background:rgba(255,255,255,.09);color:#fff;border-color:rgba(255,255,255,.16);}
+.script-ai-actions .script-ai-primary{color:#111;background:#f5f3ee;border-color:#f5f3ee;font-weight:650;}
+.script-ai-actions .script-ai-primary:hover{background:#fff;color:#111;}
+.script-custom{display:none;align-items:center;gap:7px;flex:1;}
+.script-custom.show{display:flex;}
+.script-custom input{min-width:0;flex:1;border:1px solid rgba(255,255,255,.11);border-radius:9px;background:rgba(255,255,255,.04);color:#eee;font-family:var(--sans);font-size:11px;padding:8px 10px;outline:none;}
+.script-custom input:focus{border-color:rgba(215,185,88,.38);}
+.script-revision{display:none;position:absolute;z-index:10;left:20px;right:20px;bottom:20px;padding:17px;border:1px solid rgba(109,155,211,.24);border-radius:17px;background:rgba(10,12,12,.97);box-shadow:0 22px 70px rgba(0,0,0,.72),0 0 45px rgba(109,155,211,.055);backdrop-filter:blur(24px);}
+.script-revision.show{display:block;}
+.script-rev-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:12px;}
+.script-rev-head span{font-family:var(--mono);font-size:8px;letter-spacing:.13em;text-transform:uppercase;color:rgba(109,155,211,.78);}
+.script-rev-status{font-family:var(--mono);font-size:8px;color:rgba(255,255,255,.3);}
+.script-rev-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.script-rev-cell{min-width:0;padding:12px 13px;border:1px solid rgba(255,255,255,.07);border-radius:11px;background:rgba(255,255,255,.025);}
+.script-rev-cell b{display:block;margin-bottom:7px;font-family:var(--mono);font-size:7px;letter-spacing:.13em;text-transform:uppercase;color:rgba(255,255,255,.25);}
+.script-rev-cell p{margin:0;max-height:92px;overflow:auto;font-family:var(--sans);font-size:12px;line-height:1.55;color:rgba(255,255,255,.68);}
+.script-rev-cell.after{border-color:rgba(109,155,211,.16);background:rgba(109,155,211,.035);}
+.script-rev-actions{display:flex;justify-content:flex-end;gap:7px;margin-top:12px;}
+.script-rev-actions .accept{background:#f5f3ee;color:#111;border-color:#f5f3ee;font-weight:650;}
+.script-rev-actions .accept:hover{background:#fff;color:#111;}
+.script-rev-actions button:disabled{opacity:.35;cursor:wait;}
 /* Legacy s3 - keep for fallback */
 .s3-footer{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:720px;}
 /* S_PC VERTICAL STACK */
@@ -1239,22 +1275,27 @@ body #s0{align-items:stretch;justify-content:flex-start;position:relative;isolat
   .script-overlay{width:100%;}
   .music-strip .ms-meta,.music-strip .ms-legend{display:none;}
 
-  /* --- brief and plan take turns instead of sharing 390px --- */
-  /* Back, the tabs and Open in Canvas cannot share one 390px line with the
-     account widget, so the tabs drop to a row of their own */
+  /* --- Script Studio becomes one focused phone workspace --- */
   .s3-topbar{padding:8px 10px;gap:8px;flex-wrap:wrap;}
-  .s3-topbar-labels{order:3;flex:1 0 100%;position:static;transform:none;gap:6px;}
-  .s3-col-label{flex:1;text-align:center;font-size:11px;letter-spacing:.14em;padding:9px 8px;border-radius:8px;
-    cursor:pointer;color:rgba(255,255,255,.35);border:1px solid var(--border);}
   .s3-acts{gap:10px;}
-  #s3[data-tab="brief"] .s3-col-label:first-child,
-  #s3[data-tab="plan"] .s3-col-label:last-child{color:#fff;background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.14);}
-  #s3[data-tab="brief"] .s3-col-right,
-  #s3[data-tab="plan"] .s3-col-left{display:none;}
-  .s3-col-divider{display:none;}
-  .s3-col-left,.s3-col-right{flex:1 1 auto;padding:20px 16px;}
+  .s3-body{padding:8px;}
+  .script-studio-shell{grid-template-columns:1fr;gap:8px;}
+  .script-studio-intro{display:none;}
+  .s3-col-right{flex:1 1 auto;padding:0;}
   .s3-topbar .kb-sub{display:none;}
   .kb-cont{padding:.55rem .9rem;font-size:.82rem;white-space:nowrap;}
+  .s3-plan-wrap{border-radius:17px;}
+  .s3-plan-hl,.s3-plan-ta{padding:18px 14px 158px;}
+  .script-ai-bar{left:10px;right:10px;bottom:10px;width:auto;transform:translateY(8px);flex-direction:column;align-items:stretch;}
+  .script-ai-bar.show{transform:translateY(0);}
+  .script-ai-selected{max-width:none;border-right:0;border-bottom:1px solid rgba(255,255,255,.08);padding:0 3px 8px;}
+  .script-ai-actions{display:grid;grid-template-columns:1fr 1fr;}
+  .script-ai-actions button{min-height:38px;}
+  .script-custom{width:100%;}
+  .script-revision{left:10px;right:10px;bottom:10px;padding:13px;max-height:calc(100% - 20px);overflow:auto;}
+  .script-rev-grid{grid-template-columns:1fr;}
+  .script-rev-actions{display:grid;grid-template-columns:1fr 1fr;}
+  .script-rev-actions .accept{grid-column:1/-1;order:-1;}
 
   .modal{padding:18px;gap:13px;}
   .iw{padding:1.1rem 1rem 2.4rem;gap:1.05rem;}
@@ -1447,17 +1488,10 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,label:focus-with
 .s3-acts #wc{padding:6px 9px;border:1px solid rgba(255,255,255,.065);border-radius:999px;font-family:var(--mono)!important;font-size:7px!important;letter-spacing:.08em;}
 .s3-acts .kb-cont{min-height:38px;padding:8px 17px;border-radius:999px;background:var(--gd-paper);font-size:11px;text-transform:none;box-shadow:0 8px 28px rgba(0,0,0,.22);}
 .s3-body{gap:12px;padding:12px;background:radial-gradient(circle at 72% 12%,rgba(109,155,211,.045),transparent 26%);}
-.s3-col-divider{display:none;}
-.s3-col-left,.s3-col-right{border:1px solid rgba(255,255,255,.075);border-radius:21px;background:linear-gradient(145deg,rgba(255,255,255,.035),rgba(255,255,255,.012));box-shadow:0 18px 54px rgba(0,0,0,.18);}
-.s3-col-left{flex-basis:43%;padding:40px 44px;}
-.s3-col-right{padding:14px;}
-.s3-plan-wrap{border:1px solid rgba(255,255,255,.055);border-radius:14px;background:rgba(4,5,4,.48);overflow:hidden;}
+.s3-col-right{padding:0;border:0;border-radius:0;background:none;box-shadow:none;}
+.s3-plan-wrap{border:1px solid rgba(255,255,255,.075);border-radius:24px;background:linear-gradient(145deg,rgba(255,255,255,.038),rgba(4,5,4,.54));overflow:hidden;}
 .s3-plan-wrap::before{content:'EDITABLE SCRIPT  /  LIVE';position:absolute;left:20px;top:15px;z-index:2;font-family:var(--mono);font-size:7px;letter-spacing:.15em;color:rgba(109,155,211,.6);}
-.s3-plan-hl,.s3-plan-ta{inset:48px 22px 22px;font-size:12px;line-height:1.9;}
-.s3-col-left .bd-h1{font-family:var(--sans);font-size:clamp(28px,2.5vw,42px);line-height:1.03;letter-spacing:-.045em;color:var(--gd-paper);margin:0 0 22px;}
-.s3-col-left .bd-h2{margin-top:28px;color:rgba(215,185,88,.62);}
-.s3-col-left .bd-h3{font-size:14px;color:rgba(255,255,255,.8);}
-.s3-col-left .bd-p,.s3-col-left .bd-li{font-size:13px;line-height:1.75;color:rgba(255,255,255,.5);}
+.s3-plan-hl,.s3-plan-ta{inset:0;padding:48px 24px 126px;font-size:12px;line-height:1.9;}
 
 /* Visual production board */
 #s5{background:#070807;}
@@ -1557,13 +1591,9 @@ body.location-mode #btnRebreak{display:inline-flex!important;}
   .load-stage{min-height:410px;padding:42px 24px;border-radius:24px;}
   .load-orbit{width:126px;height:126px;}
   .s3-topbar{height:auto;min-height:62px;padding:8px 10px;}
-  .s3-topbar-labels{padding:0;border:0;border-radius:0;background:none;}
-  .s3-col-label{min-height:40px;justify-content:center;border:1px solid rgba(255,255,255,.07);border-radius:11px;padding:8px;}
-  #s3[data-tab="brief"] .s3-col-label:first-child,#s3[data-tab="plan"] .s3-col-label:last-child{border-color:rgba(215,185,88,.22);background:rgba(215,185,88,.08);}
   .s3-body{padding:8px;gap:0;}
-  .s3-col-left,.s3-col-right{padding:22px 18px;border-radius:17px;}
   .s3-col-right{padding:8px;}
-  .s3-plan-hl,.s3-plan-ta{inset:43px 14px 14px;font-size:11.5px;}
+  .s3-plan-hl,.s3-plan-ta{inset:0;padding:44px 14px 158px;font-size:11.5px;}
   .s3-acts .kb-cont{min-height:36px;padding:7px 12px;}
   .cbar{height:58px;padding:0 8px 0 4px;}
   .cbar-context{max-width:none;}
@@ -2083,32 +2113,14 @@ body.location-mode #btnRebreak{display:inline-flex!important;}
   <button class="kb-back" onclick="show('s1')">&larr; Back</button>
   <div class="kb-wrap" style="gap:1.5rem">
     <div style="text-align:center">
-      <span class="brief-label">production brief</span>
+      <span class="brief-label">production details</span>
       <h1 class="kb-title" style="font-size:1.75rem">What are you working with?</h1>
-      <p class="kb-sub" style="margin-top:.5rem;max-width:440px">Describe your camera, lenses, locations, lighting, props and budget. AI will build the creative brief around your real constraints.</p>
+      <p class="kb-sub" style="margin-top:.5rem;max-width:440px">Describe your camera, lenses, locations, lighting, props and budget. These details guide your script and production plan directly.</p>
     </div>
     <textarea class="brief-ta" id="constraintsIn" placeholder="Sony a7S III with 24–70mm and 12–24mm f/2.8 lenses. A wheat field, empty road and caravan are available. Nine red rugs, one fill light, mostly exterior locations. Zero budget. Soft acoustic mood, a story about heartbreak..."></textarea>
     <div class="brief-row">
       <button class="brief-skip-btn" onclick="skipEquipment()">Skip details</button>
-      <button class="gobtn" style="flex:1;margin:0" onclick="generateBrief()">Generate brief</button>
-    </div>
-  </div>
-</div>
-
-<div id="s_brief" class="screen" style="flex-direction:column;position:relative;">
-  <div class="kb-prog-wrap"><div class="kb-prog-fill" style="width:55%"></div></div>
-  <div class="flow-brand"><span>HVNVSLS</span><small>Creative synthesis / 03</small></div>
-  <button class="kb-back" onclick="show('s_equipment')">&larr; Back</button>
-  <div class="kb-wrap" style="gap:1.4rem">
-    <div style="text-align:center">
-      <span class="brief-label">production brief</span>
-      <h1 class="kb-title" style="font-size:1.75rem" id="briefConceptTitle">Your Creative Brief</h1>
-    </div>
-    <div class="brief-display" id="briefDisplay"></div>
-    <div class="brief-row">
-      <button class="brief-skip-btn" onclick="skipBrief()">Skip brief</button>
-      <button class="brief-skip-btn" onclick="generateBrief()">Regenerate</button>
-      <button class="gobtn" style="flex:1;margin:0" onclick="useBrief()">Use this brief</button>
+      <button class="gobtn" style="flex:1;margin:0" onclick="generateScriptFromDetails()">Generate script</button>
     </div>
   </div>
 </div>
@@ -2124,26 +2136,57 @@ body.location-mode #btnRebreak{display:inline-flex!important;}
   </div>
 </div>
 
-<div id="s3" class="screen s3-split-screen" data-tab="plan">
+<div id="s3" class="screen s3-split-screen">
   <div class="s3-topbar">
-    <button class="s3-back-btn" onclick="show('s1')">&larr; Back</button>
-    <div class="s3-brand"><span>GRAIN DISTRICT</span><small>Director's desk / 04</small></div>
-    <div class="s3-topbar-labels">
-      <span class="s3-col-label" onclick="s3Tab('brief')">Creative brief</span>
-      <span class="s3-col-label" onclick="s3Tab('plan')">Shot plan</span>
-    </div>
+    <button class="s3-back-btn" onclick="show('s_equipment')">&larr; Back</button>
+    <div class="s3-brand"><span>GRAIN DISTRICT</span><small>Script intelligence / 03</small></div>
     <div class="s3-acts">
+      <button class="script-line-btn" type="button" onclick="editCurrentVoiceoverLine()">Edit line</button>
       <span class="kb-sub" id="wc" style="font-size:.8rem;color:rgba(255,255,255,.25)">0 blocks</span>
       <button class="kb-cont" onclick="buildCanvas()">Build visual board</button>
     </div>
   </div>
   <div class="s3-body">
-    <div class="s3-col-left" id="briefContent"></div>
-    <div class="s3-col-divider"></div>
-    <div class="s3-col-right">
-      <div class="s3-plan-wrap">
-        <pre class="s3-plan-hl" id="planHl" aria-hidden="true"></pre>
-        <textarea class="s3-plan-ta" id="scriptTa" spellcheck="false" placeholder="[VOICEOVER] 00:00-00:30 - ..."></textarea>
+    <div class="script-studio-shell">
+      <aside class="script-studio-intro">
+        <span class="script-studio-kicker">Script Studio / Voiceover</span>
+        <h1 class="script-studio-title">Make every line sound like you.</h1>
+        <p class="script-studio-copy">Select words inside a voiceover line to rewrite only that passage. Nothing else changes until you accept it.</p>
+        <div class="script-direction" id="scriptDirection"></div>
+        <span class="script-autosave">Draft saved automatically</span>
+        <button class="script-version-btn" id="scriptVersionBtn" type="button" onclick="undoLastScriptRevision()">Undo last AI edit</button>
+      </aside>
+      <div class="s3-col-right">
+        <div class="s3-plan-wrap" id="scriptPlanWrap">
+          <pre class="s3-plan-hl" id="planHl" aria-hidden="true"></pre>
+          <textarea class="s3-plan-ta" id="scriptTa" spellcheck="false" aria-label="Script and shot plan" placeholder="[VOICEOVER] 00:00-00:30 - ..."></textarea>
+          <div class="script-ai-bar" id="scriptAiBar">
+            <div class="script-ai-selected"><b>Selected voiceover</b><span id="scriptSelectedText"></span></div>
+            <div class="script-ai-actions" id="scriptAiActions">
+              <button type="button" onclick="requestScriptRevision('Make this selected text shorter while preserving its meaning.')">Shorter</button>
+              <button type="button" onclick="requestScriptRevision('Make this selected text clearer and more natural to say aloud.')">Clearer</button>
+              <button type="button" onclick="requestScriptRevision('Make this selected text a stronger hook without becoming clickbait.')">Stronger hook</button>
+              <button type="button" class="script-ai-primary" onclick="showScriptCustom()">Ask AI&hellip;</button>
+            </div>
+            <div class="script-custom" id="scriptCustom">
+              <input id="scriptCustomIn" type="text" autocomplete="off" placeholder="e.g. More personal, less dramatic">
+              <button type="button" onclick="runCustomScriptRevision()">Rewrite</button>
+              <button type="button" onclick="hideScriptCustom()">Cancel</button>
+            </div>
+          </div>
+          <div class="script-revision" id="scriptRevision" aria-live="polite">
+            <div class="script-rev-head"><span>AI revision</span><div class="script-rev-status" id="scriptRevStatus">Rewriting selection&hellip;</div></div>
+            <div class="script-rev-grid">
+              <div class="script-rev-cell"><b>Original</b><p id="scriptRevBefore"></p></div>
+              <div class="script-rev-cell after"><b>Suggestion</b><p id="scriptRevAfter"></p></div>
+            </div>
+            <div class="script-rev-actions">
+              <button type="button" onclick="cancelScriptRevision()">Keep original</button>
+              <button type="button" id="scriptTryAgain" onclick="retryScriptRevision()">Try another</button>
+              <button type="button" class="accept" id="scriptAccept" onclick="acceptScriptRevision()">Accept revision</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -2493,6 +2536,7 @@ var DC={voiceover:'var(--c-vo)',broll:'var(--c-br)',music:'var(--c-mu)',transiti
 var PT_BLOCKS={youtube:['VOICEOVER','BROLL','MUSIC','TRANSITION'],music:['VERSE','CHORUS','HOOK','LIP_SYNC','BRIDGE','INTRO','OUTRO','TRANSITION'],film:['SCENE','DIALOGUE','ACTION','MONTAGE','TRANSITION'],other:['INTRO','MAIN','SEGMENT','OUTRO','TRANSITION']};
 
 var tone='introspective',fmt='voiceover',styleMode='gawx',topic='',inputLang='en',projectType='youtube';
+var scriptVersions=[],scriptSelectionState=null,scriptRevisionState=null;
 
 var STYLE_PACKS={
  gawx:{
@@ -3274,12 +3318,13 @@ function performNewProject(){
   resetLocationViewState();
   nodes=[];attShots=[];imgNodes=[];noteNodes=[];conns=[];nid=1;nodeDrawerClosed={};
   topic='';projectBrief='';projectConstraints='';projectBreakdown=null;projectBreakdownKey=null;
+  scriptVersions=[];scriptSelectionState=null;scriptRevisionState=null;
   clearRecce();songName='';songDuration=0;songAnalysis=null;songURL=null;
   undoStack=[];undoIdx=-1;scale=1;px=60;py=180;selId=null;selImgId=null;selNoteId=null;
   var topicEl=document.getElementById('topicIn'),scriptEl=document.getElementById('scriptTa');
   if(topicEl)topicEl.value='';
   if(scriptEl){scriptEl.value='';planHighlight();}
-  var briefEl=document.getElementById('briefContent');if(briefEl)briefEl.innerHTML='';
+  cancelScriptRevision();hideScriptSelectionTools();refreshScriptStudio();
   var reccePanel=document.getElementById('reccePanel');if(reccePanel)reccePanel.classList.remove('open');
   if(typeof renderAll==='function')renderAll();
   show('s0');
@@ -3952,11 +3997,6 @@ document.addEventListener('click',function(e){
   var b=e.target.closest&&e.target.closest('#cbarActions .btn');
   if(b)setTimeout(closeCbarMenu,0);
 });
-// on a phone the brief and the plan take turns instead of sharing the width
-function s3Tab(which){
-  var s=document.getElementById('s3'); if(s)s.dataset.tab=which;
-}
-
 /* How much of the bottom of the screen the strips have taken. The music strip
    opens and closes, the timeline grows a second lane when two blocks overlap,
    and a phone reserves a bar for its home indicator - so measure it rather
@@ -4562,31 +4602,17 @@ function renderMarkdown(text){
   return html;
 }
 
-function generateBrief(){
-  show('s2');startLoad('s2');
-  var sys='You are a professional film director and creative producer. Based on the project description, write a concise creative brief with these sections:\n\n1. CONCEPT: A catchy concept name and 2-3 sentence visual theme\n2. VISUAL APPROACH: Color palette, lens/camera plan, mood, key aesthetic decisions\n3. SCENE BREAKDOWN: Each location with costume suggestion, key actions, lighting notes\n4. SHOOTING SCHEDULE: Suggested time blocks for each scene\n\nBe creative but strictly within the constraints described. If real location photos are attached, base the visual approach and scene breakdown on what is actually visible in them. Write in the same language the user used. Keep it tight and actionable.'+stylePack('shots')+creatorDnaContext();
+function generateScriptFromDetails(){
   var constraints=document.getElementById('constraintsIn');
   var cv=constraints?constraints.value.trim():'';
   projectConstraints=cv;
-  var userMsg='Project type: '+projectType+'\nDuration: '+durMin+'-'+durMax+' min\n\nProject description:\n'+topic+(cv?'\n\nEquipment & constraints:\n'+cv:'')+recceContext()+songAnalysisSummary();
-  api(sys,buildUserContent(userMsg),'creative_brief').then(function(raw){
-    stopLoad();
-    projectBrief=raw.trim();
-    document.getElementById('briefDisplay').innerHTML=renderMarkdown(projectBrief);
-    show('s_brief');
-  }).catch(function(e){stopLoad();alert('Error: '+e.message);show('s1');});
-}
-
-function useBrief(){
-  var el=document.getElementById('s_brief');
-  el.classList.add('screen-blur-out');
-  setTimeout(function(){el.classList.remove('screen-blur-out');genScript();},270);
-}
-
-function skipBrief(){
   projectBrief='';
   genScript();
 }
+
+/* Kept as a small compatibility alias for old links/tests. The visible brief
+   step is gone; production details now feed the script directly. */
+function generateBrief(){generateScriptFromDetails();}
 
 function skipEquipment(){
   projectConstraints='';projectBrief='';
@@ -4599,7 +4625,6 @@ function goToChoice(){
     goToEquipment();
   }else{
     if(!captureSetup())return;
-    document.getElementById('briefContent').innerHTML='';
     document.getElementById('scriptTa').value='';planHighlight();
     document.getElementById('wc').textContent='0 blocks';
     show('s3');
@@ -4620,7 +4645,6 @@ function pcContinue(){
   if(pcChoice==='ai'){
     genScript();
   }else{
-    document.getElementById('briefContent').innerHTML='';
     document.getElementById('scriptTa').value='';planHighlight();
     document.getElementById('wc').textContent='0 blocks';
     show('s3');
@@ -4629,31 +4653,23 @@ function pcContinue(){
 
 function genScript(){
   show('s2');startLoad('s2');
-  document.getElementById('briefContent').innerHTML='';
   document.getElementById('scriptTa').value='';
   var totalSec=(durMin+durMax)/2*60;
   var li=langInstr(inputLang,'shot plan content');
   var planSys=buildGenSys(totalSec,li);
   var extra=recceContext()+songAnalysisSummary();
-  var approvedBrief=(projectBrief||'').trim();
   var productionContext='';
   if(projectConstraints)productionContext+='\n\nAvailable production resources and constraints:\n'+projectConstraints;
-  if(approvedBrief)productionContext+='\n\nApproved creative brief (follow this direction):\n'+approvedBrief;
   var planMsg='Create shot plan for: '+topic+'. Duration: '+durMin+'-'+durMax+' minutes. Tone: '+tone+productionContext+extra;
-  var briefSys='You are a professional film director and creative producer. Based on this project description, write a concise creative brief with these sections:\n\n1. CONCEPT: A catchy concept name and 2-3 sentence visual theme\n2. VISUAL APPROACH: Color palette, lens/camera plan, mood, key aesthetic decisions\n3. SCENE BREAKDOWN: Each location with costume suggestion, key actions, lighting notes\n4. SHOOTING SCHEDULE: Suggested time blocks for each scene\n\nBe creative but strictly within the constraints described. If real location photos are attached, base the visual approach and scene breakdown on what is actually visible in them. Write in the same language the user used. Keep it tight and actionable.'+stylePack('shots')+creatorDnaContext();
-  var briefMsg='Project type: '+projectType+'\nDuration: '+durMin+'-'+durMax+' min\n\nProject description:\n'+topic+(projectConstraints?'\n\nEquipment & constraints:\n'+projectConstraints:'')+extra;
   // long plans: draft a beat outline then write segments in parallel instead
   // of one request at a time (much faster for 10+ min cut-by-cut videos)
   var planPromise=totalSec>240
     ? genPlanChunked(planSys,planMsg,totalSec,li)
     : api(planSys,buildUserContent(planMsg),'shot_plan').then(function(t){return ensureFullPlan(planSys,t);});
 
-  Promise.all([
-    approvedBrief?Promise.resolve(approvedBrief):api(briefSys,buildUserContent(briefMsg),'creative_brief'),
-    planPromise
-  ]).then(function(results){
+  planPromise.then(function(planResult){
     stopLoad();
-    var planText=results[1].trim();
+    var planText=planResult.trim();
     // if every segment/continuation attempt failed or timed out, what comes
     // back can be the model's own confused reply to an empty prompt (e.g.
     // "please share the last blocks and topic...") instead of real blocks -
@@ -4663,11 +4679,12 @@ function genScript(){
       planText=splitLongMusicBlocks(planText);
       planText=compactGeneratedYouTubePlan(planText,totalSec);
     }
-    projectBrief=results[0].trim();
-    document.getElementById('briefContent').innerHTML=renderMarkdown(projectBrief);
+    projectBrief='';
     document.getElementById('scriptTa').value=planText;
     document.getElementById('wc').textContent=planStatsLabel(planText);
+    refreshScriptStudio();
     show('s3');
+    if(window.gdAutosaveProject)window.gdAutosaveProject(true);
   }).catch(function(e){stopLoad();alert('Error: '+e.message);show('s1');});
 }
 
@@ -4692,7 +4709,15 @@ function planHighlight(){
 (function(){
   var ta=document.getElementById('scriptTa');
   if(!ta) return;
-  ta.addEventListener('input',planHighlight);
+  ta.addEventListener('input',function(){
+    planHighlight();
+    var wc=document.getElementById('wc');if(wc)wc.textContent=planStatsLabel(ta.value);
+    scriptSelectionState=null;hideScriptSelectionTools();renderScriptVersionButton();
+    if(window.gdAutosaveProject)window.gdAutosaveProject(false);
+  });
+  ta.addEventListener('select',function(){setTimeout(updateScriptSelectionTools,0);});
+  ta.addEventListener('mouseup',function(){setTimeout(updateScriptSelectionTools,0);});
+  ta.addEventListener('keyup',function(e){if(e.shiftKey||e.key==='ArrowLeft'||e.key==='ArrowRight'||e.key==='Home'||e.key==='End')setTimeout(updateScriptSelectionTools,0);});
   ta.addEventListener('scroll',function(){
     var hl=document.getElementById('planHl');
     if(hl) hl.scrollTop=ta.scrollTop;
@@ -4713,6 +4738,139 @@ function planHighlight(){
     }
   }catch(e){ /* if this isn't allowed, 'input' still covers typing */ }
 })();
+
+function scriptDirectionLabels(){
+  var d=creatorDNA||loadCreatorDna()||{};
+  var carrier={story:'story-led',presenter:'presenter-led',demo:'demonstration-led',graphics:'graphics-led',hybrid:'hybrid'}[d.carrier]||'creator-led';
+  var presence={camera:'on camera',sometimes:'selective on-camera',voice:'voiceover-led',none:'no presenter'}[d.presence]||fmt;
+  return [(durMin===durMax?durMin:(durMin+'-'+durMax))+' min',String(tone||'').replace(/_/g,' '),carrier,presence];
+}
+function refreshScriptStudio(){
+  var labels=scriptDirectionLabels(),wrap=document.getElementById('scriptDirection');
+  if(wrap){wrap.innerHTML='';labels.forEach(function(x){var s=document.createElement('span');s.textContent=x;wrap.appendChild(s);});}
+  var ta=document.getElementById('scriptTa'),wc=document.getElementById('wc');
+  if(ta&&wc)wc.textContent=planStatsLabel(ta.value);
+  renderScriptVersionButton();
+}
+function voiceoverSelection(wholeLine){
+  var ta=document.getElementById('scriptTa');if(!ta)return null;
+  var start=ta.selectionStart||0,end=ta.selectionEnd||0,anchor=start;
+  var lineStart=ta.value.lastIndexOf('\n',Math.max(0,anchor-1))+1;
+  var lineEnd=ta.value.indexOf('\n',anchor);if(lineEnd<0)lineEnd=ta.value.length;
+  var line=ta.value.slice(lineStart,lineEnd);
+  var head=line.match(/^\s*\[VOICEOVER\]\s+\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}\s*[-:]\s*/i);
+  if(!head)return null;
+  var contentStart=lineStart+head[0].length;
+  if(wholeLine){start=contentStart;end=lineEnd;ta.focus();ta.setSelectionRange(start,end);}
+  if(end<=start||start<contentStart||end>lineEnd||ta.value.slice(start,end).indexOf('\n')>=0)return null;
+  var selected=ta.value.slice(start,end).trim();if(!selected)return null;
+  return {start:start,end:end,original:ta.value.slice(start,end),selected:selected,lineStart:lineStart,lineEnd:lineEnd,line:line};
+}
+function hideScriptSelectionTools(){
+  var bar=document.getElementById('scriptAiBar');if(bar)bar.classList.remove('show');
+  hideScriptCustom();
+}
+function updateScriptSelectionTools(){
+  if(scriptRevisionState)return;
+  var sel=voiceoverSelection(false),bar=document.getElementById('scriptAiBar');
+  scriptSelectionState=sel;
+  if(!bar)return;
+  bar.classList.toggle('show',!!sel);
+  var label=document.getElementById('scriptSelectedText');if(label)label.textContent=sel?sel.selected:'';
+  if(!sel)hideScriptCustom();
+}
+function editCurrentVoiceoverLine(){
+  scriptSelectionState=voiceoverSelection(true);updateScriptSelectionTools();
+}
+function showScriptCustom(){
+  var actions=document.getElementById('scriptAiActions'),custom=document.getElementById('scriptCustom');
+  if(actions)actions.style.display='none';if(custom)custom.classList.add('show');
+  var input=document.getElementById('scriptCustomIn');if(input){input.value='';setTimeout(function(){input.focus();},20);}
+}
+function hideScriptCustom(){
+  var actions=document.getElementById('scriptAiActions'),custom=document.getElementById('scriptCustom');
+  if(actions)actions.style.display='';if(custom)custom.classList.remove('show');
+}
+function runCustomScriptRevision(){
+  var input=document.getElementById('scriptCustomIn'),instruction=input?input.value.trim():'';
+  if(!instruction){if(input)input.focus();return;}
+  requestScriptRevision(instruction);
+}
+document.getElementById('scriptCustomIn').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();runCustomScriptRevision();}});
+function scriptRevisionContext(sel){
+  var ta=document.getElementById('scriptTa'),lines=ta.value.split('\n'),before=ta.value.slice(0,sel.lineStart).split('\n').length-1;
+  return lines.slice(Math.max(0,before-1),Math.min(lines.length,before+2)).join('\n');
+}
+function cleanScriptRevision(raw){
+  var out=String(raw||'').trim().replace(/^```(?:text)?\s*/i,'').replace(/\s*```$/,'').trim();
+  out=out.replace(/^\[VOICEOVER\]\s+\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}\s*[-:]\s*/i,'');
+  out=out.replace(/^(["“])|(["”])$/g,'').replace(/\s*\n+\s*/g,' ').replace(/\s{2,}/g,' ').trim();
+  return out;
+}
+function setScriptRevisionLoading(loading,message){
+  var status=document.getElementById('scriptRevStatus'),accept=document.getElementById('scriptAccept'),again=document.getElementById('scriptTryAgain');
+  if(status)status.textContent=message||(loading?'Rewriting selection…':'Ready to compare');
+  if(accept)accept.disabled=loading;if(again)again.disabled=loading;
+}
+function requestScriptRevision(instruction){
+  var sel=scriptSelectionState||voiceoverSelection(false);if(!sel){hideScriptSelectionTools();return;}
+  scriptRevisionState={start:sel.start,end:sel.end,original:sel.original,instruction:instruction,context:sel.context||scriptRevisionContext(sel),candidate:''};
+  hideScriptSelectionTools();
+  var panel=document.getElementById('scriptRevision');panel.classList.add('show');
+  document.getElementById('scriptRevBefore').textContent=sel.original;
+  document.getElementById('scriptRevAfter').textContent='Thinking in the voice of this project…';
+  setScriptRevisionLoading(true);
+  var sys='You are a precise spoken-script editor. Rewrite ONLY the selected words. Return replacement text only: no quotation marks, labels, timecodes, commentary or markdown. Keep the same language, facts, names, point of view and continuity. Make it natural to say aloud. Do not rewrite the surrounding line.'+creatorDnaContext();
+  var user='PROJECT: '+topic+'\n\nNEARBY SCRIPT CONTEXT:\n'+scriptRevisionState.context+'\n\nSELECTED TEXT:\n'+sel.original+'\n\nREVISION INSTRUCTION:\n'+instruction;
+  api(sys,user,'script_revision').then(function(raw){
+    if(!scriptRevisionState)return;
+    var candidate=cleanScriptRevision(raw);if(!candidate)throw new Error('The AI returned an empty revision.');
+    scriptRevisionState.candidate=candidate;
+    document.getElementById('scriptRevAfter').textContent=candidate;
+    setScriptRevisionLoading(false,'Only this selection will change');
+  }).catch(function(e){
+    if(!scriptRevisionState)return;
+    scriptRevisionState.candidate='';
+    document.getElementById('scriptRevAfter').textContent='Could not create a revision. '+e.message;
+    setScriptRevisionLoading(false,'Revision failed — try again');
+  });
+}
+function retryScriptRevision(){
+  if(!scriptRevisionState)return;
+  var state=scriptRevisionState;
+  scriptSelectionState={start:state.start,end:state.end,original:state.original,selected:state.original.trim(),context:state.context,lineStart:0,lineEnd:0,line:''};
+  document.getElementById('scriptRevision').classList.remove('show');scriptRevisionState=null;
+  requestScriptRevision(state.instruction);
+}
+function cancelScriptRevision(){
+  scriptRevisionState=null;scriptSelectionState=null;
+  var panel=document.getElementById('scriptRevision');if(panel)panel.classList.remove('show');
+  var after=document.getElementById('scriptRevAfter');if(after)after.textContent='';
+}
+function acceptScriptRevision(){
+  var state=scriptRevisionState,ta=document.getElementById('scriptTa');if(!state||!state.candidate||!ta)return;
+  if(ta.value.slice(state.start,state.end)!==state.original){
+    setScriptRevisionLoading(false,'The script changed — select the line again');return;
+  }
+  var leading=(state.original.match(/^\s*/)||[''])[0],trailing=(state.original.match(/\s*$/)||[''])[0];
+  var replacement=leading+state.candidate+trailing;
+  var before=ta.value,after=before.slice(0,state.start)+replacement+before.slice(state.end);
+  scriptVersions.push({at:Date.now(),before:before,after:after,original:state.original,replacement:replacement});
+  if(scriptVersions.length>20)scriptVersions.shift();
+  ta.value=after;ta.focus();ta.setSelectionRange(state.start,state.start+replacement.length);
+  cancelScriptRevision();refreshScriptStudio();
+  if(window.gdAutosaveProject)window.gdAutosaveProject(true);
+}
+function renderScriptVersionButton(){
+  var btn=document.getElementById('scriptVersionBtn'),ta=document.getElementById('scriptTa'),last=scriptVersions[scriptVersions.length-1];
+  if(btn)btn.classList.toggle('show',!!(last&&ta&&ta.value===last.after));
+}
+function undoLastScriptRevision(){
+  var ta=document.getElementById('scriptTa'),last=scriptVersions[scriptVersions.length-1];
+  if(!ta||!last||ta.value!==last.after){renderScriptVersionButton();return;}
+  scriptVersions.pop();ta.value=last.before;refreshScriptStudio();
+  if(window.gdAutosaveProject)window.gdAutosaveProject(true);
+}
 
 // longer than any block the generator asks for: even the slow pacing profile
 // holds b-roll under ten seconds, voiceover lines stay short, and long music
@@ -7610,7 +7768,7 @@ document.addEventListener('mouseup',function(e){
   var DB_NAME='graindistrict', STORE='projects', DB_V=1;
 
   var token=null, userEmail=null;
-  var currentProjectId=null, currentCreated=null, currentName=null, currentNameManual=false;
+  var currentProjectId=null, currentCreated=null, currentName=null, currentNameManual=false, projectEpoch=0;
   var saveTimer=null;
 
   // "keep me signed in" decides WHERE the session lives: localStorage survives
@@ -7726,7 +7884,7 @@ document.addEventListener('mouseup',function(e){
     try{return new Date(ts).toLocaleString(undefined,withTime?{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}:{month:'short',day:'numeric'});}catch(e){return '—';}
   }
   function featureLabel(id){
-    var labels={creative_brief:'Creative brief',shot_plan:'Shot plan',plan_outline:'Plan outline',
+    var labels={creative_brief:'Creative brief',shot_plan:'Shot plan',script_revision:'Script revision',plan_outline:'Plan outline',
       shot_plan_segment:'Plan segment',shot_plan_redraft:'Segment redraft',shot_plan_fallback:'Plan fallback',
       shot_plan_continuation:'Plan continuation',shot_details_batch:'Shot details',block_shot_details:'Block planning',
       block_revision:'Block revision',translation:'Translation',location_bible:'Location bible',
@@ -8152,8 +8310,9 @@ document.addEventListener('mouseup',function(e){
 
   /* ---------- serialize / restore full board state ---------- */
   function serialize(){
+    var active=byId('s3')&&byId('s3').classList.contains('active')?'script':'board';
     return {
-      v:1, projectType:projectType, topic:topic, tone:tone, fmt:fmt, styleMode:styleMode, inputLang:inputLang,
+      v:2, stage:active, projectType:projectType, topic:topic, tone:tone, fmt:fmt, styleMode:styleMode, inputLang:inputLang,
       creatorDNA:creatorDNA,
       durMin:durMin, durMax:durMax, projectBrief:projectBrief, projectConstraints:projectConstraints,
       projectBreakdown:projectBreakdown, projectBreakdownKey:projectBreakdownKey,
@@ -8161,7 +8320,7 @@ document.addEventListener('mouseup',function(e){
       songName:songName, songDuration:songDuration, songAnalysis:songAnalysis,
       recceImages:recceImages,
       nodes:itemsAtStoryPositions(nodes,'nodes'), attShots:itemsAtStoryPositions(attShots,'atts'), imgNodes:imgNodes, noteNodes:noteNodes, conns:conns, nid:nid,
-      script:(byId('scriptTa')?byId('scriptTa').value:''),
+      script:(byId('scriptTa')?byId('scriptTa').value:''),scriptVersions:scriptVersions,
       view:storyViewForSave()
     };
   }
@@ -8178,22 +8337,31 @@ document.addEventListener('mouseup',function(e){
     songName=d.songName||''; songDuration=d.songDuration||0; songAnalysis=d.songAnalysis||null; songURL=null;
     recceImages=d.recceImages||[];
     nodes=d.nodes||[]; attShots=d.attShots||[]; imgNodes=d.imgNodes||[]; noteNodes=d.noteNodes||[]; conns=d.conns||[]; nid=d.nid||1;
+    scriptVersions=d.scriptVersions||[];scriptSelectionState=null;scriptRevisionState=null;
     var sta=byId('scriptTa'); if(sta) sta.value=d.script||'';
     if(d.view){ scale=d.view.scale||1; px=(d.view.px==null?60:d.view.px); py=(d.view.py==null?80:d.view.py); }
     undoStack=[]; undoIdx=-1;
-    show('s5');
+    var scriptStage=d.stage==='script'||(!nodes.length&&!!String(d.script||'').trim());
+    show(scriptStage?'s3':'s5');
     renderCreatorDnaProfile();
+    refreshScriptStudio();
     if(typeof renderAll==='function') renderAll();
     if(typeof renderRecceGrid==='function') renderRecceGrid();
     saveHistory();
   }
 
   /* ---------- autosave ---------- */
-  function onBoard(){ var s=byId('s5'); return s&&s.classList.contains('active'); }
-  function hasContent(){ return (nodes&&nodes.length)||(noteNodes&&noteNodes.length)||(imgNodes&&imgNodes.length); }
+  function onProject(){
+    var board=byId('s5'),script=byId('s3');
+    return !!((board&&board.classList.contains('active'))||(script&&script.classList.contains('active')));
+  }
+  function hasContent(){
+    var ta=byId('scriptTa');
+    return !!((ta&&String(ta.value||'').trim())||(nodes&&nodes.length)||(noteNodes&&noteNodes.length)||(imgNodes&&imgNodes.length));
+  }
   function autoName(){ return ((topic||projectBrief||'Untitled')+'').replace(/\s+/g,' ').trim().slice(0,80)||'Untitled'; }
   function scheduleSave(){
-    if(!onBoard()||!hasContent()) return;
+    if(!onProject()||!hasContent()) return;
     if(saveTimer) clearTimeout(saveTimer);
     saveTimer=setTimeout(doSave,1200);
   }
@@ -8202,7 +8370,7 @@ document.addEventListener('mouseup',function(e){
     // to decide whether there's genuinely unsaved work, and without this a
     // spent timer id kept looking like a pending save forever
     if(saveTimer){ clearTimeout(saveTimer); saveTimer=null; }
-    if(!onBoard()||!hasContent()) return;
+    if(!onProject()||!hasContent()) return;
     var now=Date.now();
     // signed out we mint the id ourselves; signed in the server hands one back
     if(!currentProjectId&&!token) currentProjectId=uid();
@@ -8215,14 +8383,17 @@ document.addEventListener('mouseup',function(e){
       created_at:currentCreated,
       updated_at:now
     };
+    var saveEpoch=projectEpoch;
     setSaveState('saving');
     store.put(rec).then(function(id){
-      if(id) currentProjectId=id;
-      currentName=rec.name;
-      setSaveState('saved');
+      if(saveEpoch===projectEpoch){
+        if(id) currentProjectId=id;
+        currentName=rec.name;
+        setSaveState('saved');
+      }
       renderHomePanel();
     },function(e){
-      setSaveState('error');
+      if(saveEpoch===projectEpoch)setSaveState('error');
       console.error('[gd] save failed',e);
       if(e&&(e.name==='QuotaExceededError'||/quota/i.test(e.message||''))){
         alert('This browser has run out of storage.\n\nExport or delete older projects from the Projects panel to free up space.');
@@ -8233,13 +8404,18 @@ document.addEventListener('mouseup',function(e){
       if(token){
         if(!rec.id) rec.id=uid();
         dbPut(rec).then(function(){
-          setSaveState('error');
+          if(saveEpoch===projectEpoch)setSaveState('error');
           console.warn('[gd] cloud save failed - kept a local copy instead');
         },function(){});
       }
     });
   }
+  window.gdAutosaveProject=function(immediate){
+    if(!onProject()||!hasContent())return;
+    if(immediate)doSave();else scheduleSave();
+  };
   window.gdNewProject=function(){
+    projectEpoch++;
     currentProjectId=null; currentCreated=null; currentName=null; currentNameManual=false;
     styleMode='gawx';
     setSaveState('');
@@ -8728,6 +8904,7 @@ document.addEventListener('mouseup',function(e){
   function openProject(id){
     store.get(id).then(function(p){
       if(!p){ alert('Project not found.'); return; }
+      projectEpoch++;
       currentProjectId=p.id;
       currentCreated=p.created_at||Date.now();
       currentName=p.name||null;
@@ -8864,7 +9041,12 @@ document.addEventListener('mouseup',function(e){
   /* ---------- wrap show(): reset project context on home + refresh panel ---------- */
   if(typeof show==='function'){
     var _origShow=show;
-    show=function(id){ _origShow.apply(this,arguments); if(id==='s0'){ window.gdNewProject(); } updateHomePanel(); };
+    show=function(id){
+      if(saveTimer&&onProject()&&id!=='s3'&&id!=='s5')doSave();
+      _origShow.apply(this,arguments);
+      if(id==='s0'){ window.gdNewProject(); }
+      updateHomePanel();
+    };
   }
 
   /* ---------- overlay close ---------- */
@@ -8882,7 +9064,7 @@ document.addEventListener('mouseup',function(e){
   /* a pending save is flushed on the way out, so the last edit before the tab
      closes isn't lost inside the debounce window */
   window.addEventListener('beforeunload',function(){
-    if(saveTimer&&onBoard()&&hasContent()){ clearTimeout(saveTimer); doSave(); }
+    if(saveTimer&&onProject()&&hasContent()){ clearTimeout(saveTimer); doSave(); }
   });
 
   window.gdExportAll=function(){
