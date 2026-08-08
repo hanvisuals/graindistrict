@@ -44,12 +44,14 @@ const APP = process.env.APP || path.resolve(__dirname, '..', 'index.html');
     images:document.querySelectorAll('.img-node').length,notes:document.querySelectorAll('.note-node').length,connections:document.querySelectorAll('.conn-path').length,
     toolbar:getComputedStyle(document.getElementById('toolbar')).pointerEvents,
     active:[...document.querySelectorAll('.board-view-switch .board-deck-btn.on')].map(x=>x.textContent.trim()),
-    laneTops:[...document.querySelectorAll('.story-lane')].map(x=>parseFloat(x.style.top)),
+    laneBoxes:[...document.querySelectorAll('.story-lane')].map(x=>({left:parseFloat(x.style.left),top:parseFloat(x.style.top),width:parseFloat(x.style.width),height:parseFloat(x.style.height)})),
+    nodeTops:[...document.querySelectorAll('.story-cue,.story-shot-card')].map(x=>parseFloat(x.style.top)),
+    links:document.querySelectorAll('.story-link').length,scale:scale,
     body:document.body.className
   }));
   ok('Story is the deliberate default production hierarchy',story.mode==='story'&&story.lanes===2&&story.cues===2&&story.cards===4&&story.voiceCards===0,story);
   ok('Voiceover is context while freeform objects stay out of Story',story.images===0&&story.notes===0&&story.connections===0&&story.toolbar==='none',story);
-  ok('Story scenes form a vertical reading flow',story.laneTops[1]>story.laneTops[0]&&story.active[0]==='Story'&&/story-mode/.test(story.body),story);
+  ok('Story scenes form one compact horizontal node flow',story.laneBoxes[1].left>story.laneBoxes[0].left+story.laneBoxes[0].width&&story.laneBoxes.every(x=>x.top===story.laneBoxes[0].top&&x.height<250)&&new Set(story.nodeTops).size===1&&story.links===4&&story.scale>=.88&&story.active[0]==='Story'&&/story-mode/.test(story.body),story);
 
   const compact=await page.locator('#nc-2').evaluate(el=>({w:el.getBoundingClientRect().width,h:el.getBoundingClientRect().height,tc:getComputedStyle(el.querySelector('.nc-tc')).display}));
   await page.click('#btnDensityComfortable');await page.waitForTimeout(80);
