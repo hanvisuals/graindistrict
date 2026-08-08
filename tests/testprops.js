@@ -58,44 +58,18 @@ const CHROME=process.env.CHROME||'/opt/pw-browsers/chromium-1194/chrome-linux/ch
   },{kit:KIT,cases:CASES});
   await page.waitForTimeout(300);
 
-  const rows=await page.evaluate(()=>
-    [].map.call(document.querySelectorAll('.pv-loc-list .pv-row'),function(r){
-      var d=r.querySelector('.pv-det');
-      return {n:r.querySelector('.pv-num').textContent, prop:d?d.textContent.replace(/^prop list\s*/i,''):null};
-    }));
-
-  ok('every shot is on the page', rows.length===CASES.length, rows.length);
-  CASES.forEach(function(c,i){
-    var shown=!!(rows[i]&&rows[i].prop);
-    ok((c[1]?'printed':'silent ')+' - '+c[2], shown===c[1], {row:rows[i],phrase:c[0]});
+  const result=await page.evaluate(()=>{
+    const fields={};document.querySelectorAll('.pv-loc-dl dt').forEach(dt=>fields[dt.textContent]=dt.nextElementSibling.textContent);
+    return {rows:document.querySelectorAll('.pv-loc-list .pv-row').length,
+      rowDetails:document.querySelectorAll('.pv-loc-list .pv-det').length,fields};
   });
 
-  // in the real export sixty-seven of eighty-four rows repeated the heading.
-  // Here only the four that genuinely add something should speak.
-  const shown=rows.filter(r=>r.prop).length;
-  ok('only the rows that add something speak', shown===4, shown+' of '+rows.length);
-  ok('and the mirror is one of them',
-     rows.some(r=>/kirik ayna/i.test(r.prop||'')), rows.map(r=>r.prop));
-
-  // a location with no props of its own must not silence anything
-  await page.evaluate(()=>{
-    projectBreakdown=[{name:'Bilinmeyen',timeOfDay:'',shots:allShotLabels(),
-      props:[],wardrobe:[],cast:[],note:'x'}];
-    buildPrintView();
-  });
-  await page.waitForTimeout(200);
-  const bare=await page.evaluate(()=>document.querySelectorAll('.pv-loc-list .pv-det').length);
-  ok('with nothing promised in the heading, every shot keeps its props', bare===CASES.length, bare);
-
-  // a prop entry made only of filler words names nothing and must not match
-  await page.evaluate(()=>{
-    projectBreakdown=[{name:'Bos',timeOfDay:'',shots:allShotLabels(),
-      props:['bir','ve','veya','ya da'],wardrobe:[],cast:[],note:'x'}];
-    buildPrintView();
-  });
-  await page.waitForTimeout(200);
-  const filler=await page.evaluate(()=>document.querySelectorAll('.pv-loc-list .pv-det').length);
-  ok('filler words in the kit silence nothing', filler===CASES.length, filler);
+  ok('every physical shot is on the page',result.rows===CASES.length,result.rows);
+  ok('shot rows no longer repeat packing prose',result.rowDetails===0,result.rowDetails);
+  ok('the canonical packing list stays in the location header',/hasta bitki/i.test(result.fields.PROPS||'')&&/yeni saksi/i.test(result.fields.PROPS||''),result.fields);
+  ok('a compact real prop omitted by the location answer is rescued once',/kirik ayna/i.test(result.fields.PROPS||''),result.fields);
+  ok('camera gear is promoted out of props',!/kamera|tripod/i.test(result.fields.PROPS||'')&&/kamera|tripod/i.test(result.fields.EQUIPMENT||''),result.fields);
+  ok('descriptive scenery never becomes a packing paragraph',!/damarlari belirgin|bahce topragi|gercek bitki/i.test(result.fields.PROPS||''),result.fields);
 
   await browser.close();
 })();
