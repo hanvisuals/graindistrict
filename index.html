@@ -499,15 +499,17 @@ body #s0{align-items:stretch;justify-content:flex-start;position:relative;isolat
 .recce-lightbox.open{display:flex;}
 .recce-lightbox img{max-width:90vw;max-height:90vh;border-radius:8px;box-shadow:0 24px 80px rgba(0,0,0,.85);}
 /* PLAYBACK OVERLAY (program monitor) */
-.pb-overlay{display:none;position:absolute;inset:0;z-index:60;background:rgba(5,5,6,.98);flex-direction:column;backdrop-filter:blur(20px);}
+.pb-overlay{display:none;position:absolute;inset:0;z-index:120;background:rgba(5,5,6,.98);flex-direction:column;backdrop-filter:blur(20px);}
 .pb-overlay.open{display:flex;}
-.pb-top{height:48px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 1.2rem;border-bottom:1px solid var(--border);}
-/* the account widget floats over every screen, this one included, and its
-   close button was landing underneath it */
+.pb-top{height:52px;flex-shrink:0;position:relative;display:flex;align-items:center;padding:0 1.2rem;border-bottom:1px solid var(--border);}
+/* The account widget floats over every screen. Keep that space clear while
+   leaving the way back anchored where people naturally look for it. */
 .pb-top{padding-right:calc(1.2rem + var(--gd-acct-w,0px));}
-.pb-top-title{font-family:var(--mono);font-size:11px;letter-spacing:.3em;color:rgba(255,255,255,.45);text-transform:uppercase;}
-.pb-close{font-family:var(--sans);font-size:13px;font-weight:500;padding:5px 14px;border:1px solid var(--border-hi);background:rgba(255,255,255,.05);color:var(--text-2);cursor:pointer;outline:none;border-radius:7px;transition:all .15s;}
-.pb-close:hover{background:rgba(255,255,255,.1);color:#fff;}
+.pb-top-title{position:absolute;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:9px;letter-spacing:.26em;color:rgba(255,255,255,.35);text-transform:uppercase;pointer-events:none;white-space:nowrap;}
+.pb-back{min-height:36px;display:inline-flex;align-items:center;gap:9px;padding:0 14px 0 11px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.045);color:rgba(255,255,255,.72);cursor:pointer;outline:none;border-radius:999px;font-family:var(--sans);font-size:12px;font-weight:600;transition:background .15s,border-color .15s,color .15s,transform .15s;}
+.pb-back:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.25);color:#fff;transform:translateX(-2px);}
+.pb-back-arrow{font-family:var(--mono);font-size:15px;line-height:1;color:#dfbc4d;}
+.pb-exit-hint{margin-left:auto;font-family:var(--mono);font-size:7px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.2);}
 .pb-monitor{flex:1;display:flex;align-items:center;justify-content:center;padding:28px;min-height:0;position:relative;}
 .pb-frame{
   position:relative;aspect-ratio:16/9;max-width:100%;max-height:100%;
@@ -1279,6 +1281,8 @@ body #s0{align-items:stretch;justify-content:flex-start;position:relative;isolat
   /* padding-left only - the right side still has to keep clear of the account
      widget, which .pb-top reserves from --gd-acct-w */
   .pb-top{padding-left:.8rem;}
+  .pb-top-title,.pb-exit-hint{display:none;}
+  .pb-back{min-height:38px;padding:0 13px 0 10px;}
   .pb-monitor{padding:12px;}
   .pb-transport{padding:12px 14px 18px;}
   .pb-script{padding:34px 14px 14px;}
@@ -2304,8 +2308,9 @@ body.location-mode #btnRebreak{display:inline-flex!important;}
   </div>
   <div class="pb-overlay" id="pbOverlay">
     <div class="pb-top">
-      <span class="pb-top-title">Playback</span>
-      <button class="pb-close" onclick="closePlayback()">✕ close</button>
+      <button class="pb-back" type="button" onclick="closePlayback()" aria-label="Back to production grid"><span class="pb-back-arrow" aria-hidden="true">&larr;</span><span>Back to grid</span></button>
+      <span class="pb-top-title">Playback preview</span>
+      <span class="pb-exit-hint">Esc to return</span>
     </div>
     <div class="pb-monitor">
       <div class="pb-frame" id="pbFrame"></div>
@@ -3225,7 +3230,10 @@ document.getElementById('modalTypes').querySelectorAll('.modal-type').forEach(fu
 
 document.addEventListener('keydown',function(e){
   if(e.code==='Space'&&!e.target.isContentEditable&&e.target.tagName!=='TEXTAREA'&&e.target.tagName!=='INPUT'){e.preventDefault();spaceDown=true;}
-  if(e.code==='Escape'){closeModal();cancelConn();}
+  if(e.code==='Escape'){
+    closeModal();cancelConn();
+    var playback=document.getElementById('pbOverlay');if(playback&&playback.classList.contains('open'))closePlayback();
+  }
   if((e.code==='Delete'||e.code==='Backspace')&&!e.target.isContentEditable&&e.target.tagName!=='TEXTAREA'&&e.target.tagName!=='INPUT'){
     if(selImgId!==null){e.preventDefault();saveHistory();delImgNode(selImgId);selImgId=null;}
     else if(selNoteId!==null){e.preventDefault();saveHistory();delNoteNode(selNoteId);selNoteId=null;}
