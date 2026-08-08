@@ -153,9 +153,8 @@ body #s0{align-items:stretch;justify-content:flex-start;position:relative;isolat
 .vp.panning{cursor:grabbing;}
 .vp.connecting{cursor:crosshair;}
 .cw{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform;}
-/* Location view is a production overlay, not another editable layout. The
-   navigator stays pinned to the screen; the chosen place becomes one focused
-   board where VO is context and only things the crew shoots become cards. */
+/* Locations is the same board regrouped into side-by-side shoot frames. The
+   navigator only focuses a frame; it never hides the other locations. */
 .location-nav{display:none;position:absolute;left:14px;right:14px;top:12px;z-index:55;align-items:center;gap:8px;padding:7px;background:rgba(14,14,14,.92);border:1px solid rgba(255,255,255,.1);border-radius:13px;box-shadow:0 12px 38px rgba(0,0,0,.55);backdrop-filter:blur(18px);}
 .location-nav.show{display:flex;}
 .location-nav-label{font-family:var(--mono);font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.25);padding:0 6px;white-space:nowrap;}
@@ -168,6 +167,7 @@ body #s0{align-items:stretch;justify-content:flex-start;position:relative;isolat
 .location-tab-count{font-family:var(--mono);font-size:8px;color:rgba(255,255,255,.27);}
 .location-tab.on .location-tab-count{color:rgba(201,168,76,.78);}
 .location-lane{position:absolute;border:1px solid rgba(255,255,255,.075);border-radius:18px;background:linear-gradient(120deg,rgba(255,255,255,.035),rgba(255,255,255,.012) 48%,rgba(255,255,255,.022));overflow:hidden;}
+.location-lane.active{border-color:rgba(222,192,95,.24);box-shadow:0 22px 60px rgba(0,0,0,.3),0 0 0 1px rgba(222,192,95,.04);}
 .location-lane.unplaced{border-color:rgba(204,85,85,.28);background:linear-gradient(115deg,rgba(204,85,85,.07),rgba(255,255,255,.012) 55%);}
 .location-head{position:absolute;left:24px;right:24px;top:19px;display:flex;align-items:flex-start;gap:18px;min-width:0;}
 .location-index{font-family:var(--mono);font-size:8px;line-height:1.4;letter-spacing:.16em;text-transform:uppercase;color:rgba(201,168,76,.72);white-space:nowrap;padding-top:5px;}
@@ -1701,6 +1701,12 @@ body:not(.free-mode) .guide-show{display:none!important;}
 .cw.location-view .location-shot-card.detail-full .nc-text{display:block;-webkit-line-clamp:unset;overflow:visible;}
 .location-lane{border-color:rgba(255,255,255,.075);border-radius:25px;background:linear-gradient(132deg,rgba(255,255,255,.035),rgba(255,255,255,.01) 52%,rgba(116,169,232,.022));box-shadow:0 25px 70px rgba(0,0,0,.2),inset 0 1px rgba(255,255,255,.02);}
 .location-lane::after{content:'';position:absolute;left:0;right:0;top:0;height:1px;background:linear-gradient(90deg,rgba(222,192,95,.5),rgba(222,192,95,.04),transparent 70%);}
+.location-lane .location-head{left:20px;right:20px;top:18px;gap:12px;}
+.location-lane .location-index{font-size:7px;letter-spacing:.13em;}
+.location-lane .location-title-wrap{min-width:0;max-width:none;flex:1;}
+.location-lane .location-title{font-size:19px;}
+.location-lane .location-summary{flex:0 0 auto;}
+.location-lane .location-meta{left:20px;right:20px;top:91px;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 16px;padding-top:12px;}
 .location-nav{border-radius:17px;background:rgba(11,12,11,.84);box-shadow:0 16px 54px rgba(0,0,0,.42),inset 0 1px rgba(255,255,255,.035);}
 .location-tab.on{box-shadow:0 7px 20px rgba(0,0,0,.18),inset 0 1px rgba(255,255,255,.035);}
 
@@ -2445,17 +2451,13 @@ body.free-mode .port-dot:hover{background:var(--board-gold);border-color:#f8e8a8
   <div class="board-deck" id="boardDeck" aria-label="Board view and density controls">
     <div class="board-deck-group board-view-switch" role="tablist" aria-label="Board view">
       <span class="board-deck-label">View</span>
-      <button id="btnStoryView" class="board-deck-btn on" role="tab" aria-selected="true" onclick="setCanvasViewMode('story')">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M2 3.5h12M2 8h12M2 12.5h12"/><circle cx="4" cy="3.5" r="1.4" fill="currentColor" stroke="none"/><circle cx="7" cy="8" r="1.4" fill="currentColor" stroke="none"/><circle cx="11" cy="12.5" r="1.4" fill="currentColor" stroke="none"/></svg>
-        <span>Story</span>
+      <button id="btnCanvasView" class="board-deck-btn on" role="tab" aria-selected="true" onclick="setCanvasViewMode('free')">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M2.5 2.5h4v4h-4zM9.5 3.5h4v4h-4zM5.5 9.5h4v4h-4z"/><path d="m6.5 5 3 1M8 9.5l2.5-2"/></svg>
+        <span>Canvas</span>
       </button>
       <button id="btnLocations" class="board-deck-btn" role="tab" aria-selected="false" onclick="setCanvasViewMode('location')" title="Group the board by shooting location">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M8 14s4-3.8 4-7A4 4 0 0 0 4 7c0 3.2 4 7 4 7Z"/><circle cx="8" cy="7" r="1.5"/></svg>
         <span>Locations</span>
-      </button>
-      <button id="btnCanvasView" class="board-deck-btn" role="tab" aria-selected="false" onclick="setCanvasViewMode('free')">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M2.5 2.5h4v4h-4zM9.5 3.5h4v4h-4zM5.5 9.5h4v4h-4z"/><path d="m6.5 5 3 1M8 9.5l2.5-2"/></svg>
-        <span>Canvas</span>
       </button>
     </div>
     <i class="board-deck-sep"></i>
@@ -4514,10 +4516,10 @@ function breakdownKey(){
   for(var i=0;i<t.length;i++)h=((h*33)^t.charCodeAt(i))>>>0;
   return h.toString(36)+'-'+t.length;
 }
-/* The location board is deliberately a view, not a second saved layout. It
-   temporarily moves the existing cards into production swimlanes, while this
-   snapshot protects every hand-positioned story coordinate and camera view. */
-var canvasViewMode='story';
+/* Locations is deliberately a view, not a second saved layout. It temporarily
+   regroups the existing camera cards into shoot frames, while this snapshot
+   protects every hand-positioned Canvas coordinate and camera view. */
+var canvasViewMode='free';
 var boardDensity='compact';
 var boardCardDetail='standard';
 var freeCanvasState=null;
@@ -4525,7 +4527,7 @@ var storyLanes=[];
 var storyVisibleNodeIds={};
 var storyNodeLane={};
 var locationViewState=null;
-var locationReturnMode='story';
+var locationReturnMode='free';
 var locationLanes=[];
 var locationGroups=[];
 var locationVisibleNodeIds={};
@@ -4576,7 +4578,7 @@ function syncBoardViewControls(){
   document.body.classList.toggle('board-detail-essential',boardCardDetail==='essential');
   document.body.classList.toggle('board-detail-standard',boardCardDetail==='standard');
   document.body.classList.toggle('board-detail-full',boardCardDetail==='full');
-  var viewBtns={story:'btnStoryView',location:'btnLocations',free:'btnCanvasView'};
+  var viewBtns={location:'btnLocations',free:'btnCanvasView'};
   Object.keys(viewBtns).forEach(function(mode){var b=document.getElementById(viewBtns[mode]);if(!b)return;var on=canvasViewMode===mode;b.classList.toggle('on',on);b.setAttribute('aria-selected',on?'true':'false');});
   var densityBtns={compact:'btnDensityCompact',comfortable:'btnDensityComfortable'};
   Object.keys(densityBtns).forEach(function(mode){var b=document.getElementById(densityBtns[mode]);if(!b)return;var on=boardDensity===mode;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on?'true':'false');});
@@ -4591,8 +4593,8 @@ function syncBoardViewControls(){
 }
 function syncLocationButton(){syncBoardViewControls();}
 function resetLocationViewState(){
-  canvasViewMode='story';boardDensity='compact';boardCardDetail='standard';freeCanvasState=null;storyLanes=[];storyVisibleNodeIds={};storyNodeLane={};
-  locationViewState=null;locationReturnMode='story';locationLanes=[];locationGroups=[];
+  canvasViewMode='free';boardDensity='compact';boardCardDetail='standard';freeCanvasState=null;storyLanes=[];storyVisibleNodeIds={};storyNodeLane={};
+  locationViewState=null;locationReturnMode='free';locationLanes=[];locationGroups=[];
   locationVisibleNodeIds={};locationNodeGroup={};activeLocationIndex=0;
   locationDetailsOpen=false;locationExpandedNodeId=null;locationViewBusy=false;
   syncBoardViewControls();
@@ -4801,41 +4803,33 @@ function layoutLocationView(){
   ensureLocationStoryPositions();buildLocationGroups();
   if(!locationGroups.length){locationLanes=[];locationVisibleNodeIds={};return;}
   activeLocationIndex=Math.max(0,Math.min(activeLocationIndex,locationGroups.length-1));
-  var group=locationGroups[activeLocationIndex],vpEl=document.getElementById('vp');
+  var vpEl=document.getElementById('vp');
   var vpWidth=(vpEl&&vpEl.clientWidth)||1000;
   var phone=vpWidth<600;
-  var laneWidth=phone?Math.max(350,Math.min(430,Math.round(vpWidth/Math.max(scale,.82)))):Math.max(680,Math.min(1120,Math.round(vpWidth/Math.max(scale,.82))));
-  var startX=phone?12:42,startY=phone?68:34,pad=phone?14:24,contentWidth=laneWidth-pad*2;
-  var locationCardW=phone?contentWidth:(boardDensity==='compact'?176:214),locationGap=boardDensity==='compact'?12:18;
-  var cols=phone?1:Math.max(2,Math.floor((contentWidth+locationGap)/(locationCardW+locationGap)));
-  var gridWidth=cols*locationCardW+(cols-1)*locationGap;
-  var gridX=startX+pad+Math.max(0,Math.floor((contentWidth-gridWidth)/2));
-  var headerHeight=locationDetailsOpen?180:112,y=startY+headerHeight;
-  var col=0,rowHeight=0;
-  locationVisibleNodeIds={};
-  function flushRow(){if(!col)return;y+=rowHeight+28;col=0;rowHeight=0;}
-  (group.displayNodes||group.nodes).forEach(function(n){
-    locationVisibleNodeIds[n.id]=1;
-    if(isLocationCueNode(n)){
-      flushRow();n.__locationKind='cue';n.__locationWidth=contentWidth;n.__locationHeight=58;
-      n.x=startX+pad;n.y=y;y+=74;return;
-    }
-    if(isLocationTransitionNode(n)){
-      flushRow();n.__locationKind='transition';n.__locationWidth=contentWidth;n.__locationHeight=30;
-      n.x=startX+pad;n.y=y;y+=45;return;
-    }
-    n.__locationKind='shot';n.__locationWidth=locationCardW;n.__locationHeight=expandedLocationCardHeight(n);
-    n.x=gridX+col*(locationCardW+locationGap);n.y=y;
-    rowHeight=Math.max(rowHeight,n.__locationHeight);col++;
-    if(col>=cols)flushRow();
+  var laneWidth=phone?Math.max(326,Math.min(360,vpWidth-28)):(boardDensity==='compact'?430:510);
+  var startX=phone?18:46,startY=phone?78:64,pad=phone?16:22,laneGap=phone?18:28;
+  var locationCardW=phone?laneWidth-pad*2:(boardDensity==='compact'?176:214),locationGap=boardDensity==='compact'?13:17;
+  var cols=phone?1:2,x=startX;
+  locationVisibleNodeIds={};locationLanes=[];
+  locationGroups.forEach(function(group,groupIndex){
+    var contentWidth=laneWidth-pad*2,gridWidth=cols*locationCardW+(cols-1)*locationGap;
+    var gridX=x+pad+Math.max(0,Math.floor((contentWidth-gridWidth)/2));
+    var detailsOpen=locationDetailsOpen&&groupIndex===activeLocationIndex;
+    var headerHeight=detailsOpen?184:112,y=startY+headerHeight,col=0,rowHeight=0;
+    function flushRow(){if(!col)return;y+=rowHeight+30;col=0;rowHeight=0;}
+    var visuals=locationVisualNodes(group.nodes);
+    visuals.forEach(function(n){
+      locationVisibleNodeIds[n.id]=1;n.__locationKind='shot';n.__locationWidth=locationCardW;n.__locationHeight=expandedLocationCardHeight(n);
+      n.x=gridX+col*(locationCardW+locationGap);n.y=y;rowHeight=Math.max(rowHeight,n.__locationHeight);col++;
+      if(col>=cols)flushRow();
+    });
+    flushRow();
+    var laneHeight=Math.max(286,y-startY+4);
+    locationLanes.push({x:x,y:startY,width:laneWidth,height:laneHeight,index:groupIndex+1,
+      location:group.location,nodes:group.nodes,unplaced:group.unplaced,detailsOpen:detailsOpen,
+      visualCount:visuals.length,cueCount:0,transitionCount:0});
+    x+=laneWidth+laneGap;
   });
-  flushRow();
-  var laneHeight=Math.max(300,y-startY+10);
-  locationLanes=[{x:startX,y:startY,width:laneWidth,height:laneHeight,index:activeLocationIndex+1,
-    location:group.location,nodes:group.nodes,displayNodes:group.displayNodes,unplaced:group.unplaced,
-    visualCount:locationVisualNodes(group.nodes).length,
-    cueCount:(group.displayNodes||group.nodes).filter(isLocationCueNode).length,
-    transitionCount:(group.displayNodes||group.nodes).filter(isLocationTransitionNode).length}];
 }
 function locationCountChip(parent,text){var chip=document.createElement('span');chip.className='location-chip';chip.textContent=text;parent.appendChild(chip);}
 function addLocationMeta(parent,key,values){
@@ -4847,7 +4841,8 @@ function addLocationMeta(parent,key,values){
 function renderLocationLanes(cw){
   locationLanes.forEach(function(lane){
     var loc=lane.location||{};
-    var el=document.createElement('div');el.className='location-lane'+(lane.unplaced?' unplaced':'');
+    var laneIndex=lane.index-1;
+    var el=document.createElement('div');el.className='location-lane'+(lane.unplaced?' unplaced':'')+(laneIndex===activeLocationIndex?' active':'');el.setAttribute('data-location-index',laneIndex);
     el.style.cssText='left:'+lane.x+'px;top:'+lane.y+'px;width:'+lane.width+'px;height:'+lane.height+'px;';
     var head=document.createElement('div');head.className='location-head';
     var ix=document.createElement('div');ix.className='location-index';ix.textContent=lane.unplaced?'needs a home':'location '+String(lane.index).padStart(2,'0');
@@ -4855,17 +4850,14 @@ function renderLocationLanes(cw){
     var title=document.createElement('div');title.className='location-title';title.textContent=loc.name||'Unnamed location';title.title=title.textContent;
     var sub=document.createElement('div');sub.className='location-sub';
     locationCountChip(sub,lane.visualCount+(lane.visualCount===1?' shot':' shots'));
-    if(lane.cueCount)locationCountChip(sub,lane.cueCount+(lane.cueCount===1?' VO cue':' VO cues'));
-    if(lane.transitionCount)locationCountChip(sub,lane.transitionCount+(lane.transitionCount===1?' transition':' transitions'));
     if(loc.timeOfDay)locationCountChip(sub,loc.timeOfDay);
     titleWrap.appendChild(title);titleWrap.appendChild(sub);
     var summary=document.createElement('div');summary.className='location-summary';
-    locationCountChip(summary,(loc.cast||[]).length+' cast');locationCountChip(summary,(loc.wardrobe||[]).length+' wardrobe');locationCountChip(summary,(loc.props||[]).length+' props');locationCountChip(summary,(loc.equipment||[]).length+' equipment');
-    var detailBtn=document.createElement('button');detailBtn.className='location-detail-toggle';detailBtn.textContent=locationDetailsOpen?'hide details':'details';
-    detailBtn.onclick=function(e){e.stopPropagation();locationDetailsOpen=!locationDetailsOpen;renderAll();};
+    var detailBtn=document.createElement('button');detailBtn.className='location-detail-toggle';detailBtn.textContent=lane.detailsOpen?'hide production':'production';
+    detailBtn.onclick=function(e){e.stopPropagation();var wasOpen=locationDetailsOpen&&activeLocationIndex===laneIndex;activeLocationIndex=laneIndex;locationDetailsOpen=!wasOpen;renderAll();};
     summary.appendChild(detailBtn);
     head.appendChild(ix);head.appendChild(titleWrap);head.appendChild(summary);el.appendChild(head);
-    if(locationDetailsOpen){
+    if(lane.detailsOpen){
       var meta=document.createElement('div');meta.className='location-meta';
       addLocationMeta(meta,'cast',loc.cast);addLocationMeta(meta,'wardrobe',loc.wardrobe);addLocationMeta(meta,'props',loc.props);addLocationMeta(meta,'equipment',loc.equipment);el.appendChild(meta);
     }
@@ -4895,7 +4887,7 @@ function selectLocationIndex(index){
 }
 function focusActiveLocation(){
   if(!locationLanes.length)return;
-  var vpEl=document.getElementById('vp'),r=vpEl.getBoundingClientRect(),lane=locationLanes[0];
+  var vpEl=document.getElementById('vp'),r=vpEl.getBoundingClientRect(),lane=locationLanes[activeLocationIndex]||locationLanes[0];
   var sc=Math.min(.92,(r.width-28)/lane.width);
   scale=Math.max(.48,sc);px=r.width/2-(lane.x+lane.width/2)*scale;py=72-lane.y*scale;updateT();
 }
@@ -4931,14 +4923,14 @@ function enterLocationView(){
 }
 function leaveLocationView(nextMode){
   if(canvasViewMode!=='location')return;
-  var returnMode=locationReturnMode||'story';restoreStoryLayout();canvasViewMode=returnMode;locationViewState=null;locationLanes=[];locationGroups=[];
+  var returnMode='free';restoreStoryLayout();canvasViewMode=returnMode;freeCanvasState=null;locationViewState=null;locationLanes=[];locationGroups=[];
   locationVisibleNodeIds={};locationNodeGroup={};locationDetailsOpen=false;locationExpandedNodeId=null;
   syncBoardViewControls();
   if(nextMode&&nextMode!==returnMode){setCanvasViewMode(nextMode);return;}
   renderAll();
 }
 function toggleLocationView(){
-  setCanvasViewMode(canvasViewMode==='location'?(locationReturnMode||'story'):'location');
+  setCanvasViewMode(canvasViewMode==='location'?'free':'location');
 }
 function requestLocationView(){
   if(locationViewBusy)return;
@@ -4958,19 +4950,17 @@ function requestLocationView(){
   });
 }
 function setCanvasViewMode(mode){
-  if(['story','location','free'].indexOf(mode)<0||locationViewBusy)return;
+  // Story used to be a separate presentation of the same relationships now
+  // visible in Canvas. Old saved projects may still request it; open those on
+  // the real, editable Canvas instead of reviving a redundant third mode.
+  if(mode==='story')mode='free';
+  if(['location','free'].indexOf(mode)<0||locationViewBusy)return;
   if(mode===canvasViewMode)return;
   if(canvasViewMode==='location'){
     leaveLocationView(mode);return;
   }
   if(mode==='location'){requestLocationView();return;}
-  if(mode==='story'){
-    if(canvasViewMode==='free')freeCanvasState=captureBoardPositionState();
-    canvasViewMode='story';nodes.forEach(function(n){nodeDrawerClosed[n.id]=true;});layoutStoryView();syncBoardViewControls();renderAll();requestAnimationFrame(focusStoryStart);
-  }else{
-    if(canvasViewMode==='story'&&freeCanvasState)restoreBoardPositionState(freeCanvasState);
-    canvasViewMode='free';freeCanvasState=null;storyLanes=[];storyVisibleNodeIds={};storyNodeLane={};syncBoardViewControls();renderAll();
-  }
+  canvasViewMode='free';freeCanvasState=null;storyLanes=[];storyVisibleNodeIds={};storyNodeLane={};syncBoardViewControls();renderAll();
   if(window.gdAutosaveProject)window.gdAutosaveProject(false);
 }
 var projectConstraints='';
@@ -5860,7 +5850,7 @@ function buildCanvas(){
       cl.classList.add('fade-out');
       setTimeout(function(){cl.style.display='none';},480);
       renderAll();
-      requestAnimationFrame(focusStoryStart);
+      requestAnimationFrame(fitScreen);
     }).catch(function(e){
       clearInterval(clInt);
       cl.classList.add('fade-out');
@@ -8915,12 +8905,9 @@ document.addEventListener('mouseup',function(e){
     if(d.view){ scale=d.view.scale||1; px=(d.view.px==null?60:d.view.px); py=(d.view.py==null?80:d.view.py); }
     undoStack=[]; undoIdx=-1;
     var scriptStage=d.stage==='script'||(!nodes.length&&!!String(d.script||'').trim());
-    var wantedBoardMode=['story','location','free'].indexOf(d.boardViewMode)>=0?d.boardViewMode:'story';
+    var wantedBoardMode=d.boardViewMode==='location'?'location':'free';
     if(!scriptStage){
       canvasViewMode='free';freeCanvasState=null;
-      if(wantedBoardMode!=='free'){
-        freeCanvasState=captureBoardPositionState();canvasViewMode='story';nodes.forEach(function(n){nodeDrawerClosed[n.id]=true;});
-      }
       if(d.boardCamera){scale=d.boardCamera.scale||1;px=(d.boardCamera.px==null?60:d.boardCamera.px);py=(d.boardCamera.py==null?80:d.boardCamera.py);}
     }
     show(scriptStage?'s3':'s5');

@@ -44,28 +44,30 @@ const { pathToFileURL } = require('url');
   const home=await page.evaluate(() => ({
     mode:canvasViewMode,button:document.getElementById('btnLocations').textContent,
     lanes:[...document.querySelectorAll('.location-lane .location-title')].map(e=>e.textContent),
+    laneBoxes:[...document.querySelectorAll('.location-lane')].map(e=>({left:parseFloat(e.style.left),width:parseFloat(e.style.width)})),
     tabs:[...document.querySelectorAll('.location-tab')].map(e=>e.textContent.trim()),
     active:document.querySelector('.location-tab.on')?.textContent.trim(),
     shots:document.querySelectorAll('.location-shot-card').length,
     cues:document.querySelectorAll('.location-cue').length,
     transitions:document.querySelectorAll('.location-transition').length,
     labels:[...document.querySelectorAll('.location-shot-card .nc-tag')].map(e=>e.textContent),
-    cardPos:[...document.querySelectorAll('.location-shot-card')].map(e=>({left:e.style.left,top:e.style.top})),
+    cardPos:Object.fromEntries([...document.querySelectorAll('.location-shot-card')].map(e=>[e.id,{left:parseFloat(e.style.left),top:parseFloat(e.style.top)}])),
     header:[...document.querySelectorAll('.location-head .location-chip')].map(e=>e.textContent),
     meta:document.querySelectorAll('.location-meta').length,
     images:document.querySelectorAll('.img-node').length,notes:document.querySelectorAll('.note-node').length,
     paths:document.querySelectorAll('.conn-path').length,
     captured:JSON.parse(captureState().nodes).map(n=>({id:n.id,x:n.x,y:n.y}))
   }));
-  console.log('TEST 1 - one focused location opens with a two-place navigator:',
-    home.mode==='location'&&/Locations/.test(home.button)&&home.lanes[0]==='Family Home'&&home.tabs.length===2&&home.active.startsWith('Family Home')?'PASS':'FAIL');
-  console.log('TEST 2 - VO becomes context and only visual shots become cards:',
-    home.cues===2&&home.shots===5&&home.transitions===0?'PASS':'FAIL');
-  console.log('TEST 3 - production labels stay on compact cards:',
-    JSON.stringify(home.labels)===JSON.stringify(['01A','01B','01C','01D','02A'])&&
-    new Set(home.cardPos.slice(0,4).map(p=>p.top)).size===1&&new Set(home.cardPos.slice(0,4).map(p=>p.left)).size===4?'PASS':'FAIL');
-  console.log('TEST 4 - the compact header separates shot count from VO context:',
-    home.header.includes('5 shots')&&home.header.includes('2 VO cues')&&!home.header.some(x=>x.includes('7 shots'))?'PASS':'FAIL');
+  console.log('TEST 1 - every location opens side by side on one canvas:',
+    home.mode==='location'&&/Locations/.test(home.button)&&JSON.stringify(home.lanes)===JSON.stringify(['Family Home','Photo Studio'])&&home.tabs.length===2&&home.active.startsWith('Family Home')?'PASS':'FAIL');
+  console.log('TEST 2 - Locations shows only things the crew physically shoots:',
+    home.cues===0&&home.shots===6&&home.transitions===0?'PASS':'FAIL');
+  console.log('TEST 3 - each compact node stays inside its own location frame:',
+    JSON.stringify(home.labels)===JSON.stringify(['01A','01B','01C','01D','01E','02A'])&&
+    home.cardPos['nc-2'].left>=home.laneBoxes[0].left&&home.cardPos['nc-9'].left<home.laneBoxes[0].left+home.laneBoxes[0].width&&
+    home.cardPos['nc-3'].left>=home.laneBoxes[1].left?'PASS':'FAIL');
+  console.log('TEST 4 - every frame states its own physical shot count:',
+    home.header.includes('5 shots')&&home.header.includes('1 shot')&&!home.header.some(x=>/VO cue/.test(x))?'PASS':'FAIL');
   console.log('TEST 5 - freeform items and story connections stay out of production view:',
     home.images===0&&home.notes===0&&home.paths===0?'PASS':'FAIL');
   const captured=Object.fromEntries(home.captured.map(n=>[n.id,n]));
@@ -87,8 +89,9 @@ const { pathToFileURL } = require('url');
     details:document.querySelectorAll('.location-meta').length,
     labels:[...document.querySelectorAll('.location-shot-card .nc-tag')].map(e=>e.textContent)
   }));
-  console.log('TEST 8 - switching tabs replaces the board instead of extending it:',
-    studio.title==='Photo Studio'&&studio.shots===1&&studio.cues===1&&studio.transitions===0&&studio.details===0&&studio.labels[0]==='01E'?'PASS':'FAIL');
+  console.log('TEST 8 - location tabs focus a frame without hiding the others:',
+    studio.title==='Family Home'&&studio.shots===6&&studio.cues===0&&studio.transitions===0&&studio.details===0&&studio.labels.includes('01E')&&
+    await page.evaluate(()=>activeLocationIndex===1&&document.querySelectorAll('.location-lane')[1].classList.contains('active'))?'PASS':'FAIL');
   await page.click('#nc-3');await page.waitForTimeout(50);
   const expanded=await page.locator('#nc-3').evaluate(el=>({expanded:el.classList.contains('location-expanded'),more:el.querySelector('.location-card-more')?.textContent}));
   console.log('TEST 9 - clicking a compact card expands it in place:',expanded.expanded&&expanded.more==='less'?'PASS':'FAIL');
@@ -110,8 +113,8 @@ const { pathToFileURL } = require('url');
   await page.setViewportSize({width:390,height:760});await page.click('#cbarMore');await page.click('#btnLocations');await page.waitForTimeout(100);
   const mobile=await page.evaluate(() => ({scale,lanes:document.querySelectorAll('.location-lane').length,
     tabs:document.querySelectorAll('.location-tab').length,nav:document.getElementById('locationNav').classList.contains('show')}));
-  console.log('TEST 11 - phone view keeps one focused board and a scrollable navigator:',
-    mobile.lanes===1&&mobile.tabs===2&&mobile.nav&&mobile.scale>=.48&&mobile.scale<=.92?'PASS':'FAIL');
+  console.log('TEST 11 - phone view keeps all frames on the horizontal canvas:',
+    mobile.lanes===2&&mobile.tabs===2&&mobile.nav&&mobile.scale>=.48&&mobile.scale<=.92?'PASS':'FAIL');
   console.log('TEST 12 - no page errors:',pageError===null?'PASS':'FAIL');
   if(process.env.LOCATION_SHOT)await page.screenshot({path:process.env.LOCATION_SHOT});
   await browser.close();

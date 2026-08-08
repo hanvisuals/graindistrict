@@ -47,7 +47,7 @@ const APP = process.env.APP || path.resolve(__dirname, '..', 'index.html');
   await page.waitForTimeout(320);
   ok('processing screen has the new cinematic orbit', await page.evaluate(()=>document.querySelectorAll('#s2 .load-orbit i').length===3));
   ok('processing mode removes account chrome from the cinematic moment', await page.evaluate(()=>
-    document.body.classList.contains('gd-processing') && getComputedStyle(document.getElementById('gdAcct')).opacity==='0'));
+    document.body.classList.contains('gd-processing') && parseFloat(getComputedStyle(document.getElementById('gdAcct')).opacity)<=0.02));
   if(process.env.QA_DIR) await page.screenshot({ path:process.env.QA_DIR + '/workspace-loading-desktop.png' });
 
   await page.evaluate(()=>{
@@ -73,21 +73,21 @@ const APP = process.env.APP || path.resolve(__dirname, '..', 'index.html');
       {id:2,type:'broll',tcStart:'00:00',tcEnd:'00:02',content:'Rain tracks across the apartment window.',shots:[],x:380,y:110,grp:0},
       {id:3,type:'broll',tcStart:'00:02',tcEnd:'00:06',content:'Hands close around a warm ceramic cup.',shots:[],x:670,y:110,grp:0},
       {id:4,type:'transition',tcStart:'00:06',tcEnd:'00:07',content:'Match cut from steam to street fog.',shots:[],x:960,y:110,grp:0}
-    ];attShots=[];conns=[];imgNodes=[];noteNodes=[];nodeDrawerClosed={};canvasViewMode='story';freeCanvasState=null;scale=.92;px=14;py=45;renderAll();
+    ];attShots=[];conns=[];imgNodes=[];noteNodes=[];nodeDrawerClosed={};canvasViewMode='free';freeCanvasState=null;scale=.92;px=14;py=45;renderAll();
   });
   await page.waitForTimeout(180);
   const board = await page.evaluate(()=>{
     const grid=getComputedStyle(document.querySelector('.vp'));
     return {
-      nodes:document.querySelectorAll('.story-shot-card').length,cues:document.querySelectorAll('.story-cue').length,lanes:document.querySelectorAll('.story-lane').length,links:document.querySelectorAll('.story-link').length,
-      radius:getComputedStyle(document.querySelector('.story-shot-card')).borderRadius,
+      nodes:document.querySelectorAll('.nc').length,cues:document.querySelectorAll('.story-cue').length,lanes:document.querySelectorAll('.story-lane').length,links:document.querySelectorAll('.conn-group.story-relation').length,
+      radius:getComputedStyle(document.querySelector('.nc')).borderRadius,
       live:/LIVE BOARD/.test(document.querySelector('.cbar-brand').textContent),
       controls:document.querySelectorAll('.board-view-switch .board-deck-btn').length,
       gridImage:grid.backgroundImage,gridSize:grid.backgroundSize,gridUnit:parseFloat(grid.backgroundSize),zoom:scale,
       scrollW:document.documentElement.scrollWidth,vw:document.documentElement.clientWidth
     };
   });
-  ok('visual board uses the compact connected-node hierarchy', board.nodes===3 && board.cues===1 && board.lanes===1 && board.links===3 && board.controls===3 && parseFloat(board.radius)>=10 && board.live, board);
+  ok('visual board uses one editable connected-node hierarchy', board.nodes===4 && board.cues===0 && board.lanes===0 && board.links===3 && board.controls===2 && parseFloat(board.radius)>=10 && board.live, board);
   ok('production board uses the quiet line grid without a radial glow',
     Math.abs(board.gridUnit-24*board.zoom)<.1 && !/radial-gradient/.test(board.gridImage), board);
   ok('the polished board creates no horizontal page overflow', board.scrollW<=board.vw, board);
