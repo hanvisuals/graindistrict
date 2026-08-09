@@ -19,6 +19,10 @@ const realFetch=globalThis.fetch;
 let geminiRequests=[],sourceFetches=[];
 globalThis.fetch=async function(url,options){
   const target=String(url);
+  if(target.startsWith('https://cloudflare-dns.com/dns-query')){
+    const type=new URL(target).searchParams.get('type');
+    return new Response(JSON.stringify({Status:0,Answer:type==='A'?[{type:1,data:'93.184.216.34'}]:[]}),{status:200,headers:{'Content-Type':'application/dns-json'}});
+  }
   if(target==='https://example.com/lens-guide'){
     sourceFetches.push(target);
     return new Response('<html><head><title>Practical Lens Guide</title></head><body><main><h1>Choosing a standard zoom</h1><p>A 24-70mm standard zoom covers the focal lengths used for most everyday scenes and travel work.</p><p>Specialist wildlife and macro work still require different lenses.</p></main></body></html>',{status:200,headers:{'Content-Type':'text/html; charset=utf-8'}});
