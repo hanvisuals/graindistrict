@@ -456,8 +456,9 @@ async function crossrefSearch(query, queryRecord) {
   const endpoint = 'https://api.crossref.org/works?rows=3&select=DOI,title,URL,type&query.bibliographic=' + encodeURIComponent(queryRecord.query);
   const response = await fetch(endpoint, {
     headers:{'Accept':'application/json','User-Agent':'GrainDistrict/1.0 (https://hanvisuals.github.io/graindistrict/)'},
-    redirect:'error',signal:typeof AbortSignal!=='undefined'&&AbortSignal.timeout?AbortSignal.timeout(12000):undefined
+    redirect:'manual',signal:typeof AbortSignal!=='undefined'&&AbortSignal.timeout?AbortSignal.timeout(12000):undefined
   });
+  if (response.status >= 300 && response.status < 400) throw new Error('crossref_redirect');
   if (!response.ok) throw new Error('crossref_' + response.status);
   const type = String(response.headers.get('content-type') || '').toLowerCase();
   if (type && type.indexOf('application/json') < 0) throw new Error('crossref_invalid_content_type');
@@ -473,6 +474,13 @@ async function crossrefSearch(query, queryRecord) {
       queryIds:[queryRecord.id],provider:'crossref',providerRequestIds:[requestId],metadataRecordId:doi,providerPolicy:CROSSREF_POLICY});
   }
   return {requestId:requestId,candidates:candidates};
+}
+function crossrefErrorCode(error) {
+  const message = textLimit(error && error.message, 160).toLowerCase();
+  if (/^crossref_(?:\d{3}|redirect|invalid_content_type|invalid_json)$/.test(message)) return message;
+  if (message.indexOf('too large') >= 0) return 'crossref_response_too_large';
+  if ((error && (error.name === 'AbortError' || error.name === 'TimeoutError')) || message.indexOf('timed out') >= 0) return 'crossref_timeout';
+  return 'crossref_network_error';
 }
 function researchClaims(value) {
   const allowedTypes = ['fact', 'technical', 'recommendation'], seen = {};
@@ -706,8 +714,9 @@ async function assertPublicDns(value) {
   const answers = [];
   for (const type of ['A', 'AAAA']) {
     const dns = await fetch('https://cloudflare-dns.com/dns-query?name=' + encodeURIComponent(host) + '&type=' + type, {
-      headers: {'Accept': 'application/dns-json'}, redirect: 'error'
+      headers: {'Accept': 'application/dns-json'}, redirect: 'manual'
     });
+    if (dns.status >= 300 && dns.status < 400) throw new Error('The source host DNS check redirected unexpectedly.');
     if (!dns.ok) throw new Error('The source host could not be verified safely.');
     let body; try { body = await dns.json(); } catch (e) { body = {}; }
     (Array.isArray(body.Answer) ? body.Answer : []).forEach(answer => {
@@ -778,7 +787,12 @@ async function fetchPublicSource(value) {
     if (response.status >= 300 && response.status < 400) {
       const location = response.headers.get('location');
       if (!location) throw new Error('This source redirected without a destination.');
-      current = publicSourceUrl(new URL(location, current).toString());
+      const next = new URL(location, current);
+      // DOI resolvers still commonly emit an http:// publisher Location even
+      // when that publisher supports HTTPS. Never make the insecure request:
+      // upgrade it first, then run the normal URL and DNS checks on the new hop.
+      if (next.protocol === 'http:') { next.protocol = 'https:'; if (next.port === '80') next.port = ''; }
+      current = publicSourceUrl(next.toString());
       if (!current) throw new Error('This source redirected to an unsupported address.');
       continue;
     }
@@ -1205,15 +1219,27 @@ export default {
 
             if (job.discovery && job.discovery.status === 'searching') {
               const byUrl={};(job.discovery.candidates||[]).forEach(candidate=>{byUrl[candidate.url]=candidate;});
-              for (const queryRecord of job.discovery.queries || []) {
+              const discoveryQueries = job.discovery.queries || [];
+              for (let queryIndex = 0; queryIndex < discoveryQueries.length; queryIndex++) {
+                const queryRecord = discoveryQueries[queryIndex];
                 if (queryRecord.state === 'succeeded' || queryRecord.state === 'failed') continue;
                 queryRecord.state='calling';await writeTruthResearchJob(store,jobKey,job);const queryStarted=Date.now();
                 const cluster=(job.discovery.clusters||[]).find(item=>item.queryIds.indexOf(queryRecord.id)>=0)||{claimIds:claims.map(claim=>claim.id)};
                 try {
                   const found=await crossrefSearch(cluster,queryRecord);queryRecord.state='succeeded';queryRecord.providerRequestId=found.requestId;
-                  for (const candidate of found.candidates) {const current=byUrl[candidate.url];if(current){candidate.claimIds.forEach(id=>{if(current.claimIds.indexOf(id)<0)current.claimIds.push(id);});candidate.queryIds.forEach(id=>{if(current.queryIds.indexOf(id)<0)current.queryIds.push(id);});candidate.providerRequestIds.forEach(id=>{if(current.providerRequestIds.indexOf(id)<0)current.providerRequestIds.push(id);});break;}if(job.discovery.candidates.length<job.policySnapshot.maxCandidates){job.discovery.candidates.push(candidate);byUrl[candidate.url]=candidate;break;}}
+                  const pendingAfter = discoveryQueries.slice(queryIndex + 1).filter(item => item.state !== 'succeeded' && item.state !== 'failed').length;
+                  const available = Math.max(0, job.policySnapshot.maxCandidates - job.discovery.candidates.length);
+                  const allowance = Math.max(0, available - Math.min(available, pendingAfter));let added = 0;
+                  queryRecord.candidateCount = found.candidates.length;queryRecord.candidateAllowance = allowance;
+                  for (const candidate of found.candidates) {
+                    const current=byUrl[candidate.url];
+                    if(current){candidate.claimIds.forEach(id=>{if(current.claimIds.indexOf(id)<0)current.claimIds.push(id);});candidate.queryIds.forEach(id=>{if(current.queryIds.indexOf(id)<0)current.queryIds.push(id);});candidate.providerRequestIds.forEach(id=>{if(current.providerRequestIds.indexOf(id)<0)current.providerRequestIds.push(id);});continue;}
+                    if(added>=allowance||job.discovery.candidates.length>=job.policySnapshot.maxCandidates)break;
+                    job.discovery.candidates.push(candidate);byUrl[candidate.url]=candidate;added++;
+                  }
+                  queryRecord.selectedCandidateCount = added;
                   await recordUsage(store,{request_id:runId+':crossref:'+queryRecord.id,ts:Date.now(),user_id:me.uid,email:me.email,service:'crossref',model:'rest-v1',feature:'truth_research_discovery',project_id:job.context.project_id,project_type:job.context.project_type||'youtube',cost_usd:0,duration_ms:Date.now()-queryStarted,status:found.candidates.length?'success':'partial'});
-                } catch (searchError) {queryRecord.state='failed';queryRecord.providerRequestId='crossref:'+queryRecord.queryHash.slice(0,24);await recordUsage(store,{request_id:runId+':crossref:'+queryRecord.id,ts:Date.now(),user_id:me.uid,email:me.email,service:'crossref',model:'rest-v1',feature:'truth_research_discovery',project_id:job.context.project_id,project_type:job.context.project_type||'youtube',cost_usd:0,duration_ms:Date.now()-queryStarted,status:'failed'});}
+                } catch (searchError) {queryRecord.state='failed';queryRecord.errorCode=crossrefErrorCode(searchError);queryRecord.providerRequestId='crossref:'+queryRecord.queryHash.slice(0,24);await recordUsage(store,{request_id:runId+':crossref:'+queryRecord.id,ts:Date.now(),user_id:me.uid,email:me.email,service:'crossref',model:'rest-v1',feature:'truth_research_discovery',project_id:job.context.project_id,project_type:job.context.project_type||'youtube',cost_usd:0,duration_ms:Date.now()-queryStarted,status:'failed'});}
                 await writeTruthResearchJob(store,jobKey,job);
               }
               job.discovery.status='completed';job.discovery.completedAt=Date.now();job.stage='evaluating';await writeTruthResearchJob(store,jobKey,job);

@@ -10,6 +10,7 @@ globalThis.fetch=async function(url,options={}){
   const target=String(url);
   if(target.startsWith('https://cloudflare-dns.com/dns-query')){
     const parsed=new URL(target),host=parsed.searchParams.get('name'),type=parsed.searchParams.get('type');let data='';
+    if(host==='dns-redirect.example')return new Response('',{status:302,headers:{Location:'https://untrusted.example/dns'}});
     if(host==='dns-private.example'&&type==='A')data='10.0.0.7';
     else if(host==='mixed.example'&&type==='A')data='93.184.216.34';
     else if(host==='mixed.example'&&type==='AAAA')data='fe80::1';
@@ -20,6 +21,7 @@ globalThis.fetch=async function(url,options={}){
   sourceRequests.push({target,headers:options.headers||{}});
   if(target==='https://loop.example/a')return new Response('',{status:302,headers:{Location:'https://loop.example/a'}});
   if(target==='https://redirect-internal.example/a')return new Response('',{status:302,headers:{Location:'https://metadata.google.internal/latest'}});
+  if(target==='https://http-upgrade.example/a')return new Response('',{status:302,headers:{Location:'http://safe.example/a'}});
   if(target==='https://oversized.example/a')return new Response('x',{status:200,headers:{'Content-Type':'text/html','Content-Length':'2000001'}});
   if(target==='https://spoof.example/a')return new Response('%PDF-1.7 '+('fake '.repeat(80)),{status:200,headers:{'Content-Type':'text/html'}});
   if(target==='https://bomb.example/a')return new Response('x'.repeat(1500100),{status:200,headers:{'Content-Type':'text/html'}});
@@ -41,8 +43,12 @@ try{
   ok('rejects a hostname whose A record is private',privateDns.status===422,privateDns.status);
   const mixedDns=await worker.fetch(req({claim:'A technical claim needs a source.',url:'https://mixed.example/a'},account.token),env);
   ok('rejects a hostname when either A or AAAA resolution is private',mixedDns.status===422,mixedDns.status);
+  const redirectedDns=await worker.fetch(req({claim:'A technical claim needs a source.',url:'https://dns-redirect.example/a'},account.token),env);
+  ok('rejects an unexpected redirect from the fixed DNS verifier',redirectedDns.status===422,redirectedDns.status);
   const internalRedirect=await worker.fetch(req({claim:'A technical claim needs a source.',url:'https://redirect-internal.example/a'},account.token),env);
   ok('revalidates every redirect and rejects an internal destination',internalRedirect.status===422,internalRedirect.status);
+  const upgradedRedirect=await worker.fetch(req({claim:'A technical claim needs a source.',url:'https://http-upgrade.example/a'},account.token),env);
+  ok('upgrades an HTTP-only Location to HTTPS before fetching and revalidates the destination',upgradedRedirect.status===200&&sourceRequests.some(x=>x.target==='https://safe.example/a'),upgradedRedirect.status);
   const loop=await worker.fetch(req({claim:'A technical claim needs a source.',url:'https://loop.example/a'},account.token),env);
   ok('stops redirect loops at a fixed hop ceiling',loop.status===422,loop.status);
   const oversized=await worker.fetch(req({claim:'A technical claim needs a source.',url:'https://oversized.example/a'},account.token),env);

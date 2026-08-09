@@ -15,6 +15,7 @@ const ok=(name,pass,detail)=>{console.log((pass?'PASS':'FAIL')+' - '+name+(detai
 const req=(route,method,body,token)=>new Request('https://worker.test'+route,{method:method||'GET',headers:Object.assign({'Content-Type':'application/json'},token?{Authorization:'Bearer '+token}:{}),body:body==null?undefined:JSON.stringify(body)});
 const env={GD_KV:new MockD1(),GEMINI_KEY:'test-gemini-key',ADMIN_EMAILS:'admin@test.com'};
 const sourceUrl='https://doi.org/10.1234/asphalt-study';
+const unreadableUrl='https://doi.org/10.1234/unreadable',fallbackUrl='https://doi.org/10.1234/fallback',unreadableUrl2='https://doi.org/10.1234/unreadable-2';
 const hallucinated='https://invented.example/not-a-citation';
 const queryPlanJson={clusters:[{claimIds:['claim:asphalt-1','claim:asphalt-2'],query:'asphalt pavement temperature stiffness repeated traffic loading',citationUrl:hallucinated}]};
 const evidenceJson={evidence:[
@@ -32,6 +33,8 @@ globalThis.fetch=async function(url,options){
   }
   if(target.startsWith('https://api.crossref.org/works?')){crossrefRequests.push(target);if(crossrefResponseOverride)return crossrefResponseOverride();const items=crossrefOverride==null?[{DOI:'10.1234/asphalt-study',title:['Asphalt pavement temperature and traffic loading'],URL:sourceUrl,type:'journal-article'}]:crossrefOverride;return new Response(JSON.stringify({status:'ok',message:{items}}),{status:200,headers:{'Content-Type':'application/json','x-request-id':'crossref_request_1'}});}
   if(target===sourceUrl){sourceFetches.push(target);return new Response(sourceHtml,{status:200,headers:{'Content-Type':'text/html; charset=utf-8'}});}
+  if(target===unreadableUrl||target===unreadableUrl2){sourceFetches.push(target);return new Response('blocked',{status:403,headers:{'Content-Type':'text/html'}});}
+  if(target===fallbackUrl){sourceFetches.push(target);return new Response(sourceHtml,{status:200,headers:{'Content-Type':'text/html; charset=utf-8'}});}
   if(target.includes('generativelanguage.googleapis.com')){
     const body=JSON.parse(options.body);geminiRequests.push(body);
     const schema=body.response_format&&body.response_format[0]&&body.response_format[0].schema;
@@ -89,7 +92,14 @@ try {
   const wrongMimeRes=await worker.fetch(req('/api/truth-research/run','POST',{runId:'research-run:wrong-mime',claims:[claims[0]],snapshot:{truthLedgerId:'truth-ledger:bounds',truthLedgerRevision:1,scriptFingerprint:'script-hash:bounds'}},providerAccount.token),env),wrongMime=await wrongMimeRes.json();
   crossrefResponseOverride=()=>new Response('{}',{status:200,headers:{'Content-Type':'application/json','Content-Length':'300000'}});
   const oversizedProviderRes=await worker.fetch(req('/api/truth-research/run','POST',{runId:'research-run:oversized-provider',claims:[claims[0]],snapshot:{truthLedgerId:'truth-ledger:bounds',truthLedgerRevision:1,scriptFingerprint:'script-hash:bounds'}},providerAccount.token),env),oversizedProvider=await oversizedProviderRes.json();crossrefResponseOverride=null;
-  ok('invalid or oversized Crossref responses stop at the provider boundary without a destination fetch or invented evidence',wrongMimeRes.status===200&&wrongMime.research.status==='no_match'&&oversizedProviderRes.status===200&&oversizedProvider.research.status==='no_match'&&sourceFetches.length===fetchesBeforeProviderGuards&&geminiRequests.length===callsBeforeProviderGuards+2,{wrongMime,oversizedProvider});
+  crossrefResponseOverride=()=>new Response('',{status:302,headers:{Location:'https://redirected.example/works'}});
+  const redirectedProviderRes=await worker.fetch(req('/api/truth-research/run','POST',{runId:'research-run:redirected-provider',claims:[claims[0]],snapshot:{truthLedgerId:'truth-ledger:bounds',truthLedgerRevision:1,scriptFingerprint:'script-hash:bounds'}},providerAccount.token),env),redirectedProvider=await redirectedProviderRes.json();crossrefResponseOverride=null;
+  ok('invalid, oversized or redirected Crossref responses stop at the provider boundary with safe diagnostic codes and no destination fetch or invented evidence',wrongMimeRes.status===200&&wrongMime.research.status==='no_match'&&wrongMime.research.queries[0].errorCode==='crossref_invalid_content_type'&&oversizedProviderRes.status===200&&oversizedProvider.research.status==='no_match'&&oversizedProvider.research.queries[0].errorCode==='crossref_response_too_large'&&redirectedProviderRes.status===200&&redirectedProvider.research.queries[0].errorCode==='crossref_redirect'&&sourceFetches.length===fetchesBeforeProviderGuards&&geminiRequests.length===callsBeforeProviderGuards+3,{wrongMime,oversizedProvider,redirectedProvider});
+
+  const fallbackSignup=await worker.fetch(req('/api/signup','POST',{email:'fallback@test.com',password:'secret123'}),env),fallbackAccount=await fallbackSignup.json(),fetchesBeforeFallback=sourceFetches.length;
+  crossrefOverride=[{DOI:'10.1234/unreadable',title:['Blocked first result'],URL:unreadableUrl},{DOI:'10.1234/fallback',title:['Readable fallback result'],URL:fallbackUrl},{DOI:'10.1234/unreadable-2',title:['Blocked third result'],URL:unreadableUrl2}];
+  const fallbackRes=await worker.fetch(req('/api/truth-research/run','POST',{runId:'research-run:source-fallback',claims:[claims[0]],snapshot:{truthLedgerId:'truth-ledger:fallback',truthLedgerRevision:1,scriptFingerprint:'script-hash:fallback'}},fallbackAccount.token),env),fallback=await fallbackRes.json();crossrefOverride=null;
+  ok('one query can use its bounded candidate budget and recover from an unreadable first source',fallbackRes.status===200&&fallback.research.queries[0].candidateCount===3&&fallback.research.queries[0].candidateAllowance===3&&fallback.research.queries[0].selectedCandidateCount===3&&fallback.research.sources.length===1&&fallback.research.sources[0].url===fallbackUrl&&fallback.research.links.length===1&&fallback.research.links[0].relationship==='supports'&&sourceFetches.length===fetchesBeforeFallback+3,fallback);
 
   for(let i=0;i<3;i++)await worker.fetch(req('/api/truth-research/run','POST',{runId:'research-run:limit'+i+'abc',claims},account.token),env);
   const callsAtLimit=geminiRequests.length,limited=await worker.fetch(req('/api/truth-research/run','POST',{runId:'research-run:limit-final',claims},account.token),env);
