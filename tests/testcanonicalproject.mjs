@@ -41,7 +41,7 @@ try{
     const brokenValidation=window.gdValidateCanonicalProject(broken);
     buildPrintView();
     return {
-      migratedVersion:migrated.v,schema:cp.schema,schemaVersion:cp.schemaVersion,validation,
+      migratedVersion:migrated.v,schema:cp.schema,schemaVersion:cp.schemaVersion,validation,backup:migrated.migrationBackup,
       canonicalCounts:{blocks:cp.timeline.blocks.length,details:cp.production.details.length,images:cp.assets.images.length,notes:cp.workspace.notes.length,connections:cp.workspace.connections.length,locations:cp.production.locations.length},
       refs:{detail:cp.production.details[0].parentBlockId,image:cp.assets.images[0].attachedDetailId,from:cp.workspace.connections[0].from,to:cp.workspace.connections[0].to},
       frames:{start:cp.timeline.blocks[1].start.frame,end:cp.timeline.blocks[1].end.frame,target:cp.project.durationTargetFrames},
@@ -50,7 +50,7 @@ try{
     };
   });
 
-  ok('v3 projects migrate to CanonicalProject v1',result.migratedVersion===4&&result.schema==='graindistrict.canonical-project'&&result.schemaVersion===1,result);
+  ok('v3 projects migrate to the current CanonicalProject schema with an untouched recovery source',result.migratedVersion===4&&result.schema==='graindistrict.canonical-project'&&result.schemaVersion===2&&result.backup&&result.backup.kind==='legacy'&&result.backup.data.v===3,result);
   ok('the canonical snapshot contains every current project entity',Object.values(result.canonicalCounts).join(',')==='2,1,1,1,1,1',result.canonicalCounts);
   ok('typed IDs preserve block, detail, image and connection relationships',result.refs.detail==='block:2'&&result.refs.image==='detail:10'&&result.refs.from.type==='block'&&result.refs.from.id==='block:2'&&result.refs.to.type==='image'&&result.refs.to.id==='image:20',result.refs);
   ok('timeline timecodes compile to the project frame grid',result.frames.start===0&&result.frames.end===144&&result.frames.target===144,result.frames);
