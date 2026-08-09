@@ -3710,6 +3710,7 @@ document.addEventListener('keyup',function(e){
 function show(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.getElementById(id).classList.add('active');document.body.classList.toggle('gd-processing',id==='s2'||id==='s4');}
 function performNewProject(){
   if(window.gdNewProject)window.gdNewProject();
+  canonicalRuntimeProjectId=null;canonicalProjectState=null;canonicalValidationState=null;
   resetLocationViewState();
   nodes=[];attShots=[];imgNodes=[];noteNodes=[];conns=[];nid=1;nodeDrawerClosed={};
   topic='';projectBrief='';projectConstraints='';projectBreakdown=null;projectBreakdownKey=null;
@@ -4653,6 +4654,224 @@ function breakdownKey(){
   for(var i=0;i<t.length;i++)h=((h*33)^t.charCodeAt(i))>>>0;
   return h.toString(36)+'-'+t.length;
 }
+
+/* CanonicalProject v1 is the durable project spine. The board still uses its
+   compact runtime arrays while somebody is editing, but saves, imports and
+   export preflight all pass through this typed object. That gives every item
+   a stable, globally unambiguous identity and lets future screens evolve
+   without inventing their own copy of the project. */
+var CANONICAL_PROJECT_SCHEMA='graindistrict.canonical-project';
+var CANONICAL_PROJECT_VERSION=1;
+var canonicalRuntimeProjectId=null;
+var canonicalProjectState=null;
+var canonicalValidationState=null;
+
+function canonicalClone(value,fallback){
+  try{return JSON.parse(JSON.stringify(value));}catch(e){return fallback;}
+}
+function canonicalLegacyId(entity,fallback){
+  if(entity&&entity.legacyId!=null&&!isNaN(Number(entity.legacyId)))return Number(entity.legacyId);
+  var m=String(entity&&entity.id||'').match(/(-?\d+)$/);
+  return m?Number(m[1]):fallback;
+}
+function canonicalEntityId(kind,item,index){
+  if(item&&typeof item.cid==='string'&&item.cid.indexOf(kind+':')===0)return item.cid;
+  var legacy=item&&item.id!=null?item.id:index+1;
+  return kind+':'+String(legacy);
+}
+function canonicalProjectId(seed){
+  if(canonicalRuntimeProjectId)return canonicalRuntimeProjectId;
+  var clean=String(seed||'').replace(/[^a-zA-Z0-9_-]+/g,'').slice(0,80);
+  canonicalRuntimeProjectId='project:'+(clean||('local-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8)));
+  return canonicalRuntimeProjectId;
+}
+function canonicalSeconds(tc){
+  var p=String(tc||'0').split(':').map(Number);
+  if(p.some(function(n){return !isFinite(n);}))return 0;
+  if(p.length===3)return p[0]*3600+p[1]*60+p[2];
+  return (p.length===2?p[0]*60+p[1]:p[0])||0;
+}
+function canonicalEndpointType(type){
+  return type==='node'?'block':type==='att'?'detail':type==='img'?'image':type==='note'?'note':String(type||'');
+}
+function legacyEndpointType(type){
+  return type==='block'?'node':type==='detail'?'att':type==='image'?'img':type==='note'?'note':String(type||'');
+}
+function ensureRuntimeCanonicalIds(){
+  var blockRefs={},detailRefs={},imageRefs={},noteRefs={};
+  (nodes||[]).forEach(function(item,i){item.cid=canonicalEntityId('block',item,i);blockRefs[String(item.id)]=item.cid;});
+  (attShots||[]).forEach(function(item,i){item.cid=canonicalEntityId('detail',item,i);item.parentCid=blockRefs[String(item.parentId)]||('block:'+String(item.parentId));detailRefs[String(item.id)]=item.cid;});
+  (imgNodes||[]).forEach(function(item,i){item.cid=canonicalEntityId('image',item,i);item.attachedDetailCid=item.sbAttId==null?null:(detailRefs[String(item.sbAttId)]||('detail:'+String(item.sbAttId)));imageRefs[String(item.id)]=item.cid;});
+  (noteNodes||[]).forEach(function(item,i){item.cid=canonicalEntityId('note',item,i);noteRefs[String(item.id)]=item.cid;});
+  (conns||[]).forEach(function(item,i){
+    item.cid=canonicalEntityId('connection',item,i);
+    var fromType=canonicalEndpointType(item.fromType),toType=canonicalEndpointType(item.toType);
+    var fromMap=fromType==='block'?blockRefs:fromType==='detail'?detailRefs:fromType==='image'?imageRefs:noteRefs;
+    var toMap=toType==='block'?blockRefs:toType==='detail'?detailRefs:toType==='image'?imageRefs:noteRefs;
+    item.fromCid=fromMap[String(item.fromId)]||(fromType+':'+String(item.fromId));item.toCid=toMap[String(item.toId)]||(toType+':'+String(item.toId));
+  });
+}
+function canonicalProjectFromLegacy(data){
+  data=data||{};
+  var fps=Number(data.projectFps)||24;
+  var rawBlocks=canonicalClone(data.nodes||[],[]),rawDetails=canonicalClone(data.attShots||[],[]);
+  var rawImages=canonicalClone(data.imgNodes||[],[]),rawNotes=canonicalClone(data.noteNodes||[],[]);
+  var rawConnections=canonicalClone(data.conns||[],[]),blockRefs={},detailRefs={},imageRefs={},noteRefs={};
+  var maxEnd=0;
+  var blocks=rawBlocks.map(function(raw,i){
+    var legacyId=raw.id,cid=canonicalEntityId('block',raw,i),start=canonicalSeconds(raw.tcStart),end=canonicalSeconds(raw.tcEnd);
+    blockRefs[String(legacyId)]=cid;maxEnd=Math.max(maxEnd,end);
+    raw.cid=cid;raw.id=cid;raw.legacyId=legacyId;raw.kind=raw.type||'broll';raw.text=raw.content||'';
+    raw.start={timecode:raw.tcStart||'00:00',seconds:start,frame:Math.round(start*fps)};
+    raw.end={timecode:raw.tcEnd||'00:00',seconds:end,frame:Math.round(end*fps)};
+    raw.position={x:Number(raw.x)||0,y:Number(raw.y)||0};
+    return raw;
+  });
+  var details=rawDetails.map(function(raw,i){
+    var legacyId=raw.id,cid=canonicalEntityId('detail',raw,i);detailRefs[String(legacyId)]=cid;
+    raw.cid=cid;raw.id=cid;raw.legacyId=legacyId;raw.parentBlockId=blockRefs[String(raw.parentId)]||('block:'+String(raw.parentId));
+    raw.kind=raw.k||'shot';raw.text=raw.t||'';raw.position={x:Number(raw.x)||0,y:Number(raw.y)||0};
+    return raw;
+  });
+  var images=rawImages.map(function(raw,i){
+    var legacyId=raw.id,cid=canonicalEntityId('image',raw,i);imageRefs[String(legacyId)]=cid;
+    raw.cid=cid;raw.id=cid;raw.legacyId=legacyId;raw.position={x:Number(raw.x)||0,y:Number(raw.y)||0};
+    raw.size={width:Number(raw.w)||0,height:Number(raw.h)||0};
+    raw.attachedDetailId=raw.sbAttId==null?null:(detailRefs[String(raw.sbAttId)]||('detail:'+String(raw.sbAttId)));
+    return raw;
+  });
+  var notes=rawNotes.map(function(raw,i){
+    var legacyId=raw.id,cid=canonicalEntityId('note',raw,i);noteRefs[String(legacyId)]=cid;
+    raw.cid=cid;raw.id=cid;raw.legacyId=legacyId;raw.position={x:Number(raw.x)||0,y:Number(raw.y)||0};
+    return raw;
+  });
+  function endpointRef(type,id){
+    var canonicalType=canonicalEndpointType(type),map=canonicalType==='block'?blockRefs:canonicalType==='detail'?detailRefs:canonicalType==='image'?imageRefs:noteRefs;
+    return {type:canonicalType,id:map[String(id)]||(canonicalType+':'+String(id))};
+  }
+  var connections=rawConnections.map(function(raw,i){
+    var legacyId=raw.id,cid=canonicalEntityId('connection',raw,i);
+    raw.cid=cid;raw.id=cid;raw.legacyId=legacyId;raw.from=endpointRef(raw.fromType,raw.fromId);raw.to=endpointRef(raw.toType,raw.toId);
+    return raw;
+  });
+  var locations=canonicalClone(data.projectBreakdown||[],[]).map(function(raw,i){
+    var out=Object.assign({},raw),legacyId=out.id!=null?out.id:i+1;
+    out.legacyId=legacyId;out.id=(typeof out.cid==='string'?out.cid:'location:'+String(legacyId));return out;
+  });
+  var recce=canonicalClone(data.recceImages||[],[]).map(function(raw,i){
+    var out=(raw&&typeof raw==='object')?Object.assign({},raw):{src:raw};
+    out.id=out.cid||('recce:'+(i+1));return out;
+  });
+  var project={
+    id:canonicalProjectId(data.projectRecordId),type:data.projectType||'youtube',title:data.topic||'',
+    fps:fps,dropFrame:false,aspectRatio:data.aspectRatio||'16:9',durationTargetFrames:Math.round(maxEnd*fps)
+  };
+  return {
+    schema:CANONICAL_PROJECT_SCHEMA,schemaVersion:CANONICAL_PROJECT_VERSION,project:project,
+    workflow:{stage:data.stage||'board'},
+    creative:{tone:data.tone||'',format:data.fmt||'',houseLook:data.styleMode||'',language:data.inputLang||'en',
+      durationRange:{min:Number(data.durMin)||0,max:Number(data.durMax)||0},brief:data.projectBrief||'',constraints:data.projectConstraints||'',creatorDNA:canonicalClone(data.creatorDNA||null,null)},
+    script:{text:data.script||'',versions:canonicalClone(data.scriptVersions||[],[])},
+    timeline:{blocks:blocks},
+    production:{details:details,locations:locations,breakdownKey:data.projectBreakdownKey||null},
+    assets:{images:images,recce:recce,audio:{name:data.songName||'',duration:Number(data.songDuration)||0,analysis:canonicalClone(data.songAnalysis||null,null)}},
+    workspace:{notes:notes,connections:connections,nextLegacyId:Number(data.nid)||1,view:canonicalClone(data.view||null,null),
+      camera:canonicalClone(data.boardCamera||null,null),mode:data.boardViewMode||'free',density:data.boardDensity||'compact',detail:data.boardCardDetail||'standard',aiMode:data.aiMode!==false},
+    decisions:canonicalClone(data.decisions||[],[]),migration:{sourceVersion:Number(data.v)||0}
+  };
+}
+function legacyProjectFromCanonical(project,fallback){
+  project=project||{};var out=Object.assign({},canonicalClone(fallback||{},{})),timeline=project.timeline||{},production=project.production||{},assets=project.assets||{},workspace=project.workspace||{},creative=project.creative||{};
+  var blockMap={},detailMap={},imageMap={},noteMap={},maxId=0;
+  function numericId(entity,index){var id=canonicalLegacyId(entity,index+1);maxId=Math.max(maxId,id);return id;}
+  out.nodes=(timeline.blocks||[]).map(function(entity,i){
+    var n=canonicalClone(entity,{}),cid=n.id,id=numericId(n,i);blockMap[cid]=id;n.cid=cid;n.id=id;
+    n.type=n.kind||n.type||'broll';n.content=n.text!=null?n.text:(n.content||'');
+    n.tcStart=n.start&&n.start.timecode?n.start.timecode:(n.tcStart||'00:00');n.tcEnd=n.end&&n.end.timecode?n.end.timecode:(n.tcEnd||'00:00');
+    if(n.position){n.x=n.position.x;n.y=n.position.y;}delete n.legacyId;delete n.kind;delete n.text;delete n.start;delete n.end;delete n.position;return n;
+  });
+  out.attShots=(production.details||[]).map(function(entity,i){
+    var a=canonicalClone(entity,{}),cid=a.id,id=numericId(a,i);detailMap[cid]=id;a.cid=cid;a.id=id;
+    a.parentId=blockMap[a.parentBlockId]!=null?blockMap[a.parentBlockId]:canonicalLegacyId({id:a.parentBlockId},null);
+    a.k=a.kind||a.k||'shot';a.t=a.text!=null?a.text:(a.t||'');if(a.position){a.x=a.position.x;a.y=a.position.y;}
+    delete a.legacyId;delete a.parentBlockId;delete a.kind;delete a.text;delete a.position;return a;
+  });
+  out.imgNodes=(assets.images||[]).map(function(entity,i){
+    var im=canonicalClone(entity,{}),cid=im.id,id=numericId(im,i);imageMap[cid]=id;im.cid=cid;im.id=id;
+    if(im.position){im.x=im.position.x;im.y=im.position.y;}if(im.size){im.w=im.size.width;im.h=im.size.height;}
+    if(im.attachedDetailId)im.sbAttId=detailMap[im.attachedDetailId]!=null?detailMap[im.attachedDetailId]:canonicalLegacyId({id:im.attachedDetailId},null);
+    delete im.legacyId;delete im.position;delete im.size;delete im.attachedDetailId;return im;
+  });
+  out.noteNodes=(workspace.notes||[]).map(function(entity,i){
+    var note=canonicalClone(entity,{}),cid=note.id,id=numericId(note,i);noteMap[cid]=id;note.cid=cid;note.id=id;
+    if(note.position){note.x=note.position.x;note.y=note.position.y;}delete note.legacyId;delete note.position;return note;
+  });
+  function endpointLegacy(ref){
+    var map=ref&&ref.type==='block'?blockMap:ref&&ref.type==='detail'?detailMap:ref&&ref.type==='image'?imageMap:noteMap;
+    return ref&&map[ref.id]!=null?map[ref.id]:canonicalLegacyId({id:ref&&ref.id},null);
+  }
+  out.conns=(workspace.connections||[]).map(function(entity,i){
+    var c=canonicalClone(entity,{}),cid=c.id;c.cid=cid;c.id=numericId(c,i);
+    c.fromType=legacyEndpointType(c.from&&c.from.type);c.fromId=endpointLegacy(c.from);c.toType=legacyEndpointType(c.to&&c.to.type);c.toId=endpointLegacy(c.to);
+    delete c.legacyId;delete c.from;delete c.to;return c;
+  });
+  out.projectBreakdown=(production.locations||[]).map(function(entity){var loc=canonicalClone(entity,{});loc.cid=loc.id;delete loc.id;delete loc.legacyId;return loc;});
+  out.projectBreakdownKey=production.breakdownKey||null;
+  out.recceImages=(assets.recce||[]).map(function(entity){var rec=canonicalClone(entity,{});delete rec.id;return Object.keys(rec).length===1&&rec.src!=null?rec.src:rec;});
+  out.songName=assets.audio&&assets.audio.name||'';out.songDuration=assets.audio&&assets.audio.duration||0;out.songAnalysis=assets.audio&&assets.audio.analysis||null;
+  out.projectType=project.project&&project.project.type||out.projectType||'youtube';out.topic=project.project&&project.project.title||out.topic||'';out.projectFps=project.project&&project.project.fps||24;
+  out.tone=creative.tone||out.tone||'';out.fmt=creative.format||out.fmt||'';out.styleMode=creative.houseLook||out.styleMode||'';out.inputLang=creative.language||out.inputLang||'en';
+  out.durMin=creative.durationRange&&creative.durationRange.min||out.durMin;out.durMax=creative.durationRange&&creative.durationRange.max||out.durMax;
+  out.projectBrief=creative.brief||'';out.projectConstraints=creative.constraints||'';out.creatorDNA=canonicalClone(creative.creatorDNA||null,null);
+  out.script=project.script&&project.script.text||'';out.scriptVersions=canonicalClone(project.script&&project.script.versions||[],[]);
+  out.boardViewMode=workspace.mode||'free';out.boardDensity=workspace.density||'compact';out.boardCardDetail=workspace.detail||'standard';out.view=canonicalClone(workspace.view||null,null);out.boardCamera=canonicalClone(workspace.camera||null,null);
+  out.stage=project.workflow&&project.workflow.stage||out.stage||'board';out.aiMode=workspace.aiMode!==false;
+  out.decisions=canonicalClone(project.decisions||[],[]);out.nid=Math.max(Number(workspace.nextLegacyId)||1,maxId+1);out.v=4;out.canonical=canonicalClone(project,project);
+  return out;
+}
+function validateCanonicalProject(project){
+  var errors=[],seen={},timeline=project&&project.timeline||{},production=project&&project.production||{},assets=project&&project.assets||{},workspace=project&&project.workspace||{};
+  if(!project||project.schema!==CANONICAL_PROJECT_SCHEMA)errors.push('schema_invalid');
+  if(!project||project.schemaVersion!==CANONICAL_PROJECT_VERSION)errors.push('schema_version_unsupported');
+  function addAll(items,label){(items||[]).forEach(function(item){if(!item||!item.id){errors.push(label+'_id_missing');return;}if(seen[item.id])errors.push('duplicate_id:'+item.id);seen[item.id]=label;});}
+  addAll(timeline.blocks,'block');addAll(production.details,'detail');addAll(assets.images,'image');addAll(workspace.notes,'note');addAll(workspace.connections,'connection');addAll(production.locations,'location');
+  (timeline.blocks||[]).forEach(function(block){if(!block.start||!block.end||block.end.frame<block.start.frame)errors.push('invalid_duration:'+block.id);});
+  (production.details||[]).forEach(function(detail){if(seen[detail.parentBlockId]!=='block')errors.push('orphan_detail:'+detail.id);});
+  (assets.images||[]).forEach(function(image){if(image.attachedDetailId&&seen[image.attachedDetailId]!=='detail')errors.push('orphan_image_attachment:'+image.id);});
+  (workspace.connections||[]).forEach(function(conn){
+    [conn.from,conn.to].forEach(function(ref){if(!ref||!seen[ref.id]||seen[ref.id]!==ref.type)errors.push('orphan_connection:'+conn.id);});
+  });
+  return {valid:errors.length===0,errors:errors,counts:{blocks:(timeline.blocks||[]).length,details:(production.details||[]).length,images:(assets.images||[]).length,notes:(workspace.notes||[]).length,connections:(workspace.connections||[]).length,locations:(production.locations||[]).length}};
+}
+function migrateProjectData(data){
+  data=canonicalClone(data||{},{});
+  if(data.canonical&&data.canonical.schema===CANONICAL_PROJECT_SCHEMA){
+    canonicalRuntimeProjectId=data.canonical.project&&data.canonical.project.id||canonicalRuntimeProjectId;
+    canonicalProjectState=canonicalClone(data.canonical,data.canonical);canonicalValidationState=validateCanonicalProject(canonicalProjectState);
+    return legacyProjectFromCanonical(canonicalProjectState,data);
+  }
+  var canonical=canonicalProjectFromLegacy(data);data.v=4;data.canonical=canonical;canonicalProjectState=canonicalClone(canonical,canonical);canonicalValidationState=validateCanonicalProject(canonicalProjectState);
+  return legacyProjectFromCanonical(canonicalProjectState,data);
+}
+function canonicalRuntimeSnapshot(){
+  ensureRuntimeCanonicalIds();
+  var ta=document.getElementById('scriptTa');
+  var active=document.getElementById('s3')&&document.getElementById('s3').classList.contains('active')?'script':'board';
+  return canonicalProjectFromLegacy({v:4,stage:active,projectType:projectType,topic:topic,tone:tone,fmt:fmt,styleMode:styleMode,inputLang:inputLang,durMin:durMin,durMax:durMax,
+    projectBrief:projectBrief,projectConstraints:projectConstraints,creatorDNA:creatorDNA,projectBreakdown:projectBreakdown,projectBreakdownKey:projectBreakdownKey,
+    songName:songName,songDuration:songDuration,songAnalysis:songAnalysis,recceImages:recceImages,nodes:itemsAtStoryPositions(nodes,'nodes'),attShots:itemsAtStoryPositions(attShots,'atts'),
+    imgNodes:imgNodes,noteNodes:noteNodes,conns:conns,nid:nid,script:ta?ta.value:'',scriptVersions:scriptVersions,view:storyViewForSave(),boardCamera:{scale:scale,px:px,py:py},
+    boardViewMode:canvasViewMode,boardDensity:boardDensity,boardCardDetail:boardCardDetail,aiMode:(typeof aiMode!=='undefined'?aiMode:true)});
+}
+function canonicalPreflight(){
+  canonicalProjectState=canonicalRuntimeSnapshot();canonicalValidationState=validateCanonicalProject(canonicalProjectState);
+  window.gdLastCanonicalValidation=canonicalValidationState;
+  if(!canonicalValidationState.valid)console.warn('[gd] canonical preflight',canonicalValidationState.errors);
+  return canonicalValidationState;
+}
+window.gdMigrateProjectData=migrateProjectData;
+window.gdValidateCanonicalProject=validateCanonicalProject;
+window.gdCanonicalProjectSnapshot=function(){canonicalPreflight();return canonicalClone(canonicalProjectState,canonicalProjectState);};
 /* Locations is deliberately a view, not a second saved layout. It temporarily
    regroups the existing camera cards into shoot frames, while this snapshot
    protects every hand-positioned Canvas coordinate and camera view. */
@@ -4826,6 +5045,7 @@ function renderStoryLanes(cw){
 function renderStoryCue(cw,node){
   var lane=storyLanes[storyNodeLane[node.id]],count=lane?lane.cards.length:0;
   var detail=effectiveCardDetail(node),el=document.createElement('button');el.className='story-cue detail-'+detail+(node.id===selId?' sel':'');el.id='nc-'+node.id;
+  el.dataset.canonicalId=node.cid||canonicalEntityId('block',node,0);
   el.style.cssText='left:'+node.x+'px;top:'+node.y+'px;width:'+node.__storyWidth+'px;height:'+node.__storyHeight+'px;';
   var id=document.createElement('span');id.className='story-cue-id';id.textContent=(node.__label||'')+' / '+(node.type==='music'?'music':'voiceover');
   var copy=document.createElement('span');copy.className='story-cue-copy';copy.textContent=node.content;
@@ -5040,6 +5260,7 @@ function selectLocationCanvasNode(node){
 }
 function renderLocationCue(cw,node){
   var el=document.createElement('button');el.className='location-cue'+(node.id===selId?' sel':'');el.id='nc-'+node.id;
+  el.dataset.canonicalId=node.cid||canonicalEntityId('block',node,0);
   el.style.cssText='left:'+node.x+'px;top:'+node.y+'px;width:'+node.__locationWidth+'px;height:'+node.__locationHeight+'px;';
   var label=document.createElement('span');label.className='location-cue-label';label.textContent=(node.__label||'')+' '+(node.type==='music'?'music':'voiceover');
   var text=document.createElement('span');text.className='location-cue-text';text.textContent=node.content;
@@ -5049,6 +5270,7 @@ function renderLocationCue(cw,node){
 function renderLocationShotRow(cw,node){
   var expanded=locationExpandedNodeId===node.id;
   var el=document.createElement('div');el.className='nc location-shot-card location-shot-row'+(expanded?' location-expanded detail-full':'')+(node.id===selId?' sel':'');el.id='nc-'+node.id;el.setAttribute('data-t',node.type);el.setAttribute('role','button');el.tabIndex=0;
+  el.dataset.canonicalId=node.cid||canonicalEntityId('block',node,0);
   el.style.cssText='left:'+node.x+'px;top:'+node.y+'px;width:'+node.__locationWidth+'px;height:'+node.__locationHeight+'px;';
   var main=document.createElement('div');main.className='location-row-main';
   var id=document.createElement('span');id.className='nc-tag location-row-id';id.textContent=storyLabelText(node);
@@ -5069,6 +5291,7 @@ function renderLocationShotRow(cw,node){
 }
 function renderLocationTransition(cw,node){
   var el=document.createElement('button');el.className='location-transition'+(node.id===selId?' sel':'');el.id='nc-'+node.id;
+  el.dataset.canonicalId=node.cid||canonicalEntityId('block',node,0);
   el.style.cssText='left:'+node.x+'px;top:'+node.y+'px;width:'+node.__locationWidth+'px;';
   var label=document.createElement('span');label.className='location-transition-label';label.textContent=(node.__label||'')+' transition';
   var text=document.createElement('span');text.className='location-transition-text';text.textContent=node.content;
@@ -6028,6 +6251,7 @@ function buildCanvas(){
 
 
 function renderAll(){
+  ensureRuntimeCanonicalIds();
   // Saved boards created before duration prose was banned are repaired in
   // memory as soon as they render; the operation is idempotent.
   nodes.forEach(function(n){n.content=stripDurationClaims(n.type,n.content);});
@@ -6439,6 +6663,7 @@ function renderCanvas(){
     var locationCard=canvasViewMode==='location';
     var storyCard=canvasViewMode==='story',detail=effectiveCardDetail(node);
     el.className='nc'+(locationCard?' location-shot-card':'')+(storyCard?' story-shot-card':'')+' detail-'+detail+(locationCard&&locationExpandedNodeId===node.id?' location-expanded detail-full':'')+(node.id===selId?' sel':'')+(nodeIsGroupSelected(node.id)?' group-selected':'');
+    el.dataset.canonicalId=node.cid||canonicalEntityId('block',node,idx);
     if(storyCard)el.style.setProperty('--card-i',node.__storyCardIndex||0);
     el.setAttribute('data-t',node.type);
     el.id='nc-'+node.id;
@@ -6666,6 +6891,7 @@ function renderImgNodes(){
     var el=document.createElement('div');
     el.className='img-node'+(img.id===selImgId?' sel':'')+(imgIsGroupSelected(img.id)?' group-selected':'');
     el.id='img-'+img.id;
+    el.dataset.canonicalId=img.cid||canonicalEntityId('image',img,0);
     el.style.cssText='left:'+img.x+'px;top:'+img.y+'px;width:'+img.w+'px;height:'+img.h+'px;';
     var i=document.createElement('img');i.src=img.src;
     var del=document.createElement('button');del.className='img-node-del';del.textContent='x';
@@ -6722,6 +6948,7 @@ function renderNoteNodes(){
     var el=document.createElement('div');
     el.className='note-node'+(note.id===selNoteId?' sel':'')+(noteIsGroupSelected(note.id)?' group-selected':'');
     el.id='note-'+note.id;
+    el.dataset.canonicalId=note.cid||canonicalEntityId('note',note,0);
     el.style.cssText='left:'+note.x+'px;top:'+note.y+'px;width:'+(note.w||160)+'px;';
     var head=document.createElement('div');head.className='note-head';
     var lbl=document.createElement('span');lbl.className='note-lbl';lbl.textContent='note';
@@ -6874,6 +7101,7 @@ function renderTL(){
       var b=document.createElement('div');
       b.className='tl-block tl-abs'+(selId===node.id?' sel':'')+(nodeIsGroupSelected(node.id)?' group-selected':'')+(timelineFlashIds.indexOf(node.id)>=0?' tl-reordered':'');
       b.id='tlb-'+node.id;
+      b.dataset.canonicalId=node.cid||canonicalEntityId('block',node,0);
       b.style.left=Math.round(s*pxPerSec)+'px';
       b.style.top=AUDIO_TYPES[node.type]?'0':'40px';
       b.style.width=w+'px';
@@ -6897,6 +7125,7 @@ function renderTL(){
     var b=document.createElement('div');
     b.className='tl-block'+(selId===node.id?' sel':'')+(nodeIsGroupSelected(node.id)?' group-selected':'')+(timelineFlashIds.indexOf(node.id)>=0?' tl-reordered':'');
     b.id='tlb-'+node.id;
+    b.dataset.canonicalId=node.cid||canonicalEntityId('block',node,0);
     b.style.width=w+'px';
     b.style.background=DC[node.type]||'#555';
     b.title=(TL[node.type]||node.type).toUpperCase()+' '+node.tcStart+'-'+node.tcEnd+'\n'+node.content.slice(0,80);
@@ -7910,6 +8139,10 @@ function docTitle(){
    Without a breakdown there is nothing to group by, so the document falls back
    to story order - the beats with their cuts nested underneath. */
 function buildPrintView(){
+  // Human PDF is still rendered by the existing print adapter, but it now
+  // compiles only after the canonical project has passed its ID/reference
+  // preflight. Later NLE adapters can reuse the exact same snapshot.
+  canonicalPreflight();
   var v=document.getElementById('printView');
   var when=new Date().toLocaleDateString(undefined,{day:'numeric',month:'long',year:'numeric'});
   var total=0; nodes.forEach(function(n){var e=tcToSec(n.tcEnd);if(e>total)total=e;});
@@ -8095,6 +8328,7 @@ function buildPrintView(){
 
 function doExport(){
   if(!nodes.length){ gdAsk({title:'Nothing to export',message:'Build a board first.',ok:'OK'}); return; }
+  canonicalPreflight();
   // Graphics-led channels need a scene/asset document, not invented shooting
   // locations. The story-order export already preserves every designed scene.
   if(isGraphicsLed()){projectBreakdown=null;projectBreakdownKey=null;printNow();return;}
@@ -9119,8 +9353,8 @@ document.addEventListener('mouseup',function(e){
   /* ---------- serialize / restore full board state ---------- */
   function serialize(){
     var active=byId('s3')&&byId('s3').classList.contains('active')?'script':'board';
-    return {
-      v:3, stage:active, projectType:projectType, topic:topic, tone:tone, fmt:fmt, styleMode:styleMode, inputLang:inputLang,
+    var data={
+      v:4, stage:active,projectRecordId:currentProjectId,projectType:projectType, topic:topic, tone:tone, fmt:fmt, styleMode:styleMode, inputLang:inputLang,
       boardViewMode:canvasViewMode,boardDensity:boardDensity,boardCardDetail:boardCardDetail,
       creatorDNA:creatorDNA,
       durMin:durMin, durMax:durMax, projectBrief:projectBrief, projectConstraints:projectConstraints,
@@ -9132,9 +9366,18 @@ document.addEventListener('mouseup',function(e){
       script:(byId('scriptTa')?byId('scriptTa').value:''),scriptVersions:scriptVersions,
       view:storyViewForSave(),boardCamera:{scale:scale,px:px,py:py}
     };
+    data.canonical=canonicalProjectFromLegacy(data);
+    canonicalProjectState=canonicalClone(data.canonical,data.canonical);canonicalValidationState=validateCanonicalProject(canonicalProjectState);
+    window.gdLastCanonicalValidation=canonicalValidationState;
+    // Keep only the lightweight fields old project shelves understand. Heavy
+    // images, recce photos, production details and relations live once inside
+    // canonical; restore always treats that object as authoritative.
+    return {v:4,stage:data.stage,projectType:data.projectType,topic:data.topic,nodes:data.nodes,script:data.script,canonical:data.canonical};
   }
   function restore(d){
-    d=d||{};
+    if(!d||!d.canonical)canonicalRuntimeProjectId=null;
+    if(d&&!d.projectRecordId&&currentProjectId)d=Object.assign({},d,{projectRecordId:currentProjectId});
+    d=migrateProjectData(d||{});
     resetLocationViewState();
     projectType=d.projectType||'youtube'; topic=d.topic||''; tone=d.tone||tone; fmt=d.fmt||fmt; styleMode=d.styleMode||'gawx';
     creatorDNA=d.creatorDNA||loadCreatorDna()||creatorDNA;
@@ -9166,6 +9409,8 @@ document.addEventListener('mouseup',function(e){
     if(typeof renderRecceGrid==='function') renderRecceGrid();
     saveHistory();
   }
+  window.gdSerializeProjectData=serialize;
+  window.gdRestoreProjectData=restore;
 
   /* ---------- autosave ---------- */
   function onProject(){
@@ -9234,6 +9479,7 @@ document.addEventListener('mouseup',function(e){
   window.gdNewProject=function(){
     projectEpoch++;
     currentProjectId=null; currentCreated=null; currentName=null; currentNameManual=false;
+    canonicalRuntimeProjectId=null;canonicalProjectState=null;canonicalValidationState=null;
     styleMode='gawx';
     setSaveState('');
   };
