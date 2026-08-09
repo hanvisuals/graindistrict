@@ -1469,6 +1469,61 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,label:focus-with
 #s_equipment .brief-skip-btn,#s_brief .brief-skip-btn{min-height:54px;border-radius:14px;background:rgba(255,255,255,.025);}
 #s_brief .brief-display{max-height:430px;min-height:330px;padding:24px 26px;border-radius:18px;border-color:rgba(255,255,255,.09);background:linear-gradient(145deg,rgba(255,255,255,.045),rgba(255,255,255,.014));font-size:13px;line-height:1.85;box-shadow:0 24px 70px rgba(0,0,0,.28);}
 
+/* Creative Contract: a compact project-specific layer between the persistent
+   Creator DNA and the generated script. It expands inside Production Details
+   instead of adding another screen to the flow. */
+#s_equipment{overflow-y:auto;}
+.cc-intake{display:flex;flex-direction:column;gap:12px;}
+.cc-intake-note{display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:var(--mono);font-size:7px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.22);}
+.cc-intake-note i{display:inline-flex;align-items:center;gap:7px;font-style:normal;color:rgba(109,155,211,.58);}
+.cc-intake-note i::before{content:'';width:5px;height:5px;border-radius:50%;background:#6d9bd3;box-shadow:0 0 9px rgba(109,155,211,.55);}
+.cc-panel{display:none;grid-column:1/-1;position:relative;margin-top:18px;border:1px solid rgba(215,185,88,.18);border-radius:24px;padding:22px;background:linear-gradient(145deg,rgba(215,185,88,.055),rgba(255,255,255,.018) 42%,rgba(109,155,211,.035));box-shadow:0 28px 90px rgba(0,0,0,.34);overflow:hidden;}
+.cc-panel.show{display:block;animation:cc-rise .42s cubic-bezier(.22,.7,.16,1) both;}
+.cc-panel::before{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(110deg,transparent 22%,rgba(255,255,255,.025) 48%,transparent 72%);}
+@keyframes cc-rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.cc-head{position:relative;display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,.07);}
+.cc-k{font-family:var(--mono);font-size:7px;letter-spacing:.18em;text-transform:uppercase;color:rgba(215,185,88,.76);margin-bottom:7px;}
+.cc-head h2{font-family:var(--sans);font-size:25px;line-height:1;letter-spacing:-.045em;color:#f5f3ee;}
+.cc-head p{margin-top:8px;font-family:var(--sans);font-size:11px;line-height:1.55;color:rgba(255,255,255,.34);}
+.cc-state{display:flex;align-items:center;gap:7px;white-space:nowrap;padding:8px 10px;border:1px solid rgba(109,155,211,.16);border-radius:999px;background:rgba(109,155,211,.045);font-family:var(--mono);font-size:7px;letter-spacing:.09em;text-transform:uppercase;color:rgba(109,155,211,.72);}
+.cc-state::before{content:'';width:5px;height:5px;border-radius:50%;background:#78a984;box-shadow:0 0 9px rgba(120,169,132,.55);}
+.cc-grid{position:relative;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:9px;}
+.cc-field{grid-column:span 3;display:flex;flex-direction:column;gap:7px;min-width:0;padding:12px;border:1px solid rgba(255,255,255,.07);border-radius:14px;background:rgba(4,5,4,.38);transition:border-color .16s,background .16s;}
+.cc-field.wide{grid-column:span 6;}
+.cc-field:hover,.cc-field:focus-within{border-color:rgba(215,185,88,.2);background:rgba(255,255,255,.025);}
+.cc-field label{font-family:var(--mono);font-size:6px;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.27);}
+.cc-field input,.cc-field textarea,.cc-field select{width:100%;border:0;outline:0;resize:none;background:transparent;color:rgba(255,255,255,.82);font-family:var(--sans);font-size:12px;line-height:1.5;user-select:text;}
+.cc-field textarea{height:39px;overflow-y:auto;}
+.cc-field select{appearance:none;cursor:pointer;color:rgba(255,255,255,.82);}
+.cc-field select option{background:#111;color:#eee;}
+.cc-foot{position:relative;display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:16px;}
+.cc-foot>span{font-family:var(--mono);font-size:7px;letter-spacing:.09em;text-transform:uppercase;color:rgba(255,255,255,.22);}
+.cc-foot-actions{display:flex;align-items:center;gap:8px;}
+.cc-rebuild{border:0;background:none;color:rgba(215,185,88,.68);font-family:var(--mono);font-size:7px;letter-spacing:.11em;text-transform:uppercase;cursor:pointer;padding:8px;}
+.cc-rebuild:hover{color:#efd36d;}
+.cc-lock{min-height:42px;padding:9px 15px;border:0;border-radius:11px;background:#f5f3ee;color:#0b0c0b;font-family:var(--sans);font-size:11px;font-weight:650;cursor:pointer;box-shadow:0 10px 28px rgba(0,0,0,.24);}
+.cc-lock:hover{background:#fff;transform:translateY(-1px);}
+.cc-lock:disabled{opacity:.38;pointer-events:none;}
+#s_equipment.contract-ready .kb-wrap{align-content:start;}
+#s_equipment.contract-ready .kb-wrap>div:first-child{grid-row:auto;align-self:start;padding-top:26px;}
+#s_equipment.contract-ready .brief-ta{height:220px;}
+#s_equipment.contract-ready .cc-intake .brief-row{display:none;}
+
+.script-contract{flex-shrink:0;margin-bottom:9px;border:1px solid rgba(215,185,88,.14);border-radius:16px;background:linear-gradient(100deg,rgba(215,185,88,.055),rgba(255,255,255,.018),rgba(109,155,211,.035));overflow:hidden;}
+.script-contract-toggle{width:100%;min-height:46px;display:flex;align-items:center;gap:13px;border:0;background:none;padding:10px 14px;color:#fff;text-align:left;cursor:pointer;}
+.script-contract-toggle>span:first-child{font-family:var(--mono);font-size:7px;letter-spacing:.16em;text-transform:uppercase;color:rgba(215,185,88,.72);white-space:nowrap;}
+.script-contract-promise{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--sans);font-size:11px;color:rgba(255,255,255,.55);}
+.script-contract-mode{padding:5px 8px;border:1px solid rgba(255,255,255,.08);border-radius:999px;font-family:var(--mono);font-size:6px;letter-spacing:.09em;text-transform:uppercase;color:rgba(109,155,211,.75);white-space:nowrap;}
+.script-contract-chevron{font-size:13px;color:rgba(255,255,255,.28);transition:transform .2s;}
+.script-contract.open .script-contract-chevron{transform:rotate(180deg);}
+.script-contract-body{display:none;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;border-top:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.055);}
+.script-contract.open .script-contract-body{display:grid;}
+.script-contract-item{min-width:0;padding:11px 13px;background:#0c0d0c;}
+.script-contract-item b{display:block;margin-bottom:5px;font-family:var(--mono);font-size:6px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.23);}
+.script-contract-item span{display:block;font-family:var(--sans);font-size:10px;line-height:1.45;color:rgba(255,255,255,.55);}
+.script-contract-edit{grid-column:1/-1;display:flex;justify-content:flex-end;padding:8px 12px;background:#0c0d0c;}
+.script-contract-edit button{border:0;background:none;color:rgba(215,185,88,.72);font-family:var(--mono);font-size:7px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;}
+
 /* Cinematic processing */
 #s2,#s4{position:relative;isolation:isolate;background:#060706;}
 .gd-acct{transition:opacity .25s var(--gd-ease),transform .25s var(--gd-ease);}
@@ -1606,6 +1661,16 @@ body.location-mode #btnRebreak{display:inline-flex!important;}
   #s_equipment .kb-title,#s_brief .kb-title{font-size:42px!important;}
   #s_equipment .kb-sub,#s_brief .kb-sub{font-size:13px;}
   #s_equipment .brief-ta{height:220px;}
+  .cc-panel{padding:15px;border-radius:19px;margin-top:5px;}
+  .cc-head{gap:12px;}
+  .cc-state{display:none;}
+  .cc-grid{grid-template-columns:1fr;}
+  .cc-field,.cc-field.wide{grid-column:1;}
+  .cc-field textarea{height:54px;}
+  #s_equipment.contract-ready .brief-ta{height:150px;}
+  .cc-foot{align-items:flex-start;flex-direction:column;}
+  .cc-foot-actions{width:100%;}
+  .cc-lock{flex:1;min-height:46px;}
   #s_brief .brief-display{min-height:260px;max-height:48vh;}
   #s_equipment .brief-row .gobtn,#s_brief .brief-row .gobtn{order:-1;flex-basis:100%!important;}
   .load-stage{min-height:410px;padding:42px 24px;border-radius:24px;}
@@ -1613,6 +1678,8 @@ body.location-mode #btnRebreak{display:inline-flex!important;}
   .s3-topbar{height:auto;min-height:62px;padding:8px 10px;}
   .s3-body{padding:8px;gap:0;}
   .s3-col-right{padding:8px;}
+  .script-contract-body{grid-template-columns:1fr;max-height:240px;overflow-y:auto;}
+  .script-contract-mode{display:none;}
   .s3-plan-hl,.s3-plan-ta{inset:0;padding:44px 14px 158px;font-size:11.5px;}
   .s3-acts .kb-cont{min-height:36px;padding:7px 12px;}
   .cbar{height:58px;padding:0 8px 0 4px;}
@@ -1627,10 +1694,11 @@ body.location-mode #btnRebreak{display:inline-flex!important;}
   .guide-show{display:none!important;}
 }
 @media (hover:none) and (pointer:coarse){
-  .btn,.opt,.bd-act,.bd-type-btn,.modal-type,.cf-act,.gd-pill,.bl-addbtn,.brief-skip-btn{min-height:44px;}
+  .btn,.opt,.bd-act,.bd-type-btn,.modal-type,.cf-act,.gd-pill,.bl-addbtn,.brief-skip-btn,.cc-rebuild{min-height:44px;}
 }
 @media (prefers-reduced-motion:reduce){
   .load-stage::before,.load-orbit i,.load-track span{animation:none!important;}
+  .cc-panel.show{animation:none!important;}
   .nc{transition:none;}
   .nc:hover{transform:none;}
 }
@@ -2405,15 +2473,35 @@ body.free-mode .port-dot:hover{background:var(--board-gold);border-color:#f8e8a8
   <button class="kb-back" onclick="show('s1')">&larr; Back</button>
   <div class="kb-wrap" style="gap:1.5rem">
     <div style="text-align:center">
-      <span class="brief-label">production details</span>
-      <h1 class="kb-title" style="font-size:1.75rem">What are you working with?</h1>
-      <p class="kb-sub" style="margin-top:.5rem;max-width:440px">Describe your camera, lenses, locations, lighting, props and budget. These details guide your script and production plan directly.</p>
+      <span class="brief-label">project reality</span>
+      <h1 class="kb-title" style="font-size:1.75rem">Set the boundaries.<br>Keep the idea alive.</h1>
+      <p class="kb-sub" style="margin-top:.5rem;max-width:440px">Tell us what is actually available. Grain District will combine it with your Creator DNA and turn both into one editable project direction.</p>
     </div>
-    <textarea class="brief-ta" id="constraintsIn" placeholder="Sony a7S III with 24–70mm and 12–24mm f/2.8 lenses. A wheat field, empty road and caravan are available. Nine red rugs, one fill light, mostly exterior locations. Zero budget. Soft acoustic mood, a story about heartbreak..."></textarea>
-    <div class="brief-row">
-      <button class="brief-skip-btn" onclick="skipEquipment()">Skip details</button>
-      <button class="gobtn" style="flex:1;margin:0" onclick="generateScriptFromDetails()">Generate script</button>
+    <div class="cc-intake">
+      <textarea class="brief-ta" id="constraintsIn" placeholder="Sony a7S III with 24–70mm and 12–24mm lenses. One apartment, a desk and two hours of daylight are available. Solo production, no extra budget..."></textarea>
+      <div class="cc-intake-note"><span>Equipment &middot; locations &middot; people &middot; budget</span><i>Project-specific</i></div>
+      <div class="brief-row">
+        <button class="brief-skip-btn" onclick="skipEquipment()">No production details</button>
+        <button class="gobtn" id="creativeContractAction" style="flex:1;margin:0" onclick="handleCreativeContractAction()"><span id="creativeContractActionText">Build project direction</span></button>
+      </div>
     </div>
+    <section class="cc-panel" id="creativeContractPanel" aria-live="polite">
+      <div class="cc-head">
+        <div><div class="cc-k">Creative Contract / Project Direction</div><h2>This is what the film is promising.</h2><p>Review the decisions, change anything that feels wrong, then lock the direction and generate.</p></div>
+        <div class="cc-state" id="creativeContractState">Ready to edit</div>
+      </div>
+      <div class="cc-grid">
+        <div class="cc-field"><label for="ccFormat">Format</label><select id="ccFormat"><option value="story">Cinematic story</option><option value="presenter">Educational presenter</option><option value="demo">Demonstration / review</option><option value="graphics">Graphics-led</option><option value="hybrid">Considered hybrid</option></select></div>
+        <div class="cc-field"><label for="ccPacing">Pacing</label><select id="ccPacing"><option value="reflective">Reflective</option><option value="balanced">Balanced</option><option value="energetic">Energetic</option></select></div>
+        <div class="cc-field wide"><label for="ccViewer">Viewer</label><input id="ccViewer" type="text" autocomplete="off" placeholder="Who needs this video?"></div>
+        <div class="cc-field wide"><label for="ccPromise">Core promise</label><textarea id="ccPromise" placeholder="What exactly will the viewer leave with?"></textarea></div>
+        <div class="cc-field wide"><label for="ccStructure">Story engine</label><textarea id="ccStructure" placeholder="How the argument or story moves forward"></textarea></div>
+        <div class="cc-field wide"><label for="ccVisualSystem">Visual system</label><textarea id="ccVisualSystem" placeholder="Presenter, B-roll, demonstrations, screens and graphics"></textarea></div>
+        <div class="cc-field wide"><label for="ccProof">Proof / evidence</label><textarea id="ccProof" placeholder="What makes the promise believable and useful?"></textarea></div>
+        <div class="cc-field wide"><label for="ccAvoid">Avoid</label><textarea id="ccAvoid" placeholder="What this project must not become"></textarea></div>
+      </div>
+      <div class="cc-foot"><span id="creativeContractFoot">Built from your idea, DNA and real production limits.</span><div class="cc-foot-actions"><button class="cc-rebuild" type="button" onclick="regenerateCreativeContract()">Rebuild from details</button><button class="cc-lock" id="creativeContractLock" type="button" onclick="handleCreativeContractAction()"><span id="creativeContractLockText">Lock direction & generate</span></button></div></div>
+    </section>
   </div>
 </div>
 
@@ -2449,6 +2537,12 @@ body.free-mode .port-dot:hover{background:var(--board-gold);border-color:#f8e8a8
         <button class="script-version-btn" id="scriptVersionBtn" type="button" onclick="undoLastScriptRevision()">Undo last AI edit</button>
       </aside>
       <div class="s3-col-right">
+        <section class="script-contract" id="scriptContract" hidden>
+          <button class="script-contract-toggle" type="button" onclick="toggleScriptContract()" aria-expanded="false">
+            <span>Project Direction</span><span class="script-contract-promise" id="scriptContractPromise"></span><span class="script-contract-mode" id="scriptContractMode"></span><span class="script-contract-chevron">&#8964;</span>
+          </button>
+          <div class="script-contract-body" id="scriptContractBody"></div>
+        </section>
         <div class="s3-plan-wrap" id="scriptPlanWrap">
           <pre class="s3-plan-hl" id="planHl" aria-hidden="true"></pre>
           <textarea class="s3-plan-ta" id="scriptTa" spellcheck="false" aria-label="Script and shot plan" placeholder="[VOICEOVER] 00:00-00:30 - ..."></textarea>
@@ -2883,11 +2977,22 @@ var STYLE_PACKS={
 };
 function stylePack(part){
   if(projectType!=='youtube')return '';
+  var contractMode=creativeContract&&creativeContract.format;
+  if(contractMode&&contractMode!=='story'){
+    var contractStyles={
+      presenter:{script:'PROJECT FORMAT STYLE (writing): Lead with the viewer problem and a precise promise. Teach in ordered sections with concrete examples and useful takeaways. Never manufacture a personal crisis or philosophical ending.',shots:'PROJECT FORMAT STYLE (visuals): Keep the presenter as the anchor. Use B-roll, screens and restrained graphics only to prove or clarify the spoken point.'},
+      demo:{script:'PROJECT FORMAT STYLE (writing): Establish criteria, demonstrate each claim, name limitations and end with a precise recommendation. Evidence comes before opinion.',shots:'PROJECT FORMAT STYLE (visuals): Show the real product, controls, test, result and limitation. Use comparable framing and sample footage instead of atmospheric filler.'},
+      graphics:{script:'PROJECT FORMAT STYLE (writing): Build a visual explanation with one idea per beat, concrete relationships, short labels and clean transitions. Avoid anecdotes that cannot be visualised.',shots:'PROJECT FORMAT STYLE (visuals): Treat every BROLL line as a designed graphic scene with composition, type hierarchy, diagram, motion and required assets. Do not invent live-action footage.'},
+      hybrid:{script:'PROJECT FORMAT STYLE (writing): Use one clear episode spine. Mix story, explanation and evidence only when each advances the same promise.',shots:'PROJECT FORMAT STYLE (visuals): Assign every idea to the clearest medium and keep transitions between presenter, real footage, screens, demos and graphics intentional.'}
+    };
+    if(contractStyles[contractMode])return '\n\n'+contractStyles[contractMode][part];
+  }
   if(creatorDNA&&creatorDNA.carrier&&creatorDNA.carrier!=='story')return '\n\n'+creatorDnaStyle(part);
   var p=STYLE_PACKS[styleMode];
   return p?'\n\n'+p[part]:'';
 }
 var creatorDNA=null,dnaDraft=null,dnaStep=0,dnaReturnScreen='s1',dnaHubReturnScreen='s0',dnaRevealReturnScreen='s1';
+var creativeContract=null,creativeContractBusy=false;
 var ideaStudioIdeas=[],ideaStudioBusy=false;
 var dnaLabState={videos:[],traits:[],selected:{},busy:false};
 var DNA_QS=[
@@ -3126,6 +3231,153 @@ function creatorDnaStyle(part){
   if(mode==='graphics')return 'CREATOR DNA STYLE (visuals): No live-action camera footage unless the profile explicitly makes it available. Treat every BROLL line as a designed scene with layout, type, diagram, motion and asset notes.';
   return 'CREATOR DNA STYLE (visuals): Choose the clearest medium per beat and keep transitions between presenter, real footage, screens and graphics intentional.';
 }
+var CREATIVE_CONTRACT_FORMATS={story:'Cinematic story',presenter:'Educational presenter',demo:'Demonstration / review',graphics:'Graphics-led',hybrid:'Considered hybrid'};
+function creativeContractEscape(value){return String(value==null?'':value).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function creativeContractText(value,max,fallback){
+  var out=String(value==null?'':value).replace(/\s+/g,' ').trim();
+  if(!out)out=fallback||'';
+  return max&&out.length>max?out.slice(0,max-1).trim()+'…':out;
+}
+function creativeContractFallback(){
+  var d=creatorDNA||{},mode=d.carrier||((fmt==='vlog')?'presenter':(fmt==='essay'?'story':'hybrid'));
+  if(!CREATIVE_CONTRACT_FORMATS[mode])mode='hybrid';
+  var pace=d.pace==='energetic'?'energetic':(d.pace==='balanced'?'balanced':'reflective');
+  var outcome={feel:'feel something specific',learn:'learn something they can use',decide:'make a confident decision',understand:'leave with a clearer mental model'}[d.outcome]||'leave with one clear, useful idea';
+  var viewer={story:'People drawn to an honest personal process',presenter:'Viewers looking for a clear explanation',demo:'Viewers deciding what works in a real situation',graphics:'Visual learners who need a complex idea made simple',hybrid:'Viewers who value clarity, evidence and visual craft'}[mode];
+  var proof={story:'Use real events, concrete details and a visible change instead of invented drama.',presenter:'Use specific examples, demonstrations and a takeaway the viewer can repeat.',demo:'Define criteria, show the test and result, then name the limitation.',graphics:'Make every claim visible through a diagram, comparison, number or changing graphic state.',hybrid:'Use the clearest available evidence for each claim: presenter, real footage, screen, demo or graphic.'}[mode];
+  var avoids=dnaList('avoid',d.avoid).filter(function(x){return x!=='no fixed exclusions';});
+  return {v:1,format:mode,viewer:viewer,promise:'Help the viewer '+outcome+' through a specific treatment of “'+creativeContractText(topic,120,'this subject')+'”.',structure:creatorDnaStructure(d)||'Open with the real viewer problem, develop one clear argument and end with a usable change.',visualSystem:creatorDnaVisual(d)||'Choose the clearest visual medium for every beat and avoid decorative filler.',proof:proof,pacing:pace,avoid:avoids.join(', ')||'Generic filler, repeated ideas and claims without visible proof.',tone:tone||'introspective',presence:d.presence||'sometimes',source:'fallback',createdAt:Date.now(),updatedAt:Date.now(),inputKey:''};
+}
+function normalizeCreativeContract(raw,source){
+  raw=raw&&typeof raw==='object'?raw:{};
+  var base=creativeContractFallback(),format=String(raw.format||base.format).toLowerCase();
+  if(!CREATIVE_CONTRACT_FORMATS[format])format=base.format;
+  var pacing=String(raw.pacing||base.pacing).toLowerCase();
+  if(['reflective','balanced','energetic'].indexOf(pacing)<0)pacing=base.pacing;
+  var avoid=Array.isArray(raw.avoid)?raw.avoid.join(', '):raw.avoid;
+  return {v:1,format:format,viewer:creativeContractText(raw.viewer,260,base.viewer),promise:creativeContractText(raw.promise,420,base.promise),structure:creativeContractText(raw.structure,480,base.structure),visualSystem:creativeContractText(raw.visualSystem,520,base.visualSystem),proof:creativeContractText(raw.proof,420,base.proof),pacing:pacing,avoid:creativeContractText(avoid,420,base.avoid),tone:creativeContractText(raw.tone,60,base.tone),presence:creativeContractText(raw.presence,80,base.presence),source:source||raw.source||base.source,createdAt:Number(raw.createdAt)||base.createdAt,updatedAt:Date.now(),lockedAt:Number(raw.lockedAt)||0,inputKey:String(raw.inputKey||'')};
+}
+function parseCreativeContract(raw){
+  var text=String(raw||'').trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'').trim();
+  var match=text.match(/\{[\s\S]*\}/);if(!match)throw new Error('No project direction returned.');
+  return JSON.parse(match[0]);
+}
+function creativeContractKey(constraints){
+  var d=creatorDNA||{},raw=[topic,durMin,durMax,tone,fmt,constraints||'',d.outcome||'',d.carrier||'',d.presence||'',d.pace||'',(d.capabilities||[]).join(','),(d.avoid||[]).join(',')].join('|');
+  var h=2166136261;for(var i=0;i<raw.length;i++){h^=raw.charCodeAt(i);h+=(h<<1)+(h<<4)+(h<<7)+(h<<8)+(h<<24);}
+  return 'cc:'+('00000000'+(h>>>0).toString(16)).slice(-8);
+}
+function creativeContractContext(){
+  var c=creativeContract;if(projectType!=='youtube'||!c)return '';
+  return '\n\nPROJECT-SPECIFIC CREATIVE CONTRACT — AUTHORITATIVE FOR THIS VIDEO:\n'
+    +'- Format: '+(CREATIVE_CONTRACT_FORMATS[c.format]||c.format)+'\n'
+    +'- Viewer: '+c.viewer+'\n'
+    +'- Core promise: '+c.promise+'\n'
+    +'- Story engine: '+c.structure+'\n'
+    +'- Visual system: '+c.visualSystem+'\n'
+    +'- Proof / evidence: '+c.proof+'\n'
+    +'- Pacing: '+c.pacing+'\n'
+    +'- Avoid: '+c.avoid+'\n\n'
+    +'Every voiceover line and visual beat must serve this promise. Use the specified proof system and format instead of defaulting to a cinematic essay. This project contract may override the channel\'s usual storytelling style, but it may not invent unavailable production methods or contradict creator visibility and exclusions.';
+}
+function setCreativeContractBusy(busy,message){
+  creativeContractBusy=busy;
+  var action=document.getElementById('creativeContractAction'),lock=document.getElementById('creativeContractLock'),state=document.getElementById('creativeContractState');
+  if(action)action.disabled=busy;if(lock)lock.disabled=busy;
+  if(busy)['creativeContractActionText','creativeContractLockText'].forEach(function(id){var label=document.getElementById(id);if(label)label.textContent='Building your direction…';});
+  if(state&&message)state.textContent=message;
+}
+function renderCreativeContract(){
+  var panel=document.getElementById('creativeContractPanel'),screen=document.getElementById('s_equipment');
+  if(!panel||!screen)return;
+  if(!creativeContract){panel.classList.remove('show');screen.classList.remove('contract-ready');var emptyLabel=document.getElementById('creativeContractActionText');if(emptyLabel)emptyLabel.textContent='Build project direction';return;}
+  creativeContract=normalizeCreativeContract(creativeContract,creativeContract.source);
+  var values={ccFormat:creativeContract.format,ccPacing:creativeContract.pacing,ccViewer:creativeContract.viewer,ccPromise:creativeContract.promise,ccStructure:creativeContract.structure,ccVisualSystem:creativeContract.visualSystem,ccProof:creativeContract.proof,ccAvoid:creativeContract.avoid};
+  Object.keys(values).forEach(function(id){var el=document.getElementById(id);if(el)el.value=values[id];});
+  panel.classList.add('show');screen.classList.add('contract-ready');
+  var hasScript=document.getElementById('scriptTa')&&document.getElementById('scriptTa').value.trim(),actionCopy=hasScript?'Lock direction & regenerate':'Lock direction & generate';
+  ['creativeContractActionText','creativeContractLockText'].forEach(function(id){var label=document.getElementById(id);if(label)label.textContent=actionCopy;});
+  var state=document.getElementById('creativeContractState');if(state)state.textContent=creativeContract.source==='fallback'?'Built from your DNA':'Ready to edit';
+  var foot=document.getElementById('creativeContractFoot');if(foot)foot.textContent='Built from your idea, DNA and real production limits. Every field is editable.';
+}
+function captureCreativeContract(){
+  if(!creativeContract)return null;
+  var read=function(id){var el=document.getElementById(id);return el?el.value:'';};
+  creativeContract=normalizeCreativeContract(Object.assign({},creativeContract,{format:read('ccFormat'),pacing:read('ccPacing'),viewer:read('ccViewer'),promise:read('ccPromise'),structure:read('ccStructure'),visualSystem:read('ccVisualSystem'),proof:read('ccProof'),avoid:read('ccAvoid'),source:'edited'}),'edited');
+  return creativeContract;
+}
+function creativeContractPrompt(){
+  return 'You are a YouTube creative director. Create a compact project contract before any script is written. It must be specific to this exact idea, useful during production and faithful to the creator\'s real resources. Do not write a synopsis, script, shot list, title or motivational copy. Do not imitate a reference creator.\n\n'
+    +'Choose exactly one format enum: story, presenter, demo, graphics, hybrid. Distinguish an educational or technical video from a cinematic personal story. The visualSystem should give a concise percentage mix whose parts total 100% (presenter, B-roll, demonstration, screen or graphics as relevant). The proof field states what evidence makes the promise believable. The avoid field names concrete failure modes for this project. Write all viewer-facing field values in the same language as the user\'s idea.\n\n'
+    +'Return ONLY valid JSON with exactly these keys: {"format":"story|presenter|demo|graphics|hybrid","viewer":"...","promise":"...","structure":"...","visualSystem":"...","proof":"...","pacing":"reflective|balanced|energetic","avoid":["..."],"tone":"...","presence":"..."}.'+creatorDnaContext();
+}
+function buildCreativeContract(skipDetails){
+  if(creativeContractBusy)return;
+  var constraints=document.getElementById('constraintsIn');
+  if(skipDetails&&constraints)constraints.value='';
+  projectConstraints=constraints?constraints.value.trim():'';projectBrief='';
+  setCreativeContractBusy(true,'Reading your idea + DNA');
+  var user='VIDEO IDEA:\n'+topic+'\n\nDURATION:\n'+durMin+'-'+durMax+' minutes\n\nSELECTED TONE / FORMAT:\n'+tone+' / '+fmt+'\n\nREAL PRODUCTION RESOURCES AND LIMITS:\n'+(projectConstraints||'No project-specific production details were supplied. Stay within the Creator DNA capabilities.');
+  api(creativeContractPrompt(),user,'creative_contract').then(function(raw){
+    creativeContract=normalizeCreativeContract(parseCreativeContract(raw),'ai');
+  }).catch(function(e){
+    console.warn('[creative contract] using DNA fallback:',e&&e.message?e.message:e);
+    creativeContract=normalizeCreativeContract(creativeContractFallback(),'fallback');
+  }).then(function(){
+    creativeContract.inputKey=creativeContractKey(projectConstraints);creativeContract.updatedAt=Date.now();
+    setCreativeContractBusy(false);renderCreativeContract();
+    var panel=document.getElementById('creativeContractPanel');if(panel)panel.scrollIntoView({behavior:(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)?'auto':'smooth',block:'nearest'});
+  });
+}
+function regenerateCreativeContract(){
+  creativeContract=null;buildCreativeContract(false);
+}
+function handleCreativeContractAction(){
+  if(creativeContractBusy)return;
+  var constraints=document.getElementById('constraintsIn');projectConstraints=constraints?constraints.value.trim():'';projectBrief='';
+  if(!creativeContract||creativeContract.inputKey!==creativeContractKey(projectConstraints)){buildCreativeContract(false);return;}
+  captureCreativeContract();creativeContract.lockedAt=Date.now();creativeContract.updatedAt=Date.now();
+  var ta=document.getElementById('scriptTa'),hasScript=ta&&ta.value.trim();
+  if(!hasScript){genScript();return;}
+  var prompt={title:'Regenerate this script?',message:'Your current script is already saved. A new script will be generated from the updated Project Direction.',ok:'Regenerate'};
+  var answer=window.gdAsk?window.gdAsk(prompt):Promise.resolve(window.confirm(prompt.message));
+  answer.then(function(ok){if(ok)genScript();});
+}
+function renderScriptContract(){
+  var wrap=document.getElementById('scriptContract');if(!wrap)return;
+  if(!creativeContract){wrap.hidden=true;return;}
+  wrap.hidden=false;
+  var promise=document.getElementById('scriptContractPromise'),mode=document.getElementById('scriptContractMode'),body=document.getElementById('scriptContractBody');
+  if(promise)promise.textContent=creativeContract.promise;if(mode)mode.textContent=CREATIVE_CONTRACT_FORMATS[creativeContract.format]||creativeContract.format;
+  if(body){
+    var items=[['Viewer',creativeContract.viewer],['Story engine',creativeContract.structure],['Visual system',creativeContract.visualSystem],['Proof',creativeContract.proof],['Pacing',creativeContract.pacing],['Avoid',creativeContract.avoid]];
+    body.innerHTML=items.map(function(item){return '<div class="script-contract-item"><b>'+creativeContractEscape(item[0])+'</b><span>'+creativeContractEscape(item[1])+'</span></div>';}).join('')+'<div class="script-contract-edit"><button type="button" onclick="editProjectDirectionFromScript()">Edit project direction &rarr;</button></div>';
+  }
+}
+function toggleScriptContract(){
+  var wrap=document.getElementById('scriptContract');if(!wrap)return;wrap.classList.toggle('open');
+  var btn=wrap.querySelector('.script-contract-toggle');if(btn)btn.setAttribute('aria-expanded',wrap.classList.contains('open')?'true':'false');
+}
+function editProjectDirectionFromScript(){
+  var constraints=document.getElementById('constraintsIn');if(constraints)constraints.value=projectConstraints||'';
+  renderCreativeContract();show('s_equipment');
+}
+window.gdCreativeContractFallback=creativeContractFallback;
+window.gdNormalizeCreativeContract=normalizeCreativeContract;
+window.gdCreativeContractContext=creativeContractContext;
+window.gdSetCreativeContract=function(value){creativeContract=value?normalizeCreativeContract(value,value.source):null;renderCreativeContract();renderScriptContract();return creativeContract;};
+window.gdGetCreativeContract=function(){return creativeContract?JSON.parse(JSON.stringify(creativeContract)):null;};
+document.getElementById('constraintsIn').addEventListener('input',function(){
+  if(!creativeContract)return;
+  var changed=creativeContract.inputKey!==creativeContractKey(this.value.trim());
+  var state=document.getElementById('creativeContractState');
+  if(changed)['creativeContractActionText','creativeContractLockText'].forEach(function(id){var label=document.getElementById(id);if(label)label.textContent='Rebuild project direction';});
+  if(changed&&state)state.textContent='Production details changed';
+});
+document.getElementById('creativeContractPanel').addEventListener('input',function(){
+  if(!creativeContract)return;
+  var state=document.getElementById('creativeContractState');if(state)state.textContent='Edited / ready to lock';
+});
 function applyCreatorDnaDefaults(){
   if(!creatorDNA)return;
   tone=creatorDNA.pace==='energetic'?'energetic':'introspective';
@@ -3713,14 +3965,14 @@ function performNewProject(){
   canonicalRuntimeProjectId=null;canonicalProjectState=null;canonicalValidationState=null;
   resetLocationViewState();
   nodes=[];attShots=[];imgNodes=[];noteNodes=[];conns=[];nid=1;nodeDrawerClosed={};
-  topic='';projectBrief='';projectConstraints='';projectBreakdown=null;projectBreakdownKey=null;
+  topic='';projectBrief='';projectConstraints='';creativeContract=null;creativeContractBusy=false;projectBreakdown=null;projectBreakdownKey=null;
   scriptVersions=[];scriptSelectionState=null;scriptRevisionState=null;
   clearRecce();songName='';songDuration=0;songAnalysis=null;songURL=null;
   undoStack=[];undoIdx=-1;scale=1;px=60;py=180;selId=null;selImgId=null;selNoteId=null;selectedNodeIds=[];selectedImgIds=[];selectedNoteIds=[];
   var topicEl=document.getElementById('topicIn'),scriptEl=document.getElementById('scriptTa');
   if(topicEl)topicEl.value='';
   if(scriptEl){scriptEl.value='';planHighlight();}
-  cancelScriptRevision();hideScriptSelectionTools();refreshScriptStudio();
+  cancelScriptRevision();hideScriptSelectionTools();renderCreativeContract();refreshScriptStudio();
   var reccePanel=document.getElementById('reccePanel');if(reccePanel)reccePanel.classList.remove('open');
   if(typeof renderAll==='function')renderAll();
   show('s0');
@@ -3761,6 +4013,7 @@ function stopMvHints(){if(mvHintTimer){clearInterval(mvHintTimer);mvHintTimer=nu
 function setProjectType(type){
   if(type==='music'||type==='film')return;
   projectType=type;
+  creativeContract=null;creativeContractBusy=false;renderCreativeContract();
   // Gawx is the house visual language for new work. The old style picker was
   // an extra decision before the user had even described the film.
   styleMode='gawx';
@@ -4581,7 +4834,7 @@ function splitLongMusicBlocks(text){
    unrealistic for one person to shoot. Keep one shared pacing budget in code
    so the prompt, parallel segments and final guardrail all use the same math. */
 function ytPacingProfile(totalSec){
-  var dnaPace=creatorDNA&&creatorDNA.pace;
+  var dnaPace=creativeContract&&creativeContract.pacing?creativeContract.pacing:(creatorDNA&&creatorDNA.pace);
   var fast=dnaPace?dnaPace==='energetic':tone==='energetic';
   var balanced=dnaPace==='balanced';
   var avgHold=fast?3:(balanced?4.5:6);
@@ -4634,7 +4887,7 @@ function buildGenSys(totalSec,li){
       +'- Rhetorical questions the narrator immediately answers, and openers of the "these days" / "have you ever" family.'
       +stylePack('script')+stylePack('shots');
   }
-  return (li?li+'\n\n':'')+base+creatorDnaContext()+(li?'\n\n'+li:'')+'\n\nLANGUAGE: Write ALL block content - voiceover words, visual descriptions, everything after the timecode - in the SAME LANGUAGE the user wrote the topic in. Keep the [TYPE] tags in English.\n\nReturn ONLY plain text. Each block is EXACTLY ONE line - never split a block across two lines, never repeat the timecode on its own line:\n[TYPE] 00:00-00:00 - content';
+  return (li?li+'\n\n':'')+base+creatorDnaContext()+creativeContractContext()+(li?'\n\n'+li:'')+'\n\nLANGUAGE: Write ALL block content - voiceover words, visual descriptions, everything after the timecode - in the SAME LANGUAGE the user wrote the topic in. Keep the [TYPE] tags in English.\n\nReturn ONLY plain text. Each block is EXACTLY ONE line - never split a block across two lines, never repeat the timecode on its own line:\n[TYPE] 00:00-00:00 - content';
 }
 
 var pcChoice='ai';
@@ -4770,7 +5023,7 @@ function canonicalProjectFromLegacy(data){
     schema:CANONICAL_PROJECT_SCHEMA,schemaVersion:CANONICAL_PROJECT_VERSION,project:project,
     workflow:{stage:data.stage||'board'},
     creative:{tone:data.tone||'',format:data.fmt||'',houseLook:data.styleMode||'',language:data.inputLang||'en',
-      durationRange:{min:Number(data.durMin)||0,max:Number(data.durMax)||0},brief:data.projectBrief||'',constraints:data.projectConstraints||'',creatorDNA:canonicalClone(data.creatorDNA||null,null)},
+      durationRange:{min:Number(data.durMin)||0,max:Number(data.durMax)||0},brief:data.projectBrief||'',constraints:data.projectConstraints||'',creatorDNA:canonicalClone(data.creatorDNA||null,null),contract:canonicalClone(data.creativeContract||null,null)},
     script:{text:data.script||'',versions:canonicalClone(data.scriptVersions||[],[])},
     timeline:{blocks:blocks},
     production:{details:details,locations:locations,breakdownKey:data.projectBreakdownKey||null},
@@ -4822,7 +5075,7 @@ function legacyProjectFromCanonical(project,fallback){
   out.projectType=project.project&&project.project.type||out.projectType||'youtube';out.topic=project.project&&project.project.title||out.topic||'';out.projectFps=project.project&&project.project.fps||24;
   out.tone=creative.tone||out.tone||'';out.fmt=creative.format||out.fmt||'';out.styleMode=creative.houseLook||out.styleMode||'';out.inputLang=creative.language||out.inputLang||'en';
   out.durMin=creative.durationRange&&creative.durationRange.min||out.durMin;out.durMax=creative.durationRange&&creative.durationRange.max||out.durMax;
-  out.projectBrief=creative.brief||'';out.projectConstraints=creative.constraints||'';out.creatorDNA=canonicalClone(creative.creatorDNA||null,null);
+  out.projectBrief=creative.brief||'';out.projectConstraints=creative.constraints||'';out.creatorDNA=canonicalClone(creative.creatorDNA||null,null);out.creativeContract=canonicalClone(creative.contract||null,null);
   out.script=project.script&&project.script.text||'';out.scriptVersions=canonicalClone(project.script&&project.script.versions||[],[]);
   out.boardViewMode=workspace.mode||'free';out.boardDensity=workspace.density||'compact';out.boardCardDetail=workspace.detail||'standard';out.view=canonicalClone(workspace.view||null,null);out.boardCamera=canonicalClone(workspace.camera||null,null);
   out.stage=project.workflow&&project.workflow.stage||out.stage||'board';out.aiMode=workspace.aiMode!==false;
@@ -4858,7 +5111,7 @@ function canonicalRuntimeSnapshot(){
   var ta=document.getElementById('scriptTa');
   var active=document.getElementById('s3')&&document.getElementById('s3').classList.contains('active')?'script':'board';
   return canonicalProjectFromLegacy({v:4,stage:active,projectType:projectType,topic:topic,tone:tone,fmt:fmt,styleMode:styleMode,inputLang:inputLang,durMin:durMin,durMax:durMax,
-    projectBrief:projectBrief,projectConstraints:projectConstraints,creatorDNA:creatorDNA,projectBreakdown:projectBreakdown,projectBreakdownKey:projectBreakdownKey,
+    projectBrief:projectBrief,projectConstraints:projectConstraints,creatorDNA:creatorDNA,creativeContract:creativeContract,projectBreakdown:projectBreakdown,projectBreakdownKey:projectBreakdownKey,
     songName:songName,songDuration:songDuration,songAnalysis:songAnalysis,recceImages:recceImages,nodes:itemsAtStoryPositions(nodes,'nodes'),attShots:itemsAtStoryPositions(attShots,'atts'),
     imgNodes:imgNodes,noteNodes:noteNodes,conns:conns,nid:nid,script:ta?ta.value:'',scriptVersions:scriptVersions,view:storyViewForSave(),boardCamera:{scale:scale,px:px,py:py},
     boardViewMode:canvasViewMode,boardDensity:boardDensity,boardCardDetail:boardCardDetail,aiMode:(typeof aiMode!=='undefined'?aiMode:true)});
@@ -5392,6 +5645,9 @@ document.getElementById('topicIn').addEventListener('input',function(){
 function goToEquipment(){
   if(!captureSetup())return;
   if(projectConstraints)document.getElementById('constraintsIn').value=projectConstraints;
+  var currentKey=creativeContractKey(document.getElementById('constraintsIn').value.trim());
+  if(creativeContract&&creativeContract.inputKey===currentKey)renderCreativeContract();
+  else{creativeContract=null;renderCreativeContract();var ccLabel=document.getElementById('creativeContractActionText');if(ccLabel)ccLabel.textContent='Build project direction';}
   var el=document.getElementById('s1');
   el.classList.add('screen-blur-out');
   setTimeout(function(){el.classList.remove('screen-blur-out');show('s_equipment');},270);
@@ -5431,7 +5687,7 @@ function generateBrief(){generateScriptFromDetails();}
 function skipEquipment(){
   projectConstraints='';projectBrief='';
   var constraints=document.getElementById('constraintsIn');if(constraints)constraints.value='';
-  genScript();
+  creativeContract=null;buildCreativeContract(true);
 }
 
 function goToChoice(){
@@ -5555,15 +5811,18 @@ function planHighlight(){
 
 function scriptDirectionLabels(){
   var d=creatorDNA||loadCreatorDna()||{};
-  var carrier={story:'story-led',presenter:'presenter-led',demo:'demonstration-led',graphics:'graphics-led',hybrid:'hybrid'}[d.carrier]||'creator-led';
+  var projectCarrier=creativeContract&&creativeContract.format||d.carrier;
+  var carrier={story:'story-led',presenter:'presenter-led',demo:'demonstration-led',graphics:'graphics-led',hybrid:'hybrid'}[projectCarrier]||'creator-led';
   var presence={camera:'on camera',sometimes:'selective on-camera',voice:'voiceover-led',none:'no presenter'}[d.presence]||fmt;
-  return [(durMin===durMax?durMin:(durMin+'-'+durMax))+' min',String(tone||'').replace(/_/g,' '),carrier,presence];
+  var pace=creativeContract&&creativeContract.pacing||tone;
+  return [(durMin===durMax?durMin:(durMin+'-'+durMax))+' min',String(pace||'').replace(/_/g,' '),carrier,presence];
 }
 function refreshScriptStudio(){
   var labels=scriptDirectionLabels(),wrap=document.getElementById('scriptDirection');
   if(wrap){wrap.innerHTML='';labels.forEach(function(x){var s=document.createElement('span');s.textContent=x;wrap.appendChild(s);});}
   var ta=document.getElementById('scriptTa'),wc=document.getElementById('wc');
   if(ta&&wc)wc.textContent=planStatsLabel(ta.value);
+  renderScriptContract();
   renderScriptVersionButton();
 }
 function voiceoverSelection(wholeLine){
@@ -5634,7 +5893,7 @@ function requestScriptRevision(instruction){
   document.getElementById('scriptRevBefore').textContent=sel.original;
   document.getElementById('scriptRevAfter').textContent='Thinking in the voice of this project…';
   setScriptRevisionLoading(true);
-  var sys='You are a precise spoken-script editor. Rewrite ONLY the selected words. Return replacement text only: no quotation marks, labels, timecodes, commentary or markdown. Keep the same language, facts, names, point of view and continuity. Make it natural to say aloud. Do not rewrite the surrounding line.'+creatorDnaContext();
+  var sys='You are a precise spoken-script editor. Rewrite ONLY the selected words. Return replacement text only: no quotation marks, labels, timecodes, commentary or markdown. Keep the same language, facts, names, point of view and continuity. Make it natural to say aloud. Do not rewrite the surrounding line.'+creatorDnaContext()+creativeContractContext();
   var user='PROJECT: '+topic+'\n\nNEARBY SCRIPT CONTEXT:\n'+scriptRevisionState.context+'\n\nSELECTED TEXT:\n'+sel.original+'\n\nREVISION INSTRUCTION:\n'+instruction;
   api(sys,user,'script_revision').then(function(raw){
     if(!scriptRevisionState)return;
@@ -5756,7 +6015,7 @@ function parseBlocks(text){
 /* Timeline blocks and things the camera crew must physically capture are not
    the same count. Calling both of them "shots" made a 70-shot film look like a
    120-shot day once voiceover, music and edit transitions were included. */
-function isGraphicsLed(){return projectType==='youtube'&&creatorDNA&&creatorDNA.carrier==='graphics';}
+function isGraphicsLed(){return projectType==='youtube'&&((creativeContract&&creativeContract.format==='graphics')||(creatorDNA&&creatorDNA.carrier==='graphics'));}
 function isCameraBlock(type){
   if(isGraphicsLed()&&String(type||'').toLowerCase()==='broll')return false;
   return !{voiceover:1,music:1,transition:1}[String(type||'').toLowerCase()];
@@ -5950,7 +6209,7 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
     +'MOTIFS: choose at most 3 repeating images. For each, state the maximum number of uses and how every use changes its meaning or physical state. Text written on paper, windows, dust, hands and photographs are not free filler; if they repeat, they need a progression.\n\n'
     +'Then break it into exactly '+numSegments+' contiguous segments covering the full 00:00-'+fmtTime(totalSec)+' runtime, each about '+fmtTime(totalSec/numSegments)+' long.'+stylePack('script')+'\n\n'
     +'For each segment define: one short beat; the NEW INFORMATION only this segment contributes; its visual goal; opening and closing physical state; which fixed specifics it may use; which motif step it advances; and facts/phrases it must not repeat. The opening state of a segment must agree with the previous segment\'s closing state. A story where nothing costs anything has no middle. Keep every field brief.\n\n'
-    +'Return ONLY JSON: {"thesis":"...","specifics":["..."],"continuity":{"heroObject":"...","heroObjectAppearance":"...","performerVisibility":"...","locations":["..."],"props":["..."],"wardrobe":["..."],"timeProgression":"..."},"motifs":[{"name":"...","maxUses":2,"progression":["first use","changed second use"]}],"segments":[{"start":"mm:ss","end":"mm:ss","beat":"...","newInformation":"...","visualGoal":"...","openingState":"...","closingState":"...","usesSpecifics":["..."],"motifStep":"...","forbiddenRepeats":["..."]}]}'+creatorDnaContext()+(li?'\n\n'+li:'');
+    +'Return ONLY JSON: {"thesis":"...","specifics":["..."],"continuity":{"heroObject":"...","heroObjectAppearance":"...","performerVisibility":"...","locations":["..."],"props":["..."],"wardrobe":["..."],"timeProgression":"..."},"motifs":[{"name":"...","maxUses":2,"progression":["first use","changed second use"]}],"segments":[{"start":"mm:ss","end":"mm:ss","beat":"...","newInformation":"...","visualGoal":"...","openingState":"...","closingState":"...","usesSpecifics":["..."],"motifStep":"...","forbiddenRepeats":["..."]}]}'+creatorDnaContext()+creativeContractContext()+(li?'\n\n'+li:'');
   var outlineMsg='Topic: '+topic+'. Tone: '+tone+'.';
   var evenSplit=[];
   for(var esi=0;esi<numSegments;esi++)evenSplit.push({start:fmtTime(esi*totalSec/numSegments),end:fmtTime((esi+1)*totalSec/numSegments),beat:''});
@@ -6129,8 +6388,9 @@ function layoutBlocks(blocks){
 
 function buildCanvasSys(li){
   var briefCtx=projectBrief?('Production Brief context (use specified equipment, locations, lighting plan from this):\n'+projectBrief+'\n\n'):'';
+  var contractCtx=creativeContractContext();
   if(projectType==='music'){
-    return briefCtx+(li?li+'\n':'')+
+    return briefCtx+contractCtx+(li?li+'\n':'')+
       'You are a music video director. Return ONLY a valid JSON array. No explanation, no markdown.\n'+
       'Format: [{"i":0,"shots":[{"k":"location","t":"..."},{"k":"acting","t":"..."},{"k":"shot","t":"..."},{"k":"lighting","t":"..."},{"k":"props","t":"..."}]}]\n'+
       'k must be exactly: location, acting, shot, lighting, props.\n'+
@@ -6140,7 +6400,7 @@ function buildCanvasSys(li){
       'lighting = quality and direction of light.\n'+
       'props = list key props visible in frame.'+propSemanticsRule()+(li?'\n'+li:'');
   }
-  return briefCtx+(li?li+'\n':'')+
+  return briefCtx+contractCtx+(li?li+'\n':'')+
     'You are a cinematographer. Return ONLY a valid JSON array. No explanation, no markdown.\n'+
     'Format: [{"i":0,"shots":[{"k":"props","t":"..."},{"k":"action","t":"..."},{"k":"emotion","t":"..."},{"k":"tech","t":"..."}]}]\n'+
     'k must be: props, action, emotion, or tech. props = a concrete list of key props/objects needed in this scene (the block itself already covers lens, framing and camera movement, do not repeat that here).'+propSemanticsRule()+' tech = lens, lighting, movement, grain, analog film stock.\n'+
@@ -8926,7 +9186,7 @@ document.addEventListener('mouseup',function(e){
     try{return new Date(ts).toLocaleString(undefined,withTime?{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}:{month:'short',day:'numeric'});}catch(e){return '—';}
   }
   function featureLabel(id){
-    var labels={creative_brief:'Creative brief',shot_plan:'Shot plan',script_revision:'Script revision',plan_outline:'Plan outline',
+    var labels={creative_brief:'Creative brief',creative_contract:'Project direction',shot_plan:'Shot plan',script_revision:'Script revision',plan_outline:'Plan outline',
       shot_plan_segment:'Plan segment',shot_plan_redraft:'Segment redraft',shot_plan_fallback:'Plan fallback',
       shot_plan_continuation:'Plan continuation',shot_details_batch:'Shot details',block_shot_details:'Block planning',
       block_revision:'Block revision',translation:'Translation',location_bible:'Location bible',
@@ -9356,7 +9616,7 @@ document.addEventListener('mouseup',function(e){
     var data={
       v:4, stage:active,projectRecordId:currentProjectId,projectType:projectType, topic:topic, tone:tone, fmt:fmt, styleMode:styleMode, inputLang:inputLang,
       boardViewMode:canvasViewMode,boardDensity:boardDensity,boardCardDetail:boardCardDetail,
-      creatorDNA:creatorDNA,
+      creatorDNA:creatorDNA,creativeContract:creativeContract,
       durMin:durMin, durMax:durMax, projectBrief:projectBrief, projectConstraints:projectConstraints,
       projectBreakdown:projectBreakdown, projectBreakdownKey:projectBreakdownKey,
       aiMode:(typeof aiMode!=='undefined'?aiMode:true),
@@ -9382,6 +9642,7 @@ document.addEventListener('mouseup',function(e){
     projectType=d.projectType||'youtube'; topic=d.topic||''; tone=d.tone||tone; fmt=d.fmt||fmt; styleMode=d.styleMode||'gawx';
     creatorDNA=d.creatorDNA||loadCreatorDna()||creatorDNA;
     if(d.creatorDNA)storeCreatorDna(d.creatorDNA);
+    creativeContract=d.creativeContract?normalizeCreativeContract(d.creativeContract,d.creativeContract.source):null;
     inputLang=d.inputLang||'en'; durMin=d.durMin||durMin; durMax=d.durMax||durMax;
     projectBrief=d.projectBrief||''; projectConstraints=d.projectConstraints||'';
     projectBreakdown=d.projectBreakdown||null; projectBreakdownKey=d.projectBreakdownKey||null;
@@ -9404,6 +9665,7 @@ document.addEventListener('mouseup',function(e){
     show(scriptStage?'s3':'s5');
     renderCreatorDnaProfile();
     refreshScriptStudio();
+    renderCreativeContract();renderScriptContract();
     if(typeof renderAll==='function') renderAll();
     if(!scriptStage&&wantedBoardMode==='location'&&projectBreakdown&&projectBreakdown.length)setTimeout(function(){enterLocationView();},0);
     if(typeof renderRecceGrid==='function') renderRecceGrid();
@@ -9515,7 +9777,7 @@ document.addEventListener('mouseup',function(e){
     resetLocationViewState();
     nodes=[]; attShots=[]; imgNodes=[]; noteNodes=[]; conns=[]; nid=1;
     nodeDrawerClosed={};
-    topic=''; projectBrief=''; projectConstraints=''; projectBreakdown=null; projectBreakdownKey=null;
+    topic=''; projectBrief=''; projectConstraints=''; creativeContract=null; creativeContractBusy=false; projectBreakdown=null; projectBreakdownKey=null;
     recceImages=[];
     songName=''; songDuration=0; songAnalysis=null; songURL=null;
     var sta=byId('scriptTa'); if(sta) sta.value='';
