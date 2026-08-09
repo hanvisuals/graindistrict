@@ -50,13 +50,13 @@ try{
     ].join('\n');
     const claims=window.gdExtractTruthClaims(script);return {claims,required:claims.filter(claim=>claim.required),personal:claims.filter(claim=>claim.type==='personal_experience')};
   });
-  ok('Turkish thousands separators stay intact and adjacent research statements are grouped',numeric.required.length===1&&numeric.required[0].statement.includes("10.000'i")&&numeric.required[0].statement.includes('10.000 geçişine')&&numeric.required[0].refs.length===3&&!numeric.claims.some(claim=>/^000/.test(claim.statement)),numeric);
-  ok('research attribution overrides first-person framing but genuine lived experience stays source-free',numeric.required[0].type==='technical'&&numeric.personal.length===1&&numeric.personal[0].statement.includes("Brooklyn'de"),numeric);
+  ok('Turkish thousands separators stay intact and adjacent external research statements are grouped',numeric.required.length===1&&numeric.required[0].statement.includes("10.000'i")&&numeric.required[0].statement.includes('10.000 geçişine')&&numeric.required[0].refs.length===2&&!numeric.claims.some(claim=>/^000/.test(claim.statement)),numeric);
+  ok('first-person research framing remains first-party authority instead of being silently authorized by a source',numeric.required[0].type==='technical'&&numeric.personal.length===2&&numeric.personal.every(claim=>claim.researchEligibility==='forbidden_personal'&&!claim.required)&&numeric.personal.some(claim=>claim.statement.includes("Brooklyn'de")),numeric);
 
   const migrated=await page.evaluate(()=>{
     const before=window.gdGetTruthLedger(),legacy=JSON.parse(JSON.stringify(before));legacy.schemaVersion=1;legacy.classifierVersion=1;legacy.provenance.classifierVersion=1;window.gdSetTruthLedger(legacy);const after=window.gdGetTruthLedger();return {beforeRevision:before.revision,after};
   });
-  ok('saved v1 reviews upgrade automatically without asking the creator to redo the project',migrated.after.classifierVersion===2&&migrated.after.revision===migrated.beforeRevision+1&&migrated.after.migration.fromClassifierVersion===1&&migrated.after.migration.toClassifierVersion===2,migrated);
+  ok('saved v1 reviews upgrade automatically without asking the creator to redo the project',migrated.after.classifierVersion===3&&migrated.after.revision===migrated.beforeRevision+1&&migrated.after.migration.fromClassifierVersion===1&&migrated.after.migration.toClassifierVersion===3,migrated);
 
   const rescanned=await page.evaluate(script=>{
     const before=window.gdGetTruthLedger(),poetic=before.claims.find(claim=>claim.active&&claim.statement==='Bir çatlak tesadüf değildir.'),legacy=JSON.parse(JSON.stringify(before)),legacyClaim=legacy.claims.find(claim=>claim.id===poetic.id);

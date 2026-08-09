@@ -60,7 +60,7 @@ try{
   ok('save-load-save preserves semantic canonical data',result.roundTrip,result);
   ok('structured validation creates a recovery save with a last known valid snapshot',!result.validation.valid&&result.validation.issues.some(x=>x.code==='MISSING_CONNECTION_ENDPOINT'&&x.entityId&&x.path)&&result.recovery&&result.recovery.lastKnownValid,result.validation);
   ok('validation is visible and blocks both export and AI boundaries',result.panel.open&&result.panel.items>0&&/Export is paused/.test(result.panel.text)&&result.printed===0&&result.fetched===0,{panel:result.panel,printed:result.printed,fetched:result.fetched});
-  ok('migration is idempotent and keeps an untouched legacy recovery source',result.migration.version===2&&result.migration.backupExact&&result.migration.same,result.migration);
+  ok('migration is idempotent and keeps an untouched legacy recovery source',result.migration.version===3&&result.migration.backupExact&&result.migration.same,result.migration);
   await page.setViewportSize({width:390,height:844});
   const mobile=await page.evaluate(()=>({scrollWidth:document.documentElement.scrollWidth,viewport:document.documentElement.clientWidth,keepHeight:Math.round(document.getElementById('gdIntegrityKeep').getBoundingClientRect().height),restoreHeight:Math.round(document.getElementById('gdIntegrityRestore').getBoundingClientRect().height)}));
   ok('the integrity recovery panel stays readable and tap-safe on phones',mobile.scrollWidth<=mobile.viewport&&mobile.keepHeight>=44&&mobile.restoreHeight>=44,mobile);

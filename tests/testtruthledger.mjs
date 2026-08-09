@@ -23,7 +23,7 @@ try{
   });
   const active=initial.ledger.claims.filter(claim=>claim.active);
   const types=Object.fromEntries(active.map(claim=>[claim.statement,claim.type]));
-  ok('Truth Ledger v2 is created as a canonical project entity',initial.ledger.schema==='graindistrict.truth-ledger'&&initial.ledger.schemaVersion===2&&initial.ledger.classifierVersion===2&&initial.ledger.id.startsWith('truth-ledger:')&&initial.ledger.status==='current'&&initial.ledger.strictness==='standard',initial.ledger);
+  ok('Truth Ledger v2 is created as a canonical project entity',initial.ledger.schema==='graindistrict.truth-ledger'&&initial.ledger.schemaVersion===2&&initial.ledger.classifierVersion===3&&initial.ledger.id.startsWith('truth-ledger:')&&initial.ledger.status==='current'&&initial.ledger.strictness==='standard',initial.ledger);
   ok('voiceover statements receive stable claim identities and script references',active.length===4&&active.every(claim=>claim.id.startsWith('claim:')&&claim.refs.length===1&&claim.refs[0].lineNumber>0),active);
   ok('personal experience and opinion remain source-free',types['I learned this after filming for a year.']==='personal_experience'&&types['Bence bu his teknik mukemmellikten daha onemli.']==='opinion'&&active.filter(claim=>claim.type==='personal_experience'||claim.type==='opinion').every(claim=>!claim.required&&claim.status==='not_required'),active);
   ok('technical claims and recommendations ask for support',types['A 24-70mm lens covers most everyday shooting situations.']==='technical'&&types['You should carry one fast prime for low light.']==='recommendation'&&active.filter(claim=>claim.type==='technical'||claim.type==='recommendation').every(claim=>claim.required&&claim.status==='needs_source'),active);
