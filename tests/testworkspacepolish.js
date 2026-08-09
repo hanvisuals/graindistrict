@@ -33,14 +33,15 @@ const APP = process.env.APP || path.resolve(__dirname, '..', 'index.html');
   ok('the setup form stays inside the desktop viewport', intake.shellRight <= intake.vw && intake.scrollW <= intake.vw, intake);
   if(process.env.QA_DIR) await page.screenshot({ path:process.env.QA_DIR + '/workspace-intake-desktop.png' });
 
-  await page.evaluate(()=>show('s_equipment'));
+  await page.evaluate(()=>{show('s_equipment');setCreativeContractBusy(true);});
   await page.waitForTimeout(100);
   const equipment = await page.evaluate(()=>{
-    const title=document.querySelector('#s_equipment .kb-title').getBoundingClientRect();
-    const field=document.querySelector('#s_equipment .brief-ta').getBoundingClientRect();
-    return {titleRight:title.right,fieldLeft:field.left,fieldHeight:field.height};
+    const state=document.getElementById('directionBuildState').getBoundingClientRect();
+    const intake=getComputedStyle(document.querySelector('#s_equipment .cc-intake')).display;
+    const progress=Number(document.querySelector('.direction-build-track').getAttribute('aria-valuenow'));
+    return {stateWidth:state.width,stateHeight:state.height,intake,progress,viewport:document.documentElement.clientWidth};
   });
-  ok('production constraints read as a split director brief', equipment.titleRight < equipment.fieldLeft && equipment.fieldHeight >= 280, equipment);
+  ok('project direction building is one calm centered task', equipment.intake==='none' && equipment.progress>0 && equipment.progress<100 && equipment.stateWidth<=720 && equipment.stateHeight>=300 && equipment.stateWidth<equipment.viewport, equipment);
   if(process.env.QA_DIR) await page.screenshot({ path:process.env.QA_DIR + '/workspace-equipment-desktop.png' });
 
   await page.evaluate(()=>show('s2'));
@@ -63,7 +64,7 @@ const APP = process.env.APP || path.resolve(__dirname, '..', 'index.html');
     const editor=document.querySelector('.s3-plan-wrap');
     return {leftRight:left.right,rightLeft:right.left,editorRadius:getComputedStyle(editor).borderRadius,title:document.querySelector('.script-studio-title').textContent};
   });
-  ok('Script Studio gives the editable plan one focused tactile surface', desk.leftRight < desk.rightLeft && parseFloat(desk.editorRadius)>=20 && /every line/i.test(desk.title), desk);
+  ok('Script Studio gives the voiceover one focused tactile surface', desk.leftRight < desk.rightLeft && parseFloat(desk.editorRadius)>=20 && /production noise/i.test(desk.title), desk);
   if(process.env.QA_DIR) await page.screenshot({ path:process.env.QA_DIR + '/workspace-desk-desktop.png' });
 
   await page.evaluate(()=>{
