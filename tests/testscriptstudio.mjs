@@ -111,11 +111,11 @@ ok('a fast Back action flushes the latest script edit before leaving',/A final t
 await page.evaluate(()=>show('s3'));
 
 await page.setViewportSize({width:390,height:844});
-await page.evaluate(()=>{const ta=document.getElementById('scriptTa');const p=ta.value.indexOf('Mostly');ta.focus();ta.setSelectionRange(p,p);});
-await page.click('.script-line-btn');
+await page.evaluate(()=>{refreshScriptStudio();document.getElementById('scriptPlanWrap').className='s3-plan-wrap voiceover-mode';});
+await page.locator('#voiceoverReader button').filter({hasText:'Mostly'}).click();
 await page.waitForTimeout(180);
 const mobile=await page.evaluate(()=>({bar:document.getElementById('scriptAiBar').classList.contains('show'),selected:document.getElementById('scriptSelectedText').textContent,width:document.getElementById('scriptAiBar').getBoundingClientRect().width}));
-ok('Edit line provides a touch-friendly fallback on phones',mobile.bar&&/Mostly/.test(mobile.selected)&&mobile.width<=370,mobile);
+ok('Clicking a voiceover paragraph opens a touch-friendly rewrite control on phones',mobile.bar&&/Mostly/.test(mobile.selected)&&mobile.width<=370,mobile);
 if(process.env.QA_DIR)await page.screenshot({path:process.env.QA_DIR+'/script-selection-mobile.png'});
 ok('Script Studio raises no page errors',pageError===null,pageError);
 

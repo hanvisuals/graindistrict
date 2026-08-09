@@ -2222,6 +2222,132 @@ body.free-mode .port-dot:hover{background:var(--board-gold);border-color:#f8e8a8
   .dna-visual::before,.dna-real-helix,.dna-real-helix .dna-strand,.dna-real-helix .dna-node{animation-play-state:paused!important;}
   .dna-inline-reveal.is-new{animation:none!important;}
 }
+/* Calm guided flow v1 -----------------------------------------------------
+   The user supplies one idea. Everything else is either a preselected quick
+   choice or progressive disclosure; the underlying production model remains
+   available without becoming the interface. */
+#s1 .s1-form-shell{grid-template-columns:minmax(0,1fr);gap:8px;padding:10px;}
+#s1 .s1-form-shell>div,#s1 .s1-form-shell>section,#s1 .s1-form-shell>button{grid-column:1/-1;}
+#s1 .s1-topic-block{padding:19px 20px!important;}
+#s1 .s1-topic-block .ita{min-height:118px;font-size:18px;line-height:1.55;}
+.guided-questions{gap:0!important;padding:5px!important;border:1px solid rgba(255,255,255,.07);border-radius:18px;background:rgba(5,6,5,.36);}
+.guided-head{display:flex;align-items:flex-end;justify-content:space-between;gap:22px;padding:14px 15px 15px;border-bottom:1px solid rgba(255,255,255,.06);}
+.guided-head span{display:block;margin-bottom:6px;font-family:var(--mono);font-size:6px;letter-spacing:.16em;text-transform:uppercase;color:rgba(215,185,88,.72);}
+.guided-head h2{font-family:var(--sans);font-size:16px;line-height:1.25;letter-spacing:-.025em;color:rgba(255,255,255,.84);}
+.guided-head p{max-width:300px;font-family:var(--sans);font-size:10px;line-height:1.5;color:rgba(255,255,255,.27);}
+.guided-question{display:grid;grid-template-columns:minmax(190px,.72fr) minmax(0,1.28fr);align-items:center;gap:16px;padding:13px 14px;border-bottom:1px solid rgba(255,255,255,.05);}
+.guided-question:last-child{border-bottom:0;}
+.guided-question-copy{display:flex;align-items:flex-start;gap:10px;min-width:0;}
+.guided-question-copy>b{padding-top:3px;font-family:var(--mono);font-size:6px;letter-spacing:.1em;color:rgba(215,185,88,.62);}
+.guided-question-copy>span{display:block;min-width:0;}
+.guided-question-copy strong{display:block;font-family:var(--sans);font-size:11.5px;font-weight:600;line-height:1.35;color:rgba(255,255,255,.72);}
+.guided-question-copy small{display:block;margin-top:3px;font-family:var(--sans);font-size:8.5px;line-height:1.35;color:rgba(255,255,255,.22);}
+.guided-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}
+.guided-options button{min-height:38px;padding:7px 9px;border:1px solid rgba(255,255,255,.075);border-radius:10px;background:rgba(255,255,255,.022);color:rgba(255,255,255,.38);font-family:var(--sans);font-size:10px;cursor:pointer;transition:border-color .18s,background .18s,color .18s,transform .18s;}
+.guided-options button:hover{border-color:rgba(255,255,255,.16);color:rgba(255,255,255,.66);transform:translateY(-1px);}
+.guided-options button.on{border-color:rgba(215,185,88,.28);background:linear-gradient(135deg,rgba(215,185,88,.11),rgba(255,255,255,.025));color:#f4ead0;box-shadow:inset 0 0 22px rgba(215,185,88,.025);}
+.s1-advanced-toggle{display:flex!important;align-items:center;gap:12px;min-height:48px;padding:10px 14px;border:1px solid rgba(255,255,255,.065);border-radius:13px;background:rgba(255,255,255,.018);color:rgba(255,255,255,.48);text-align:left;cursor:pointer;}
+.s1-advanced-toggle span{font-family:var(--sans);font-size:10.5px;font-weight:600;}
+.s1-advanced-toggle small{flex:1;font-family:var(--sans);font-size:9px;color:rgba(255,255,255,.2);}
+.s1-advanced-toggle i{font-style:normal;font-family:var(--mono);font-size:15px;color:rgba(215,185,88,.62);transition:transform .2s;}
+#guidedSetup>.s1-advanced-field,#guidedSetup>div:has(#recceGrid),#guidedSetup>div:has(#toneOpts){display:none!important;}
+#guidedSetup.advanced-open>.s1-advanced-field,#guidedSetup.advanced-open>div:has(#recceGrid),#guidedSetup.advanced-open>div:has(#toneOpts){display:flex!important;}
+#guidedSetup.advanced-open>div:has(#recceGrid){display:block!important;}
+#guidedSetup.advanced-open .s1-advanced-toggle i{transform:rotate(45deg);}
+.quick-constraints{padding:16px 17px!important;border:1px solid rgba(255,255,255,.065);border-radius:15px;background:rgba(7,8,7,.48);}
+.quick-constraints .ilabel span{color:rgba(255,255,255,.16);}
+.quick-constraints textarea{width:100%;min-height:76px;resize:vertical;padding:12px 13px;border:1px solid rgba(255,255,255,.075);border-radius:11px;outline:0;background:rgba(255,255,255,.025);color:rgba(255,255,255,.75);font-family:var(--sans);font-size:12px;line-height:1.55;}
+.quick-constraints textarea:focus{border-color:rgba(215,185,88,.3);}
+#s1 #aiModeSwitch{display:none;}
+#s1 .gobtn{min-height:60px;margin-top:2px;border-radius:14px;font-size:13px;}
+
+#s_equipment .kb-wrap{width:min(980px,100%);display:block;padding:clamp(88px,11vh,122px) 34px 60px;}
+#s_equipment .kb-wrap>div:first-child{max-width:560px;margin:0 auto 28px;text-align:center!important;}
+#s_equipment .kb-wrap>div:first-child .kb-title,#s_equipment .kb-wrap>div:first-child .kb-sub{text-align:center;max-width:none;}
+#s_equipment .cc-intake{display:none;}
+.direction-build-state{display:none;position:relative;width:min(720px,100%);min-height:330px;margin:0 auto;padding:54px;border:1px solid rgba(255,255,255,.08);border-radius:26px;background:linear-gradient(145deg,rgba(255,255,255,.045),rgba(255,255,255,.012));box-shadow:0 30px 90px rgba(0,0,0,.36);text-align:center;overflow:hidden;}
+.direction-build-state::before{content:'';position:absolute;inset:-45%;background:conic-gradient(from 15deg,transparent,rgba(215,185,88,.055),transparent 34%,rgba(109,155,211,.045),transparent 68%);animation:loadAura 9s linear infinite;}
+.direction-build-state>*{position:relative;z-index:1;}
+.direction-build-k{font-family:var(--mono);font-size:7px;letter-spacing:.17em;text-transform:uppercase;color:rgba(215,185,88,.72);}
+.direction-build-state h2{margin-top:58px;font-family:var(--sans);font-size:clamp(28px,4vw,44px);line-height:1;letter-spacing:-.05em;color:#f5f3ee;}
+.direction-build-state p{margin-top:13px;font-family:var(--sans);font-size:12px;color:rgba(255,255,255,.34);}
+.direction-build-track{position:absolute;left:28px;right:28px;bottom:26px;height:3px;border-radius:99px;background:rgba(255,255,255,.06);overflow:hidden;}
+.direction-build-track span{display:block;width:18%;height:100%;border-radius:inherit;background:linear-gradient(90deg,#d7b958,#f1d77d);box-shadow:0 0 18px rgba(215,185,88,.28);transition:width .5s var(--gd-ease);}
+#s_equipment.building-direction .direction-build-state{display:block;animation:cc-rise .38s var(--gd-ease) both;}
+#s_equipment.building-direction .kb-wrap>div:first-child{display:none;}
+#s_equipment.building-direction .cc-panel{display:none!important;}
+#s_equipment.contract-ready .kb-wrap>div:first-child{display:none;}
+.cc-panel{width:100%;max-width:980px;margin:0 auto;padding:20px;}
+.cc-snapshot{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));}
+.cc-panel:not(.details-open) .cc-sections{display:none;}
+.cc-panel.details-open .cc-sections{display:grid;}
+.cc-head{margin-bottom:13px;padding:4px 3px 17px;}
+.cc-head h2{font-size:clamp(26px,3vw,38px);}
+.cc-head p{font-size:11.5px;}
+.cc-snapshot-item{min-height:132px;padding:18px;}
+.cc-snapshot-item b{font-size:6.5px;color:rgba(215,185,88,.55);}
+.cc-snapshot-item span{font-size:13px;line-height:1.55;-webkit-line-clamp:4;color:rgba(255,255,255,.72);}
+.cc-foot{position:relative;bottom:auto;margin:15px 0 0;padding:14px 2px 1px;background:none;backdrop-filter:none;border-top:1px solid rgba(255,255,255,.055);}
+.cc-lock{min-height:46px;padding:10px 18px;border-radius:12px;}
+
+.load-stage{min-height:430px;}
+.load-stage .lstep{margin-top:22px;font-family:var(--sans);font-size:15px;letter-spacing:-.01em;text-transform:none;color:rgba(255,255,255,.68);}
+.load-stage .lsub{margin-top:9px;font-size:7px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.26);}
+.load-track{height:4px;border-radius:999px;}
+.load-track span{width:0;transform:none;animation:none;border-radius:inherit;background:linear-gradient(90deg,#d7b958,#f2d97e);box-shadow:0 0 18px rgba(215,185,88,.32);transition:width .5s var(--gd-ease);}
+.load-stage.is-complete .load-orbit{border-color:rgba(120,169,132,.25);box-shadow:0 0 60px rgba(120,169,132,.08);}
+.load-stage.is-complete .load-orbit i{animation-duration:.9s;}
+
+.s3-plan-wrap.voiceover-mode .s3-plan-hl,.s3-plan-wrap.voiceover-mode .s3-plan-ta{display:none;}
+.s3-plan-wrap.production-mode .voiceover-reader{display:none;}
+.script-view-toggle{position:absolute;z-index:12;right:17px;top:13px;min-height:31px;padding:6px 10px;border:1px solid rgba(255,255,255,.075);border-radius:999px;background:rgba(7,8,7,.72);color:rgba(255,255,255,.36);font-family:var(--mono);font-size:6px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;backdrop-filter:blur(12px);}
+.script-view-toggle:hover{border-color:rgba(255,255,255,.16);color:rgba(255,255,255,.68);}
+.voiceover-reader{position:absolute;inset:0;overflow-y:auto;padding:52px clamp(25px,5vw,72px) 120px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.09) transparent;}
+.voiceover-reader::before{content:'VOICEOVER  /  AUTO-SAVED';display:block;margin-bottom:23px;font-family:var(--mono);font-size:7px;letter-spacing:.16em;color:rgba(109,155,211,.6);}
+.voiceover-reader button{position:relative;display:block;width:100%;padding:15px 42px 17px 0;border:0;border-bottom:1px solid rgba(255,255,255,.055);background:none;color:rgba(255,255,255,.78);font-family:var(--sans);font-size:clamp(16px,1.65vw,22px);font-weight:430;line-height:1.64;letter-spacing:-.016em;text-align:left;cursor:text;transition:color .16s,background .16s,padding .16s;}
+.voiceover-reader button::after{content:attr(data-number);position:absolute;right:3px;top:21px;font-family:var(--mono);font-size:7px;letter-spacing:.1em;color:rgba(255,255,255,.15);}
+.voiceover-reader button:hover,.voiceover-reader button.selected{padding-left:12px;color:#fff;background:linear-gradient(90deg,rgba(215,185,88,.055),transparent 76%);}
+.voiceover-reader button.selected{box-shadow:inset 2px 0 rgba(215,185,88,.58);}
+.voiceover-empty{display:flex;min-height:260px;align-items:center;justify-content:center;text-align:center;font-family:var(--sans);font-size:13px;line-height:1.6;color:rgba(255,255,255,.28);}
+.truth-ledger-mode{display:none;}
+.truth-ledger-body{max-height:min(430px,48vh);}
+.truth-overview{grid-template-columns:repeat(3,minmax(0,1fr));}
+.truth-evidence-details{margin-top:8px;border-top:1px solid rgba(255,255,255,.055);}
+.truth-evidence-details>summary{padding:12px 2px 5px;list-style:none;cursor:pointer;font-family:var(--mono);font-size:6px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.25);}
+.truth-evidence-details>summary::after{content:' +';color:rgba(215,185,88,.55);}
+.truth-evidence-details[open]>summary::after{content:' −';}
+.truth-evidence-details .truth-research-privacy{margin:6px 2px 10px;}
+
+.cl-progress{width:min(360px,calc(100% - 48px));margin-top:22px;}
+.cl-progress-track{height:3px;border-radius:999px;background:rgba(255,255,255,.065);overflow:hidden;}
+.cl-progress-track span{display:block;width:8%;height:100%;border-radius:inherit;background:linear-gradient(90deg,#d7b958,#f2d97e);box-shadow:0 0 16px rgba(215,185,88,.3);transition:width .45s var(--gd-ease);}
+.cl-progress-label{display:flex;justify-content:space-between;margin-top:8px;font-family:var(--mono);font-size:6px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.22);}
+
+@media(max-width:900px){
+  .guided-question{grid-template-columns:1fr;gap:10px;}
+  .guided-head{align-items:flex-start;flex-direction:column;gap:7px;}
+  #s_equipment .kb-wrap{padding-left:20px;padding-right:20px;}
+  .cc-snapshot{grid-template-columns:1fr;}
+  .cc-snapshot-item{min-height:0;}
+}
+@media(max-width:600px){
+  #s1 .s1-topic-block .ita{font-size:16px;}
+  .guided-options{display:flex;overflow-x:auto;padding-bottom:2px;scrollbar-width:none;}
+  .guided-options button{flex:0 0 auto;min-width:132px;}
+  .guided-head p{display:none;}
+  .s1-advanced-toggle small{display:none;}
+  .direction-build-state{min-height:300px;padding:38px 22px;}
+  .cc-panel{padding:14px;border-radius:19px;}
+  .cc-head{align-items:flex-start;flex-direction:column;gap:12px;}
+  .cc-foot-actions{display:grid;grid-template-columns:1fr 1fr;width:100%;}
+  .cc-lock{grid-column:1/-1;grid-row:1;}
+  .cc-rebuild,.cc-details{min-height:44px;}
+  .script-studio-intro{display:none;}
+  .script-studio-shell{grid-template-columns:1fr;}
+  .voiceover-reader{padding:48px 18px 126px;}
+  .voiceover-reader button{padding-right:28px;font-size:16px;line-height:1.58;}
+  .truth-ledger-state{display:none;}
+}
 </style>
 </head>
 <body>
@@ -2464,13 +2590,13 @@ body.free-mode .port-dot:hover{background:var(--board-gold);border-color:#f8e8a8
         <span class="idea-entry-arrow">&rarr;</span>
       </button>
     </div>
-    <div class="s1-form-shell">
+    <div class="s1-form-shell" id="guidedSetup">
     <div class="dna-profile" id="dnaProfile">
       <span class="dna-profile-dot"></span>
       <span class="dna-profile-copy"><span class="dna-profile-k">Creator DNA active</span><span class="dna-profile-v" id="dnaProfileText"></span></span>
       <button class="dna-profile-edit" onclick="openCreatorDnaHub()">My DNA</button>
     </div>
-    <div>
+    <div class="s1-topic-block">
       <div class="ilabel" id="s1TopicLabel">what is this video about?</div>
       <textarea class="ita" id="topicIn" placeholder="A rainy morning in NYC — intimate, cinematic, handheld..." rows="3"></textarea>
       <div class="s1-error" id="topicErr" role="alert" aria-live="polite"></div>
@@ -2479,7 +2605,39 @@ body.free-mode .port-dot:hover{background:var(--board-gold);border-color:#f8e8a8
         <span class="mv-hint-text" id="mvHintText">Describe the mood -- dark, romantic, euphoric?</span>
       </div>
     </div>
-    <div class="s1-youtube-only">
+    <section class="guided-questions s1-youtube-only" id="guidedQuestions" aria-label="A few quick choices">
+      <div class="guided-head"><div><span>Optional guidance</span><h2>Three quick choices. Or keep our suggestions.</h2></div><p>Nothing here is required. We use your topic and Creator DNA to preselect a strong starting point.</p></div>
+      <div class="guided-question" data-question="outcome">
+        <div class="guided-question-copy"><b>01</b><span><strong>What should the viewer leave with?</strong><small id="guidedOutcomeHint">Choose the result that matters most.</small></span></div>
+        <div class="guided-options">
+          <button type="button" data-value="feel" onclick="chooseProjectGuidance('outcome','feel',this)">A feeling</button>
+          <button type="button" data-value="understand" class="on" onclick="chooseProjectGuidance('outcome','understand',this)">A clear idea</button>
+          <button type="button" data-value="do" onclick="chooseProjectGuidance('outcome','do',this)">Something useful</button>
+        </div>
+      </div>
+      <div class="guided-question" data-question="approach">
+        <div class="guided-question-copy"><b>02</b><span><strong>How should we tell it?</strong><small id="guidedApproachHint">We can choose this from your topic.</small></span></div>
+        <div class="guided-options">
+          <button type="button" data-value="personal" onclick="chooseProjectGuidance('approach','personal',this)">Personal reflection</button>
+          <button type="button" data-value="observe" class="on" onclick="chooseProjectGuidance('approach','observe',this)">Visual exploration</button>
+          <button type="button" data-value="explain" onclick="chooseProjectGuidance('approach','explain',this)">Clear explanation</button>
+        </div>
+      </div>
+      <div class="guided-question" data-question="production">
+        <div class="guided-question-copy"><b>03</b><span><strong>What feels realistic today?</strong><small>Pick one only if it helps us respect your setup.</small></span></div>
+        <div class="guided-options">
+          <button type="button" data-value="voice-footage" class="on" onclick="chooseProjectGuidance('production','voice-footage',this)">Voice + footage</button>
+          <button type="button" data-value="on-camera" onclick="chooseProjectGuidance('production','on-camera',this)">I can be on camera</button>
+          <button type="button" data-value="graphics" onclick="chooseProjectGuidance('production','graphics',this)">Screens + graphics</button>
+        </div>
+      </div>
+    </section>
+    <button class="s1-advanced-toggle s1-youtube-only" id="projectAdvancedToggle" type="button" onclick="toggleProjectAdvanced()" aria-expanded="false"><span>Production details</span><small>Optional · duration, locations and exact limits</small><i>+</i></button>
+    <div class="s1-youtube-only s1-advanced-field quick-constraints">
+      <div class="ilabel">anything we should work around? <span>optional</span></div>
+      <textarea id="quickConstraintsIn" rows="2" placeholder="One room, solo shoot, no budget, two hours of daylight..."></textarea>
+    </div>
+    <div class="s1-youtube-only s1-advanced-field">
       <div>
         <div class="ilabel">video duration</div>
         <div class="dur-row">
@@ -2491,7 +2649,7 @@ body.free-mode .port-dot:hover{background:var(--board-gold);border-color:#f8e8a8
         </div>
       </div>
     </div>
-    <div class="s1-music-only">
+    <div class="s1-music-only s1-advanced-field">
       <div class="song-row">
         <div class="song-up-col">
           <div class="ilabel">upload song</div>
@@ -2550,7 +2708,7 @@ body.free-mode .port-dot:hover{background:var(--board-gold);border-color:#f8e8a8
       <span class="ai-mode-sw"><span class="ai-mode-knob"></span></span>
       <span class="ai-mode-state" id="aiModeState">ON</span>
     </div>
-    <button class="gobtn" id="gobtn" onclick="goToChoice()"><span id="gobtnTxt">continue to production details</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+    <button class="gobtn" id="gobtn" onclick="goToChoice()"><span id="gobtnTxt">Shape my video</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
     </div>
   </div>
 </div>
@@ -2602,9 +2760,15 @@ body.free-mode .port-dot:hover{background:var(--board-gold);border-color:#f8e8a8
         <button class="gobtn" id="creativeContractAction" style="flex:1;margin:0" onclick="handleCreativeContractAction()"><span id="creativeContractActionText">Build project direction</span></button>
       </div>
     </div>
+    <section class="direction-build-state" id="directionBuildState" aria-live="polite">
+      <span class="direction-build-k">Understanding your idea</span>
+      <h2 id="directionBuildTitle">Finding the clearest direction…</h2>
+      <p id="directionBuildCopy">Combining your topic, quick choices and Creator DNA.</p>
+      <div class="direction-build-track" role="progressbar" aria-label="Project direction progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="18"><span id="directionBuildProgress"></span></div>
+    </section>
     <section class="cc-panel" id="creativeContractPanel" aria-live="polite">
       <div class="cc-head">
-        <div><div class="cc-k">Creative Contract / Project Direction</div><h2>This is what the film is promising.</h2><p>Review the decisions, change anything that feels wrong, then lock the direction and generate.</p></div>
+        <div><div class="cc-k">Your project direction</div><h2>Here’s what we understood.</h2><p>Read these three decisions. If they feel right, your part is done.</p></div>
         <div class="cc-state" id="creativeContractState">Ready to edit</div>
       </div>
       <div class="cc-snapshot" id="creativeContractSnapshot" aria-label="Project direction summary"></div>
@@ -2637,7 +2801,7 @@ body.free-mode .port-dot:hover{background:var(--board-gold);border-color:#f8e8a8
           <div class="cc-field wide"><label for="ccAvoid">Must avoid</label><textarea id="ccAvoid" placeholder="Non-negotiable exclusions, one per line"></textarea></div>
         </div></section>
       </div>
-      <div class="cc-foot"><span id="creativeContractFoot">Built from your idea, DNA and real production limits.</span><div class="cc-foot-actions"><button class="cc-details" id="creativeContractDetails" type="button" onclick="toggleCreativeContractDetails()">Edit details</button><button class="cc-rebuild" type="button" onclick="regenerateCreativeContract()">Rebuild with AI</button><button class="cc-lock" id="creativeContractLock" type="button" onclick="handleCreativeContractAction()"><span id="creativeContractLockText">Save direction & continue</span></button></div></div>
+      <div class="cc-foot"><span id="creativeContractFoot">Built from your topic, quick choices and Creator DNA.</span><div class="cc-foot-actions"><button class="cc-details" id="creativeContractDetails" type="button" onclick="toggleCreativeContractDetails()">Fine-tune</button><button class="cc-rebuild" type="button" onclick="regenerateCreativeContract()">Try another direction</button><button class="cc-lock" id="creativeContractLock" type="button" onclick="handleCreativeContractAction()"><span id="creativeContractLockText">Create my voiceover</span></button></div></div>
     </section>
   </div>
 </div>
@@ -2648,8 +2812,8 @@ body.free-mode .port-dot:hover{background:var(--board-gold);border-color:#f8e8a8
     <div class="load-orbit" aria-hidden="true"><i></i><i></i><i></i><span>GD</span></div>
     <div class="load-logo" data-text="HVNVSLS">HVNVSLS</div>
     <div class="lstep" id="s2msg">reading your idea</div>
-    <div class="lsub" id="s2sub">0s</div>
-    <div class="load-track"><span></span></div>
+    <div class="lsub" id="s2sub">Starting</div>
+    <div class="load-track" role="progressbar" aria-label="Voiceover generation progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="s2Progress"></span></div>
   </div>
 </div>
 
@@ -2658,7 +2822,7 @@ body.free-mode .port-dot:hover{background:var(--board-gold);border-color:#f8e8a8
     <button class="s3-back-btn" onclick="show('s_equipment')">&larr; Back</button>
     <div class="s3-brand"><span>GRAIN DISTRICT</span><small>Script intelligence / 03</small></div>
     <div class="s3-acts">
-      <button class="script-line-btn" type="button" onclick="editCurrentVoiceoverLine()">Edit line</button>
+      <button class="script-line-btn" type="button" onclick="editCurrentVoiceoverLine()">Edit selected line</button>
       <span class="kb-sub" id="wc" style="font-size:.8rem;color:rgba(255,255,255,.25)">0 blocks</span>
       <button class="kb-cont" onclick="buildCanvas()">Build visual board</button>
     </div>
@@ -2666,9 +2830,9 @@ body.free-mode .port-dot:hover{background:var(--board-gold);border-color:#f8e8a8
   <div class="s3-body">
     <div class="script-studio-shell">
       <aside class="script-studio-intro">
-        <span class="script-studio-kicker">Script Studio / Voiceover</span>
-        <h1 class="script-studio-title">Make every line sound like you.</h1>
-        <p class="script-studio-copy">Select words inside a voiceover line to rewrite only that passage. Nothing else changes until you accept it.</p>
+        <span class="script-studio-kicker">Your voiceover</span>
+        <h1 class="script-studio-title">The story, without the production noise.</h1>
+        <p class="script-studio-copy">Read it as one continuous piece. Click any paragraph to rewrite only that line.</p>
         <div class="script-direction" id="scriptDirection"></div>
         <span class="script-autosave">Draft saved automatically</span>
         <button class="script-version-btn" id="scriptVersionBtn" type="button" onclick="undoLastScriptRevision()">Undo last AI edit</button>
@@ -2676,23 +2840,24 @@ body.free-mode .port-dot:hover{background:var(--board-gold);border-color:#f8e8a8
       <div class="s3-col-right">
         <section class="script-contract" id="scriptContract" hidden>
           <button class="script-contract-toggle" type="button" onclick="toggleScriptContract()" aria-expanded="false">
-            <span>Project Direction</span><span class="script-contract-promise" id="scriptContractPromise"></span><span class="script-contract-freshness" id="scriptContractFreshness">Current</span><span class="script-contract-mode" id="scriptContractMode"></span><span class="script-contract-chevron">&#8964;</span>
+            <span>Direction</span><span class="script-contract-promise" id="scriptContractPromise"></span><span class="script-contract-freshness" id="scriptContractFreshness">Current</span><span class="script-contract-mode" id="scriptContractMode"></span><span class="script-contract-chevron">&#8964;</span>
           </button>
           <div class="script-contract-body" id="scriptContractBody"></div>
         </section>
         <section class="truth-ledger" id="truthLedgerPanel" hidden>
           <button class="truth-ledger-toggle" type="button" onclick="toggleTruthLedger()" aria-expanded="false">
-            <span class="truth-ledger-name">Truth Ledger</span><span class="truth-ledger-summary" id="truthLedgerSummary">Ready to review</span><span class="truth-ledger-mode" id="truthLedgerMode">Adaptive</span><span class="truth-ledger-state" id="truthLedgerState">Unreviewed</span><span class="truth-ledger-chevron">&#8964;</span>
+            <span class="truth-ledger-name">Research check</span><span class="truth-ledger-summary" id="truthLedgerSummary">Checking what needs evidence</span><span class="truth-ledger-mode" id="truthLedgerMode">Adaptive</span><span class="truth-ledger-state" id="truthLedgerState">Current</span><span class="truth-ledger-chevron">&#8964;</span>
           </button>
           <div class="truth-ledger-body">
-            <div class="truth-ledger-head"><p id="truthLedgerIntro">Personal experience and opinion stay yours. Technical claims and recommendations are checked for support.</p><div class="truth-ledger-actions"><button class="truth-research-btn" id="truthResearchBtn" type="button" onclick="runTruthResearch()">Find evidence</button><button class="truth-review-btn" type="button" onclick="reviewTruthLedger()">Refresh topics</button></div></div>
+            <div class="truth-ledger-head"><p id="truthLedgerIntro">Grain District keeps personal and poetic lines untouched, then checks only the ideas that can be verified.</p><div class="truth-ledger-actions"><button class="truth-research-btn" id="truthResearchBtn" type="button" onclick="runTruthResearch()">Check factual claims</button><button class="truth-review-btn" type="button" onclick="reviewTruthLedger()">Refresh</button></div></div>
             <div class="truth-overview" id="truthLedgerOverview" aria-label="Evidence review summary"></div>
-            <div class="truth-research-privacy"><b>PRIVATE BY DESIGN</b> &middot; Only the compact research topics shown below leave your project. Crossref scholarly metadata finds candidate articles; selected public pages are compared with the claim. Your full script, Creator DNA, project name and identity are not sent. Nothing becomes Verified without your approval.</div>
             <div class="truth-ledger-message" id="truthLedgerMessage" aria-live="polite"></div>
-            <div class="truth-claims" id="truthLedgerClaims"></div>
+            <details class="truth-evidence-details" id="truthEvidenceDetails"><summary>Review sources and decisions</summary><div class="truth-research-privacy"><b>PRIVATE BY DESIGN</b> &middot; Only compact research topics leave your project. Your full script, Creator DNA, project name and identity stay private.</div><div class="truth-claims" id="truthLedgerClaims"></div></details>
           </div>
         </section>
-        <div class="s3-plan-wrap" id="scriptPlanWrap">
+        <div class="s3-plan-wrap voiceover-mode" id="scriptPlanWrap">
+          <button class="script-view-toggle" id="scriptViewToggle" type="button" onclick="toggleScriptProductionView()">View production notes</button>
+          <div class="voiceover-reader" id="voiceoverReader" aria-label="Voiceover script"></div>
           <pre class="s3-plan-hl" id="planHl" aria-hidden="true"></pre>
           <textarea class="s3-plan-ta" id="scriptTa" spellcheck="false" aria-label="Script and shot plan" placeholder="[VOICEOVER] 00:00-00:30 - ..."></textarea>
           <div class="script-ai-bar" id="scriptAiBar">
@@ -2733,8 +2898,8 @@ body.free-mode .port-dot:hover{background:var(--board-gold);border-color:#f8e8a8
     <div class="load-orbit" aria-hidden="true"><i></i><i></i><i></i><span>GD</span></div>
     <div class="load-logo" data-text="HVNVSLS">HVNVSLS</div>
     <div class="lstep" id="s4msg">analyzing each block</div>
-    <div class="lsub" id="s4sub">0s</div>
-    <div class="load-track"><span></span></div>
+    <div class="lsub" id="s4sub">Starting</div>
+    <div class="load-track" role="progressbar" aria-label="Production board progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="s4Progress"></span></div>
   </div>
 </div>
 
@@ -2818,6 +2983,7 @@ body.free-mode .port-dot:hover{background:var(--board-gold);border-color:#f8e8a8
       <div class="canvas-loader" id="canvasLoader" style="display:none">
         <div class="cl-word">HVNVSLS</div>
         <div class="cl-msg" id="clMsg">preparing your canvas...</div>
+        <div class="cl-progress"><div class="cl-progress-track" role="progressbar" aria-label="Visual board progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="8"><span id="canvasProgress"></span></div><div class="cl-progress-label"><span id="canvasProgressLabel">Preparing structure</span><span id="canvasProgressValue">8%</span></div></div>
       </div>
       <div class="undo-hint" id="undoHint">undone</div>
     </div>
@@ -3682,9 +3848,28 @@ function setCreativeContractBusy(busy,message){
   if(busy)['creativeContractActionText','creativeContractLockText'].forEach(function(id){var label=document.getElementById(id);if(label)label.textContent='Building your direction…';});
   if(state&&message)state.textContent=message;
 }
+var creativeContractProgressTimer=null,creativeContractProgress=0;
+function updateCreativeContractProgress(value,title,copy){
+  creativeContractProgress=Math.max(0,Math.min(100,Number(value)||0));var bar=document.getElementById('directionBuildProgress'),track=bar&&bar.parentElement;
+  if(bar)bar.style.width=creativeContractProgress+'%';if(track)track.setAttribute('aria-valuenow',String(Math.round(creativeContractProgress)));
+  var titleEl=document.getElementById('directionBuildTitle'),copyEl=document.getElementById('directionBuildCopy');if(titleEl&&title)titleEl.textContent=title;if(copyEl&&copy)copyEl.textContent=copy;
+}
+function setCreativeContractBusy(busy,message){
+  creativeContractBusy=busy;
+  var action=document.getElementById('creativeContractAction'),lock=document.getElementById('creativeContractLock'),state=document.getElementById('creativeContractState'),screen=document.getElementById('s_equipment');
+  if(action)action.disabled=busy;if(lock)lock.disabled=busy;
+  if(busy){
+    if(screen)screen.classList.add('building-direction');if(creativeContractProgressTimer)clearInterval(creativeContractProgressTimer);updateCreativeContractProgress(12,'Reading the idea…','Finding the viewer, promise and most natural format.');
+    creativeContractProgressTimer=setInterval(function(){var next=Math.min(78,creativeContractProgress+Math.max(1,(78-creativeContractProgress)*.12));var title=next<38?'Reading the idea…':next<62?'Choosing the story shape…':'Checking it against your Creator DNA…';updateCreativeContractProgress(next,title,'Only the decisions that affect the finished video are kept.');},520);
+    ['creativeContractActionText','creativeContractLockText'].forEach(function(id){var label=document.getElementById(id);if(label)label.textContent='Building your direction…';});
+  }else{
+    if(creativeContractProgressTimer){clearInterval(creativeContractProgressTimer);creativeContractProgressTimer=null;}updateCreativeContractProgress(100,'Direction ready','Three decisions are ready for a quick review.');setTimeout(function(){if(screen)screen.classList.remove('building-direction');},220);
+  }
+  if(state&&message)state.textContent=message;
+}
 function toggleCreativeContractDetails(){
   var panel=document.getElementById('creativeContractPanel'),button=document.getElementById('creativeContractDetails');if(!panel)return;
-  panel.classList.toggle('details-open');if(button)button.textContent=panel.classList.contains('details-open')?'Hide details':'Edit details';
+  panel.classList.toggle('details-open');if(button)button.textContent=panel.classList.contains('details-open')?'Hide fine-tuning':'Fine-tune';
 }
 function renderCreativeContract(){
   var panel=document.getElementById('creativeContractPanel'),screen=document.getElementById('s_equipment');
@@ -3694,14 +3879,14 @@ function renderCreativeContract(){
   var values={ccFormat:creativeContractFormat(creativeContract),ccPresence:creativeContract.format.creatorPresence,ccDeliveryMode:creativeContract.format.deliveryMode,ccPacing:creativeContract.style.pacingIntent,ccTone:creativeContract.style.tone,ccViewer:creativeContract.audience.primary,ccPriorState:creativeContract.audience.priorState,ccDesiredState:creativeContract.audience.desiredState,ccPromise:creativeContract.promise.statement,ccSuccessCriteria:creativeContract.promise.successCriteria.join('\n'),ccDrivingQuestion:creativeContract.storyEngine.drivingQuestion,ccWhyItMatters:creativeContract.storyEngine.whyItMatters,ccTransformation:creativeContract.storyEngine.transformation,ccStructure:creativeContract.storyEngine.structure,ccVisualSystem:creativeContract.style.visualSystem,ccProof:creativeContract.proofRequirements.map(function(x){return x.statement;}).join('\n'),ccPayoffs:creativeContract.payoffs.map(function(x){return x.statement;}).join('\n'),ccMustInclude:creativeContract.constraints.mustInclude.map(function(x){return x.statement;}).join('\n'),ccAvoid:creativeContract.constraints.mustAvoid.map(function(x){return x.statement;}).join('\n')};
   Object.keys(values).forEach(function(id){var el=document.getElementById(id);if(el)el.value=values[id];});
   panel.classList.add('show');screen.classList.add('contract-ready');
-  var previousStatus=panel.dataset.contractStatus||'',isLocked=creativeContract.status==='locked';panel.dataset.contractStatus=creativeContract.status;panel.classList.toggle('locked',isLocked);if(isLocked&&previousStatus!=='locked')panel.classList.remove('details-open');
-  var snapshot=document.getElementById('creativeContractSnapshot');if(snapshot){var formatLabel=CREATIVE_CONTRACT_FORMATS[creativeContractFormat(creativeContract)]||creativeContractFormat(creativeContract),engine=creativeContract.storyEngine.drivingQuestion||creativeContract.storyEngine.structure||creativeContract.storyEngine.transformation,snapshotItems=[['Core promise',creativeContract.promise.statement],['Story engine',engine],['Shoot mode',formatLabel+' · '+creativeContract.format.deliveryMode+' · '+creativeContract.style.pacingIntent]];snapshot.innerHTML=snapshotItems.map(function(item){return '<div class="cc-snapshot-item"><b>'+creativeContractEscape(item[0])+'</b><span>'+creativeContractEscape(item[1])+'</span></div>';}).join('');}
-  var details=document.getElementById('creativeContractDetails');if(details){details.hidden=!isLocked;details.textContent=panel.classList.contains('details-open')?'Hide details':'Edit details';}
+  var previousStatus=panel.dataset.contractStatus||'',isLocked=creativeContract.status==='locked';panel.dataset.contractStatus=creativeContract.status;panel.classList.toggle('locked',isLocked);if(previousStatus!==creativeContract.status)panel.classList.remove('details-open');
+  var snapshot=document.getElementById('creativeContractSnapshot');if(snapshot){var engine=creativeContract.storyEngine.drivingQuestion||creativeContract.storyEngine.structure||creativeContract.storyEngine.transformation,snapshotItems=[["Who it's for",creativeContract.audience.primary],['The promise',creativeContract.promise.statement],['How it unfolds',engine]];snapshot.innerHTML=snapshotItems.map(function(item){return '<div class="cc-snapshot-item"><b>'+creativeContractEscape(item[0])+'</b><span>'+creativeContractEscape(item[1])+'</span></div>';}).join('');}
+  var details=document.getElementById('creativeContractDetails');if(details){details.hidden=false;details.textContent=panel.classList.contains('details-open')?'Hide fine-tuning':'Fine-tune';}
   var hasScript=document.getElementById('scriptTa')&&document.getElementById('scriptTa').value.trim();
-  var actionCopy=isLocked?(hasScript?'Regenerate voiceover':'Continue to voiceover'):(creativeContract.status==='stale'?'Rebuild project direction':(hasScript?'Save direction & regenerate':'Save direction & continue'));
+  var actionCopy=isLocked?(hasScript?'Regenerate voiceover':'Create my voiceover'):(creativeContract.status==='stale'?'Refresh direction':(hasScript?'Save & regenerate':'Create my voiceover'));
   ['creativeContractActionText','creativeContractLockText'].forEach(function(id){var label=document.getElementById(id);if(label)label.textContent=actionCopy;});
   var state=document.getElementById('creativeContractState');if(state)state.textContent=isLocked?('Direction saved · Revision '+creativeContract.revision):(creativeContract.status==='stale'?'Needs refresh':('Editing · Revision '+creativeContract.revision));
-  var foot=document.getElementById('creativeContractFoot');if(foot)foot.textContent=isLocked?('Saved automatically · Revision '+creativeContract.revision):'Changes save automatically while you review.';
+  var foot=document.getElementById('creativeContractFoot');if(foot)foot.textContent=isLocked?('Saved automatically · Revision '+creativeContract.revision):'Only fine-tune if one of these decisions feels wrong.';
 }
 function creativeContractFormPatch(){
   var read=function(id){var el=document.getElementById(id);return el?el.value:'';};
@@ -3723,7 +3908,7 @@ function buildCreativeContract(skipDetails){
   if(skipDetails&&constraints)constraints.value='';
   projectConstraints=constraints?constraints.value.trim():'';projectBrief='';
   setCreativeContractBusy(true,'Reading your idea + DNA');
-  var user='VIDEO IDEA:\n'+topic+'\n\nDURATION:\n'+durMin+'-'+durMax+' minutes\n\nSELECTED TONE / FORMAT:\n'+tone+' / '+fmt+'\n\nREAL PRODUCTION RESOURCES AND LIMITS:\n'+(projectConstraints||'No project-specific production details were supplied. Stay within the Creator DNA capabilities.');
+  var user='VIDEO IDEA:\n'+topic+'\n\nTHREE QUICK CHOICES:\n'+projectGuidanceContext()+'\n\nDURATION:\n'+durMin+'-'+durMax+' minutes\n\nSELECTED TONE / FORMAT:\n'+tone+' / '+fmt+'\n\nREAL PRODUCTION RESOURCES AND LIMITS:\n'+(projectConstraints||'No project-specific production details were supplied. Stay within the Creator DNA capabilities.');
   var previous=creativeContract?normalizeCreativeContract(creativeContract,creativeContract.source):null;
   api(creativeContractPrompt(),user,'creative_contract').then(function(raw){
     var parsed=parseCreativeContract(raw),structured=parsed&&parsed.format&&typeof parsed.format==='object'?Object.assign({},parsed,{schema:CREATIVE_CONTRACT_SCHEMA,schemaVersion:2}):parsed,candidate=normalizeCreativeContract(structured,'ai');
@@ -4036,17 +4221,17 @@ function truthSourceAssistantHtml(claim,source){
 function renderTruthLedger(){
   var panel=document.getElementById('truthLedgerPanel'),ta=document.getElementById('scriptTa');if(!panel||!ta)return;var hasScript=projectType==='youtube'&&!!String(ta.value||'').trim();panel.hidden=!hasScript;if(!hasScript)return;
   var summary=document.getElementById('truthLedgerSummary'),state=document.getElementById('truthLedgerState'),mode=document.getElementById('truthLedgerMode'),claimsEl=document.getElementById('truthLedgerClaims'),intro=document.getElementById('truthLedgerIntro'),overview=document.getElementById('truthLedgerOverview'),message=document.getElementById('truthLedgerMessage'),researchBtn=document.getElementById('truthResearchBtn');
-  if(!truthLedger){panel.classList.remove('needs-review','has-conflict');if(summary)summary.textContent='Review the script when it is ready';if(state)state.textContent='Unreviewed';if(mode)mode.textContent=truthLedgerStrictness();if(researchBtn){researchBtn.disabled=true;researchBtn.textContent='Find evidence';}if(overview)overview.innerHTML='';if(claimsEl)claimsEl.innerHTML='<div class="truth-empty">Run one review. GrainDistrict will keep personal and poetic lines out, then combine related factual lines into compact research topics.</div>';if(message)message.textContent='';return;}
+  if(!truthLedger){panel.classList.remove('needs-review','has-conflict');if(summary)summary.textContent='We will check facts after the draft';if(state)state.textContent='Waiting';if(mode)mode.textContent=truthLedgerStrictness();if(researchBtn){researchBtn.disabled=true;researchBtn.textContent='Check factual claims';}if(overview)overview.innerHTML='';if(claimsEl)claimsEl.innerHTML='<div class="truth-empty">Only externally checkable ideas will appear here. Personal and poetic writing stays out of the research queue.</div>';if(message)message.textContent='';return;}
   truthLedger=normalizeTruthLedger(truthLedger);
   if(truthLedger.classifierVersion<TRUTH_LEDGER_CLASSIFIER_VERSION&&!truthLedgerMigrating){truthLedgerMigrating=true;truthResearchFeedback='This older review was simplified automatically. Numbers, narrative context and prior evidence were preserved.';rebuildTruthLedgerFromScript(ta.value,{silent:true,reason:'classifier_v2_migration'});truthLedgerMigrating=false;if(window.gdAutosaveProject)window.gdAutosaveProject(true);return;}
   if(truthLedger.status==='current'&&truthLedger.scriptFingerprint!==truthLedgerScriptFingerprint(ta.value))markTruthLedgerStale('Script changed',ta.value);
   var active=truthLedger.claims.filter(function(claim){return claim.active;}),reviewClaims=active.filter(truthClaimVisibleInEvidenceQueue),skipped=active.length-reviewClaims.length,needs=reviewClaims.filter(function(claim){return claim.required&&claim.status==='needs_source';}),verified=reviewClaims.filter(function(claim){return claim.status==='verified'||claim.status==='user_asserted';}),conflicts=reviewClaims.filter(function(claim){return claim.status==='conflict';}),readyStrong=needs.filter(function(claim){return !!truthResearchStrongAssessment(claim);});
   panel.classList.toggle('needs-review',truthLedger.status!=='current'||needs.length>0);panel.classList.toggle('has-conflict',conflicts.length>0);if(mode)mode.textContent=truthLedger.strictness+' review';
-  if(summary)summary.textContent=truthLedger.status==='stale'?'Script changed - refresh topics':(reviewClaims.length+' research topic'+(reviewClaims.length===1?'':'s')+' / '+needs.length+' need evidence / '+verified.length+' clear');
-  if(state)state.textContent=conflicts.length?conflicts.length+' conflict'+(conflicts.length===1?'':'s'):(truthLedger.status==='stale'?'Review needed':'Current');
-  if(intro)intro.textContent=(truthLedger.strictness==='strict'?'Specifications, demonstrations and externally checkable facts are grouped here. ':'Only externally checkable ideas are grouped here. ')+(skipped?skipped+' narrative or personal line'+(skipped===1?' stays':'s stay')+' in the script with no source work.':'No narrative lines need manual review.');
-  if(overview)overview.innerHTML='<div class="truth-overview-item"><b>'+reviewClaims.length+'</b><span>Research topics</span></div><div class="truth-overview-item needs"><b>'+needs.length+'</b><span>Need evidence</span></div><div class="truth-overview-item clear"><b>'+skipped+'</b><span>Story lines left alone</span></div>';
-  if(researchBtn){researchBtn.disabled=truthResearchBusy||(!needs.length&&truthLedger.status==='current');researchBtn.textContent=truthResearchBusy?'Researching the web...':(readyStrong.length?'Accept '+readyStrong.length+' strong match'+(readyStrong.length===1?'':'es'):(needs.length?'Find evidence':'Evidence clear'));researchBtn.onclick=readyStrong.length&&!truthResearchBusy?acceptStrongTruthResearch:runTruthResearch;}
+  if(summary)summary.textContent=truthLedger.status==='stale'?'The voiceover changed — check again':(!reviewClaims.length?'No factual claims need checking':needs.length+' factual topic'+(needs.length===1?' can':'s can')+' be checked automatically');
+  if(state)state.textContent=conflicts.length?conflicts.length+' conflict'+(conflicts.length===1?'':'s'):(truthLedger.status==='stale'?'Needs a check':(needs.length?'Ready':'Clear'));
+  if(intro)intro.textContent=needs.length?'We found a small number of checkable ideas. Grain District can research them together; you do not need to paste sources line by line.':'No research work is required. Personal, poetic and narrative lines were left untouched.';
+  if(overview)overview.innerHTML='<div class="truth-overview-item"><b>'+reviewClaims.length+'</b><span>Topics</span></div><div class="truth-overview-item needs"><b>'+needs.length+'</b><span>To check</span></div><div class="truth-overview-item clear"><b>'+skipped+'</b><span>Left untouched</span></div>';
+  if(researchBtn){researchBtn.disabled=truthResearchBusy||(!needs.length&&truthLedger.status==='current');researchBtn.textContent=truthResearchBusy?'Checking reliable sources…':(readyStrong.length?'Accept '+readyStrong.length+' strong match'+(readyStrong.length===1?'':'es'):(needs.length?'Check factual claims':'No check needed'));researchBtn.onclick=readyStrong.length&&!truthResearchBusy?acceptStrongTruthResearch:runTruthResearch;}
   if(message)message.textContent=truthLedger.status==='stale'?'The voiceover changed. Refresh topics to update only the evidence queue.':truthResearchFeedback;
   if(!claimsEl)return;if(!reviewClaims.length){claimsEl.innerHTML='<div class="truth-empty">No external factual claims need evidence. Personal, poetic and narrative lines stay in the script without creating source work.</div>';return;}
   claimsEl.innerHTML=reviewClaims.map(function(claim,index){var source=claim.sources[0]||{},assistant=source.assistant,sourceReady=claim.status==='needs_source'&&assistant&&assistant.origin==='automatic_research'&&truthSourceAssistantIsCurrent(claim,source),visualStatus=sourceReady?(assistant.relationship==='supports'?'Source ready':(assistant.relationship==='conflicts'?'Conflict found':'Needs review')):TRUTH_CLAIM_STATUSES[claim.status],ref=claim.refs[0]||{},refLabel=claim.refs.length>1?(claim.refs.length+' connected voiceover lines'):('Script line '+(ref.lineNumber||'-')+(ref.timecode?' · '+ref.timecode:'')),open=truthClaimOpenState[claim.id]?' open':'';return '<details data-claim-id="'+creativeContractEscape(claim.id)+'" class="truth-claim '+creativeContractEscape(claim.status)+'"'+open+' ontoggle="rememberTruthClaimOpen(\''+claim.id+'\',this)"><summary><span class="truth-claim-index">'+String(index+1).padStart(2,'0')+'</span><span class="truth-claim-text">'+creativeContractEscape(claim.statement)+'</span><span class="truth-claim-chip">'+creativeContractEscape(TRUTH_CLAIM_TYPES[claim.type])+'</span><span class="truth-claim-chip truth-claim-status">'+creativeContractEscape(visualStatus)+'</span></summary><div class="truth-claim-form"><div class="truth-field"><label>Statement type</label><select onchange="updateTruthClaimFromControl(\''+claim.id+'\',\'type\',this)">'+truthTypeOptions(claim.type)+'</select></div><div class="truth-field"><label>Review state</label><select onchange="updateTruthClaimFromControl(\''+claim.id+'\',\'status\',this)">'+truthStatusOptions(claim.status)+'</select></div>'+truthSourceAssistantHtml(claim,source)+'<div class="truth-field wide"><label>Verification note</label><input type="text" value="'+creativeContractEscape(source.note||'')+'" placeholder="Your own note or manual confirmation" onchange="updateTruthClaimFromControl(\''+claim.id+'\',\'sourceNote\',this)"></div><div class="truth-claim-ref">'+creativeContractEscape(refLabel)+' · '+(claim.classificationSource==='user'?'reviewed by you':'grouped privately on device')+'</div></div></details>';}).join('');
@@ -4054,6 +4239,11 @@ function renderTruthLedger(){
 function toggleTruthLedger(){var panel=document.getElementById('truthLedgerPanel');if(!panel)return;panel.classList.toggle('open');var btn=panel.querySelector('.truth-ledger-toggle');if(btn)btn.setAttribute('aria-expanded',panel.classList.contains('open')?'true':'false');}
 function reviewTruthLedger(){var ta=document.getElementById('scriptTa');truthResearchFeedback='';rebuildTruthLedgerFromScript(ta?ta.value:'',{reason:'manual_review'});}
 function updateTruthClaimFromControl(id,field,control){var patch={};patch[field]=control.value;var result=updateTruthClaim(id,patch),message=document.getElementById('truthLedgerMessage');if(!result.ok){if(message)message.textContent=result.error;renderTruthLedger();var claim=truthLedger&&truthLedger.claims.find(function(item){return item.id===id;});if(claim)control.value=claim[field]||claim.status;}else if(message)message.textContent='Saved to this project.';}
+function maybeAutoResearchEvidence(){
+  try{if(localStorage.getItem('gd_truth_research_consent_v2')!=='1')return;}catch(e){return;}
+  var pending=truthLedger&&truthLedger.status==='current'&&truthLedger.claims.some(function(claim){return claim.active&&claim.required&&claim.researchEligibility==='eligible_external'&&claim.status==='needs_source'&&['fact','technical','recommendation'].indexOf(claim.type)>=0;});
+  if(pending&&!truthResearchBusy)setTimeout(runTruthResearch,420);
+}
 function runTruthResearch(){
   if(truthResearchBusy||!truthLedger||truthLedger.status!=='current')return;try{if(localStorage.getItem('gd_truth_research_consent_v2')!=='1'){var consent=window.gdAsk?window.gdAsk({title:'Let GrainDistrict find scholarly evidence?',message:'Only the factual claims shown in Truth Ledger are used to plan searches in Crossref’s open scholarly metadata. Your full script, Creator DNA, project name and identity stay out. GrainDistrict then opens selected public article pages and compares them with the claim. Nothing becomes Verified without your approval.',ok:'Allow evidence research'}):Promise.resolve(false);consent.then(function(yes){if(!yes)return;try{localStorage.setItem('gd_truth_research_consent_v2','1');}catch(e){}runTruthResearch();});return;}}catch(e){}
   var claims=truthLedger.claims.filter(function(claim){return claim.active&&claim.required&&claim.researchEligibility==='eligible_external'&&claim.status==='needs_source'&&['fact','technical','recommendation'].indexOf(claim.type)>=0;}).slice(0,12);if(!claims.length){truthResearchFeedback='No unresolved factual claims need web research.';renderTruthLedger();return;}
@@ -4099,7 +4289,7 @@ document.getElementById('constraintsIn').addEventListener('input',function(){
 });
 document.getElementById('creativeContractPanel').addEventListener('input',function(){
   if(!creativeContract)return;
-  creativeContract=editCreativeContract(creativeContractFormPatch());var panel=document.getElementById('creativeContractPanel'),state=document.getElementById('creativeContractState'),details=document.getElementById('creativeContractDetails'),foot=document.getElementById('creativeContractFoot'),hasScript=document.getElementById('scriptTa')&&document.getElementById('scriptTa').value.trim();if(panel){panel.classList.remove('locked');panel.classList.add('details-open');panel.dataset.contractStatus='draft';}if(details)details.hidden=true;if(state)state.textContent='Editing · Revision '+creativeContract.revision;if(foot)foot.textContent='Changes save automatically while you review.';['creativeContractActionText','creativeContractLockText'].forEach(function(id){var label=document.getElementById(id);if(label)label.textContent=hasScript?'Save direction & regenerate':'Save direction & continue';});renderScriptContract();
+  creativeContract=editCreativeContract(creativeContractFormPatch());var panel=document.getElementById('creativeContractPanel'),state=document.getElementById('creativeContractState'),details=document.getElementById('creativeContractDetails'),foot=document.getElementById('creativeContractFoot'),hasScript=document.getElementById('scriptTa')&&document.getElementById('scriptTa').value.trim();if(panel){panel.classList.remove('locked');panel.classList.add('details-open');panel.dataset.contractStatus='draft';}if(details)details.hidden=true;if(state)state.textContent='Editing · Revision '+creativeContract.revision;if(foot)foot.textContent='Changes save automatically while you review.';['creativeContractActionText','creativeContractLockText'].forEach(function(id){var label=document.getElementById(id);if(label)label.textContent=hasScript?'Save & regenerate':'Create my voiceover';});renderScriptContract();
 });
 function applyCreatorDnaDefaults(){
   if(!creatorDNA)return;
@@ -4108,6 +4298,7 @@ function applyCreatorDnaDefaults(){
   var toneOpts=document.getElementById('toneOpts'),fmtOpts=document.getElementById('fmtOpts');
   if(toneOpts)toneOpts.querySelectorAll('.opt').forEach(function(b){b.classList.toggle('on',b.dataset.v===tone);});
   if(fmtOpts)fmtOpts.querySelectorAll('.opt').forEach(function(b){b.classList.toggle('on',b.dataset.v===fmt);});
+  suggestProjectGuidance(document.getElementById('topicIn')&&document.getElementById('topicIn').value||'');
   renderCreatorDnaProfile();
 }
 function renderCreatorDnaProfile(){
@@ -4511,41 +4702,46 @@ function toggleNodeInSelection(id){toggleCanvasItem('node',id);}
 
 var loadTimerInt=null;
 var genStage='';
-// long chunked generations move through real phases (outline, parallel
-// segments, gap repair) - a bare stopwatch doesn't tell the user which one
-// they're waiting on, so genPlanChunked reports its current phase here and
-// the loading screen shows it next to the elapsed time
-function setGenStage(s){genStage=s;}
+var loadScreen='',loadProgress=0,loadProgressTarget=0;
+function loadStageProgress(label){
+  var s=String(label||'').toLowerCase();
+  if(/structur|outline|reading/.test(s))return 24;
+  if(/writing/.test(s))return 48;
+  if(/redraft|repair/.test(s))return 68;
+  if(/continuing/.test(s))return 76;
+  if(/retry/.test(s))return 58;
+  if(/finish|check|protect/.test(s))return 88;
+  return 34;
+}
+function setLoadProgress(scr,value,label,detail){
+  scr=scr||loadScreen;if(!scr)return;loadProgressTarget=Math.max(loadProgressTarget,Math.min(100,Number(value)||0));
+  var el=document.getElementById(scr+'msg'),sub=document.getElementById(scr+'sub'),bar=document.getElementById(scr+'Progress'),track=bar&&bar.parentElement;
+  if(el&&label)el.textContent=label;if(sub)sub.textContent=detail||Math.round(loadProgressTarget)+'% complete';
+  if(track)track.setAttribute('aria-valuenow',String(Math.round(loadProgressTarget)));
+}
+function paintLoadProgress(){
+  if(!loadScreen)return;loadProgress+=(loadProgressTarget-loadProgress)*.22;if(Math.abs(loadProgressTarget-loadProgress)<.3)loadProgress=loadProgressTarget;
+  var bar=document.getElementById(loadScreen+'Progress');if(bar)bar.style.width=loadProgress+'%';
+}
+function setGenStage(s){genStage=s;setLoadProgress(loadScreen,loadStageProgress(s),s,'Working through the current stage');}
 function startLoad(scr){
   if(loadInt)clearInterval(loadInt);
   if(loadTimerInt)clearInterval(loadTimerInt);
-  genStage='';
-  var msgs=scr==='s2'?S2:S4;
+  genStage='';loadScreen=scr;loadProgress=0;loadProgressTarget=8;
   var el=document.getElementById(scr+'msg');
   if(!el)return;
-  el.textContent=msgs[0];
-  var i=0;
-  loadInt=setInterval(function(){
-    i=(i+1)%msgs.length;
-    el.style.opacity='0';
-    setTimeout(function(){if(el){el.textContent=msgs[i];el.style.opacity='1';}},350);
-  },2200);
-  // a live elapsed counter beats a static "about 15 seconds..." that goes stale
-  // the moment a long plan takes 30-90s - the screen should never look frozen
-  var sub=document.getElementById(scr+'sub');
-  if(sub){
-    var t0=Date.now();
-    sub.textContent='0s';
-    loadTimerInt=setInterval(function(){
-      var secs=Math.round((Date.now()-t0)/1000)+'s';
-      sub.textContent=genStage?genStage+' · '+secs:secs;
-    },1000);
-  }
+  var stage=el.closest('.load-stage');if(stage)stage.classList.remove('is-complete');
+  setLoadProgress(scr,8,scr==='s2'?'Understanding your direction':'Preparing the visual board','Starting safely');
+  loadInt=setInterval(paintLoadProgress,80);
+}
+function finishLoad(scr,label){
+  scr=scr||loadScreen;setLoadProgress(scr,100,label||'Ready','Complete');loadProgress=100;paintLoadProgress();var stage=document.getElementById(scr)&&document.getElementById(scr).querySelector('.load-stage');if(stage)stage.classList.add('is-complete');
+  return new Promise(function(resolve){setTimeout(resolve,260);});
 }
 function stopLoad(){
   if(loadInt){clearInterval(loadInt);loadInt=null;}
   if(loadTimerInt){clearInterval(loadTimerInt);loadTimerInt=null;}
-  genStage='';
+  genStage='';loadScreen='';loadProgress=0;loadProgressTarget=0;
 }
 
 // Undo
@@ -4690,12 +4886,13 @@ function performNewProject(){
   canonicalRuntimeProjectId=null;canonicalProjectState=null;canonicalValidationState=null;canonicalMigrationBackup=null;canonicalLastKnownValid=null;canonicalTombstones=[];
   resetLocationViewState();
   nodes=[];attShots=[];imgNodes=[];noteNodes=[];conns=[];nid=1;nodeDrawerClosed={};
-  topic='';projectBrief='';projectConstraints='';creativeContract=null;creativeContractBusy=false;creativeContractHistory=[];creativeGenerationRecords=[];currentScriptGeneratedFrom=null;truthLedger=null;truthResearch=null;firstPartyAssertions=[];scriptEpistemicRevisions=[];currentScriptEpistemic=null;projectBreakdown=null;projectBreakdownKey=null;
+  topic='';projectBrief='';projectConstraints='';projectGuidance={outcome:'understand',approach:'observe',production:'voice-footage'};projectGuidanceTouched={};creativeContract=null;creativeContractBusy=false;creativeContractHistory=[];creativeGenerationRecords=[];currentScriptGeneratedFrom=null;truthLedger=null;truthResearch=null;firstPartyAssertions=[];scriptEpistemicRevisions=[];currentScriptEpistemic=null;projectBreakdown=null;projectBreakdownKey=null;
   scriptVersions=[];scriptSelectionState=null;scriptRevisionState=null;
   clearRecce();songName='';songDuration=0;songAnalysis=null;songURL=null;
   undoStack=[];undoIdx=-1;scale=1;px=60;py=180;selId=null;selImgId=null;selNoteId=null;selectedNodeIds=[];selectedImgIds=[];selectedNoteIds=[];
   var topicEl=document.getElementById('topicIn'),scriptEl=document.getElementById('scriptTa');
   if(topicEl)topicEl.value='';
+  var quickEl=document.getElementById('quickConstraintsIn'),guided=document.getElementById('guidedSetup');if(quickEl)quickEl.value='';if(guided)guided.classList.remove('advanced-open');renderProjectGuidance();
   if(scriptEl){scriptEl.value='';planHighlight();}
   cancelScriptRevision();hideScriptSelectionTools();renderCreativeContract();refreshScriptStudio();
   var reccePanel=document.getElementById('reccePanel');if(reccePanel)reccePanel.classList.remove('open');
@@ -4754,7 +4951,7 @@ function setProjectType(type){
     document.getElementById('topicIn').placeholder='A rainy morning in NYC — intimate, cinematic, handheld...';
     stopMvHints();
   }
-  if(type==='youtube'){openCreatorDna(false,'s1');return;}
+  if(type==='youtube'){projectGuidanceTouched={};suggestProjectGuidance(document.getElementById('topicIn').value||'');openCreatorDna(false,'s1');return;}
   renderCreatorDnaProfile();show('s1');
 }
 
@@ -5822,7 +6019,7 @@ function canonicalProjectFromLegacy(data){
     schema:CANONICAL_PROJECT_SCHEMA,schemaVersion:CANONICAL_PROJECT_VERSION,project:project,
     workflow:{stage:data.stage||'board'},
     creative:{tone:data.tone||'',format:data.fmt||'',houseLook:data.styleMode||'',language:data.inputLang||'en',
-      durationRange:{min:Number(data.durMin)||0,max:Number(data.durMax)||0},brief:data.projectBrief||'',constraints:data.projectConstraints||'',creatorDNA:canonicalClone(data.creatorDNA||null,null),contract:data.creativeContract?normalizeCreativeContract(data.creativeContract,data.creativeContract.source):null,contractHistory:canonicalClone(data.creativeContractHistory||[],[]).map(function(c){return normalizeCreativeContract(c,c&&c.source);}),generatedOutputs:canonicalClone(data.creativeGenerationRecords||[],[]),truthLedger:data.truthLedger?normalizeTruthLedger(data.truthLedger):null,truthResearch:data.truthResearch?normalizeTruthResearch(data.truthResearch):null,firstPartyAssertions:canonicalClone(data.firstPartyAssertions||firstPartyAssertions||[],[]).map(normalizeFirstPartyAssertion)},
+      durationRange:{min:Number(data.durMin)||0,max:Number(data.durMax)||0},brief:data.projectBrief||'',constraints:data.projectConstraints||'',guidance:canonicalClone(data.projectGuidance||projectGuidance||{},{}),creatorDNA:canonicalClone(data.creatorDNA||null,null),contract:data.creativeContract?normalizeCreativeContract(data.creativeContract,data.creativeContract.source):null,contractHistory:canonicalClone(data.creativeContractHistory||[],[]).map(function(c){return normalizeCreativeContract(c,c&&c.source);}),generatedOutputs:canonicalClone(data.creativeGenerationRecords||[],[]),truthLedger:data.truthLedger?normalizeTruthLedger(data.truthLedger):null,truthResearch:data.truthResearch?normalizeTruthResearch(data.truthResearch):null,firstPartyAssertions:canonicalClone(data.firstPartyAssertions||firstPartyAssertions||[],[]).map(normalizeFirstPartyAssertion)},
     script:{text:data.script||'',versions:canonicalClone(data.scriptVersions||[],[]),generatedFrom:canonicalClone(data.currentScriptGeneratedFrom||null,null),epistemic:{policy:EPISTEMIC_POLICY,policyVersion:EPISTEMIC_POLICY_VERSION,current:data.currentScriptEpistemic?normalizeScriptEpistemicRecord(data.currentScriptEpistemic,0):null,history:canonicalClone(data.scriptEpistemicRevisions||scriptEpistemicRevisions||[],[]).map(normalizeScriptEpistemicRecord)}},
     timeline:{blocks:blocks},
     production:{details:details,locations:locations,breakdownKey:data.projectBreakdownKey||null},
@@ -5875,7 +6072,7 @@ function legacyProjectFromCanonical(project,fallback){
   out.projectType=project.project&&project.project.type||out.projectType||'youtube';out.topic=project.project&&project.project.title||out.topic||'';out.projectFps=project.project&&project.project.fps||24;
   out.tone=creative.tone||out.tone||'';out.fmt=creative.format||out.fmt||'';out.styleMode=creative.houseLook||out.styleMode||'';out.inputLang=creative.language||out.inputLang||'en';
   out.durMin=creative.durationRange&&creative.durationRange.min||out.durMin;out.durMax=creative.durationRange&&creative.durationRange.max||out.durMax;
-  out.projectBrief=creative.brief||'';out.projectConstraints=creative.constraints||'';out.creatorDNA=canonicalClone(creative.creatorDNA||null,null);out.creativeContract=creative.contract?normalizeCreativeContract(creative.contract,creative.contract.source):null;out.creativeContractHistory=canonicalClone(creative.contractHistory||[],[]).map(function(c){return normalizeCreativeContract(c,c&&c.source);});out.creativeGenerationRecords=canonicalClone(creative.generatedOutputs||[],[]);out.truthLedger=creative.truthLedger?normalizeTruthLedger(creative.truthLedger):null;out.truthResearch=creative.truthResearch?normalizeTruthResearch(creative.truthResearch):null;out.firstPartyAssertions=(creative.firstPartyAssertions||[]).map(normalizeFirstPartyAssertion);
+  out.projectBrief=creative.brief||'';out.projectConstraints=creative.constraints||'';out.projectGuidance=canonicalClone(creative.guidance||out.projectGuidance||{},{});out.creatorDNA=canonicalClone(creative.creatorDNA||null,null);out.creativeContract=creative.contract?normalizeCreativeContract(creative.contract,creative.contract.source):null;out.creativeContractHistory=canonicalClone(creative.contractHistory||[],[]).map(function(c){return normalizeCreativeContract(c,c&&c.source);});out.creativeGenerationRecords=canonicalClone(creative.generatedOutputs||[],[]);out.truthLedger=creative.truthLedger?normalizeTruthLedger(creative.truthLedger):null;out.truthResearch=creative.truthResearch?normalizeTruthResearch(creative.truthResearch):null;out.firstPartyAssertions=(creative.firstPartyAssertions||[]).map(normalizeFirstPartyAssertion);
   var scriptEpistemic=project.script&&project.script.epistemic||{};out.script=project.script&&project.script.text||'';out.scriptVersions=canonicalClone(project.script&&project.script.versions||[],[]);out.currentScriptGeneratedFrom=canonicalClone(project.script&&project.script.generatedFrom||null,null);out.currentScriptEpistemic=scriptEpistemic.current?normalizeScriptEpistemicRecord(scriptEpistemic.current,0):null;out.scriptEpistemicRevisions=(scriptEpistemic.history||[]).map(normalizeScriptEpistemicRecord);
   out.boardViewMode=workspace.mode||'free';out.boardDensity=workspace.density||'compact';out.boardCardDetail=workspace.detail||'standard';out.view=canonicalClone(workspace.view||null,null);out.boardCamera=canonicalClone(workspace.camera||null,null);
   out.stage=project.workflow&&project.workflow.stage||out.stage||'board';out.aiMode=workspace.aiMode!==false;
@@ -5948,7 +6145,7 @@ function canonicalRuntimeSnapshot(){
   var ta=document.getElementById('scriptTa');
   var active=document.getElementById('s3')&&document.getElementById('s3').classList.contains('active')?'script':'board';
   return canonicalProjectFromLegacy({v:4,stage:active,projectType:projectType,topic:topic,tone:tone,fmt:fmt,styleMode:styleMode,inputLang:inputLang,durMin:durMin,durMax:durMax,
-    projectBrief:projectBrief,projectConstraints:projectConstraints,creatorDNA:creatorDNA,creativeContract:creativeContract,creativeContractHistory:creativeContractHistory,creativeGenerationRecords:creativeGenerationRecords,currentScriptGeneratedFrom:currentScriptGeneratedFrom,truthLedger:truthLedger,truthResearch:truthResearch,firstPartyAssertions:firstPartyAssertions,scriptEpistemicRevisions:scriptEpistemicRevisions,currentScriptEpistemic:currentScriptEpistemic,projectBreakdown:projectBreakdown,projectBreakdownKey:projectBreakdownKey,
+    projectBrief:projectBrief,projectConstraints:projectConstraints,projectGuidance:projectGuidance,creatorDNA:creatorDNA,creativeContract:creativeContract,creativeContractHistory:creativeContractHistory,creativeGenerationRecords:creativeGenerationRecords,currentScriptGeneratedFrom:currentScriptGeneratedFrom,truthLedger:truthLedger,truthResearch:truthResearch,firstPartyAssertions:firstPartyAssertions,scriptEpistemicRevisions:scriptEpistemicRevisions,currentScriptEpistemic:currentScriptEpistemic,projectBreakdown:projectBreakdown,projectBreakdownKey:projectBreakdownKey,
     songName:songName,songDuration:songDuration,songAnalysis:songAnalysis,recceImages:recceImages,nodes:itemsAtStoryPositions(nodes,'nodes'),attShots:itemsAtStoryPositions(attShots,'atts'),
     imgNodes:imgNodes,noteNodes:noteNodes,conns:conns,nid:nid,canonicalTombstones:canonicalTombstones,script:ta?ta.value:'',scriptVersions:scriptVersions,view:storyViewForSave(),boardCamera:{scale:scale,px:px,py:py},
     boardViewMode:canvasViewMode,boardDensity:boardDensity,boardCardDetail:boardCardDetail,aiMode:(typeof aiMode!=='undefined'?aiMode:true)});
@@ -6488,7 +6685,51 @@ function setCanvasViewMode(mode){
   canvasViewMode='free';freeCanvasState=null;storyLanes=[];storyVisibleNodeIds={};storyNodeLane={};syncBoardViewControls();renderAll();
   if(window.gdAutosaveProject)window.gdAutosaveProject(false);
 }
+var CALM_GUIDED_FLOW='calm-guided-flow-v1';
 var projectConstraints='';
+var projectGuidance={outcome:'understand',approach:'observe',production:'voice-footage'};
+var projectGuidanceTouched={};
+
+function projectGuidanceLabel(group,value){
+  var labels={outcome:{feel:'A feeling',understand:'A clear idea',do:'Something useful'},approach:{personal:'Personal reflection',observe:'Visual exploration',explain:'Clear explanation'},production:{'voice-footage':'Voice + available footage','on-camera':'Creator can appear on camera',graphics:'Screens and designed graphics'}};
+  return labels[group]&&labels[group][value]||value||'';
+}
+function renderProjectGuidance(){
+  var root=document.getElementById('guidedQuestions');if(!root)return;
+  ['outcome','approach','production'].forEach(function(group){var value=projectGuidance[group],box=root.querySelector('[data-question="'+group+'"]');if(!box)return;box.querySelectorAll('[data-value]').forEach(function(button){var on=button.dataset.value===value;button.classList.toggle('on',on);button.setAttribute('aria-pressed',on?'true':'false');});});
+}
+function chooseProjectGuidance(group,value){projectGuidance[group]=value;projectGuidanceTouched[group]=true;renderProjectGuidance();}
+function suggestProjectGuidance(value){
+  var text=epistemicAscii(value||''),suggest={};
+  if(/\b(why|neden|meaning|anlam|lonely|alone|yalniz|feel|hisset)\b/.test(text)){suggest.outcome='feel';suggest.approach='observe';}
+  if(/\b(how|nasil|guide|tips|lens|camera|review|karsilastir|incele|three|3)\b/.test(text)){suggest.outcome='do';suggest.approach='explain';}
+  if(/\b(my|i |benim|bana|hatira|memory|journey|hikayem)\b/.test(text)){suggest.approach='personal';}
+  if(creatorDNA){if(!suggest.outcome)suggest.outcome=creatorDNA.outcome==='learn'?'understand':creatorDNA.outcome==='act'?'do':creatorDNA.outcome==='feel'?'feel':projectGuidance.outcome;if(!suggest.approach)suggest.approach=creatorDNA.carrier==='presenter'||creatorDNA.carrier==='demo'?'explain':creatorDNA.carrier==='story'?'personal':'observe';suggest.production=creatorDNA.presence==='camera'?'on-camera':creatorDNA.carrier==='graphics'?'graphics':'voice-footage';}
+  Object.keys(suggest).forEach(function(group){if(!projectGuidanceTouched[group])projectGuidance[group]=suggest[group];});
+  var approachHint=document.getElementById('guidedApproachHint'),outcomeHint=document.getElementById('guidedOutcomeHint');
+  if(approachHint)approachHint.textContent=value.trim()?'Suggested from your topic. Change it only if it feels wrong.':'We can choose this from your topic.';
+  if(outcomeHint)outcomeHint.textContent=value.trim()?'A starting point is already selected for you.':'Choose the result that matters most.';
+  renderProjectGuidance();
+}
+function toggleProjectAdvanced(){
+  var root=document.getElementById('guidedSetup'),button=document.getElementById('projectAdvancedToggle');if(!root||!button)return;
+  root.classList.toggle('advanced-open');var open=root.classList.contains('advanced-open');button.setAttribute('aria-expanded',open?'true':'false');
+}
+function projectGuidanceContext(){
+  return 'Viewer outcome: '+projectGuidanceLabel('outcome',projectGuidance.outcome)+'\nStory approach: '+projectGuidanceLabel('approach',projectGuidance.approach)+'\nRealistic production mode: '+projectGuidanceLabel('production',projectGuidance.production);
+}
+function syncGuidedSetup(){
+  if(projectType!=='youtube')return;
+  tone=projectGuidance.outcome==='do'?'energetic':projectGuidance.outcome==='feel'?'introspective':'raw';
+  fmt=projectGuidance.approach==='explain'||projectGuidance.production==='on-camera'?'vlog':projectGuidance.approach==='observe'?'voiceover':'essay';
+  var quick=document.getElementById('quickConstraintsIn'),parts=[];
+  if(projectGuidance.production==='voice-footage')parts.push('Voiceover with available real footage; do not require the creator on camera.');
+  if(projectGuidance.production==='on-camera')parts.push('The creator is available to appear on camera.');
+  if(projectGuidance.production==='graphics')parts.push('Use screens, type, diagrams and designed graphics as the primary visual material.');
+  if(quick&&quick.value.trim())parts.push(quick.value.trim());
+  projectConstraints=parts.join('\n');
+  var constraints=document.getElementById('constraintsIn');if(constraints)constraints.value=projectConstraints;
+}
 
 function captureSetup(){
   var topicEl=document.getElementById('topicIn');
@@ -6520,9 +6761,11 @@ function captureSetup(){
     document.getElementById('durMax').value=durMax;
   }
   inputLang=detectLang(topic);
+  syncGuidedSetup();
   return true;
 }
 document.getElementById('topicIn').addEventListener('input',function(){
+  suggestProjectGuidance(this.value);
   if(!this.value.trim())return;
   this.classList.remove('invalid');this.removeAttribute('aria-invalid');
   var err=document.getElementById('topicErr');err.textContent='';err.classList.remove('show');
@@ -6532,12 +6775,13 @@ function goToEquipment(){
   if(!captureSetup())return;
   if(projectConstraints)document.getElementById('constraintsIn').value=projectConstraints;
   var currentKey=creativeContractKey(document.getElementById('constraintsIn').value.trim());
+  var shouldBuild=!creativeContract||creativeContract.projectInputKey!==currentKey;
   if(creativeContract&&creativeContract.projectInputKey===currentKey)renderCreativeContract();
   else if(creativeContract){markCreativeContractStale('Project setup changed',currentKey);renderCreativeContract();var ccLabel=document.getElementById('creativeContractActionText');if(ccLabel)ccLabel.textContent='Rebuild project direction';}
   else{renderCreativeContract();var emptyCcLabel=document.getElementById('creativeContractActionText');if(emptyCcLabel)emptyCcLabel.textContent='Build project direction';}
   var el=document.getElementById('s1');
   el.classList.add('screen-blur-out');
-  setTimeout(function(){el.classList.remove('screen-blur-out');show('s_equipment');},270);
+  setTimeout(function(){el.classList.remove('screen-blur-out');show('s_equipment');if(aiMode&&shouldBuild)buildCreativeContract(false);},270);
 }
 
 function renderMarkdown(text){
@@ -6595,7 +6839,7 @@ function toggleAi(){
   sw.classList.toggle('on',aiMode);
   document.getElementById('aiModeState').textContent=aiMode?'ON':'OFF';
   document.getElementById('aiModeTxt').textContent=aiMode?'Generate with AI':'Write it yourself';
-  document.getElementById('gobtnTxt').textContent=aiMode?'continue to production details':'open blank canvas';
+  document.getElementById('gobtnTxt').textContent=aiMode?'Shape my video':'Open blank canvas';
 }
 
 function pcContinue(){
@@ -6618,6 +6862,7 @@ function genScript(){
   var productionContext='';
   if(projectConstraints)productionContext+='\n\nAvailable production resources and constraints:\n'+projectConstraints;
   var planMsg='Create shot plan for: '+topic+'. Duration: '+durMin+'-'+durMax+' minutes. Tone: '+tone+productionContext+extra;
+  setLoadProgress('s2',28,'Shaping the voiceover','Building a structure around your promise');
   // long plans: draft a beat outline then write segments in parallel instead
   // of one request at a time (much faster for 10+ min cut-by-cut videos)
   var planPromise=totalSec>240
@@ -6625,6 +6870,7 @@ function genScript(){
     : api(planSys,buildUserContent(planMsg),'shot_plan').then(function(t){return ensureFullPlan(planSys,t);});
 
   planPromise.then(function(planResult){
+    setLoadProgress('s2',76,'Checking the draft','Removing repetition and keeping the story focused');
     var planText=planResult.trim();
     // if every segment/continuation attempt failed or timed out, what comes
     // back can be the model's own confused reply to an empty prompt (e.g.
@@ -6635,15 +6881,15 @@ function genScript(){
       planText=splitLongMusicBlocks(planText);
       planText=compactGeneratedYouTubePlan(planText,totalSec);
     }
+    setLoadProgress('s2',88,'Protecting your voice','Checking facts, personal history and project boundaries');
     return projectType==='youtube'?epistemicGateCandidateScript(planText,'shot_plan',previousFingerprint):Promise.resolve({script:planText,audit:null,rewritten:false});
   }).then(function(result){
-    stopLoad();var planText=result.script;projectBrief='';
+    var planText=result.script;projectBrief='';
     scriptTa.value=planText;
     rebuildTruthLedgerFromScript(planText,{reason:result.rewritten?'generated_script_safety_rewrite':'generated_script',silent:true});
     document.getElementById('wc').textContent=planStatsLabel(planText);
     refreshScriptStudio();
-    show('s3');
-    if(window.gdAutosaveProject)window.gdAutosaveProject(true);
+    return finishLoad('s2','Your voiceover is ready').then(function(){stopLoad();show('s3');maybeAutoResearchEvidence();if(window.gdAutosaveProject)window.gdAutosaveProject(true);});
   }).catch(function(e){stopLoad();currentScriptGeneratedFrom=previousGeneratedFrom;if(scriptTa)scriptTa.value=previousScript;alert('Error: '+e.message);show(previousScript?'s3':'s1');});
 }
 
@@ -6668,12 +6914,14 @@ function planHighlight(){
   // the trailing newline keeps the last line scrollable in step with the textarea
   hl.innerHTML=html+'\n';
   hl.scrollTop=ta.scrollTop;
+  renderVoiceoverReader();
 }
 (function(){
   var ta=document.getElementById('scriptTa');
   if(!ta) return;
   ta.addEventListener('input',function(){
     markTruthLedgerStale('Script edited',ta.value);
+    activeVoiceoverRange=null;
     planHighlight();
     var wc=document.getElementById('wc');if(wc)wc.textContent=planStatsLabel(ta.value);
     scriptSelectionState=null;hideScriptSelectionTools();renderScriptVersionButton();
@@ -6697,7 +6945,7 @@ function planHighlight(){
       Object.defineProperty(ta,'value',{
         configurable:true,
         get:function(){ return desc.get.call(this); },
-        set:function(v){ desc.set.call(this,v); planHighlight(); }
+        set:function(v){ desc.set.call(this,v); activeVoiceoverRange=null; planHighlight(); }
       });
     }
   }catch(e){ /* if this isn't allowed, 'input' still covers typing */ }
@@ -6719,6 +6967,24 @@ function refreshScriptStudio(){
   renderScriptContract();
   renderTruthLedger();
   renderScriptVersionButton();
+  renderVoiceoverReader();
+}
+var activeVoiceoverRange=null;
+function voiceoverReaderLines(value){
+  var out=[],offset=0;String(value||'').split('\n').forEach(function(line,index){var head=line.match(/^\s*\[VOICEOVER\]\s+\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}\s*[-:]\s*/i);if(head){var start=offset+head[0].length,end=offset+line.length,text=line.slice(head[0].length).trim();if(text)out.push({start:start,end:end,text:text,line:index+1});}offset+=line.length+1;});return out;
+}
+function renderVoiceoverReader(){
+  var reader=document.getElementById('voiceoverReader'),ta=document.getElementById('scriptTa');if(!reader||!ta)return;
+  var lines=voiceoverReaderLines(ta.value);reader.innerHTML='';
+  if(!lines.length){reader.innerHTML='<div class="voiceover-empty">Your continuous voiceover will appear here.</div>';return;}
+  lines.forEach(function(item,index){var button=document.createElement('button');button.type='button';button.dataset.number=String(index+1).padStart(2,'0');button.textContent=item.text;if(activeVoiceoverRange&&activeVoiceoverRange.start===item.start)button.classList.add('selected');button.addEventListener('click',function(){selectVoiceoverParagraph(item.start,item.end,button);});reader.appendChild(button);});
+  var wc=document.getElementById('wc');if(wc)wc.textContent=lines.length+' voiceover line'+(lines.length===1?'':'s');
+}
+function selectVoiceoverParagraph(start,end,button){
+  var ta=document.getElementById('scriptTa');if(!ta)return;activeVoiceoverRange={start:start,end:end};ta.focus();ta.setSelectionRange(start,end);scriptSelectionState=voiceoverSelection(false);document.querySelectorAll('#voiceoverReader button').forEach(function(item){item.classList.toggle('selected',item===button);});updateScriptSelectionTools();
+}
+function toggleScriptProductionView(){
+  var wrap=document.getElementById('scriptPlanWrap'),button=document.getElementById('scriptViewToggle');if(!wrap||!button)return;var production=!wrap.classList.contains('production-mode');wrap.classList.toggle('production-mode',production);wrap.classList.toggle('voiceover-mode',!production);button.textContent=production?'Back to voiceover':'View production notes';if(!production)renderVoiceoverReader();
 }
 function voiceoverSelection(wholeLine){
   var ta=document.getElementById('scriptTa');if(!ta)return null;
@@ -6748,7 +7014,7 @@ function updateScriptSelectionTools(){
   if(!sel)hideScriptCustom();
 }
 function editCurrentVoiceoverLine(){
-  scriptSelectionState=voiceoverSelection(true);updateScriptSelectionTools();
+  var ta=document.getElementById('scriptTa');if(ta&&activeVoiceoverRange){ta.focus();ta.setSelectionRange(activeVoiceoverRange.start,activeVoiceoverRange.end);scriptSelectionState=voiceoverSelection(false);}else{var first=voiceoverReaderLines(ta&&ta.value)[0];if(first&&ta){activeVoiceoverRange={start:first.start,end:first.end};ta.focus();ta.setSelectionRange(first.start,first.end);scriptSelectionState=voiceoverSelection(false);}}updateScriptSelectionTools();
 }
 function showScriptCustom(){
   var actions=document.getElementById('scriptAiActions'),custom=document.getElementById('scriptCustom');
@@ -7313,6 +7579,10 @@ function buildCanvasSys(li){
     'Write all "t" values in the same language as the script blocks.'+stylePack('shots')+(li?'\n'+li:'');
 }
 
+function setCanvasBuildProgress(value,label){
+  value=Math.max(0,Math.min(100,Number(value)||0));var bar=document.getElementById('canvasProgress'),track=bar&&bar.parentElement,copy=document.getElementById('canvasProgressLabel'),number=document.getElementById('canvasProgressValue');
+  if(bar)bar.style.width=value+'%';if(track)track.setAttribute('aria-valuenow',String(Math.round(value)));if(copy&&label)copy.textContent=label;if(number)number.textContent=Math.round(value)+'%';
+}
 function buildCanvas(){
   var text=document.getElementById('scriptTa').value.trim();
   var blocks=parseBlocks(text);
@@ -7342,6 +7612,7 @@ function buildCanvas(){
   // show canvas loader
   var cl=document.getElementById('canvasLoader');
   cl.style.display='flex';cl.classList.remove('fade-out');
+  setCanvasBuildProgress(8,'Preparing structure');
   var clMsg=document.getElementById('clMsg');
   var clMsgs=['preparing your canvas...','imagining each shot...','thinking about light...','choosing the lenses...','almost there...'];
   var clIdx=0;
@@ -7365,16 +7636,19 @@ function buildCanvas(){
     // parallel batches instead of one giant sequential request
     var CH=25,chunks=[];
     for(var ci=0;ci<idxBlocks.length;ci+=CH)chunks.push(idxBlocks.slice(ci,ci+CH));
+    var completedChunks=0;
+    setCanvasBuildProgress(18,'Reading the production notes');
     var chunkPromises=chunks.map(function(chunk){
       var usr='Blocks:\n'+chunk.map(function(o){return o.i+': ['+o.b.type.toUpperCase()+'] '+o.b.tcStart+'-'+o.b.tcEnd+' - '+o.b.content;}).join('\n')+'\n\nReturn shot ideas for each block, using the same "i" indexes as given.';
       return api(sys,usr,'shot_details_batch').then(function(raw){
         try{var m=raw.match(/\[[\s\S]*\]/);if(m)return JSON.parse(m[0]);}catch(e){console.warn('Shot parse:',e);}
         return [];
-      });
+      }).then(function(result){completedChunks++;setCanvasBuildProgress(18+(completedChunks/Math.max(1,chunks.length))*67,'Designing each visual beat');return result;});
     });
 
     Promise.all(chunkPromises).then(function(chunkResults){
       clearInterval(clInt);
+      setCanvasBuildProgress(92,'Organizing the connected board');
       resetLocationViewState();
       var sd=[].concat.apply([],chunkResults);
       var posArr=layoutBlocks(blocks);
@@ -7398,13 +7672,13 @@ function buildCanvas(){
       spWrap.classList.remove('visible');
       document.getElementById('blockList').style.display='';
       document.getElementById('blockDetail').style.display='';
-      // fade out canvas loader
-      cl.classList.add('fade-out');
-      setTimeout(function(){cl.style.display='none';},480);
       renderAll();
       requestAnimationFrame(fitScreen);
+      setCanvasBuildProgress(100,'Visual board ready');
+      setTimeout(function(){cl.classList.add('fade-out');setTimeout(function(){cl.style.display='none';},480);},260);
     }).catch(function(e){
       clearInterval(clInt);
+      setCanvasBuildProgress(0,'Could not finish the board');
       cl.classList.add('fade-out');
       setTimeout(function(){cl.style.display='none';},480);
       spWrap.classList.remove('visible');
@@ -10598,7 +10872,7 @@ document.addEventListener('mouseup',function(e){
       v:4, stage:active,projectRecordId:currentProjectId,projectType:projectType, topic:topic, tone:tone, fmt:fmt, styleMode:styleMode, inputLang:inputLang,
       boardViewMode:canvasViewMode,boardDensity:boardDensity,boardCardDetail:boardCardDetail,
       creatorDNA:creatorDNA,creativeContract:creativeContract,creativeContractHistory:creativeContractHistory,creativeGenerationRecords:creativeGenerationRecords,currentScriptGeneratedFrom:currentScriptGeneratedFrom,truthLedger:truthLedger,truthResearch:truthResearch,firstPartyAssertions:firstPartyAssertions,scriptEpistemicRevisions:scriptEpistemicRevisions,currentScriptEpistemic:currentScriptEpistemic,
-      durMin:durMin, durMax:durMax, projectBrief:projectBrief, projectConstraints:projectConstraints,
+      durMin:durMin, durMax:durMax, projectBrief:projectBrief, projectConstraints:projectConstraints, projectGuidance:projectGuidance,
       projectBreakdown:projectBreakdown, projectBreakdownKey:projectBreakdownKey,
       aiMode:(typeof aiMode!=='undefined'?aiMode:true),
       songName:songName, songDuration:songDuration, songAnalysis:songAnalysis,
@@ -10629,7 +10903,7 @@ document.addEventListener('mouseup',function(e){
     creativeContract=d.creativeContract?normalizeCreativeContract(d.creativeContract,d.creativeContract.source):null;
     creativeContractHistory=(d.creativeContractHistory||[]).map(function(c){return normalizeCreativeContract(c,c&&c.source);});creativeGenerationRecords=d.creativeGenerationRecords||[];currentScriptGeneratedFrom=d.currentScriptGeneratedFrom||null;truthLedger=d.truthLedger?normalizeTruthLedger(d.truthLedger):null;truthResearch=d.truthResearch?normalizeTruthResearch(d.truthResearch):null;firstPartyAssertions=(d.firstPartyAssertions||[]).map(normalizeFirstPartyAssertion);scriptEpistemicRevisions=(d.scriptEpistemicRevisions||[]).map(normalizeScriptEpistemicRecord);currentScriptEpistemic=d.currentScriptEpistemic?normalizeScriptEpistemicRecord(d.currentScriptEpistemic,0):null;
     inputLang=d.inputLang||'en'; durMin=d.durMin||durMin; durMax=d.durMax||durMax;
-    projectBrief=d.projectBrief||''; projectConstraints=d.projectConstraints||'';
+    projectBrief=d.projectBrief||''; projectConstraints=d.projectConstraints||''; projectGuidance=Object.assign({outcome:'understand',approach:'observe',production:'voice-footage'},d.projectGuidance||{}); renderProjectGuidance();
     projectBreakdown=d.projectBreakdown||null; projectBreakdownKey=d.projectBreakdownKey||null;
     if(typeof d.aiMode!=='undefined'&&typeof aiMode!=='undefined') aiMode=d.aiMode;
     songName=d.songName||''; songDuration=d.songDuration||0; songAnalysis=d.songAnalysis||null; songURL=null;
@@ -10768,7 +11042,7 @@ document.addEventListener('mouseup',function(e){
     resetLocationViewState();
     nodes=[]; attShots=[]; imgNodes=[]; noteNodes=[]; conns=[]; nid=1;
     nodeDrawerClosed={};
-    topic=''; projectBrief=''; projectConstraints=''; creativeContract=null; creativeContractBusy=false; creativeContractHistory=[]; creativeGenerationRecords=[]; currentScriptGeneratedFrom=null; truthLedger=null; truthResearch=null; firstPartyAssertions=[]; scriptEpistemicRevisions=[]; currentScriptEpistemic=null; projectBreakdown=null; projectBreakdownKey=null;
+    topic=''; projectBrief=''; projectConstraints=''; projectGuidance={outcome:'understand',approach:'observe',production:'voice-footage'}; projectGuidanceTouched={}; creativeContract=null; creativeContractBusy=false; creativeContractHistory=[]; creativeGenerationRecords=[]; currentScriptGeneratedFrom=null; truthLedger=null; truthResearch=null; firstPartyAssertions=[]; scriptEpistemicRevisions=[]; currentScriptEpistemic=null; projectBreakdown=null; projectBreakdownKey=null;
     recceImages=[];
     songName=''; songDuration=0; songAnalysis=null; songURL=null;
     var sta=byId('scriptTa'); if(sta) sta.value='';

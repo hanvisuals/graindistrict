@@ -27,7 +27,7 @@ try{
   ok('voiceover statements receive stable claim identities and script references',active.length===4&&active.every(claim=>claim.id.startsWith('claim:')&&claim.refs.length===1&&claim.refs[0].lineNumber>0),active);
   ok('personal experience and opinion remain source-free',types['I learned this after filming for a year.']==='personal_experience'&&types['Bence bu his teknik mukemmellikten daha onemli.']==='opinion'&&active.filter(claim=>claim.type==='personal_experience'||claim.type==='opinion').every(claim=>!claim.required&&claim.status==='not_required'),active);
   ok('technical claims and recommendations ask for support',types['A 24-70mm lens covers most everyday shooting situations.']==='technical'&&types['You should carry one fast prime for low light.']==='recommendation'&&active.filter(claim=>claim.type==='technical'||claim.type==='recommendation').every(claim=>claim.required&&claim.status==='needs_source'),active);
-  ok('the Script Studio shows only the compact evidence queue without another workflow screen',!initial.panelHidden&&/2 research topics/.test(initial.summary)&&/2 need evidence/.test(initial.summary),initial);
+  ok('the Script Studio shows only the compact research check without another workflow screen',!initial.panelHidden&&/2 factual topics can be checked automatically/.test(initial.summary),initial);
 
   const stable=await page.evaluate(script=>{
     const before=window.gdGetTruthLedger(),again=window.gdRebuildTruthLedger(script,{silent:true});
@@ -62,7 +62,7 @@ try{
     renderTruthLedger();
     return {marked,ledger:window.gdGetTruthLedger(),state:document.getElementById('truthLedgerState').textContent,summary:document.getElementById('truthLedgerSummary').textContent,changed};
   },initial.script);
-  ok('script changes make the ledger stale without deleting reviewed evidence',stale.marked&&stale.ledger.status==='stale'&&stale.ledger.claims.some(claim=>claim.id===sourced.claimId&&claim.sources.length===1)&&stale.state==='Review needed'&&/Script changed/.test(stale.summary),stale);
+  ok('script changes make the ledger stale without deleting reviewed evidence',stale.marked&&stale.ledger.status==='stale'&&stale.ledger.claims.some(claim=>claim.id===sourced.claimId&&claim.sources.length===1)&&stale.state==='Needs a check'&&/voiceover changed/.test(stale.summary),stale);
 
   const retired=await page.evaluate(script=>{
     const changed=script.split('\n').filter(line=>!line.includes('You should carry')).join('\n')+'\n[VOICEOVER] 00:20-00:25 - This sensor records 10-bit color.';

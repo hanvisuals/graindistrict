@@ -18,6 +18,7 @@ try {
     const script='[VOICEOVER] 00:00-00:05 - A 24-70mm lens covers most everyday shooting situations.';document.getElementById('scriptTa').value=script;const ledger=window.gdRebuildTruthLedger(script,{silent:true});renderTruthLedger();document.getElementById('truthLedgerPanel').classList.add('open');show('s3');return ledger.claims.find(x=>x.active).id;
   });
 
+  await page.locator('#truthEvidenceDetails > summary').click();
   await page.locator('.truth-claim > summary').click();
   await page.locator('.truth-manual-source summary').click();
   await page.locator('[data-truth-source-url]').fill('https://example.com/lens-guide');

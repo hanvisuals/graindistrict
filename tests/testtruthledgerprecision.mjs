@@ -39,7 +39,7 @@ try{
   ok('personal narration stays source-free',personalTouch.type==='personal_experience'&&personalThought.type==='personal_experience',initial.active);
   ok('mixed technical prose keeps its context and adjacent evidence becomes one research topic',processTopic.type==='technical'&&processTopic.refs.length===2&&processTopic.statement.includes('ve o andan itibaren'),processTopic);
   ok('only high-confidence technical topics enter the visible evidence queue',initial.visible.length===2&&initial.visible.some(text=>text.startsWith('Asfalt döküldüğünde'))&&initial.visible.includes('A 24-70mm lens covers most everyday shooting situations.')&&!initial.visible.includes('Bir çatlak tesadüf değildir.'),initial);
-  ok('the compact summary explains the research workload instead of all script sentences',/2 research topics/.test(initial.summary)&&/2 need evidence/.test(initial.summary)&&/narrative or personal line/.test(initial.intro),initial);
+  ok('the compact summary explains the research workload instead of all script sentences',/2 factual topics can be checked automatically/.test(initial.summary)&&/small number of checkable ideas/.test(initial.intro)&&/do not need to paste sources line by line/.test(initial.intro),initial);
 
   const numeric=await page.evaluate(()=>{
     const script=[
