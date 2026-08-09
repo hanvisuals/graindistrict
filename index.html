@@ -3143,6 +3143,11 @@ function stylePack(part){
 }
 var creatorDNA=null,dnaDraft=null,dnaStep=0,dnaReturnScreen='s1',dnaHubReturnScreen='s0',dnaRevealReturnScreen='s1';
 var creativeContract=null,creativeContractBusy=false,creativeContractHistory=[],creativeGenerationRecords=[],currentScriptGeneratedFrom=null,truthLedger=null,truthResearch=null;
+/* First-person biography is a different authority domain from research.
+   Creator DNA may shape voice, but only explicit project input may authorize
+   something as having happened to the creator. Candidate scripts are audited
+   before they can replace the current script. */
+var firstPartyAssertions=[],scriptEpistemicRevisions=[],currentScriptEpistemic=null;
 var ideaStudioIdeas=[],ideaStudioBusy=false;
 var dnaLabState={videos:[],traits:[],selected:{},busy:false};
 var DNA_QS=[
@@ -3425,6 +3430,72 @@ function creativeContractElementId(existing,contractId,kind,index){
   if(typeof existing==='string'&&existing.indexOf('contract-element:')===0)return existing;
   return 'contract-element:'+creativeContractHashText(contractId+'|'+kind+'|'+String(index||0));
 }
+var EPISTEMIC_POLICY='biography-boundary-v1';
+var EPISTEMIC_POLICY_VERSION=1;
+function epistemicAscii(value){return String(value==null?'':value).toLocaleLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\u0131/g,'i').replace(/[\u2018\u2019]/g,"'");}
+function epistemicHypothetical(value){var s=epistemicAscii(value);return /\b(imagine|suppose|hypothetical|if i were|if we were|could have|might have|dusunun|varsayalim|farz edelim|olsaydim|olsaydik|olabilirdi)\b/.test(s);}
+function epistemicPersonalSignal(value){
+  var s=epistemicAscii(value);if(!s||epistemicHypothetical(s))return false;
+  var explicit=/\b(i|i've|i have|i'm|my|me|we|we've|we have|our|us|ben|benim|bana|bende|benden|biz|bizim|bize|bizi|aklimda|ayagim|elim|gozum)\b/.test(s);
+  var event=epistemicEventRoots(s).length>0;
+  var implicit=/\b[\p{L}]+(?:dim|dimde|digimda|digimde|tim|timde|tigimda|tigimde|dum|dumda|dugumda|tum|tumda|tugumda|yordum|misim|misimdir|ecegim|acagim|dik|tik|duk|tuk)\b/u.test(s)||/\bafter (?:moving|living|working|visiting|walking|buying|using|seeing|starting)\b/.test(s);
+  var safeOpinion=/\b(i think|i believe|in my view|bence|bana gore|sanirim)\b/.test(s)&&!event&&!implicit;
+  return !safeOpinion&&((explicit&&event)||implicit);
+}
+function epistemicBiographyRequirement(value){
+  var s=epistemicAscii(value);if(!s)return false;
+  return /\b(creator(?:'s|in)? (?:own |personal |lived |real )?(?:experience|memory|story|event|observation)|personally experienced|creator must (?:share|include|describe|have lived)|creator'in (?:bizzat |kendi |gercekten )?(?:yasadigi|deneyimledigi|basindan gecen|anisi|deneyimi|gozlemi)|bizzat yasadigi|kisisel deneyim|kendi anisindan|basindan gecen)\b/.test(s);
+}
+function epistemicBiographyRequirementAuthorized(value){var roots=epistemicEventRoots(value),tokens=epistemicTokens(value);return (firstPartyAssertions||[]).some(function(assertion){var otherRoots=assertion.eventRoots||epistemicEventRoots(assertion.statement),rootMatch=roots.some(function(root){return otherRoots.indexOf(root)>=0;}),other=epistemicTokens(assertion.statement),overlap=tokens.filter(function(token){return other.indexOf(token)>=0;}).length;return rootMatch||overlap>=2;});}
+function epistemicEventRoots(value){
+  var s=epistemicAscii(value),roots=[];
+  [{r:'move',p:/\b(moved|moving|tasin\w*)\b/},{r:'live',p:/\b(lived|living|yasa\w*)\b/},{r:'work',p:/\b(worked|working|calis\w*)\b/},{r:'visit',p:/\b(visited|ziyaret\w*)\b/},{r:'walk',p:/\b(walked|walking|yuru\w*)\b/},{r:'buy',p:/\b(bought|owned|aldi\w*|satin al\w*)\b/},{r:'use',p:/\b(used|tried|kullan\w*|dene\w*)\b/},{r:'see',p:/\b(saw|noticed|realized|gordu\w*|fark\w*)\b/},{r:'count',p:/\b(counted|saydi\w*)\b/},{r:'sit',p:/\b(sat|otur\w*)\b/},{r:'start',p:/\b(started|basla\w*)\b/},{r:'learn',p:/\b(learned|ogren\w*)\b/},{r:'touch',p:/\b(touched|dokun\w*)\b/},{r:'remember',p:/\b(remembered|remember|hatirla\w*)\b/},{r:'feel',p:/\b(felt|experienced|hisset\w*|deneyim\w*)\b/}].forEach(function(item){if(item.p.test(s))roots.push(item.r);});return roots;
+}
+function epistemicTokens(value){
+  var stop={the:1,and:1,that:1,this:1,with:1,from:1,have:1,when:1,then:1,icin:1,ama:1,bir:1,ben:1,benim:1,biz:1,bizim:1,ve:1,da:1,de:1,bu:1,su:1,olarak:1};
+  return epistemicAscii(value).replace(/[^\p{L}\p{N}]+/gu,' ').trim().split(/\s+/).filter(function(x){return x.length>2&&!stop[x];});
+}
+function normalizeFirstPartyAssertion(raw,index){
+  raw=raw&&typeof raw==='object'?raw:{statement:raw};var statement=truthLedgerText(raw.statement,700),origin=raw.origin&&typeof raw.origin==='object'?raw.origin:{};
+  return {id:typeof raw.id==='string'&&raw.id.indexOf('first-party:')===0?raw.id:'first-party:'+creativeContractHashText(statement+'|'+String(index||0)),statement:statement,scope:'project',origin:{type:'user_project_input',field:truthLedgerText(origin.field||raw.field||'project_input',80)},eventRoots:epistemicEventRoots(statement),createdAt:Number(raw.createdAt)||Date.now(),revokedAt:Number(raw.revokedAt)||0};
+}
+function refreshFirstPartyAssertions(){
+  var found=[],seen={};[{field:'topic',value:topic},{field:'project_constraints',value:projectConstraints},{field:'project_brief',value:projectBrief}].forEach(function(source){
+    String(source.value||'').split(/(?:\r?\n|(?<=[.!?])\s+)/).forEach(function(part){var statement=truthLedgerText(part,700);if(!statement||!epistemicPersonalSignal(statement))return;var key=creativeContractHashText(epistemicAscii(statement));if(seen[key])return;seen[key]=1;found.push(normalizeFirstPartyAssertion({id:'first-party:'+key,statement:statement,field:source.field},found.length));});
+  });firstPartyAssertions=found;return firstPartyAssertions;
+}
+function epistemicAssertionMatches(statement,assertion){if(!assertion||assertion.revokedAt)return false;var roots=epistemicEventRoots(statement),tokens=epistemicTokens(statement),otherRoots=assertion.eventRoots||epistemicEventRoots(assertion.statement),rootMatch=roots.some(function(root){return otherRoots.indexOf(root)>=0;});if(!rootMatch)return false;var other=epistemicTokens(assertion.statement),overlap=tokens.filter(function(token){return other.indexOf(token)>=0;}).length;return overlap>=2||tokens.length<=3&&overlap>=1;}
+function epistemicAssertionAuthorizes(statement){return (firstPartyAssertions||[]).some(function(assertion){return epistemicAssertionMatches(statement,assertion);});}
+function epistemicAtom(statement,ref,origin){
+  statement=truthLedgerText(statement,700);var personal=epistemicPersonalSignal(statement),authorized=personal&&epistemicAssertionAuthorizes(statement),kind=personal?'personal_experience':'external_or_narrative';
+  return {id:'atom:'+creativeContractHashText((ref&&ref.fingerprint||'')+'|'+String(ref&&ref.partIndex||0)+'|'+statement),statement:statement,epistemicKind:kind,subject:personal?'creator':'world_or_unspecified',assertionMode:epistemicHypothetical(statement)?'hypothetical':'asserted',origin:{type:origin||'model_generated'},authority:{domain:personal?'first_party':'not_applicable',state:personal?(authorized?'authorized_first_party':'blocked_unauthorized_personal'):'not_required',refIds:authorized?(firstPartyAssertions||[]).filter(function(a){return epistemicAssertionMatches(statement,a);}).map(function(a){return a.id;}):[]},evidence:{domain:personal?'not_applicable':'external',state:'unreviewed'},researchEligibility:personal?'forbidden_personal':'eligible_if_factual',validationState:personal&&!authorized?'blocked_unauthorized_personal':'clear',policyVersion:EPISTEMIC_POLICY_VERSION,ref:canonicalClone(ref||null,null)};
+}
+function epistemicSplitClauses(value){
+  /* Sentence boundaries are the safe default. Semicolons are explicit clause
+     boundaries; em dashes and conjunctions often carry essential poetic or
+     technical context, so splitting them created false meanings. Mixed
+     personal/external sentences consequently fail closed as first-party. */
+  var out=[];truthSplitSentences(value).forEach(function(sentence){String(sentence||'').split(/\s*;\s*/).forEach(function(clause){clause=truthLedgerText(clause,700);if(clause)out.push(clause);});});return out;
+}
+function epistemicAuditScript(script,origin){
+  refreshFirstPartyAssertions();var atoms=[];String(script||'').split(/\r?\n/).forEach(function(line,index){var match=line.match(/^\s*\[VOICEOVER\]\s+(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})\s*[-:]\s*(.+)$/i);if(!match)return;epistemicSplitClauses(match[3]).forEach(function(statement,partIndex){atoms.push(epistemicAtom(statement,{lineNumber:index+1,partIndex:partIndex,timecode:match[1]+'-'+match[2],blockType:'voiceover',fingerprint:'line-hash:'+creativeContractHashText(line)},origin));});});var blocked=atoms.filter(function(atom){return atom.validationState==='blocked_unauthorized_personal';});return {policy:EPISTEMIC_POLICY,policyVersion:EPISTEMIC_POLICY_VERSION,status:blocked.length?'blocked':'clear',scriptFingerprint:truthLedgerScriptFingerprint(script),atoms:atoms,blocked:blocked,checkedAt:Date.now()};
+}
+function normalizeScriptEpistemicRecord(raw,index){raw=raw&&typeof raw==='object'?raw:{};return {id:typeof raw.id==='string'&&raw.id.indexOf('script-epistemic:')===0?raw.id:'script-epistemic:'+creativeContractHashText(String(raw.scriptFingerprint||index||0)+'|'+String(raw.createdAt||0)),revision:Math.max(1,Number(raw.revision)||Number(index)+1),policy:EPISTEMIC_POLICY,policyVersion:EPISTEMIC_POLICY_VERSION,status:['promoted','quarantined','rejected','legacy_unreviewed'].indexOf(raw.status)>=0?raw.status:'legacy_unreviewed',origin:truthLedgerText(raw.origin,80),scriptFingerprint:truthLedgerText(raw.scriptFingerprint,100),blockedAtoms:canonicalClone(raw.blockedAtoms||[],[]),assertionRefs:canonicalClone(raw.assertionRefs||[],[]),parentFingerprint:truthLedgerText(raw.parentFingerprint,100),createdAt:Number(raw.createdAt)||Date.now()};}
+function recordScriptEpistemic(script,status,origin,audit,parentFingerprint){var record=normalizeScriptEpistemicRecord({id:'script-epistemic:'+canonicalIdToken(),revision:scriptEpistemicRevisions.length+1,status:status,origin:origin,scriptFingerprint:truthLedgerScriptFingerprint(script),blockedAtoms:(audit&&audit.blocked||[]).map(function(atom){return {id:atom.id,statement:atom.statement,authority:atom.authority,validationState:atom.validationState,ref:atom.ref};}),assertionRefs:(firstPartyAssertions||[]).map(function(a){return a.id;}),parentFingerprint:parentFingerprint||'',createdAt:Date.now()},scriptEpistemicRevisions.length);scriptEpistemicRevisions.push(record);if(status==='promoted')currentScriptEpistemic=canonicalClone(record,record);return record;}
+function epistemicSafeContractText(){return inputLang==='tr'||/[\u011f\u00fc\u015f\u0131\u00f6\u00e7]/i.test(topic||'')?'Konuya \u00f6zg\u00fc en az iki somut ve g\u00f6zlemlenebilir durum kullan. Bunlar \u015fimdi filme al\u0131nabilir veya ara\u015ft\u0131rmayla desteklenebilir; creator\u2019\u0131n ya\u015fad\u0131\u011f\u0131 ima edilmez.':'Use at least two concrete, observable situations specific to the subject. They may be filmed now or supported by research; do not imply that the creator lived them.';}
+function sanitizeCreativeContractBiography(contract){
+  var c=canonicalClone(contract,contract),priorChanges=c&&c.provenance&&c.provenance.epistemicBoundary&&Array.isArray(c.provenance.epistemicBoundary.changes)?c.provenance.epistemicBoundary.changes.slice():[],changes=[];refreshFirstPartyAssertions();
+  function safe(statement,path,target){if(!epistemicBiographyRequirement(statement)||epistemicBiographyRequirementAuthorized(statement))return statement;changes.push({path:path,originalStatement:statement,replacement:epistemicSafeContractText(),reason:'missing_first_party_authority'});if(target){target.originalStatement=target.originalStatement||statement;target.authorityRequirement='external_or_observable';target.authorityRefIds=[];target.fallbackMode='observable_or_researched';}return epistemicSafeContractText();}
+  c.promise.successCriteria=(c.promise.successCriteria||[]).map(function(x,i){return safe(x,'promise.successCriteria['+i+']');});
+  ['structure','transformation'].forEach(function(k){c.storyEngine[k]=safe(c.storyEngine[k],'storyEngine.'+k);});
+  (c.payoffs||[]).forEach(function(x,i){x.statement=safe(x.statement,'payoffs['+i+'].statement',x);});
+  (c.proofRequirements||[]).forEach(function(x,i){x.statement=safe(x.statement,'proofRequirements['+i+'].statement',x);});
+  (c.constraints.mustInclude||[]).forEach(function(x,i){x.statement=safe(x.statement,'constraints.mustInclude['+i+'].statement',x);});
+  c.provenance=Object.assign({},c.provenance||{});var allChanges=priorChanges.concat(changes),seen={};allChanges=allChanges.filter(function(change){var key=String(change.path||'')+'|'+String(change.originalStatement||'');if(seen[key])return false;seen[key]=1;return true;});c.provenance.epistemicBoundary={policy:EPISTEMIC_POLICY,policyVersion:EPISTEMIC_POLICY_VERSION,changes:allChanges,checkedAt:Date.now()};return c;
+}
+function epistemicContext(){refreshFirstPartyAssertions();return '\n\nEPISTEMIC SAFETY - OVERRIDES CREATOR DNA AND THE CREATIVE CONTRACT:\n- You may imitate the creator\'s tone; you may not invent the creator\'s biography.\n- External sources can support facts about the world. They can NEVER authorize a memory, action, location visit, job, purchase, possession, feeling or observation as belonging to the creator.\n- Past or present first-person events are allowed only when they are entailed by the explicit project-input assertions below. Do not infer biography from a topic, style choice, reference video or Creator DNA.\n- When no assertion authorizes a personal beat, use a present-tense observation that can be filmed now, a clearly hypothetical frame, or neutral narration.\nAUTHORIZED FIRST-PARTY ASSERTIONS:\n- '+((firstPartyAssertions||[]).length?firstPartyAssertions.map(function(a){return a.statement+' ['+a.id+']';}).join('\n- '):'None. Keep creator biography out of the script.');}
+function epistemicRewriteScript(candidate,audit){var blocked=(audit&&audit.blocked||[]).map(function(x){return '- '+x.statement;}).join('\n');var sys='You are GrainDistrict\'s biography safety editor. Return the COMPLETE shot plan in exactly the same one-line [TYPE] timecode format. Rewrite ONLY unsupported first-person biography in VOICEOVER. Preserve verified facts, meaning, language, timecodes and all non-offending blocks. Replace invented memories with present observable, neutral or explicitly hypothetical wording. Do not add any new date, job, purchase, visit, possession, feeling or personal event.'+epistemicContext();return api(sys,'BLOCKED FIRST-PERSON CLAUSES:\n'+blocked+'\n\nCANDIDATE SHOT PLAN:\n'+candidate,'epistemic_rewrite');}
+function epistemicGateCandidateScript(candidate,origin,parentFingerprint){var first=epistemicAuditScript(candidate,origin);if(first.status==='clear'){recordScriptEpistemic(candidate,'promoted',origin,first,parentFingerprint);currentScriptGeneratedFrom=creativeContractGenerationReference()||currentScriptGeneratedFrom;return Promise.resolve({script:candidate,audit:first,rewritten:false});}recordScriptEpistemic(candidate,'quarantined',origin,first,parentFingerprint);return epistemicRewriteScript(candidate,first).then(function(raw){var rewritten=String(raw||'').trim(),second=epistemicAuditScript(rewritten,'epistemic_rewrite');if(!parseBlocks(rewritten).length||second.status!=='clear'){recordScriptEpistemic(rewritten||candidate,'rejected','epistemic_rewrite',second,parentFingerprint);throw new Error('The draft tried to invent a personal history and could not be repaired safely. Your previous script was kept.');}recordScriptEpistemic(rewritten,'promoted','epistemic_rewrite',second,parentFingerprint);currentScriptGeneratedFrom=creativeContractGenerationReference()||currentScriptGeneratedFrom;return {script:rewritten,audit:second,rewritten:true};});}
 function creativeContractDefaults(){
   var d=creatorDNA||{},mode=d.carrier||((fmt==='vlog')?'presenter':(fmt==='essay'?'story':'hybrid'));
   if(!CREATIVE_CONTRACT_FORMATS[mode])mode='hybrid';
@@ -3449,7 +3520,7 @@ function migrateCreativeContractV1(raw,source){
     proofRequirements:[{id:creativeContractElementId(null,id,'proof',0),statement:proof,evidenceType:format==='graphics'?'visual_explanation':(format==='demo'?'demonstration':'visible_support'),required:true}],
     constraints:{mustInclude:[],mustAvoid:avoid.map(function(statement,i){return {id:creativeContractElementId(null,id,'avoid',i),statement:statement,severity:'hard'};}),production:[]},
     style:{tone:creativeContractText(raw.tone,100,base.tone),visualSystem:creativeContractText(raw.visualSystem,520,base.visualSystem),pacingIntent:String(raw.pacing||base.pacing)},
-    provenance:{createdBy:source==='ai'?'ai':(source==='fallback'?'fallback':'migration'),editedByUser:source==='edited',projectInputKey:String(raw.inputKey||raw.projectInputKey||''),createdAt:created,updatedAt:Number(raw.updatedAt)||created,lockedAt:Number(raw.lockedAt)||0,staleAt:0,staleReason:''},
+    provenance:{createdBy:source==='ai'?'ai':(source==='fallback'?'fallback':'migration'),editedByUser:source==='edited',projectInputKey:String(raw.inputKey||raw.projectInputKey||''),createdAt:created,updatedAt:Number(raw.updatedAt)||created,lockedAt:Number(raw.lockedAt)||0,staleAt:0,staleReason:'',epistemicBoundary:null},
     projectInputKey:String(raw.inputKey||raw.projectInputKey||''),source:source||raw.source||'migration',migration:{sourceVersion:Number(raw.schemaVersion||raw.v)||1,legacy:raw}};
 }
 function normalizeCreativeContract(raw,source){
@@ -3462,7 +3533,7 @@ function normalizeCreativeContract(raw,source){
     if(!values.length&&fallback)values=[{statement:fallback}];
     return values.map(function(item,i){item=item&&typeof item==='object'?item:{statement:item};var out=Object.assign({},item,{id:creativeContractElementId(item.id,id,kind,i),statement:creativeContractText(item.statement,520,fallback||''),required:item.required!==false});if(kind==='proof'){out.evidenceType=item.evidenceType||item.type||type;delete out.type;}else out.type=item.type||type;return out;});
   }
-  function rules(items,kind){return (Array.isArray(items)?items:creativeContractLines(items)).map(function(item,i){item=item&&typeof item==='object'?item:{statement:item};return {id:creativeContractElementId(item.id,id,kind,i),statement:creativeContractText(item.statement,420,''),severity:item.severity==='soft'?'soft':'hard'};}).filter(function(x){return !!x.statement;});}
+  function rules(items,kind){return (Array.isArray(items)?items:creativeContractLines(items)).map(function(item,i){item=item&&typeof item==='object'?item:{statement:item};return Object.assign({},item,{id:creativeContractElementId(item.id,id,kind,i),statement:creativeContractText(item.statement,420,''),severity:item.severity==='soft'?'soft':'hard'});}).filter(function(x){return !!x.statement;});}
   var proofReq=elements(raw.proofRequirements,'proof','',format==='demo'?'demonstration':'visible_support');
   var payoffs=elements(raw.payoffs,'payoff','',format==='presenter'?'learning_result':'visual_reveal');
   var success=Array.isArray(prom.successCriteria)?creativeContractLines(prom.successCriteria):creativeContractLines(prom.successCriteria||'');
@@ -3474,7 +3545,7 @@ function normalizeCreativeContract(raw,source){
     payoffs:payoffs,proofRequirements:proofReq,
     constraints:{mustInclude:rules(constraints.mustInclude,'include'),mustAvoid:rules(constraints.mustAvoid,'avoid'),production:Array.isArray(constraints.production)?canonicalClone(constraints.production,[]):[]},
     style:{tone:creativeContractText(style.tone,100,''),visualSystem:creativeContractText(style.visualSystem,520,''),pacingIntent:['reflective','balanced','energetic'].indexOf(style.pacingIntent)>=0?style.pacingIntent:base.pacing},
-    provenance:{createdBy:prov.createdBy||'ai',editedByUser:!!prov.editedByUser,projectInputKey:String(prov.projectInputKey||raw.projectInputKey||''),createdAt:Number(prov.createdAt)||Date.now(),updatedAt:Number(prov.updatedAt)||Number(prov.createdAt)||Date.now(),lockedAt:Number(prov.lockedAt)||0,staleAt:Number(prov.staleAt)||0,staleReason:prov.staleReason||''},
+    provenance:{createdBy:prov.createdBy||'ai',editedByUser:!!prov.editedByUser,projectInputKey:String(prov.projectInputKey||raw.projectInputKey||''),createdAt:Number(prov.createdAt)||Date.now(),updatedAt:Number(prov.updatedAt)||Number(prov.createdAt)||Date.now(),lockedAt:Number(prov.lockedAt)||0,staleAt:Number(prov.staleAt)||0,staleReason:prov.staleReason||'',epistemicBoundary:canonicalClone(prov.epistemicBoundary||null,null)},
     projectInputKey:String(raw.projectInputKey||prov.projectInputKey||''),source:source||raw.source||prov.createdBy||'ai',migration:canonicalClone(raw.migration||null,null)};
 }
 function creativeContractFallback(){
@@ -3483,7 +3554,7 @@ function creativeContractFallback(){
 }
 function creativeContractSemantic(contract){
   contract=normalizeCreativeContract(contract,contract&&contract.source);
-  return {id:contract.id,revision:contract.revision,format:contract.format,audience:contract.audience,promise:contract.promise,storyEngine:contract.storyEngine,payoffs:contract.payoffs,proofRequirements:contract.proofRequirements,constraints:contract.constraints,style:contract.style,projectInputKey:contract.projectInputKey};
+  return {id:contract.id,revision:contract.revision,format:contract.format,audience:contract.audience,promise:contract.promise,storyEngine:contract.storyEngine,payoffs:contract.payoffs,proofRequirements:contract.proofRequirements,constraints:contract.constraints,style:contract.style,projectInputKey:contract.projectInputKey,epistemicPolicy:{id:EPISTEMIC_POLICY,version:EPISTEMIC_POLICY_VERSION}};
 }
 function creativeContractHash(contract){return 'cc-hash:'+creativeContractHashText(creativeContractStableStringify(creativeContractSemantic(contract)));}
 function validateCreativeContract(contract,options){
@@ -3512,6 +3583,8 @@ function validateCreativeContract(contract,options){
   }else if(mode==='graphics'){
     if(!c.style.visualSystem)add('CONTRACT_GRAPHICS_SYSTEM_REQUIRED','creative.contract.style.visualSystem','Graphics-led projects need a visual explanation system.');
   }else if(mode==='hybrid'&&!c.format.deliveryMode)add('CONTRACT_HYBRID_DELIVERY_REQUIRED','creative.contract.format.deliveryMode','Hybrid projects need a clear delivery mode.');
+  var authorityTexts=(c.promise.successCriteria||[]).concat([c.storyEngine.structure,c.storyEngine.transformation]).concat((c.payoffs||[]).map(function(x){return x.statement;}),(c.proofRequirements||[]).map(function(x){return x.statement;}),(c.constraints.mustInclude||[]).map(function(x){return x.statement;}));
+  if(authorityTexts.some(function(statement){return epistemicBiographyRequirement(statement)&&!epistemicBiographyRequirementAuthorized(statement);}))add('CONTRACT_FIRST_PARTY_AUTHORITY_MISSING','creative.contract','A Project Direction cannot require a personal memory or lived event unless the creator supplied it explicitly.');
   return {valid:issues.length===0,issues:issues,errors:issues.map(function(x){return x.code;}),format:mode};
 }
 function rememberCreativeContractRevision(contract,status){
@@ -3548,7 +3621,7 @@ function editCreativeContract(patch){
   creativeContract=applyCreativeContractPatch(base,patch);if(truthLedger)markTruthLedgerStale('Project Direction changed',null,true);return creativeContract;
 }
 function lockCreativeContract(){
-  if(!creativeContract)return null;var validation=validateCreativeContract(creativeContract);
+  if(!creativeContract)return null;refreshFirstPartyAssertions();creativeContract=normalizeCreativeContract(sanitizeCreativeContractBiography(normalizeCreativeContract(creativeContract,creativeContract.source)),creativeContract.source);var validation=validateCreativeContract(creativeContract);
   if(!validation.valid)return {contract:creativeContract,validation:validation};
   creativeContractHistory=(creativeContractHistory||[]).map(function(x){var copy=canonicalClone(x,x);if(copy&&copy.id===creativeContract.id&&Number(copy.revision)<Number(creativeContract.revision)&&(copy.status==='locked'||copy.status==='stale'))copy.status='superseded';return copy;});
   creativeContract=canonicalClone(creativeContract,{});creativeContract.status='locked';creativeContract.provenance=Object.assign({},creativeContract.provenance,{lockedAt:Date.now(),updatedAt:Date.now(),projectInputKey:creativeContract.projectInputKey||''});
@@ -3565,7 +3638,7 @@ function creativeContractGenerationReference(){
   var validation=validateCreativeContract(creativeContract,{requireLocked:true});if(!validation.valid)return null;
   return {contractId:creativeContract.id,contractRevision:creativeContract.revision,contractHash:creativeContractHash(creativeContract)};
 }
-function creativeContractBoundFeature(feature){return /^(shot_plan|shot_plan_segment|shot_plan_redraft|shot_plan_fallback|shot_plan_continuation|plan_outline|script_revision|block_revision|block_shot_details|shot_details_batch|storyboard_prompt|storyboard_revision)$/.test(String(feature||''));}
+function creativeContractBoundFeature(feature){return /^(shot_plan|shot_plan_segment|shot_plan_redraft|shot_plan_fallback|shot_plan_continuation|plan_outline|script_revision|epistemic_rewrite|block_revision|block_shot_details|shot_details_batch|storyboard_prompt|storyboard_revision)$/.test(String(feature||''));}
 function recordCreativeGeneration(feature,reference,text){
   if(!reference)return null;var entry={id:'generation:'+canonicalIdToken(),feature:String(feature||'ai_request'),generatedFrom:canonicalClone(reference,reference),outputHash:'output:'+creativeContractHashText(String(text||'')),createdAt:Date.now()};
   creativeGenerationRecords.push(entry);if(/shot_plan|script_revision/.test(entry.feature))currentScriptGeneratedFrom=canonicalClone(reference,reference);renderScriptContract();return entry;
@@ -3600,7 +3673,7 @@ function creativeContractContext(){
     +'- Payoffs: '+c.payoffs.map(function(x){return x.statement;}).join(' | ')+'\n- Proof requirements: '+c.proofRequirements.map(function(x){return x.statement;}).join(' | ')+'\n'
     +'- Visual system: '+c.style.visualSystem+'\n- Tone: '+c.style.tone+'\n- Pacing: '+c.style.pacingIntent+'\n'
     +'\nNON-NEGOTIABLE HARD MUST INCLUDE:\n- '+(includes.length?includes.join('\n- '):'None specified')+'\nNON-NEGOTIABLE HARD MUST AVOID:\n- '+(avoids.length?avoids.join('\n- '):'None specified')+'\n\n'
-    +'Every voiceover line and visual beat must serve this promise. Hard constraints override Creator DNA and any AI-generated preference. Never silently weaken, remove or reinterpret them.';
+    +'Every voiceover line and visual beat must serve this promise. Hard constraints override Creator DNA and any AI-generated preference, but epistemic safety always overrides this contract. Never silently weaken, remove or reinterpret valid constraints.'+epistemicContext();
 }
 function setCreativeContractBusy(busy,message){
   creativeContractBusy=busy;
@@ -3641,7 +3714,7 @@ function captureCreativeContract(){
 }
 function creativeContractPrompt(){
   return 'You are a YouTube creative director. Create a compact project contract before any script is written. It must be specific to this exact idea, useful during production and faithful to the creator\'s real resources. Do not write a synopsis, script, shot list, title or motivational copy. Do not imitate a reference creator.\n\n'
-    +'Choose exactly one format enum: story, presenter, demo, graphics, hybrid. Do not force dramatic tension onto presenter, demonstration or graphics-led work. Proof requirements describe what the finished video must demonstrate; they are not claims that evidence already exists. Write all viewer-facing values in the same language as the user\'s idea.\n\n'
+    +'Choose exactly one format enum: story, presenter, demo, graphics, hybrid. Do not force dramatic tension onto presenter, demonstration or graphics-led work. Proof requirements describe what the finished video must demonstrate; they are not claims that evidence already exists. Never require the creator to share a memory, lived event, job, visit, purchase, feeling or personal observation unless it appears explicitly in the user\'s project input. A story-led style is not permission to invent biography; use observable situations, researchable context or explicit hypotheticals instead. Write all viewer-facing values in the same language as the user\'s idea.\n\n'
     +'Return ONLY valid JSON with this shape: {"format":{"type":"story|presenter|demo|graphics|hybrid","creatorPresence":"camera|sometimes|voice|none","deliveryMode":"voiceover-led|presenter-led|visual-led|mixed"},"audience":{"primary":"...","priorState":"...","desiredState":"..."},"promise":{"statement":"...","successCriteria":["..."]},"storyEngine":{"drivingQuestion":"...","whyItMatters":"...","transformation":"...","structure":"..."},"payoffs":[{"type":"visual_reveal|learning_result|observable_result","statement":"...","required":true}],"proofRequirements":[{"statement":"...","evidenceType":"...","required":true}],"constraints":{"mustInclude":[{"statement":"...","severity":"hard"}],"mustAvoid":[{"statement":"...","severity":"hard"}]},"style":{"tone":"...","visualSystem":"...","pacingIntent":"reflective|balanced|energetic"}}.'+creatorDnaContext();
 }
 function buildCreativeContract(skipDetails){
@@ -3655,10 +3728,10 @@ function buildCreativeContract(skipDetails){
   api(creativeContractPrompt(),user,'creative_contract').then(function(raw){
     var parsed=parseCreativeContract(raw),structured=parsed&&parsed.format&&typeof parsed.format==='object'?Object.assign({},parsed,{schema:CREATIVE_CONTRACT_SCHEMA,schemaVersion:2}):parsed,candidate=normalizeCreativeContract(structured,'ai');
     if(previous){rememberCreativeContractRevision(previous,previous.status);candidate.id=previous.id;candidate.revision=Number(previous.revision)+1;candidate=preserveHardCreativeConstraints(normalizeCreativeContract(candidate,'ai'),previous);}
-    creativeContract=candidate;
+    refreshFirstPartyAssertions();creativeContract=normalizeCreativeContract(sanitizeCreativeContractBiography(candidate),candidate.source);
   }).catch(function(e){
     console.warn('[creative contract] using DNA fallback:',e&&e.message?e.message:e);
-    var candidate=creativeContractFallback();if(previous){rememberCreativeContractRevision(previous,previous.status);candidate.id=previous.id;candidate.revision=Number(previous.revision)+1;candidate=preserveHardCreativeConstraints(normalizeCreativeContract(candidate,'fallback'),previous);}creativeContract=candidate;
+    var candidate=creativeContractFallback();if(previous){rememberCreativeContractRevision(previous,previous.status);candidate.id=previous.id;candidate.revision=Number(previous.revision)+1;candidate=preserveHardCreativeConstraints(normalizeCreativeContract(candidate,'fallback'),previous);}refreshFirstPartyAssertions();creativeContract=normalizeCreativeContract(sanitizeCreativeContractBiography(candidate),'fallback');
   }).then(function(){
     creativeContract.projectInputKey=creativeContractKey(projectConstraints);creativeContract.provenance.projectInputKey=creativeContract.projectInputKey;creativeContract.provenance.updatedAt=Date.now();creativeContract.status='draft';
     setCreativeContractBusy(false);renderCreativeContract();
@@ -3719,7 +3792,7 @@ window.gdRecordCreativeGeneration=function(feature,reference,text){return canoni
 window.gdGetCreativeContractHistory=function(){return canonicalClone(creativeContractHistory,[]);};
 window.gdGetCreativeGenerationRecords=function(){return canonicalClone(creativeGenerationRecords,[]);};
 window.gdCreativeContractContext=creativeContractContext;
-window.gdSetCreativeContract=function(value){creativeContract=value?normalizeCreativeContract(value,value.source):null;creativeContractHistory=[];creativeGenerationRecords=[];currentScriptGeneratedFrom=null;truthLedger=null;truthResearch=null;renderCreativeContract();renderScriptContract();renderTruthLedger();return canonicalClone(creativeContract,creativeContract);};
+window.gdSetCreativeContract=function(value){refreshFirstPartyAssertions();creativeContract=value?normalizeCreativeContract(value,value.source):null;creativeContractHistory=[];creativeGenerationRecords=[];currentScriptGeneratedFrom=null;truthLedger=null;truthResearch=null;scriptEpistemicRevisions=[];currentScriptEpistemic=null;renderCreativeContract();renderScriptContract();renderTruthLedger();return canonicalClone(creativeContract,creativeContract);};
 window.gdGetCreativeContract=function(){return creativeContract?JSON.parse(JSON.stringify(creativeContract)):null;};
 
 /* Truth Ledger v2 is a project memory for statements that may need support.
@@ -3732,7 +3805,7 @@ window.gdGetCreativeContract=function(){return creativeContract?JSON.parse(JSON.
    fact-checking chore. */
 var TRUTH_LEDGER_SCHEMA='graindistrict.truth-ledger';
 var TRUTH_LEDGER_VERSION=2;
-var TRUTH_LEDGER_CLASSIFIER_VERSION=2;
+var TRUTH_LEDGER_CLASSIFIER_VERSION=3;
 var TRUTH_SOURCE_ASSISTANT_SCHEMA='graindistrict.truth-source-analysis';
 var TRUTH_SOURCE_ASSISTANT_VERSION=1;
 var TRUTH_RESEARCH_SCHEMA='graindistrict.evidence-research';
@@ -3761,13 +3834,15 @@ function truthClassifyStatement(statement){
   var technicalPredicate=/\b(katilasir|sertlesir|sividir|erir|donar|catlar|kirilir|deforme olur|genisler|daralir|uretilir|neden olur|etkiler|artirir|azaltir|saglar|hardens?|solidifies?|liquids?|melts?|freezes?|cracks?|deforms?|expands?|contracts?|causes?|increases?|reduces?|provides?)\b/.test(ascii);
   var firstPerson=/\b(ben|benim|bende|benden|kendim|ayagim|elim|gozum|baktim|koydum|yururken|bunu dusundum|dusundum|hissettim|gordum|ogrendim|denedim|kullandim|yasadim|fark ettim|dokundum|hatirliyorum|i|i've|i have|i learned|i tried|i used|i remember|i noticed|my experience|we learned|we tried)\b/.test(ascii);
   var opinion=/\b(bence|sanirim|bana gore|bana kalirsa|i think|i feel|in my view|personally|to me)\b/.test(ascii);
-  if(recommendation)return 'recommendation';
+  var conditionalInference=/\b(if|eger|varsa|olsaydi|olsa)\b/.test(ascii)&&/\b(should|would|must|olmali|olurdu|gerekir)\b/.test(ascii);
+  if(conditionalInference&&!measured&&!publicAttribution)return 'creative_premise';
   /* A statistic, named study or date remains externally checkable even if the
      narrator says "I read" or "I found" around it. This prevents unsupported
      research claims from being disguised as personal experience. */
   if(measured||publicAttribution||historicalFact)return technicalTopic?'technical':'fact';
   if(opinion)return 'opinion';
-  if(firstPerson)return 'personal_experience';
+  if(epistemicPersonalSignal(raw)||firstPerson)return 'personal_experience';
+  if(recommendation)return 'recommendation';
   if((technicalTopic&&technicalPredicate)||/\b(katilasir|sertlesir|solidifies?|hardens?)\b/.test(ascii))return 'technical';
   return 'creative_premise';
 }
@@ -3789,19 +3864,19 @@ function truthGroupEvidenceCandidates(candidates){
   (candidates||[]).forEach(function(candidate){
     if(!candidate.required){out.push(candidate);current=null;return;}
     var family=candidate.type==='recommendation'?'recommendation':'evidence',lastRef=current&&current.refs[current.refs.length-1],canJoin=current&&current.required&&current.family===family&&lastRef&&candidate.ref.lineNumber-lastRef.lineNumber<=1&&current.refs.length<4&&(current.statement.length+candidate.statement.length)<650;
-    if(!canJoin){current={statement:candidate.statement,type:candidate.type,required:true,ref:candidate.ref,refs:[candidate.ref],components:[candidate.statement],family:family};out.push(current);return;}
+    if(!canJoin){current={statement:candidate.statement,type:candidate.type,required:true,ref:candidate.ref,refs:[candidate.ref],components:[candidate.statement],family:family,epistemicKind:candidate.epistemicKind,subject:candidate.subject,assertionMode:candidate.assertionMode,origin:candidate.origin,authority:candidate.authority,evidence:candidate.evidence,researchEligibility:candidate.researchEligibility,validationState:candidate.validationState,policyVersion:candidate.policyVersion};out.push(current);return;}
     current.statement=truthLedgerText(current.statement+' '+candidate.statement,700);current.refs.push(candidate.ref);current.components.push(candidate.statement);if(candidate.type==='technical')current.type='technical';
   });
   return out;
 }
 function truthExtractVoiceoverClaims(script){
-  var raw=[];String(script||'').split(/\r?\n/).forEach(function(line,index){
+  refreshFirstPartyAssertions();var raw=[];String(script||'').split(/\r?\n/).forEach(function(line,index){
     var match=line.match(/^\s*\[VOICEOVER\]\s+(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})\s*[-:]\s*(.+)$/i);if(!match)return;
-    var sentences=truthSplitSentences(match[3]),partIndex=0;
+    var sentences=epistemicSplitClauses(match[3]),partIndex=0;
     sentences.forEach(function(sentence){
       var statement=truthLedgerText(sentence,700),currentIndex=partIndex++;if(statement.split(/\s+/).filter(Boolean).length<3)return;
-      var type=truthClassifyStatement(statement);
-      raw.push({statement:statement,type:type,required:truthClaimNeedsSupport(type),ref:{lineNumber:index+1,partIndex:currentIndex,timecode:match[1]+'-'+match[2],blockType:'voiceover',fingerprint:'line-hash:'+creativeContractHashText(line)}});
+      var ref={lineNumber:index+1,partIndex:currentIndex,timecode:match[1]+'-'+match[2],blockType:'voiceover',fingerprint:'line-hash:'+creativeContractHashText(line)},atom=epistemicAtom(statement,ref,'script'),type=atom.epistemicKind==='personal_experience'?'personal_experience':truthClassifyStatement(statement),required=truthClaimNeedsSupport(type)&&atom.researchEligibility!=='forbidden_personal';
+      raw.push({statement:statement,type:type,required:required,ref:ref,epistemicKind:atom.epistemicKind,subject:atom.subject,assertionMode:atom.assertionMode,origin:atom.origin,authority:atom.authority,evidence:atom.evidence,researchEligibility:required?'eligible_external':atom.researchEligibility,validationState:atom.validationState,policyVersion:atom.policyVersion});
     });
   });return truthGroupEvidenceCandidates(raw);
 }
@@ -3820,7 +3895,8 @@ function normalizeTruthClaim(raw,index){
   raw=raw&&typeof raw==='object'?raw:{};var id=typeof raw.id==='string'&&raw.id.indexOf('claim:')===0?raw.id:'claim:'+creativeContractHashText((raw.statement||'')+'|'+String(index||0));
   var type=TRUTH_CLAIM_TYPES[raw.type]?raw.type:'fact',status=TRUTH_CLAIM_STATUSES[raw.status]?raw.status:(truthClaimNeedsSupport(type)?'needs_source':'not_required');
   var refs=Array.isArray(raw.refs)?raw.refs:(raw.ref?[raw.ref]:[]);refs=refs.map(function(ref){return {lineNumber:Math.max(1,Number(ref&&ref.lineNumber)||1),partIndex:Math.max(0,Number(ref&&ref.partIndex)||0),timecode:truthLedgerText(ref&&ref.timecode,40),blockType:'voiceover',fingerprint:truthLedgerText(ref&&ref.fingerprint,80)};});
-  return {id:id,statement:truthLedgerText(raw.statement,700),components:(Array.isArray(raw.components)?raw.components:[raw.statement]).map(function(item){return truthLedgerText(item,700);}).filter(Boolean).slice(0,8),mergedFrom:(Array.isArray(raw.mergedFrom)?raw.mergedFrom:[]).map(function(item){return truthLedgerText(item,100);}).filter(Boolean).slice(0,12),type:type,status:status,required:raw.required==null?truthClaimNeedsSupport(type):!!raw.required,active:raw.active!==false,classificationSource:raw.classificationSource==='user'?'user':'local_classifier',refs:refs,sources:(Array.isArray(raw.sources)?raw.sources:[]).map(function(source,i){return normalizeTruthSource(source,id,i);}),createdAt:Number(raw.createdAt)||Date.now(),updatedAt:Number(raw.updatedAt)||Number(raw.createdAt)||Date.now(),retiredAt:Number(raw.retiredAt)||0};
+  var researchEligibility=raw.researchEligibility==='forbidden_personal'?'forbidden_personal':(raw.researchEligibility==='eligible_external'?'eligible_external':(truthClaimNeedsSupport(type)?'eligible_external':'not_required'));
+  return {id:id,statement:truthLedgerText(raw.statement,700),components:(Array.isArray(raw.components)?raw.components:[raw.statement]).map(function(item){return truthLedgerText(item,700);}).filter(Boolean).slice(0,8),mergedFrom:(Array.isArray(raw.mergedFrom)?raw.mergedFrom:[]).map(function(item){return truthLedgerText(item,100);}).filter(Boolean).slice(0,12),type:type,status:status,required:researchEligibility==='forbidden_personal'?false:(raw.required==null?truthClaimNeedsSupport(type):!!raw.required),active:raw.active!==false,classificationSource:raw.classificationSource==='user'?'user':'local_classifier',epistemicKind:truthLedgerText(raw.epistemicKind||((type==='personal_experience')?'personal_experience':'external_or_narrative'),60),subject:truthLedgerText(raw.subject||((type==='personal_experience')?'creator':'world_or_unspecified'),60),assertionMode:truthLedgerText(raw.assertionMode||'asserted',40),origin:canonicalClone(raw.origin||{type:'legacy'},{}),authority:canonicalClone(raw.authority||{domain:type==='personal_experience'?'first_party':'not_applicable',state:type==='personal_experience'?'requires_first_party_confirmation':'not_required',refIds:[]},{}),evidence:canonicalClone(raw.evidence||{domain:type==='personal_experience'?'not_applicable':'external',state:'unreviewed'},{}),researchEligibility:researchEligibility,validationState:truthLedgerText(raw.validationState||(researchEligibility==='forbidden_personal'?'blocked_unauthorized_personal':'clear'),60),policyVersion:Math.max(1,Number(raw.policyVersion)||EPISTEMIC_POLICY_VERSION),refs:refs,sources:(Array.isArray(raw.sources)?raw.sources:[]).map(function(source,i){return normalizeTruthSource(source,id,i);}),createdAt:Number(raw.createdAt)||Date.now(),updatedAt:Number(raw.updatedAt)||Number(raw.createdAt)||Date.now(),retiredAt:Number(raw.retiredAt)||0};
 }
 function normalizeTruthLedger(raw){
   if(!raw||typeof raw!=='object')return null;var now=Date.now(),id=typeof raw.id==='string'&&raw.id.indexOf('truth-ledger:')===0?raw.id:'truth-ledger:'+creativeContractHashText((raw.projectId||canonicalRuntimeProjectId||topic||'local')+'|'+String(raw.createdAt||0));
@@ -3862,7 +3938,7 @@ function applyTruthResearchResult(value){
   mergeStable(research.claimTasks,value.claimTasks,normalizeTruthClaimTask);mergeStable(research.queryClusters,value.queryClusters,normalizeTruthQueryCluster);mergeStable(research.queries,value.queries,normalizeTruthResearchQuery);mergeStable(research.sourceVersions,value.sourceVersions,normalizeTruthSourceVersion);mergeStable(research.evidenceSpans,value.evidenceSpans,normalizeTruthEvidenceSpan);
   research.sources.forEach(function(source){stableSources[truthResearchUrlKey(source.url)]=source;});
   (Array.isArray(value.sources)?value.sources:[]).forEach(function(candidate,index){var key=truthResearchUrlKey(candidate&&candidate.url);if(!key)return;var stable=stableSources[key];if(!stable){stable=normalizeTruthResearchSource(Object.assign({},candidate,{id:candidate.id&&candidate.id.indexOf('source:')===0?candidate.id:'source:'+creativeContractHashText(key),createdAt:now}),research.sources.length);research.sources.push(stable);stableSources[key]=stable;}candidateSources[candidate.id]=stable;});
-  var linkRefs=[],assistantCandidates={};(Array.isArray(value.links)?value.links:[]).forEach(function(candidate,index){var source=candidateSources[candidate&&candidate.sourceId]||research.sources.find(function(item){return item.id===candidate.sourceId;}),claim=truthLedger.claims.find(function(item){return item.id===candidate.claimId&&item.active;});if(!source||!claim)return;var link=research.links.find(function(item){return item.claimId===claim.id&&item.sourceId===source.id;});if(!link){link=normalizeTruthResearchLink({id:candidate.id&&candidate.id.indexOf('research-link:')===0?candidate.id:'research-link:'+creativeContractHashText(claim.id+'|'+source.id),claimId:claim.id,sourceId:source.id,revisions:[]},research.links.length);research.links.push(link);}var prior=truthResearchLatestRevision(link),revision=normalizeTruthResearchRevision({revision:prior?prior.revision+1:1,runId:value.runId,claimFingerprint:truthSourceClaimFingerprint(claim.statement),sourceVersionId:candidate.sourceVersionId,evidenceSpanIds:candidate.evidenceSpanIds,relationship:candidate.relationship,confidence:candidate.confidence,excerpt:candidate.excerpt,locator:candidate.locator,explanation:candidate.explanation,reviewState:candidate.reviewState,createdAt:now},link.revisions.length);var same=prior&&creativeContractHashText(JSON.stringify([prior.claimFingerprint,prior.sourceVersionId,prior.evidenceSpanIds,prior.relationship,prior.confidence,prior.excerpt,prior.locator,prior.explanation]))===creativeContractHashText(JSON.stringify([revision.claimFingerprint,revision.sourceVersionId,revision.evidenceSpanIds,revision.relationship,revision.confidence,revision.excerpt,revision.locator,revision.explanation]));if(!same)link.revisions.push(revision);else revision=prior;linkRefs.push({id:link.id,revision:revision.revision});(assistantCandidates[claim.id]||(assistantCandidates[claim.id]=[])).push({claim:claim,source:source,link:link,revision:revision});});
+  var linkRefs=[],assistantCandidates={};(Array.isArray(value.links)?value.links:[]).forEach(function(candidate,index){var source=candidateSources[candidate&&candidate.sourceId]||research.sources.find(function(item){return item.id===candidate.sourceId;}),claim=truthLedger.claims.find(function(item){return item.id===candidate.claimId&&item.active&&item.researchEligibility==='eligible_external';});if(!source||!claim)return;var link=research.links.find(function(item){return item.claimId===claim.id&&item.sourceId===source.id;});if(!link){link=normalizeTruthResearchLink({id:candidate.id&&candidate.id.indexOf('research-link:')===0?candidate.id:'research-link:'+creativeContractHashText(claim.id+'|'+source.id),claimId:claim.id,sourceId:source.id,revisions:[]},research.links.length);research.links.push(link);}var prior=truthResearchLatestRevision(link),revision=normalizeTruthResearchRevision({revision:prior?prior.revision+1:1,runId:value.runId,claimFingerprint:truthSourceClaimFingerprint(claim.statement),sourceVersionId:candidate.sourceVersionId,evidenceSpanIds:candidate.evidenceSpanIds,relationship:candidate.relationship,confidence:candidate.confidence,excerpt:candidate.excerpt,locator:candidate.locator,explanation:candidate.explanation,reviewState:candidate.reviewState,createdAt:now},link.revisions.length);var same=prior&&creativeContractHashText(JSON.stringify([prior.claimFingerprint,prior.sourceVersionId,prior.evidenceSpanIds,prior.relationship,prior.confidence,prior.excerpt,prior.locator,prior.explanation]))===creativeContractHashText(JSON.stringify([revision.claimFingerprint,revision.sourceVersionId,revision.evidenceSpanIds,revision.relationship,revision.confidence,revision.excerpt,revision.locator,revision.explanation]));if(!same)link.revisions.push(revision);else revision=prior;linkRefs.push({id:link.id,revision:revision.revision});(assistantCandidates[claim.id]||(assistantCandidates[claim.id]=[])).push({claim:claim,source:source,link:link,revision:revision});});
   Object.keys(assistantCandidates).forEach(function(claimId){var priority={conflicts:0,partial:1,unclear:2,supports:3},chosen=assistantCandidates[claimId].sort(function(a,b){var relation=(priority[a.revision.relationship]||0)-(priority[b.revision.relationship]||0);return relation||b.revision.confidence-a.revision.confidence;})[0],claim=chosen.claim,source=chosen.source,link=chosen.link,revision=chosen.revision;applyTruthSourceAnalysis(claim.id,{url:source.url,title:source.title,kind:source.kind,relationship:revision.relationship,confidence:revision.confidence,excerpt:revision.excerpt,locator:revision.locator,explanation:revision.explanation,provider:value.provider,model:value.model,origin:'automatic_research',researchRef:{researchId:research.id,runId:value.runId,sourceId:source.id,sourceVersionId:revision.sourceVersionId,evidenceSpanIds:revision.evidenceSpanIds,linkId:link.id,linkRevision:revision.revision},analyzedAt:value.completedAt||now});});
   research.runs.push(normalizeTruthResearchRun(Object.assign({},value,{queryIds:(value.queries||[]).map(function(query){return query.id;}),sourceIds:Object.keys(candidateSources).map(function(id){return candidateSources[id].id;}),linkRefs:linkRefs}),research.runs.length));research.revision++;research.status='current';research.ledgerRef={ledgerId:truthLedger.id,ledgerRevision:truthLedger.revision,scriptFingerprint:truthLedger.scriptFingerprint,contractRef:canonicalClone(truthLedger.contractRef||null,null)};research.provenance.updatedAt=now;truthResearch=normalizeTruthResearch(research);renderTruthLedger();if(window.gdAutosaveProject)window.gdAutosaveProject(true);return {ok:true,research:canonicalClone(truthResearch,null),linksAdded:linkRefs.length};
 }
@@ -3891,11 +3967,12 @@ function rebuildTruthLedgerFromScript(script,options){
     if(!prior&&componentPriors.length)prior=componentPriors[0];
     if(prior){
       reused[prior.id]=1;claim=canonicalClone(prior,prior);claim.active=true;claim.statement=candidate.statement;claim.components=components.slice();claim.refs=refs.slice();claim.mergedFrom=componentPriors.map(function(item){return item.id;});
+      ['epistemicKind','subject','assertionMode','origin','authority','evidence','researchEligibility','validationState','policyVersion'].forEach(function(key){claim[key]=canonicalClone(candidate[key],candidate[key]);});
       if(componentPriors.length){var sourceKeys={};claim.sources=[];componentPriors.forEach(function(item){(item.sources||[]).forEach(function(source){var sourceKey=truthLedgerText(source.url,1000)+'|'+truthLedgerText(source.note,800);if(sourceKeys[sourceKey])return;sourceKeys[sourceKey]=1;claim.sources.push(canonicalClone(source,source));});});claim.classificationSource='local_classifier';claim.type=candidate.type;claim.required=candidate.required;claim.status=claim.required?'needs_source':'not_required';if(claim.required&&componentPriors.every(function(item){return item.status==='verified'&&truthClaimHasSource(item);}))claim.status='verified';}
       else if(claim.classificationSource!=='user'){claim.type=candidate.type;claim.required=candidate.required;if(!claim.required&&claim.status==='needs_source')claim.status='not_required';if(claim.required&&claim.status==='not_required')claim.status='needs_source';}else claim.required=truthClaimNeedsSupport(claim.type);
       if(claim.status==='stale')claim.status=truthClaimHasSource(claim)?'verified':(claim.required?'needs_source':'not_required');claim.retiredAt=0;claim.updatedAt=now;
     }
-    else claim={id:'claim:'+canonicalIdToken(),statement:candidate.statement,components:components.slice(),mergedFrom:[],type:candidate.type,status:candidate.required?'needs_source':'not_required',required:candidate.required,active:true,classificationSource:'local_classifier',refs:refs.slice(),sources:[],createdAt:now,updatedAt:now,retiredAt:0};
+    else claim={id:'claim:'+canonicalIdToken(),statement:candidate.statement,components:components.slice(),mergedFrom:[],type:candidate.type,status:candidate.required?'needs_source':'not_required',required:candidate.required,active:true,classificationSource:'local_classifier',epistemicKind:candidate.epistemicKind,subject:candidate.subject,assertionMode:candidate.assertionMode,origin:canonicalClone(candidate.origin,{}),authority:canonicalClone(candidate.authority,{}),evidence:canonicalClone(candidate.evidence,{}),researchEligibility:candidate.researchEligibility,validationState:candidate.validationState,policyVersion:candidate.policyVersion,refs:refs.slice(),sources:[],createdAt:now,updatedAt:now,retiredAt:0};
     return normalizeTruthClaim(claim,index);
   });
   var retired=[];(previous&&previous.claims||[]).forEach(function(claim){if(reused[claim.id])return;var old=normalizeTruthClaim(claim,retired.length);old.active=false;old.status='stale';old.retiredAt=old.retiredAt||now;retired.push(old);});
@@ -3916,7 +3993,7 @@ function truthClaimVisibleInEvidenceQueue(claim){return !!(claim&&claim.active&&
 function truthSourceAssistantIsCurrent(claim,source){var a=source&&source.assistant;return !!(a&&a.status==='current'&&a.claimFingerprint===truthSourceClaimFingerprint(claim.statement)&&truthLedgerText(a.sourceUrl,1000)===truthLedgerText(source.url,1000));}
 function updateTruthClaim(id,patch){
   if(!truthLedger)return {ok:false,error:'Truth Ledger has not been reviewed.'};truthLedger=normalizeTruthLedger(truthLedger);var claim=truthLedger.claims.find(function(item){return item.id===id;});if(!claim)return {ok:false,error:'Claim not found.'};patch=patch||{};
-  if(patch.type&&TRUTH_CLAIM_TYPES[patch.type]){var previousType=claim.type;claim.type=patch.type;claim.required=truthClaimNeedsSupport(claim.type);claim.classificationSource='user';if(!claim.required&&['needs_source','verified','conflict'].indexOf(claim.status)>=0)claim.status='not_required';if(claim.required&&claim.status==='not_required')claim.status='needs_source';if(previousType!==claim.type&&truthResearch){truthResearch=normalizeTruthResearch(truthResearch);truthResearch.status='stale';truthResearch.provenance.updatedAt=Date.now();}}
+  if(patch.type&&TRUTH_CLAIM_TYPES[patch.type]){var previousType=claim.type;claim.type=patch.type;claim.required=claim.researchEligibility==='forbidden_personal'?false:truthClaimNeedsSupport(claim.type);claim.classificationSource='user';if(!claim.required&&['needs_source','verified','conflict'].indexOf(claim.status)>=0)claim.status='not_required';if(claim.required&&claim.status==='not_required')claim.status='needs_source';if(previousType!==claim.type&&truthResearch){truthResearch=normalizeTruthResearch(truthResearch);truthResearch.status='stale';truthResearch.provenance.updatedAt=Date.now();}}
   if(patch.sourceUrl!=null||patch.sourceNote!=null){var source=claim.sources[0]||normalizeTruthSource({},claim.id,0),previousUrl=source.url;if(patch.sourceUrl!=null){source.url=truthLedgerText(patch.sourceUrl,1000);if(source.url!==previousUrl){if(source.assistant){source.assistant.status='stale';source.assistantHistory=(source.assistantHistory||[]).concat([source.assistant]).slice(-8);}source.assistant=null;source.title='';source.kind='';if(claim.status==='verified')claim.status=claim.required?'needs_source':'not_required';}}if(patch.sourceNote!=null)source.note=truthLedgerText(patch.sourceNote,800);source.verifiedAt=(source.url||source.note)?Date.now():0;claim.sources=(source.url||source.note||source.assistantHistory&&source.assistantHistory.length)?[source]:[];if(!truthClaimHasSource(claim)&&claim.status==='verified')claim.status=claim.required?'needs_source':'not_required';}
   if(patch.status&&TRUTH_CLAIM_STATUSES[patch.status]){if(patch.status==='verified'&&!truthClaimHasSource(claim))return {ok:false,error:'Add a source link or verification note before marking this claim Verified.'};var activeSource=claim.sources[0];if(patch.status==='verified'&&activeSource&&activeSource.assistant&&truthSourceAssistantIsCurrent(claim,activeSource)&&activeSource.assistant.relationship==='conflicts')return {ok:false,error:'This source conflicts with the claim. Resolve the conflict or use a different source before marking it Verified.'};claim.status=patch.status;claim.classificationSource='user';}
   claim.updatedAt=Date.now();truthLedger.provenance.updatedAt=Date.now();renderTruthLedger();planHighlight();if(window.gdAutosaveProject)window.gdAutosaveProject(false);return {ok:true,claim:canonicalClone(claim,claim)};
@@ -3930,7 +4007,7 @@ function validateTruthLedger(ledger,options){
   if(!value)return {valid:true,issues:issues,errors:[],counts:{claims:0,activeClaims:0,sources:0}};
   if(value.schema!==TRUTH_LEDGER_SCHEMA)add('TRUTH_LEDGER_SCHEMA_INVALID','creative.truthLedger.schema','Truth Ledger uses an unsupported schema.');
   if(!value.id||value.id.indexOf('truth-ledger:')!==0)add('TRUTH_LEDGER_ID_INVALID','creative.truthLedger.id','Truth Ledger is missing its stable identity.');
-  value.claims.forEach(function(claim,index){var path='creative.truthLedger.claims['+index+']';if(!claim.id||claim.id.indexOf('claim:')!==0)add('TRUTH_CLAIM_ID_INVALID',path+'.id','A claim is missing its stable identity.');else if(seen[claim.id])add('DUPLICATE_TRUTH_CLAIM_ID',path+'.id','Two claims share the same identity.');else seen[claim.id]=1;if(!claim.statement)add('TRUTH_CLAIM_EMPTY',path+'.statement','A claim has no statement.');if(claim.active&&!claim.refs.length)add('TRUTH_CLAIM_REFERENCE_MISSING',path+'.refs','An active claim is not linked to a script line.',false);if(claim.status==='verified'&&!truthClaimHasSource(claim))add('TRUTH_VERIFICATION_SOURCE_MISSING',path+'.sources','A verified claim needs a source link or verification note.');claim.sources.forEach(function(source,sourceIndex){var sourcePath=path+'.sources['+sourceIndex+']',assistant=source.assistant;if(assistant&&!truthSourceAssistantIsCurrent(claim,source))add('TRUTH_SOURCE_ANALYSIS_STALE',sourcePath+'.assistant','This source analysis no longer matches the claim or link.',false);if(claim.status==='verified'&&assistant&&truthSourceAssistantIsCurrent(claim,source)&&assistant.relationship==='conflicts')add('TRUTH_VERIFIED_SOURCE_CONFLICT',sourcePath+'.assistant.relationship','A verified claim cannot rely on a source that conflicts with it.');});if(claim.active&&claim.required&&claim.status==='needs_source')add('TRUTH_SOURCE_NEEDED',path+'.status','This claim still needs support.',false);});
+  value.claims.forEach(function(claim,index){var path='creative.truthLedger.claims['+index+']';if(!claim.id||claim.id.indexOf('claim:')!==0)add('TRUTH_CLAIM_ID_INVALID',path+'.id','A claim is missing its stable identity.');else if(seen[claim.id])add('DUPLICATE_TRUTH_CLAIM_ID',path+'.id','Two claims share the same identity.');else seen[claim.id]=1;if(!claim.statement)add('TRUTH_CLAIM_EMPTY',path+'.statement','A claim has no statement.');if(claim.active&&!claim.refs.length)add('TRUTH_CLAIM_REFERENCE_MISSING',path+'.refs','An active claim is not linked to a script line.',false);if(claim.researchEligibility==='forbidden_personal'&&claim.required)add('PERSONAL_AUTHORITY_SENT_TO_RESEARCH',path+'.researchEligibility','External evidence cannot authorize creator biography.');if(claim.researchEligibility==='forbidden_personal'&&claim.status==='verified')add('PERSONAL_AUTHORITY_EXTERNALLY_VERIFIED',path+'.status','A creator biography statement cannot be verified by an external source.');if(claim.status==='verified'&&!truthClaimHasSource(claim))add('TRUTH_VERIFICATION_SOURCE_MISSING',path+'.sources','A verified claim needs a source link or verification note.');claim.sources.forEach(function(source,sourceIndex){var sourcePath=path+'.sources['+sourceIndex+']',assistant=source.assistant;if(assistant&&!truthSourceAssistantIsCurrent(claim,source))add('TRUTH_SOURCE_ANALYSIS_STALE',sourcePath+'.assistant','This source analysis no longer matches the claim or link.',false);if(claim.status==='verified'&&assistant&&truthSourceAssistantIsCurrent(claim,source)&&assistant.relationship==='conflicts')add('TRUTH_VERIFIED_SOURCE_CONFLICT',sourcePath+'.assistant.relationship','A verified claim cannot rely on a source that conflicts with it.');});if(claim.active&&claim.required&&claim.status==='needs_source')add('TRUTH_SOURCE_NEEDED',path+'.status','This claim still needs support.',false);});
   if(value.status==='current'&&options.scriptText!=null&&value.scriptFingerprint!==truthLedgerScriptFingerprint(options.scriptText))add('TRUTH_LEDGER_SCRIPT_STALE','creative.truthLedger.scriptFingerprint','The script changed after the last Truth Ledger review.',false);
   return {valid:issues.every(function(issue){return !issue.blocking;}),issues:issues,errors:issues.filter(function(issue){return issue.blocking;}).map(function(issue){return issue.code;}),counts:{claims:value.claims.length,activeClaims:value.claims.filter(function(claim){return claim.active;}).length,sources:value.claims.reduce(function(total,claim){return total+claim.sources.length;},0)}};
 }
@@ -3940,7 +4017,7 @@ function truthLedgerContext(){
   return '\n\nTRUTH LEDGER - CLAIM DISCIPLINE FOR THIS PROJECT:\n- Ledger: '+ledger.id+' / revision '+ledger.revision+' / '+ledger.strictness+' review\n'
     +(trusted.length?'\nVERIFIED OR USER-CONFIRMED STATEMENTS - preserve their meaning and do not contradict them:\n- '+trusted.map(function(claim){return claim.statement;}).join('\n- '):'')
     +(open.length?'\n\nUNSUPPORTED STATEMENTS - do not strengthen, quantify or present these as established fact without evidence:\n- '+open.map(function(claim){return claim.statement;}).join('\n- '):'')
-    +'\n\nPersonal experience, opinion and creative premise may remain subjective. Never invent a citation, source, statistic or verification state.';
+    +'\n\nOpinion and creative premise may remain subjective. Personal experience is allowed only when first-party authority exists in the explicit project input; external research never creates that authority. Never invent a citation, source, statistic or verification state.';
 }
 function truthLedgerLineState(lineNumber){
   var ledger=normalizeTruthLedger(truthLedger);if(!ledger||ledger.status!=='current')return '';
@@ -3979,7 +4056,7 @@ function reviewTruthLedger(){var ta=document.getElementById('scriptTa');truthRes
 function updateTruthClaimFromControl(id,field,control){var patch={};patch[field]=control.value;var result=updateTruthClaim(id,patch),message=document.getElementById('truthLedgerMessage');if(!result.ok){if(message)message.textContent=result.error;renderTruthLedger();var claim=truthLedger&&truthLedger.claims.find(function(item){return item.id===id;});if(claim)control.value=claim[field]||claim.status;}else if(message)message.textContent='Saved to this project.';}
 function runTruthResearch(){
   if(truthResearchBusy||!truthLedger||truthLedger.status!=='current')return;try{if(localStorage.getItem('gd_truth_research_consent_v2')!=='1'){var consent=window.gdAsk?window.gdAsk({title:'Let GrainDistrict find scholarly evidence?',message:'Only the factual claims shown in Truth Ledger are used to plan searches in Crossref’s open scholarly metadata. Your full script, Creator DNA, project name and identity stay out. GrainDistrict then opens selected public article pages and compares them with the claim. Nothing becomes Verified without your approval.',ok:'Allow evidence research'}):Promise.resolve(false);consent.then(function(yes){if(!yes)return;try{localStorage.setItem('gd_truth_research_consent_v2','1');}catch(e){}runTruthResearch();});return;}}catch(e){}
-  var claims=truthLedger.claims.filter(function(claim){return claim.active&&claim.required&&claim.status==='needs_source'&&['fact','technical','recommendation'].indexOf(claim.type)>=0;}).slice(0,12);if(!claims.length){truthResearchFeedback='No unresolved factual claims need web research.';renderTruthLedger();return;}
+  var claims=truthLedger.claims.filter(function(claim){return claim.active&&claim.required&&claim.researchEligibility==='eligible_external'&&claim.status==='needs_source'&&['fact','technical','recommendation'].indexOf(claim.type)>=0;}).slice(0,12);if(!claims.length){truthResearchFeedback='No unresolved factual claims need web research.';renderTruthLedger();return;}
   truthResearchBusy=true;truthResearchFeedback='Finding and reading strong sources for '+claims.length+' factual claim'+(claims.length===1?'':'s')+'...';var panel=document.getElementById('truthLedgerPanel');if(panel)panel.classList.add('open');renderTruthLedger();var controller=typeof AbortController!=='undefined'?new AbortController():null,timer=controller?setTimeout(function(){controller.abort();},90000):null;
   var runId=truthResearchPendingRunId||('research-run:'+canonicalIdToken()),contractRef=truthLedger.contractRef||{};truthResearchPendingRunId=runId;
   fetch(String(WORKER||'').replace(/\/+$/,'')+'/api/truth-research/run',{method:'POST',headers:workerHeaders(),signal:controller&&controller.signal,body:JSON.stringify({runId:runId,claims:claims.map(function(claim){return {id:claim.id,statement:claim.statement,type:claim.type,fingerprint:truthSourceClaimFingerprint(claim.statement)};}),snapshot:{truthLedgerId:truthLedger.id,truthLedgerRevision:truthLedger.revision,scriptFingerprint:truthLedger.scriptFingerprint,contractId:contractRef.contractId||'',contractRevision:contractRef.contractRevision||0,contractHash:contractRef.contractHash||''},context:workerUsageContext()})}).then(function(response){return response.text().then(function(text){var data={};try{data=JSON.parse(text);}catch(e){}if(!response.ok){if(response.status===401)throw new Error('Sign in to let GrainDistrict research evidence for you.');throw new Error(data.error||('Evidence Research error '+response.status));}return data;});}).then(function(data){var result=applyTruthResearchResult(data);if(!result.ok)throw new Error(result.error);truthResearchPendingRunId='';var run=data&&data.research||{},found=Number(result.linksAdded)||0;truthResearchFeedback=found?(found+' evidence match'+(found===1?' is':'es are')+' ready. GrainDistrict did not verify anything; review the matches or accept the strong ones together.'):'No reliable match was found this time. Nothing was fabricated; you can retry or add one source manually.';if(run.remainingRunsToday!=null)truthResearchFeedback+=' '+run.remainingRunsToday+' automatic run'+(run.remainingRunsToday===1?'':'s')+' left today.';}).catch(function(error){truthResearchFeedback=error&&error.name==='AbortError'?'Research paused safely. Retry to continue the same run without paying twice.':(error&&error.message||'Automatic evidence research could not finish.');}).finally(function(){if(timer)clearTimeout(timer);truthResearchBusy=false;renderTruthLedger();});
@@ -4008,6 +4085,11 @@ window.gdValidateTruthResearch=validateTruthResearch;
 window.gdApplyTruthResearchResult=function(value){return canonicalClone(applyTruthResearchResult(value||{}),null);};
 window.gdGetTruthResearch=function(){return canonicalClone(truthResearch,null);};
 window.gdSetTruthResearch=function(value){truthResearch=value?normalizeTruthResearch(value):null;renderTruthLedger();return canonicalClone(truthResearch,null);};
+window.gdRefreshFirstPartyAssertions=function(){return canonicalClone(refreshFirstPartyAssertions(),[]);};
+window.gdAuditScriptEpistemics=function(script,origin){return canonicalClone(epistemicAuditScript(script,origin||'test'),null);};
+window.gdSanitizeCreativeContractBiography=function(value){refreshFirstPartyAssertions();return canonicalClone(sanitizeCreativeContractBiography(normalizeCreativeContract(value,value&&value.source)),null);};
+window.gdGetFirstPartyAssertions=function(){return canonicalClone(firstPartyAssertions,[]);};
+window.gdGetScriptEpistemicHistory=function(){return canonicalClone(scriptEpistemicRevisions,[]);};
 document.getElementById('constraintsIn').addEventListener('input',function(){
   if(!creativeContract)return;
   var changed=creativeContract.projectInputKey!==creativeContractKey(this.value.trim());
@@ -4608,7 +4690,7 @@ function performNewProject(){
   canonicalRuntimeProjectId=null;canonicalProjectState=null;canonicalValidationState=null;canonicalMigrationBackup=null;canonicalLastKnownValid=null;canonicalTombstones=[];
   resetLocationViewState();
   nodes=[];attShots=[];imgNodes=[];noteNodes=[];conns=[];nid=1;nodeDrawerClosed={};
-  topic='';projectBrief='';projectConstraints='';creativeContract=null;creativeContractBusy=false;creativeContractHistory=[];creativeGenerationRecords=[];currentScriptGeneratedFrom=null;truthLedger=null;truthResearch=null;projectBreakdown=null;projectBreakdownKey=null;
+  topic='';projectBrief='';projectConstraints='';creativeContract=null;creativeContractBusy=false;creativeContractHistory=[];creativeGenerationRecords=[];currentScriptGeneratedFrom=null;truthLedger=null;truthResearch=null;firstPartyAssertions=[];scriptEpistemicRevisions=[];currentScriptEpistemic=null;projectBreakdown=null;projectBreakdownKey=null;
   scriptVersions=[];scriptSelectionState=null;scriptRevisionState=null;
   clearRecce();songName='';songDuration=0;songAnalysis=null;songURL=null;
   undoStack=[];undoIdx=-1;scale=1;px=60;py=180;selId=null;selImgId=null;selNoteId=null;selectedNodeIds=[];selectedImgIds=[];selectedNoteIds=[];
@@ -4656,7 +4738,7 @@ function stopMvHints(){if(mvHintTimer){clearInterval(mvHintTimer);mvHintTimer=nu
 function setProjectType(type){
   if(type==='music'||type==='film')return;
   projectType=type;
-  creativeContract=null;creativeContractBusy=false;creativeContractHistory=[];creativeGenerationRecords=[];currentScriptGeneratedFrom=null;truthLedger=null;truthResearch=null;renderCreativeContract();renderTruthLedger();
+  creativeContract=null;creativeContractBusy=false;creativeContractHistory=[];creativeGenerationRecords=[];currentScriptGeneratedFrom=null;truthLedger=null;truthResearch=null;firstPartyAssertions=[];scriptEpistemicRevisions=[];currentScriptEpistemic=null;renderCreativeContract();renderTruthLedger();
   // Gawx is the house visual language for new work. The old style picker was
   // an extra decision before the user had even described the film.
   styleMode='gawx';
@@ -5516,7 +5598,7 @@ function buildGenSys(totalSec,li){
   }else if(projectType==='other'){
     base='You are a director building a shot plan for a video project.\n\n5 block types:\nINTRO - Opening sequence. How it starts.\nMAIN - Core content. The main visual segment.\nSEGMENT - A distinct section or chapter within the video.\nOUTRO - Closing sequence. How it ends.\nTRANSITION - One line. Brief cut or pause.\n\nRULES:\n- Total duration: '+dur+'\n- Each block describes what happens visually and structurally.';
   }else{
-    base='You are a filmmaker building a cut-by-cut plan for a personal YouTube video in a '+tone+' tone.\n\n4 block types:\nVOICEOVER - Write the EXACT words spoken out loud. First person. No visual description.\nBROLL - No talking. ONE single camera cut. Describe only what the CAMERA SEES: framing, lens, movement, subject.\nMUSIC - No talking. Only music plays. Marks a montage section.\nTRANSITION - One line. Match cut, smash cut or brief pause.'+ytCutRules(totalSec)+'\n\nRULES:\n- Total duration: '+dur+'\n- NEVER follow repeating patterns. Let emotion and story rhythm decide.\n- Aesthetic: harsh flash, grain, analog, anti-polished.'
+    base='You are a filmmaker building a cut-by-cut plan for a personal YouTube video in a '+tone+' tone.\n\n4 block types:\nVOICEOVER - Write the EXACT words spoken out loud. The creator may express a present opinion or intention in first person; past or present personal events require explicit first-party authority. No visual description.\nBROLL - No talking. ONE single camera cut. Describe only what the CAMERA SEES: framing, lens, movement, subject.\nMUSIC - No talking. Only music plays. Marks a montage section.\nTRANSITION - One line. Match cut, smash cut or brief pause.'+ytCutRules(totalSec)+'\n\nRULES:\n- Total duration: '+dur+'\n- NEVER follow repeating patterns. Let emotion and story rhythm decide.\n- Aesthetic: harsh flash, grain, analog, anti-polished.'
       /* Everything above tells the model how to fill a timeline. Left at that
          it fills one very competently and says nothing: it reaches for the
          cadence it has learned means "moving" - the three-part list, the
@@ -5541,7 +5623,7 @@ function buildGenSys(totalSec,li){
       +'- Rhetorical questions the narrator immediately answers, and openers of the "these days" / "have you ever" family.'
       +stylePack('script')+stylePack('shots');
   }
-  return (li?li+'\n\n':'')+base+creatorDnaContext()+creativeContractContext()+truthLedgerContext()+(li?'\n\n'+li:'')+'\n\nLANGUAGE: Write ALL block content - voiceover words, visual descriptions, everything after the timecode - in the SAME LANGUAGE the user wrote the topic in. Keep the [TYPE] tags in English.\n\nReturn ONLY plain text. Each block is EXACTLY ONE line - never split a block across two lines, never repeat the timecode on its own line:\n[TYPE] 00:00-00:00 - content';
+  return (li?li+'\n\n':'')+base+creatorDnaContext()+creativeContractContext()+truthLedgerContext()+epistemicContext()+(li?'\n\n'+li:'')+'\n\nLANGUAGE: Write ALL block content - voiceover words, visual descriptions, everything after the timecode - in the SAME LANGUAGE the user wrote the topic in. Keep the [TYPE] tags in English.\n\nReturn ONLY plain text. Each block is EXACTLY ONE line - never split a block across two lines, never repeat the timecode on its own line:\n[TYPE] 00:00-00:00 - content';
 }
 
 var pcChoice='ai';
@@ -5568,7 +5650,7 @@ function breakdownKey(){
    a stable, globally unambiguous identity and lets future screens evolve
    without inventing their own copy of the project. */
 var CANONICAL_PROJECT_SCHEMA='graindistrict.canonical-project';
-var CANONICAL_PROJECT_VERSION=2;
+var CANONICAL_PROJECT_VERSION=3;
 var canonicalRuntimeProjectId=null;
 var canonicalProjectState=null;
 var canonicalValidationState=null;
@@ -5625,6 +5707,12 @@ var canonicalMigrationRegistry={
     if(applied.indexOf('1>2')<0)applied.push('1>2');
     project.migration.applied=applied;
     return project;
+  },
+  2:function(project){
+    project=canonicalClone(project,{});project.schemaVersion=3;project.creative=project.creative||{};project.script=project.script||{};
+    if(!Array.isArray(project.creative.firstPartyAssertions))project.creative.firstPartyAssertions=[];
+    if(!project.script.epistemic)project.script.epistemic={policy:EPISTEMIC_POLICY,policyVersion:EPISTEMIC_POLICY_VERSION,current:null,history:project.script.text?[normalizeScriptEpistemicRecord({status:'legacy_unreviewed',origin:'canonical_v2_migration',scriptFingerprint:truthLedgerScriptFingerprint(project.script.text),createdAt:Date.now()},0)]:[]};
+    project.migration=Object.assign({},project.migration||{});var applied=Array.isArray(project.migration.applied)?project.migration.applied.slice():[];if(applied.indexOf('2>3')<0)applied.push('2>3');project.migration.applied=applied;return project;
   }
 };
 function migrateCanonicalSchema(project){
@@ -5639,6 +5727,8 @@ function migrateCanonicalSchema(project){
   if(out.creative&&!Array.isArray(out.creative.generatedOutputs))out.creative.generatedOutputs=[];
   if(out.creative&&out.creative.truthLedger)out.creative.truthLedger=normalizeTruthLedger(out.creative.truthLedger);
   if(out.creative&&out.creative.truthResearch)out.creative.truthResearch=normalizeTruthResearch(out.creative.truthResearch);
+  if(out.creative)out.creative.firstPartyAssertions=(Array.isArray(out.creative.firstPartyAssertions)?out.creative.firstPartyAssertions:[]).map(normalizeFirstPartyAssertion);
+  if(out.script){var epi=out.script.epistemic||{};out.script.epistemic={policy:EPISTEMIC_POLICY,policyVersion:EPISTEMIC_POLICY_VERSION,current:epi.current?normalizeScriptEpistemicRecord(epi.current,0):null,history:(Array.isArray(epi.history)?epi.history:[]).map(normalizeScriptEpistemicRecord)};}
   return out;
 }
 function canonicalProjectId(seed){
@@ -5732,8 +5822,8 @@ function canonicalProjectFromLegacy(data){
     schema:CANONICAL_PROJECT_SCHEMA,schemaVersion:CANONICAL_PROJECT_VERSION,project:project,
     workflow:{stage:data.stage||'board'},
     creative:{tone:data.tone||'',format:data.fmt||'',houseLook:data.styleMode||'',language:data.inputLang||'en',
-      durationRange:{min:Number(data.durMin)||0,max:Number(data.durMax)||0},brief:data.projectBrief||'',constraints:data.projectConstraints||'',creatorDNA:canonicalClone(data.creatorDNA||null,null),contract:data.creativeContract?normalizeCreativeContract(data.creativeContract,data.creativeContract.source):null,contractHistory:canonicalClone(data.creativeContractHistory||[],[]).map(function(c){return normalizeCreativeContract(c,c&&c.source);}),generatedOutputs:canonicalClone(data.creativeGenerationRecords||[],[]),truthLedger:data.truthLedger?normalizeTruthLedger(data.truthLedger):null,truthResearch:data.truthResearch?normalizeTruthResearch(data.truthResearch):null},
-    script:{text:data.script||'',versions:canonicalClone(data.scriptVersions||[],[]),generatedFrom:canonicalClone(data.currentScriptGeneratedFrom||null,null)},
+      durationRange:{min:Number(data.durMin)||0,max:Number(data.durMax)||0},brief:data.projectBrief||'',constraints:data.projectConstraints||'',creatorDNA:canonicalClone(data.creatorDNA||null,null),contract:data.creativeContract?normalizeCreativeContract(data.creativeContract,data.creativeContract.source):null,contractHistory:canonicalClone(data.creativeContractHistory||[],[]).map(function(c){return normalizeCreativeContract(c,c&&c.source);}),generatedOutputs:canonicalClone(data.creativeGenerationRecords||[],[]),truthLedger:data.truthLedger?normalizeTruthLedger(data.truthLedger):null,truthResearch:data.truthResearch?normalizeTruthResearch(data.truthResearch):null,firstPartyAssertions:canonicalClone(data.firstPartyAssertions||firstPartyAssertions||[],[]).map(normalizeFirstPartyAssertion)},
+    script:{text:data.script||'',versions:canonicalClone(data.scriptVersions||[],[]),generatedFrom:canonicalClone(data.currentScriptGeneratedFrom||null,null),epistemic:{policy:EPISTEMIC_POLICY,policyVersion:EPISTEMIC_POLICY_VERSION,current:data.currentScriptEpistemic?normalizeScriptEpistemicRecord(data.currentScriptEpistemic,0):null,history:canonicalClone(data.scriptEpistemicRevisions||scriptEpistemicRevisions||[],[]).map(normalizeScriptEpistemicRecord)}},
     timeline:{blocks:blocks},
     production:{details:details,locations:locations,breakdownKey:data.projectBreakdownKey||null},
     assets:{images:images,recce:recce,audio:{name:data.songName||'',duration:Number(data.songDuration)||0,analysis:canonicalClone(data.songAnalysis||null,null)}},
@@ -5785,8 +5875,8 @@ function legacyProjectFromCanonical(project,fallback){
   out.projectType=project.project&&project.project.type||out.projectType||'youtube';out.topic=project.project&&project.project.title||out.topic||'';out.projectFps=project.project&&project.project.fps||24;
   out.tone=creative.tone||out.tone||'';out.fmt=creative.format||out.fmt||'';out.styleMode=creative.houseLook||out.styleMode||'';out.inputLang=creative.language||out.inputLang||'en';
   out.durMin=creative.durationRange&&creative.durationRange.min||out.durMin;out.durMax=creative.durationRange&&creative.durationRange.max||out.durMax;
-  out.projectBrief=creative.brief||'';out.projectConstraints=creative.constraints||'';out.creatorDNA=canonicalClone(creative.creatorDNA||null,null);out.creativeContract=creative.contract?normalizeCreativeContract(creative.contract,creative.contract.source):null;out.creativeContractHistory=canonicalClone(creative.contractHistory||[],[]).map(function(c){return normalizeCreativeContract(c,c&&c.source);});out.creativeGenerationRecords=canonicalClone(creative.generatedOutputs||[],[]);out.truthLedger=creative.truthLedger?normalizeTruthLedger(creative.truthLedger):null;out.truthResearch=creative.truthResearch?normalizeTruthResearch(creative.truthResearch):null;
-  out.script=project.script&&project.script.text||'';out.scriptVersions=canonicalClone(project.script&&project.script.versions||[],[]);out.currentScriptGeneratedFrom=canonicalClone(project.script&&project.script.generatedFrom||null,null);
+  out.projectBrief=creative.brief||'';out.projectConstraints=creative.constraints||'';out.creatorDNA=canonicalClone(creative.creatorDNA||null,null);out.creativeContract=creative.contract?normalizeCreativeContract(creative.contract,creative.contract.source):null;out.creativeContractHistory=canonicalClone(creative.contractHistory||[],[]).map(function(c){return normalizeCreativeContract(c,c&&c.source);});out.creativeGenerationRecords=canonicalClone(creative.generatedOutputs||[],[]);out.truthLedger=creative.truthLedger?normalizeTruthLedger(creative.truthLedger):null;out.truthResearch=creative.truthResearch?normalizeTruthResearch(creative.truthResearch):null;out.firstPartyAssertions=(creative.firstPartyAssertions||[]).map(normalizeFirstPartyAssertion);
+  var scriptEpistemic=project.script&&project.script.epistemic||{};out.script=project.script&&project.script.text||'';out.scriptVersions=canonicalClone(project.script&&project.script.versions||[],[]);out.currentScriptGeneratedFrom=canonicalClone(project.script&&project.script.generatedFrom||null,null);out.currentScriptEpistemic=scriptEpistemic.current?normalizeScriptEpistemicRecord(scriptEpistemic.current,0):null;out.scriptEpistemicRevisions=(scriptEpistemic.history||[]).map(normalizeScriptEpistemicRecord);
   out.boardViewMode=workspace.mode||'free';out.boardDensity=workspace.density||'compact';out.boardCardDetail=workspace.detail||'standard';out.view=canonicalClone(workspace.view||null,null);out.boardCamera=canonicalClone(workspace.camera||null,null);
   out.stage=project.workflow&&project.workflow.stage||out.stage||'board';out.aiMode=workspace.aiMode!==false;
   out.decisions=canonicalClone(project.decisions||[],[]);out.canonicalTombstones=canonicalClone(project.tombstones||[],[]);out.nid=Math.max(Number(workspace.nextLegacyId)||1,maxId+1);out.v=4;out.canonical=canonicalClone(project,project);
@@ -5794,6 +5884,7 @@ function legacyProjectFromCanonical(project,fallback){
 }
 function validateCanonicalProject(project){
   var errors=[],issues=[],seen={},revisionContracts={},timeline=project&&project.timeline||{},production=project&&project.production||{},assets=project&&project.assets||{},workspace=project&&project.workspace||{},creative=project&&project.creative||{};
+  var runtimeFirstPartyAssertions=firstPartyAssertions;firstPartyAssertions=(creative.firstPartyAssertions||[]).map(normalizeFirstPartyAssertion);
   function issue(code,legacy,entityId,path,message,blocking){
     errors.push(legacy||code.toLowerCase());issues.push({severity:blocking===false?'warning':'error',code:code,entityId:entityId||null,path:path||'',message:message,blocking:blocking!==false});
   }
@@ -5813,6 +5904,8 @@ function validateCanonicalProject(project){
     var ledgerRef=ledger&&ledger.contractRef;if(ledgerRef&&ledgerRef.contractId){var ledgerContract=revisionContracts[ledgerRef.contractId+'@'+ledgerRef.contractRevision];if(!ledgerContract)issue('TRUTH_LEDGER_CONTRACT_REVISION_MISSING','truth_ledger_contract_revision_missing',ledger.id,'creative.truthLedger.contractRef','Truth Ledger references a Creative Contract revision that is no longer stored.');else if(ledgerRef.contractHash!==creativeContractHash(ledgerContract))issue('TRUTH_LEDGER_CONTRACT_HASH_MISMATCH','truth_ledger_contract_hash_mismatch',ledger.id,'creative.truthLedger.contractRef','Truth Ledger Contract hash does not match the stored revision.');}
   }
   if(creative.truthResearch){var research=normalizeTruthResearch(creative.truthResearch),researchValidation=validateTruthResearch(research),acceptedResearch={};(researchValidation.issues||[]).forEach(function(item){issue(item.code,'truth_research:'+item.code,research.id,item.path,item.message,item.blocking);});research.decisions.forEach(function(decision){if(decision.action==='accepted')acceptedResearch[decision.linkId+'@'+decision.linkRevision]=1;});var canonicalLedger=normalizeTruthLedger(creative.truthLedger);(canonicalLedger&&canonicalLedger.claims||[]).forEach(function(claim,claimIndex){if(!claim.active||claim.status!=='verified')return;(claim.sources||[]).forEach(function(source,sourceIndex){var assistant=source.assistant,ref=assistant&&assistant.researchRef;if(assistant&&assistant.origin==='automatic_research'&&(!ref||!acceptedResearch[ref.linkId+'@'+ref.linkRevision]))issue('AUTO_RESEARCH_VERIFIED_WITHOUT_USER_DECISION','auto_research_verified_without_user_decision',claim.id,'creative.truthLedger.claims['+claimIndex+'].sources['+sourceIndex+'].assistant.researchRef','Automatic research cannot make a claim Verified without a recorded user decision.');});});}
+  var assertionSeen={};(creative.firstPartyAssertions||[]).forEach(function(assertion,index){var normalized=normalizeFirstPartyAssertion(assertion,index);if(!normalized.statement)issue('FIRST_PARTY_ASSERTION_EMPTY','first_party_assertion_empty',normalized.id,'creative.firstPartyAssertions['+index+'].statement','A first-party assertion has no text.');if(assertionSeen[normalized.id])issue('DUPLICATE_FIRST_PARTY_ASSERTION','duplicate_first_party_assertion:'+normalized.id,normalized.id,'creative.firstPartyAssertions['+index+'].id','A first-party assertion is stored more than once.');assertionSeen[normalized.id]=1;});
+  var epi=project&&project.script&&project.script.epistemic||{},epiSeen={};(epi.history||[]).map(normalizeScriptEpistemicRecord).forEach(function(record,index){var key=record.id+'@'+record.revision;if(epiSeen[key])issue('DUPLICATE_SCRIPT_EPISTEMIC_REVISION','duplicate_script_epistemic_revision:'+key,record.id,'script.epistemic.history['+index+']','A script safety revision is stored more than once.');epiSeen[key]=1;});if(epi.current){var current=normalizeScriptEpistemicRecord(epi.current,0),scriptFingerprint=truthLedgerScriptFingerprint(project&&project.script&&project.script.text||'');if(current.status!=='promoted')issue('SCRIPT_EPISTEMIC_CURRENT_NOT_PROMOTED','script_epistemic_current_not_promoted',current.id,'script.epistemic.current.status','Only a promoted script safety revision may be current.');if(current.scriptFingerprint!==scriptFingerprint)issue('SCRIPT_EPISTEMIC_FINGERPRINT_MISMATCH','script_epistemic_fingerprint_mismatch',current.id,'script.epistemic.current.scriptFingerprint','The current script changed after its biography-safety promotion.',false);}
   function addAll(items,label,path){(items||[]).forEach(function(item,index){
     if(!item||!item.id){issue('ENTITY_ID_MISSING',label+'_id_missing',null,path+'['+index+'].id','A '+label+' is missing its permanent identity.');return;}
     if(String(item.id).indexOf(label+':')!==0)issue('ENTITY_ID_TYPE_MISMATCH','id_type_mismatch:'+item.id,item.id,path+'['+index+'].id','This '+label+' has an identity for a different entity type.');
@@ -5832,7 +5925,7 @@ function validateCanonicalProject(project){
     if(seen[tomb.id])issue('ACTIVE_TOMBSTONE_CONFLICT','active_tombstone:'+tomb.id,tomb.id,'tombstones['+index+'].id','An item is marked as both active and deleted.');tombSeen[tomb.id]=1;
   });
   var ledgerCounts=validateTruthLedger(creative.truthLedger,{scriptText:project&&project.script&&project.script.text||''}).counts,researchCounts=validateTruthResearch(creative.truthResearch).counts;
-  return {valid:issues.every(function(x){return !x.blocking;}),errors:errors,issues:issues,counts:{blocks:(timeline.blocks||[]).length,details:(production.details||[]).length,images:(assets.images||[]).length,notes:(workspace.notes||[]).length,connections:(workspace.connections||[]).length,locations:(production.locations||[]).length,contractRevisions:(creative.contract?1:0)+(creative.contractHistory||[]).length,generationOutputs:(creative.generatedOutputs||[]).length,truthClaims:ledgerCounts.activeClaims,truthSources:ledgerCounts.sources,researchSources:researchCounts.sources,researchLinks:researchCounts.links,researchRuns:researchCounts.runs,tombstones:(project&&project.tombstones||[]).length}};
+  firstPartyAssertions=runtimeFirstPartyAssertions;return {valid:issues.every(function(x){return !x.blocking;}),errors:errors,issues:issues,counts:{blocks:(timeline.blocks||[]).length,details:(production.details||[]).length,images:(assets.images||[]).length,notes:(workspace.notes||[]).length,connections:(workspace.connections||[]).length,locations:(production.locations||[]).length,contractRevisions:(creative.contract?1:0)+(creative.contractHistory||[]).length,generationOutputs:(creative.generatedOutputs||[]).length,truthClaims:ledgerCounts.activeClaims,truthSources:ledgerCounts.sources,researchSources:researchCounts.sources,researchLinks:researchCounts.links,researchRuns:researchCounts.runs,tombstones:(project&&project.tombstones||[]).length}};
 }
 function migrateProjectData(data){
   data=canonicalClone(data||{},{});
@@ -5855,7 +5948,7 @@ function canonicalRuntimeSnapshot(){
   var ta=document.getElementById('scriptTa');
   var active=document.getElementById('s3')&&document.getElementById('s3').classList.contains('active')?'script':'board';
   return canonicalProjectFromLegacy({v:4,stage:active,projectType:projectType,topic:topic,tone:tone,fmt:fmt,styleMode:styleMode,inputLang:inputLang,durMin:durMin,durMax:durMax,
-    projectBrief:projectBrief,projectConstraints:projectConstraints,creatorDNA:creatorDNA,creativeContract:creativeContract,creativeContractHistory:creativeContractHistory,creativeGenerationRecords:creativeGenerationRecords,currentScriptGeneratedFrom:currentScriptGeneratedFrom,truthLedger:truthLedger,truthResearch:truthResearch,projectBreakdown:projectBreakdown,projectBreakdownKey:projectBreakdownKey,
+    projectBrief:projectBrief,projectConstraints:projectConstraints,creatorDNA:creatorDNA,creativeContract:creativeContract,creativeContractHistory:creativeContractHistory,creativeGenerationRecords:creativeGenerationRecords,currentScriptGeneratedFrom:currentScriptGeneratedFrom,truthLedger:truthLedger,truthResearch:truthResearch,firstPartyAssertions:firstPartyAssertions,scriptEpistemicRevisions:scriptEpistemicRevisions,currentScriptEpistemic:currentScriptEpistemic,projectBreakdown:projectBreakdown,projectBreakdownKey:projectBreakdownKey,
     songName:songName,songDuration:songDuration,songAnalysis:songAnalysis,recceImages:recceImages,nodes:itemsAtStoryPositions(nodes,'nodes'),attShots:itemsAtStoryPositions(attShots,'atts'),
     imgNodes:imgNodes,noteNodes:noteNodes,conns:conns,nid:nid,canonicalTombstones:canonicalTombstones,script:ta?ta.value:'',scriptVersions:scriptVersions,view:storyViewForSave(),boardCamera:{scale:scale,px:px,py:py},
     boardViewMode:canvasViewMode,boardDensity:boardDensity,boardCardDetail:boardCardDetail,aiMode:(typeof aiMode!=='undefined'?aiMode:true)});
@@ -6517,7 +6610,7 @@ function pcContinue(){
 
 function genScript(){
   show('s2');startLoad('s2');
-  document.getElementById('scriptTa').value='';
+  var scriptTa=document.getElementById('scriptTa'),previousScript=scriptTa?scriptTa.value:'',previousFingerprint=previousScript?truthLedgerScriptFingerprint(previousScript):'',previousGeneratedFrom=canonicalClone(currentScriptGeneratedFrom,null);
   var totalSec=(durMin+durMax)/2*60;
   var li=langInstr(inputLang,'shot plan content');
   var planSys=buildGenSys(totalSec,li);
@@ -6532,7 +6625,6 @@ function genScript(){
     : api(planSys,buildUserContent(planMsg),'shot_plan').then(function(t){return ensureFullPlan(planSys,t);});
 
   planPromise.then(function(planResult){
-    stopLoad();
     var planText=planResult.trim();
     // if every segment/continuation attempt failed or timed out, what comes
     // back can be the model's own confused reply to an empty prompt (e.g.
@@ -6543,14 +6635,16 @@ function genScript(){
       planText=splitLongMusicBlocks(planText);
       planText=compactGeneratedYouTubePlan(planText,totalSec);
     }
-    projectBrief='';
-    document.getElementById('scriptTa').value=planText;
-    rebuildTruthLedgerFromScript(planText,{reason:'generated_script',silent:true});
+    return projectType==='youtube'?epistemicGateCandidateScript(planText,'shot_plan',previousFingerprint):Promise.resolve({script:planText,audit:null,rewritten:false});
+  }).then(function(result){
+    stopLoad();var planText=result.script;projectBrief='';
+    scriptTa.value=planText;
+    rebuildTruthLedgerFromScript(planText,{reason:result.rewritten?'generated_script_safety_rewrite':'generated_script',silent:true});
     document.getElementById('wc').textContent=planStatsLabel(planText);
     refreshScriptStudio();
     show('s3');
     if(window.gdAutosaveProject)window.gdAutosaveProject(true);
-  }).catch(function(e){stopLoad();alert('Error: '+e.message);show('s1');});
+  }).catch(function(e){stopLoad();currentScriptGeneratedFrom=previousGeneratedFrom;if(scriptTa)scriptTa.value=previousScript;alert('Error: '+e.message);show(previousScript?'s3':'s1');});
 }
 
 /* The plan is edited as plain text but reads far better with its block types
@@ -6681,6 +6775,13 @@ function cleanScriptRevision(raw){
   out=out.replace(/^(["“])|(["”])$/g,'').replace(/\s*\n+\s*/g,' ').replace(/\s{2,}/g,' ').trim();
   return out;
 }
+function epistemicGateSelectedRevision(state,candidate){
+  var ta=document.getElementById('scriptTa'),full=ta.value.slice(0,state.start)+candidate+ta.value.slice(state.end),audit=epistemicAuditScript(full,'script_revision');
+  if(audit.status==='clear')return Promise.resolve(candidate);
+  recordScriptEpistemic(full,'quarantined','script_revision',audit,truthLedgerScriptFingerprint(ta.value));
+  var sys='Rewrite only this selected spoken fragment so it follows the biography boundary. Return replacement words only, with no label, timecode, quotation marks or commentary. Preserve the requested meaning and language. Do not invent a memory, action, visit, job, purchase, possession, feeling or observation for the creator.'+epistemicContext();
+  return api(sys,'UNSAFE CANDIDATE:\n'+candidate+'\n\nNEARBY CONTEXT:\n'+state.context,'epistemic_rewrite').then(function(raw){var safe=cleanScriptRevision(raw),next=ta.value.slice(0,state.start)+safe+ta.value.slice(state.end),second=epistemicAuditScript(next,'epistemic_rewrite');if(!safe||second.status!=='clear')throw new Error('That revision would invent a personal event, so it was not applied.');return safe;});
+}
 function setScriptRevisionLoading(loading,message){
   var status=document.getElementById('scriptRevStatus'),accept=document.getElementById('scriptAccept'),again=document.getElementById('scriptTryAgain');
   if(status)status.textContent=message||(loading?'Rewriting selection…':'Ready to compare');
@@ -6694,14 +6795,15 @@ function requestScriptRevision(instruction){
   document.getElementById('scriptRevBefore').textContent=sel.original;
   document.getElementById('scriptRevAfter').textContent='Thinking in the voice of this project…';
   setScriptRevisionLoading(true);
-  var sys='You are a precise spoken-script editor. Rewrite ONLY the selected words. Return replacement text only: no quotation marks, labels, timecodes, commentary or markdown. Keep the same language, facts, names, point of view and continuity. Make it natural to say aloud. Do not rewrite the surrounding line.'+creatorDnaContext()+creativeContractContext()+truthLedgerContext();
+  var sys='You are a precise spoken-script editor. Rewrite ONLY the selected words. Return replacement text only: no quotation marks, labels, timecodes, commentary or markdown. Keep the same language, facts, names, point of view and continuity. Make it natural to say aloud. Do not rewrite the surrounding line.'+creatorDnaContext()+creativeContractContext()+truthLedgerContext()+epistemicContext();
   var user='PROJECT: '+topic+'\n\nNEARBY SCRIPT CONTEXT:\n'+scriptRevisionState.context+'\n\nSELECTED TEXT:\n'+sel.original+'\n\nREVISION INSTRUCTION:\n'+instruction;
   api(sys,user,'script_revision').then(function(raw){
     if(!scriptRevisionState)return;
     var candidate=cleanScriptRevision(raw);if(!candidate)throw new Error('The AI returned an empty revision.');
-    scriptRevisionState.candidate=candidate;
-    document.getElementById('scriptRevAfter').textContent=candidate;
-    setScriptRevisionLoading(false,'Only this selection will change');
+    return epistemicGateSelectedRevision(scriptRevisionState,candidate);
+  }).then(function(candidate){
+    if(!scriptRevisionState)return;scriptRevisionState.candidate=candidate;
+    document.getElementById('scriptRevAfter').textContent=candidate;setScriptRevisionLoading(false,'Only this selection will change');
   }).catch(function(e){
     if(!scriptRevisionState)return;
     scriptRevisionState.candidate='';
@@ -6729,6 +6831,8 @@ function acceptScriptRevision(){
   var leading=(state.original.match(/^\s*/)||[''])[0],trailing=(state.original.match(/\s*$/)||[''])[0];
   var replacement=leading+state.candidate+trailing;
   var before=ta.value,after=before.slice(0,state.start)+replacement+before.slice(state.end);
+  var audit=epistemicAuditScript(after,'script_revision');if(audit.status!=='clear'){recordScriptEpistemic(after,'rejected','script_revision',audit,truthLedgerScriptFingerprint(before));setScriptRevisionLoading(false,'This revision would invent a personal event');return;}
+  recordScriptEpistemic(after,'promoted','script_revision',audit,truthLedgerScriptFingerprint(before));
   scriptVersions.push({at:Date.now(),before:before,after:after,original:state.original,replacement:replacement});
   if(scriptVersions.length>20)scriptVersions.shift();
   ta.value=after;ta.focus();ta.setSelectionRange(state.start,state.start+replacement.length);
@@ -9248,9 +9352,9 @@ function docTitle(){
    Without a breakdown there is nothing to group by, so the document falls back
    to story order - the beats with their cuts nested underneath. */
 function withCanonicalRuntimeProjection(snapshot,run){
-  var projection=legacyProjectFromCanonical(snapshot,{}),previous={nodes:nodes,attShots:attShots,imgNodes:imgNodes,noteNodes:noteNodes,conns:conns,projectBreakdown:projectBreakdown,projectType:projectType,topic:topic,creativeContract:creativeContract,creativeContractHistory:creativeContractHistory,creativeGenerationRecords:creativeGenerationRecords,currentScriptGeneratedFrom:currentScriptGeneratedFrom,truthLedger:truthLedger,truthResearch:truthResearch};
-  nodes=projection.nodes||[];attShots=projection.attShots||[];imgNodes=projection.imgNodes||[];noteNodes=projection.noteNodes||[];conns=projection.conns||[];projectBreakdown=projection.projectBreakdown||null;projectType=projection.projectType||projectType;topic=projection.topic||topic;creativeContract=projection.creativeContract||creativeContract;creativeContractHistory=projection.creativeContractHistory||[];creativeGenerationRecords=projection.creativeGenerationRecords||[];currentScriptGeneratedFrom=projection.currentScriptGeneratedFrom||null;truthLedger=projection.truthLedger?normalizeTruthLedger(projection.truthLedger):null;truthResearch=projection.truthResearch?normalizeTruthResearch(projection.truthResearch):null;
-  try{return run(projection);}finally{nodes=previous.nodes;attShots=previous.attShots;imgNodes=previous.imgNodes;noteNodes=previous.noteNodes;conns=previous.conns;projectBreakdown=previous.projectBreakdown;projectType=previous.projectType;topic=previous.topic;creativeContract=previous.creativeContract;creativeContractHistory=previous.creativeContractHistory;creativeGenerationRecords=previous.creativeGenerationRecords;currentScriptGeneratedFrom=previous.currentScriptGeneratedFrom;truthLedger=previous.truthLedger;truthResearch=previous.truthResearch;}
+  var projection=legacyProjectFromCanonical(snapshot,{}),previous={nodes:nodes,attShots:attShots,imgNodes:imgNodes,noteNodes:noteNodes,conns:conns,projectBreakdown:projectBreakdown,projectType:projectType,topic:topic,creativeContract:creativeContract,creativeContractHistory:creativeContractHistory,creativeGenerationRecords:creativeGenerationRecords,currentScriptGeneratedFrom:currentScriptGeneratedFrom,truthLedger:truthLedger,truthResearch:truthResearch,firstPartyAssertions:firstPartyAssertions,scriptEpistemicRevisions:scriptEpistemicRevisions,currentScriptEpistemic:currentScriptEpistemic};
+  nodes=projection.nodes||[];attShots=projection.attShots||[];imgNodes=projection.imgNodes||[];noteNodes=projection.noteNodes||[];conns=projection.conns||[];projectBreakdown=projection.projectBreakdown||null;projectType=projection.projectType||projectType;topic=projection.topic||topic;creativeContract=projection.creativeContract||creativeContract;creativeContractHistory=projection.creativeContractHistory||[];creativeGenerationRecords=projection.creativeGenerationRecords||[];currentScriptGeneratedFrom=projection.currentScriptGeneratedFrom||null;truthLedger=projection.truthLedger?normalizeTruthLedger(projection.truthLedger):null;truthResearch=projection.truthResearch?normalizeTruthResearch(projection.truthResearch):null;firstPartyAssertions=(projection.firstPartyAssertions||[]).map(normalizeFirstPartyAssertion);scriptEpistemicRevisions=(projection.scriptEpistemicRevisions||[]).map(normalizeScriptEpistemicRecord);currentScriptEpistemic=projection.currentScriptEpistemic?normalizeScriptEpistemicRecord(projection.currentScriptEpistemic,0):null;
+  try{return run(projection);}finally{nodes=previous.nodes;attShots=previous.attShots;imgNodes=previous.imgNodes;noteNodes=previous.noteNodes;conns=previous.conns;projectBreakdown=previous.projectBreakdown;projectType=previous.projectType;topic=previous.topic;creativeContract=previous.creativeContract;creativeContractHistory=previous.creativeContractHistory;creativeGenerationRecords=previous.creativeGenerationRecords;currentScriptGeneratedFrom=previous.currentScriptGeneratedFrom;truthLedger=previous.truthLedger;truthResearch=previous.truthResearch;firstPartyAssertions=previous.firstPartyAssertions;scriptEpistemicRevisions=previous.scriptEpistemicRevisions;currentScriptEpistemic=previous.currentScriptEpistemic;}
 }
 function buildPrintView(){
   // Export reads through a canonical snapshot projection. The editor can keep
@@ -10493,7 +10597,7 @@ document.addEventListener('mouseup',function(e){
     var data={
       v:4, stage:active,projectRecordId:currentProjectId,projectType:projectType, topic:topic, tone:tone, fmt:fmt, styleMode:styleMode, inputLang:inputLang,
       boardViewMode:canvasViewMode,boardDensity:boardDensity,boardCardDetail:boardCardDetail,
-      creatorDNA:creatorDNA,creativeContract:creativeContract,creativeContractHistory:creativeContractHistory,creativeGenerationRecords:creativeGenerationRecords,currentScriptGeneratedFrom:currentScriptGeneratedFrom,truthLedger:truthLedger,truthResearch:truthResearch,
+      creatorDNA:creatorDNA,creativeContract:creativeContract,creativeContractHistory:creativeContractHistory,creativeGenerationRecords:creativeGenerationRecords,currentScriptGeneratedFrom:currentScriptGeneratedFrom,truthLedger:truthLedger,truthResearch:truthResearch,firstPartyAssertions:firstPartyAssertions,scriptEpistemicRevisions:scriptEpistemicRevisions,currentScriptEpistemic:currentScriptEpistemic,
       durMin:durMin, durMax:durMax, projectBrief:projectBrief, projectConstraints:projectConstraints,
       projectBreakdown:projectBreakdown, projectBreakdownKey:projectBreakdownKey,
       aiMode:(typeof aiMode!=='undefined'?aiMode:true),
@@ -10523,7 +10627,7 @@ document.addEventListener('mouseup',function(e){
     creatorDNA=d.creatorDNA||loadCreatorDna()||creatorDNA;
     if(d.creatorDNA)storeCreatorDna(d.creatorDNA);
     creativeContract=d.creativeContract?normalizeCreativeContract(d.creativeContract,d.creativeContract.source):null;
-    creativeContractHistory=(d.creativeContractHistory||[]).map(function(c){return normalizeCreativeContract(c,c&&c.source);});creativeGenerationRecords=d.creativeGenerationRecords||[];currentScriptGeneratedFrom=d.currentScriptGeneratedFrom||null;truthLedger=d.truthLedger?normalizeTruthLedger(d.truthLedger):null;truthResearch=d.truthResearch?normalizeTruthResearch(d.truthResearch):null;
+    creativeContractHistory=(d.creativeContractHistory||[]).map(function(c){return normalizeCreativeContract(c,c&&c.source);});creativeGenerationRecords=d.creativeGenerationRecords||[];currentScriptGeneratedFrom=d.currentScriptGeneratedFrom||null;truthLedger=d.truthLedger?normalizeTruthLedger(d.truthLedger):null;truthResearch=d.truthResearch?normalizeTruthResearch(d.truthResearch):null;firstPartyAssertions=(d.firstPartyAssertions||[]).map(normalizeFirstPartyAssertion);scriptEpistemicRevisions=(d.scriptEpistemicRevisions||[]).map(normalizeScriptEpistemicRecord);currentScriptEpistemic=d.currentScriptEpistemic?normalizeScriptEpistemicRecord(d.currentScriptEpistemic,0):null;
     inputLang=d.inputLang||'en'; durMin=d.durMin||durMin; durMax=d.durMax||durMax;
     projectBrief=d.projectBrief||''; projectConstraints=d.projectConstraints||'';
     projectBreakdown=d.projectBreakdown||null; projectBreakdownKey=d.projectBreakdownKey||null;
@@ -10664,7 +10768,7 @@ document.addEventListener('mouseup',function(e){
     resetLocationViewState();
     nodes=[]; attShots=[]; imgNodes=[]; noteNodes=[]; conns=[]; nid=1;
     nodeDrawerClosed={};
-    topic=''; projectBrief=''; projectConstraints=''; creativeContract=null; creativeContractBusy=false; creativeContractHistory=[]; creativeGenerationRecords=[]; currentScriptGeneratedFrom=null; truthLedger=null; truthResearch=null; projectBreakdown=null; projectBreakdownKey=null;
+    topic=''; projectBrief=''; projectConstraints=''; creativeContract=null; creativeContractBusy=false; creativeContractHistory=[]; creativeGenerationRecords=[]; currentScriptGeneratedFrom=null; truthLedger=null; truthResearch=null; firstPartyAssertions=[]; scriptEpistemicRevisions=[]; currentScriptEpistemic=null; projectBreakdown=null; projectBreakdownKey=null;
     recceImages=[];
     songName=''; songDuration=0; songAnalysis=null; songURL=null;
     var sta=byId('scriptTa'); if(sta) sta.value='';
