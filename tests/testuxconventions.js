@@ -23,7 +23,7 @@ const { pathToFileURL } = require('url');
     topic:document.getElementById('topicIn').placeholder,
     constraints:document.getElementById('constraintsIn').placeholder
   }));
-  ok('Setup examples default to English',/rainy morning in NYC/i.test(defaultCopy.topic)&&/wheat field/i.test(defaultCopy.constraints)&&!/Buğday|lensler|bütçe|aşk/i.test(defaultCopy.topic+' '+defaultCopy.constraints),defaultCopy);
+  ok('Setup examples default to English',/rainy morning in NYC/i.test(defaultCopy.topic)&&/Sony a7S III/i.test(defaultCopy.constraints)&&/apartment/i.test(defaultCopy.constraints)&&!/Buğday|lensler|bütçe|aşk/i.test(defaultCopy.topic+' '+defaultCopy.constraints),defaultCopy);
 
   const nav=await page.evaluate(()=>{
     const back=document.querySelector('.s1-back').getBoundingClientRect();
@@ -51,31 +51,35 @@ const { pathToFileURL } = require('url');
   ok('AI setup continues to production details instead of skipping them',equipment.screen==='s_equipment',equipment);
   ok('The primary desktop action sits at the trailing edge',equipment.skipLeft<equipment.primaryLeft,equipment);
 
-  await page.evaluate(()=>{window.__generated=0;genScript=function(){window.__generated++;show('s3');};});
+  await page.evaluate(()=>{window.__generated=0;api=function(){return Promise.resolve('{"format":"story","viewer":"People interested in craft","promise":"See the baker’s real night process","structure":"arrival to first loaf","visualSystem":"70% B-roll · 30% graphics","proof":"real process","pacing":"reflective","avoid":["filler"]}');};genScript=function(){window.__generated++;show('s3');};});
   await page.click('#s_equipment .brief-skip-btn');
-  const skippedEquipment=await page.evaluate(()=>({calls:window.__generated,screen:document.querySelector('.screen.active').id}));
-  ok('Skipping optional equipment moves forward',skippedEquipment.calls===1&&skippedEquipment.screen==='s3',skippedEquipment);
+  await page.waitForTimeout(80);
+  const skippedEquipment=await page.evaluate(()=>({calls:window.__generated,screen:document.querySelector('.screen.active').id,panel:document.getElementById('creativeContractPanel').classList.contains('show'),constraints:projectConstraints}));
+  ok('Skipping optional equipment still prepares a reviewable project direction',skippedEquipment.calls===0&&skippedEquipment.screen==='s_equipment'&&skippedEquipment.panel&&skippedEquipment.constraints==='',skippedEquipment);
 
-  await page.evaluate(()=>{genScript=window.__realGen;show('s1');});
+  await page.evaluate(()=>{genScript=window.__realGen;creativeContract=null;renderCreativeContract();show('s1');});
   await page.fill('#topicIn','A quiet portrait of a night-shift baker');
   await page.click('#gobtn');await page.waitForTimeout(340);
   await page.fill('#constraintsIn','One camera, 35mm lens, bakery available after midnight');
   await page.evaluate(()=>{
     window.__apiCalls=[];
-    api=function(sys,content,feature){window.__apiCalls.push({content:JSON.stringify(content),feature});return Promise.resolve('[VOICEOVER] 00:00-00:05 - The city sleeps.');};
+    api=function(sys,content,feature){window.__apiCalls.push({sys:String(sys),content:JSON.stringify(content),feature});return Promise.resolve(feature==='creative_contract'?'{"format":"story","viewer":"People interested in craft","promise":"See the baker’s real night process","structure":"arrival to first loaf","visualSystem":"70% B-roll · 30% graphics","proof":"real process","pacing":"reflective","avoid":["filler"]}':'[VOICEOVER] 00:00-04:00 - The city sleeps.');};
     ensureFullPlan=function(sys,text){return Promise.resolve(text);};
   });
   await page.click('#s_equipment .gobtn');await page.waitForTimeout(120);
+  const direction=await page.evaluate(()=>({screen:document.querySelector('.screen.active').id,panel:document.getElementById('creativeContractPanel').classList.contains('show'),calls:window.__apiCalls}));
+  ok('Production details first become an editable Project Direction',direction.screen==='s_equipment'&&direction.panel&&direction.calls.length===1&&direction.calls[0].feature==='creative_contract',direction);
+  await page.click('#creativeContractLock');await page.waitForTimeout(120);
   const studio=await page.evaluate(()=>({screen:document.querySelector('.screen.active').id,constraints:projectConstraints,brief:projectBrief,calls:window.__apiCalls,briefScreen:!!document.getElementById('s_brief')}));
-  ok('Production details now open Script Studio directly',studio.screen==='s3'&&!studio.briefScreen&&studio.brief==='',studio);
-  ok('The real constraints reach one shot-plan request without a duplicate brief call',studio.calls.length===1&&studio.calls[0].feature==='shot_plan'&&/35mm lens/.test(studio.calls[0].content),studio.calls);
+  ok('Locking Project Direction opens Script Studio without reviving the old brief screen',studio.screen==='s3'&&!studio.briefScreen&&studio.brief==='',studio);
+  ok('The real constraints create one contract request and one contract-guided shot-plan request',studio.calls.length===2&&studio.calls[0].feature==='creative_contract'&&studio.calls[1].feature==='shot_plan'&&/35mm lens/.test(studio.calls[0].content)&&/PROJECT-SPECIFIC CREATIVE CONTRACT/.test(studio.calls[1].sys),studio.calls);
 
   await page.evaluate(()=>{
     show('s5');nodes=[{id:1,type:'broll',tcStart:'00:00',tcEnd:'00:03',content:'Bakery exterior',shots:[],x:60,y:80,grp:0}];
     attShots=[];imgNodes=[];noteNodes=[];conns=[];renderAll();
   });
   const legendClosed=await page.evaluate(()=>({panel:getComputedStyle(document.getElementById('guidePanel')).display,button:getComputedStyle(document.getElementById('guideShow')).display,expanded:document.getElementById('guideShow').getAttribute('aria-expanded')}));
-  ok('Story opens without free-canvas instructions covering work',legendClosed.panel==='none'&&legendClosed.button==='none'&&legendClosed.expanded==='false',legendClosed);
+  ok('Canvas opens without instructions covering the work',legendClosed.panel==='none'&&legendClosed.button!=='none'&&legendClosed.expanded==='false',legendClosed);
   await page.click('#btnCanvasView');await page.waitForTimeout(40);
   await page.click('#guideShow');
   const legendOpen=await page.evaluate(()=>({panel:getComputedStyle(document.getElementById('guidePanel')).display,expanded:document.getElementById('guideShow').getAttribute('aria-expanded')}));
