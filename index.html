@@ -1497,6 +1497,13 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,label:focus-with
 .cc-head p{margin-top:8px;font-family:var(--sans);font-size:11px;line-height:1.55;color:rgba(255,255,255,.34);}
 .cc-state{display:flex;align-items:center;gap:7px;white-space:nowrap;padding:8px 10px;border:1px solid rgba(109,155,211,.16);border-radius:999px;background:rgba(109,155,211,.045);font-family:var(--mono);font-size:7px;letter-spacing:.09em;text-transform:uppercase;color:rgba(109,155,211,.72);}
 .cc-state::before{content:'';width:5px;height:5px;border-radius:50%;background:#78a984;box-shadow:0 0 9px rgba(120,169,132,.55);}
+.cc-snapshot{position:relative;display:none;grid-template-columns:1.45fr 1fr 1fr;gap:9px;margin-bottom:14px;}
+.cc-panel.locked:not(.details-open) .cc-snapshot{display:grid;}
+.cc-panel.locked:not(.details-open) .cc-sections{display:none;}
+.cc-snapshot-item{min-width:0;padding:14px 15px;border:1px solid rgba(255,255,255,.07);border-radius:15px;background:linear-gradient(135deg,rgba(255,255,255,.035),rgba(4,5,4,.32));}
+.cc-snapshot-item:first-child{border-color:rgba(215,185,88,.16);background:linear-gradient(135deg,rgba(215,185,88,.065),rgba(4,5,4,.34));}
+.cc-snapshot-item b{display:block;margin-bottom:7px;font-family:var(--mono);font-size:6px;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.27);}
+.cc-snapshot-item span{display:-webkit-box;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:3;font-family:var(--sans);font-size:11px;line-height:1.5;color:rgba(255,255,255,.68);}
 .cc-sections{position:relative;display:grid;gap:10px;}
 .cc-section{padding:13px;border:1px solid rgba(255,255,255,.065);border-radius:17px;background:rgba(4,5,4,.24);}
 .cc-section-head{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;}
@@ -1512,11 +1519,13 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,label:focus-with
 .cc-field textarea{height:39px;overflow-y:auto;}
 .cc-field select{appearance:none;cursor:pointer;color:rgba(255,255,255,.82);}
 .cc-field select option{background:#111;color:#eee;}
-.cc-foot{position:relative;display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:16px;}
+.cc-foot{position:sticky;z-index:4;bottom:-1px;display:flex;align-items:center;justify-content:space-between;gap:16px;margin:16px -8px -8px;padding:12px 8px 8px;background:linear-gradient(180deg,rgba(12,13,12,0),rgba(12,13,12,.94) 30%);backdrop-filter:blur(14px);}
 .cc-foot>span{font-family:var(--mono);font-size:7px;letter-spacing:.09em;text-transform:uppercase;color:rgba(255,255,255,.22);}
 .cc-foot-actions{display:flex;align-items:center;gap:8px;}
 .cc-rebuild{border:0;background:none;color:rgba(215,185,88,.68);font-family:var(--mono);font-size:7px;letter-spacing:.11em;text-transform:uppercase;cursor:pointer;padding:8px;}
 .cc-rebuild:hover{color:#efd36d;}
+.cc-details{min-height:38px;padding:8px 11px;border:1px solid rgba(255,255,255,.09);border-radius:10px;background:rgba(255,255,255,.025);color:rgba(255,255,255,.48);font-family:var(--mono);font-size:7px;letter-spacing:.09em;text-transform:uppercase;cursor:pointer;}
+.cc-details:hover{border-color:rgba(255,255,255,.17);color:rgba(255,255,255,.74);}
 .cc-lock{min-height:42px;padding:9px 15px;border:0;border-radius:11px;background:#f5f3ee;color:#0b0c0b;font-family:var(--sans);font-size:11px;font-weight:650;cursor:pointer;box-shadow:0 10px 28px rgba(0,0,0,.24);}
 .cc-lock:hover{background:#fff;transform:translateY(-1px);}
 .cc-lock:disabled{opacity:.38;pointer-events:none;}
@@ -1574,6 +1583,11 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,label:focus-with
 .truth-research-privacy b{color:rgba(109,155,211,.62);font-weight:500}
 .truth-manual-source{grid-column:1/-1;border:1px solid rgba(255,255,255,.055);border-radius:10px;background:rgba(4,5,4,.28);overflow:hidden}.truth-manual-source summary{min-height:auto!important;display:block!important;padding:9px 10px!important;font-family:var(--mono);font-size:6px;letter-spacing:.11em;text-transform:uppercase;color:rgba(255,255,255,.24);cursor:pointer}.truth-manual-source[open] summary{border-bottom:1px solid rgba(255,255,255,.05)}.truth-manual-source .truth-field{border:0;border-radius:0;background:transparent}
 .truth-ledger-message{min-height:15px;margin:-3px 2px 8px;font-family:var(--mono);font-size:7px;line-height:1.5;letter-spacing:.06em;color:rgba(215,185,88,.65);}
+.truth-overview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:0 0 10px;}
+.truth-overview-item{padding:10px 11px;border:1px solid rgba(255,255,255,.06);border-radius:11px;background:rgba(255,255,255,.016);}
+.truth-overview-item b{display:block;margin-bottom:4px;font-family:var(--sans);font-size:16px;line-height:1;color:rgba(255,255,255,.74);}
+.truth-overview-item span{font-family:var(--mono);font-size:6px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.25);}
+.truth-overview-item.needs b{color:#d7b958}.truth-overview-item.clear b{color:#78a984}
 .truth-empty{padding:22px;border:1px dashed rgba(255,255,255,.09);border-radius:13px;text-align:center;font-family:var(--sans);font-size:11px;line-height:1.6;color:rgba(255,255,255,.32);}
 .truth-claims{display:grid;gap:7px;}
 .truth-claim{border:1px solid rgba(255,255,255,.07);border-radius:12px;background:rgba(255,255,255,.018);overflow:hidden;}
@@ -1584,7 +1598,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,label:focus-with
 .truth-claim summary{min-height:45px;display:grid;grid-template-columns:24px minmax(0,1fr) auto auto;align-items:center;gap:10px;padding:8px 11px;cursor:pointer;list-style:none;}
 .truth-claim summary::-webkit-details-marker{display:none;}
 .truth-claim-index{font-family:var(--mono);font-size:7px;color:rgba(255,255,255,.18);}
-.truth-claim-text{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--sans);font-size:10.5px;color:rgba(255,255,255,.62);}
+.truth-claim-text{min-width:0;display:-webkit-box;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:2;font-family:var(--sans);font-size:10.5px;line-height:1.45;color:rgba(255,255,255,.62);}
 .truth-claim-chip{padding:5px 7px;border:1px solid rgba(255,255,255,.075);border-radius:999px;font-family:var(--mono);font-size:6px;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,.3);white-space:nowrap;}
 .truth-claim-status{color:rgba(215,185,88,.72);border-color:rgba(215,185,88,.14);}
 .truth-claim.verified .truth-claim-status,.truth-claim.not_required .truth-claim-status,.truth-claim.user_asserted .truth-claim-status{color:rgba(120,169,132,.75);border-color:rgba(120,169,132,.14);}
@@ -1618,7 +1632,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,label:focus-with
 .truth-source-accept{padding:6px 9px;border:1px solid rgba(120,169,132,.22);border-radius:8px;background:rgba(120,169,132,.075);color:rgba(141,200,154,.85);font-family:var(--mono);font-size:6px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;}
 .truth-source-result[data-relation="conflicts"] .truth-source-accept{border-color:rgba(220,104,104,.25);background:rgba(220,104,104,.07);color:#df7b7b;}
 .truth-source-disclaimer{grid-column:1/-1;margin:-1px 2px 0;font-family:var(--mono);font-size:5.5px;line-height:1.5;letter-spacing:.055em;color:rgba(255,255,255,.17);}
-@media(max-width:600px){.truth-ledger-head{align-items:flex-start;flex-direction:column}.truth-ledger-actions{width:100%;display:grid;grid-template-columns:1fr 1fr}.truth-research-btn,.truth-review-btn{width:100%}.truth-source-row{grid-template-columns:1fr}.truth-source-analyse{width:100%}.truth-source-top,.truth-source-foot{align-items:flex-start;flex-direction:column}.truth-source-accept{width:100%}}
+@media(max-width:760px){.cc-snapshot{grid-template-columns:1fr}.cc-foot{align-items:flex-start;flex-direction:column}.cc-foot-actions{width:100%;flex-wrap:wrap}.cc-lock{flex:1}}
+@media(max-width:600px){.truth-ledger-head{align-items:flex-start;flex-direction:column}.truth-ledger-actions{width:100%;display:grid;grid-template-columns:1fr 1fr}.truth-research-btn,.truth-review-btn{width:100%}.truth-source-row{grid-template-columns:1fr}.truth-source-analyse{width:100%}.truth-source-top,.truth-source-foot{align-items:flex-start;flex-direction:column}.truth-source-accept{width:100%}.truth-claim summary{grid-template-columns:22px minmax(0,1fr);gap:7px}.truth-claim-chip{grid-row:2}.truth-claim summary .truth-claim-chip:nth-of-type(3){grid-column:1/2}.truth-claim summary .truth-claim-chip:nth-of-type(4){grid-column:2/3;justify-self:start}}
 .p-truth-needs{background:linear-gradient(180deg,transparent 76%,rgba(215,185,88,.18) 76% 92%,transparent 92%);}
 .p-truth-conflict{background:linear-gradient(180deg,transparent 76%,rgba(220,104,104,.22) 76% 92%,transparent 92%);}
 .p-truth-verified{background:linear-gradient(180deg,transparent 80%,rgba(120,169,132,.12) 80% 92%,transparent 92%);}
@@ -2592,6 +2607,7 @@ body.free-mode .port-dot:hover{background:var(--board-gold);border-color:#f8e8a8
         <div><div class="cc-k">Creative Contract / Project Direction</div><h2>This is what the film is promising.</h2><p>Review the decisions, change anything that feels wrong, then lock the direction and generate.</p></div>
         <div class="cc-state" id="creativeContractState">Ready to edit</div>
       </div>
+      <div class="cc-snapshot" id="creativeContractSnapshot" aria-label="Project direction summary"></div>
       <div class="cc-sections">
         <section class="cc-section"><div class="cc-section-head"><b>01 / Viewer &amp; Promise</b><span>Who changes, and what are we promising them?</span></div><div class="cc-grid">
           <div class="cc-field wide"><label for="ccViewer">Primary viewer</label><input id="ccViewer" type="text" autocomplete="off" placeholder="Who needs this video?"></div>
@@ -2621,7 +2637,7 @@ body.free-mode .port-dot:hover{background:var(--board-gold);border-color:#f8e8a8
           <div class="cc-field wide"><label for="ccAvoid">Must avoid</label><textarea id="ccAvoid" placeholder="Non-negotiable exclusions, one per line"></textarea></div>
         </div></section>
       </div>
-      <div class="cc-foot"><span id="creativeContractFoot">Built from your idea, DNA and real production limits.</span><div class="cc-foot-actions"><button class="cc-rebuild" type="button" onclick="regenerateCreativeContract()">Rebuild from details</button><button class="cc-lock" id="creativeContractLock" type="button" onclick="handleCreativeContractAction()"><span id="creativeContractLockText">Lock direction & generate</span></button></div></div>
+      <div class="cc-foot"><span id="creativeContractFoot">Built from your idea, DNA and real production limits.</span><div class="cc-foot-actions"><button class="cc-details" id="creativeContractDetails" type="button" onclick="toggleCreativeContractDetails()">Edit details</button><button class="cc-rebuild" type="button" onclick="regenerateCreativeContract()">Rebuild with AI</button><button class="cc-lock" id="creativeContractLock" type="button" onclick="handleCreativeContractAction()"><span id="creativeContractLockText">Save direction & continue</span></button></div></div>
     </section>
   </div>
 </div>
@@ -2669,8 +2685,9 @@ body.free-mode .port-dot:hover{background:var(--board-gold);border-color:#f8e8a8
             <span class="truth-ledger-name">Truth Ledger</span><span class="truth-ledger-summary" id="truthLedgerSummary">Ready to review</span><span class="truth-ledger-mode" id="truthLedgerMode">Adaptive</span><span class="truth-ledger-state" id="truthLedgerState">Unreviewed</span><span class="truth-ledger-chevron">&#8964;</span>
           </button>
           <div class="truth-ledger-body">
-            <div class="truth-ledger-head"><p id="truthLedgerIntro">Personal experience and opinion stay yours. Technical claims and recommendations are checked for support.</p><div class="truth-ledger-actions"><button class="truth-research-btn" id="truthResearchBtn" type="button" onclick="runTruthResearch()">Find evidence</button><button class="truth-review-btn" type="button" onclick="reviewTruthLedger()">Review script</button></div></div>
-            <div class="truth-research-privacy"><b>PRIVATE BY DESIGN</b> &middot; Only the small factual claims shown below are sent to web research. Your script, Creator DNA, project name and identity are not sent. Google Search grounding retains the research request for 30 days. Nothing becomes Verified without your approval.</div>
+            <div class="truth-ledger-head"><p id="truthLedgerIntro">Personal experience and opinion stay yours. Technical claims and recommendations are checked for support.</p><div class="truth-ledger-actions"><button class="truth-research-btn" id="truthResearchBtn" type="button" onclick="runTruthResearch()">Find evidence</button><button class="truth-review-btn" type="button" onclick="reviewTruthLedger()">Refresh topics</button></div></div>
+            <div class="truth-overview" id="truthLedgerOverview" aria-label="Evidence review summary"></div>
+            <div class="truth-research-privacy"><b>PRIVATE BY DESIGN</b> &middot; Only the compact research topics shown below leave your project. Crossref scholarly metadata finds candidate articles; selected public pages are compared with the claim. Your full script, Creator DNA, project name and identity are not sent. Nothing becomes Verified without your approval.</div>
             <div class="truth-ledger-message" id="truthLedgerMessage" aria-live="polite"></div>
             <div class="truth-claims" id="truthLedgerClaims"></div>
           </div>
@@ -3592,6 +3609,10 @@ function setCreativeContractBusy(busy,message){
   if(busy)['creativeContractActionText','creativeContractLockText'].forEach(function(id){var label=document.getElementById(id);if(label)label.textContent='Building your direction…';});
   if(state&&message)state.textContent=message;
 }
+function toggleCreativeContractDetails(){
+  var panel=document.getElementById('creativeContractPanel'),button=document.getElementById('creativeContractDetails');if(!panel)return;
+  panel.classList.toggle('details-open');if(button)button.textContent=panel.classList.contains('details-open')?'Hide details':'Edit details';
+}
 function renderCreativeContract(){
   var panel=document.getElementById('creativeContractPanel'),screen=document.getElementById('s_equipment');
   if(!panel||!screen)return;
@@ -3600,11 +3621,14 @@ function renderCreativeContract(){
   var values={ccFormat:creativeContractFormat(creativeContract),ccPresence:creativeContract.format.creatorPresence,ccDeliveryMode:creativeContract.format.deliveryMode,ccPacing:creativeContract.style.pacingIntent,ccTone:creativeContract.style.tone,ccViewer:creativeContract.audience.primary,ccPriorState:creativeContract.audience.priorState,ccDesiredState:creativeContract.audience.desiredState,ccPromise:creativeContract.promise.statement,ccSuccessCriteria:creativeContract.promise.successCriteria.join('\n'),ccDrivingQuestion:creativeContract.storyEngine.drivingQuestion,ccWhyItMatters:creativeContract.storyEngine.whyItMatters,ccTransformation:creativeContract.storyEngine.transformation,ccStructure:creativeContract.storyEngine.structure,ccVisualSystem:creativeContract.style.visualSystem,ccProof:creativeContract.proofRequirements.map(function(x){return x.statement;}).join('\n'),ccPayoffs:creativeContract.payoffs.map(function(x){return x.statement;}).join('\n'),ccMustInclude:creativeContract.constraints.mustInclude.map(function(x){return x.statement;}).join('\n'),ccAvoid:creativeContract.constraints.mustAvoid.map(function(x){return x.statement;}).join('\n')};
   Object.keys(values).forEach(function(id){var el=document.getElementById(id);if(el)el.value=values[id];});
   panel.classList.add('show');screen.classList.add('contract-ready');
+  var previousStatus=panel.dataset.contractStatus||'',isLocked=creativeContract.status==='locked';panel.dataset.contractStatus=creativeContract.status;panel.classList.toggle('locked',isLocked);if(isLocked&&previousStatus!=='locked')panel.classList.remove('details-open');
+  var snapshot=document.getElementById('creativeContractSnapshot');if(snapshot){var formatLabel=CREATIVE_CONTRACT_FORMATS[creativeContractFormat(creativeContract)]||creativeContractFormat(creativeContract),engine=creativeContract.storyEngine.drivingQuestion||creativeContract.storyEngine.structure||creativeContract.storyEngine.transformation,snapshotItems=[['Core promise',creativeContract.promise.statement],['Story engine',engine],['Shoot mode',formatLabel+' · '+creativeContract.format.deliveryMode+' · '+creativeContract.style.pacingIntent]];snapshot.innerHTML=snapshotItems.map(function(item){return '<div class="cc-snapshot-item"><b>'+creativeContractEscape(item[0])+'</b><span>'+creativeContractEscape(item[1])+'</span></div>';}).join('');}
+  var details=document.getElementById('creativeContractDetails');if(details){details.hidden=!isLocked;details.textContent=panel.classList.contains('details-open')?'Hide details':'Edit details';}
   var hasScript=document.getElementById('scriptTa')&&document.getElementById('scriptTa').value.trim();
-  var actionCopy=creativeContract.status==='locked'?(hasScript?'Regenerate from revision '+creativeContract.revision:'Generate from revision '+creativeContract.revision):(creativeContract.status==='stale'?'Rebuild stale direction':(hasScript?'Lock direction & regenerate':'Lock direction & generate'));
+  var actionCopy=isLocked?(hasScript?'Regenerate voiceover':'Continue to voiceover'):(creativeContract.status==='stale'?'Rebuild project direction':(hasScript?'Save direction & regenerate':'Save direction & continue'));
   ['creativeContractActionText','creativeContractLockText'].forEach(function(id){var label=document.getElementById(id);if(label)label.textContent=actionCopy;});
-  var state=document.getElementById('creativeContractState');if(state)state.textContent=creativeContract.status+' / revision '+creativeContract.revision;
-  var foot=document.getElementById('creativeContractFoot');if(foot)foot.textContent='Contract '+creativeContract.id+' / revision '+creativeContract.revision+' / '+creativeContractHash(creativeContract);
+  var state=document.getElementById('creativeContractState');if(state)state.textContent=isLocked?('Direction saved · Revision '+creativeContract.revision):(creativeContract.status==='stale'?'Needs refresh':('Editing · Revision '+creativeContract.revision));
+  var foot=document.getElementById('creativeContractFoot');if(foot)foot.textContent=isLocked?('Saved automatically · Revision '+creativeContract.revision):'Changes save automatically while you review.';
 }
 function creativeContractFormPatch(){
   var read=function(id){var el=document.getElementById(id);return el?el.value:'';};
@@ -3698,12 +3722,17 @@ window.gdCreativeContractContext=creativeContractContext;
 window.gdSetCreativeContract=function(value){creativeContract=value?normalizeCreativeContract(value,value.source):null;creativeContractHistory=[];creativeGenerationRecords=[];currentScriptGeneratedFrom=null;truthLedger=null;truthResearch=null;renderCreativeContract();renderScriptContract();renderTruthLedger();return canonicalClone(creativeContract,creativeContract);};
 window.gdGetCreativeContract=function(){return creativeContract?JSON.parse(JSON.stringify(creativeContract)):null;};
 
-/* Truth Ledger v1 is a project memory for statements that may need support.
+/* Truth Ledger v2 is a project memory for statements that may need support.
    It does not pretend that every sentence is a fact: personal experience,
    opinion and creative premise remain source-free, while technical claims and
-   recommendations receive explicit review state and durable source records. */
+   recommendations receive explicit review state and durable source records.
+   The v2 classifier keeps numerical punctuation intact, classifies strong
+   external signals before subjective language and groups adjacent evidence
+   into research topics instead of handing the creator a sentence-by-sentence
+   fact-checking chore. */
 var TRUTH_LEDGER_SCHEMA='graindistrict.truth-ledger';
-var TRUTH_LEDGER_VERSION=1;
+var TRUTH_LEDGER_VERSION=2;
+var TRUTH_LEDGER_CLASSIFIER_VERSION=2;
 var TRUTH_SOURCE_ASSISTANT_SCHEMA='graindistrict.truth-source-analysis';
 var TRUTH_SOURCE_ASSISTANT_VERSION=1;
 var TRUTH_RESEARCH_SCHEMA='graindistrict.evidence-research';
@@ -3711,7 +3740,7 @@ var TRUTH_RESEARCH_VERSION=1;
 var TRUTH_CLAIM_TYPES={fact:'Fact',technical:'Technical claim',recommendation:'Recommendation',personal_experience:'Personal experience',opinion:'Opinion',creative_premise:'Creative premise'};
 var TRUTH_CLAIM_STATUSES={needs_source:'Needs source',verified:'Verified',user_asserted:'User-confirmed',not_required:'No source needed',conflict:'Conflict',stale:'Retired'};
 var TRUTH_SOURCE_RELATIONSHIPS={supports:'Supports claim',partial:'Partial support',conflicts:'Conflicts',unclear:'Unclear'};
-var truthSourceAssistantBusy={},truthSourceAssistantFeedback={},truthClaimOpenState={},truthResearchBusy=false,truthResearchFeedback='',truthResearchPendingRunId='';
+var truthSourceAssistantBusy={},truthSourceAssistantFeedback={},truthClaimOpenState={},truthResearchBusy=false,truthResearchFeedback='',truthResearchPendingRunId='',truthLedgerMigrating=false;
 function truthLedgerText(value,max){var out=String(value==null?'':value).replace(/\s+/g,' ').trim();return max&&out.length>max?out.slice(0,max-1).trim()+'...':out;}
 function truthLedgerStatementKey(value){
   return truthLedgerText(value,1200).toLocaleLowerCase().replace(/[\u2018\u2019]/g,"'").replace(/[^\p{L}\p{N}]+/gu,' ').trim();
@@ -3724,29 +3753,57 @@ function truthClassifyStatement(statement){
   var raw=truthLedgerText(statement,1000),ascii=truthLedgerAscii(raw);
   /* Evidence review is intentionally high precision. Uncertain prose remains a
      creative premise instead of creating dozens of false source chores. */
-  if(/\b(bence|sanirim|bana gore|bana kalirsa|i think|i feel|in my view|personally|to me)\b/.test(ascii))return 'opinion';
-  if(/\b(ben|benim|bende|benden|kendim|bunu dusundum|dusundum|hissettim|gordum|ogrendim|denedim|kullandim|yasadim|fark ettim|dokundum|koydum|hatirliyorum|i|i've|i have|i learned|i tried|i used|i remember|i noticed|my experience|we learned|we tried)\b/.test(ascii))return 'personal_experience';
-  if(/\b(should|must|need to|best|top\s+\d+|recommend|worth buying|yaninizda|yaninda|gerekir|gerekiyor|olmali|tavsiye|en iyi)\b/.test(ascii))return 'recommendation';
-  var measured=/\d+(?:[.,]\d+)?\s*(?:%|mm|cm|m|km|g|kg|hz|khz|fps|mp|megapixel|bit|bitrate|mbps|gb|tb|second|seconds|minute|minutes|hour|hours|saniye|dakika|saat)?\b|\bf\/?\d+(?:[.,]\d+)?\b/.test(ascii);
-  var technicalTopic=/\b(asfalt|bitum|binder|pavement|catlak|gerilim|sicaklik|thermal|stress|strain|pressure|basinc|deform|malzeme|material|lens|lenses|sensor|kamera|camera|iso|aperture|diyafram|shutter|codec|bitrate|dynamic range|odak|focal|megapixel|voltage|current|protein|calorie)\b/.test(ascii);
+  var recommendation=/\b(should|must|need to|best|top\s+\d+|recommend|worth buying|yaninizda|yaninda|gerekir|gerekiyor|olmali|tavsiye|en iyi)\b/.test(ascii);
+  var measured=/\b(?:18|19|20)\d{2}\b|\d{1,3}(?:[.]\d{3})+(?:,\d+)?|\d+(?:[.,]\d+)?[-\s]*(?:%|mm|cm|m|km|g|kg|ton|hz|khz|fps|mp|megapixel|bit|bitrate|mbps|gb|tb|kez|kisi|arac|vehicle|people|times|second|seconds|minute|minutes|hour|hours|saniye|dakika|saat)\b|\bf\/?\d+(?:[.,]\d+)?\b/.test(ascii);
+  var publicAttribution=/\b(arastirma|arastirmalar|calisma|calismalar|veri|rapor|muhendisler|uzmanlar|kayitlara gore|according to|research|study|studies|data shows|engineers|experts)\b/.test(ascii);
+  var historicalFact=/\b(acildi|kuruldu|yayinlandi|icat edildi|yenilendi|insaa edildi|built|released|opened|founded|published|invented|renovated|since|den beri|dan beri)\b/.test(ascii);
+  var technicalTopic=/\b(asfalt|bitum|binder|pavement|catlak|gerilim|sicaklik|thermal|stress|strain|pressure|basinc|deform|malzeme|material|trafik|traffic|arac|vehicle|yuk|load|lens|lenses|sensor|kamera|camera|iso|aperture|diyafram|shutter|codec|bitrate|dynamic range|odak|focal|megapixel|voltage|current|protein|calorie)\b/.test(ascii);
   var technicalPredicate=/\b(katilasir|sertlesir|sividir|erir|donar|catlar|kirilir|deforme olur|genisler|daralir|uretilir|neden olur|etkiler|artirir|azaltir|saglar|hardens?|solidifies?|liquids?|melts?|freezes?|cracks?|deforms?|expands?|contracts?|causes?|increases?|reduces?|provides?)\b/.test(ascii);
-  var publicFact=/\b(acildi|kuruldu|yayinlandi|icat edildi|released|opened|founded|published|invented|according to|research shows|arastirmaya gore)\b/.test(ascii);
-  if(publicFact)return 'fact';
-  if(measured||(technicalTopic&&technicalPredicate)||/\b(katilasir|sertlesir|solidifies?|hardens?)\b/.test(ascii))return 'technical';
+  var firstPerson=/\b(ben|benim|bende|benden|kendim|ayagim|elim|gozum|baktim|koydum|yururken|bunu dusundum|dusundum|hissettim|gordum|ogrendim|denedim|kullandim|yasadim|fark ettim|dokundum|hatirliyorum|i|i've|i have|i learned|i tried|i used|i remember|i noticed|my experience|we learned|we tried)\b/.test(ascii);
+  var opinion=/\b(bence|sanirim|bana gore|bana kalirsa|i think|i feel|in my view|personally|to me)\b/.test(ascii);
+  if(recommendation)return 'recommendation';
+  /* A statistic, named study or date remains externally checkable even if the
+     narrator says "I read" or "I found" around it. This prevents unsupported
+     research claims from being disguised as personal experience. */
+  if(measured||publicAttribution||historicalFact)return technicalTopic?'technical':'fact';
+  if(opinion)return 'opinion';
+  if(firstPerson)return 'personal_experience';
+  if((technicalTopic&&technicalPredicate)||/\b(katilasir|sertlesir|solidifies?|hardens?)\b/.test(ascii))return 'technical';
   return 'creative_premise';
 }
+function truthSplitSentences(value){
+  var text=String(value||'').trim(),out=[],start=0,abbreviations={dr:1,mr:1,mrs:1,ms:1,prof:1,vs:1,vb:1,etc:1};
+  for(var i=0;i<text.length;i++){
+    var ch=text[i],terminal=ch==='.'||ch==='!'||ch==='?'||ch==='\u2026';if(!terminal)continue;
+    if(ch==='.'&&/\d/.test(text[i-1]||'')&&/\d/.test(text[i+1]||''))continue;
+    if(ch==='.'){
+      var before=text.slice(start,i).trim(),last=(before.match(/([\p{L}]+)$/u)||[])[1];if(last&&abbreviations[truthLedgerAscii(last)])continue;
+    }
+    var next=text[i+1]||'';if(next&&!/\s/.test(next))continue;
+    var sentence=truthLedgerText(text.slice(start,i+1),700);if(sentence)out.push(sentence);start=i+1;while(start<text.length&&/\s/.test(text[start]))start++;i=start-1;
+  }
+  var tail=truthLedgerText(text.slice(start),700);if(tail)out.push(tail);return out.length?out:[truthLedgerText(text,700)];
+}
+function truthGroupEvidenceCandidates(candidates){
+  var out=[],current=null;
+  (candidates||[]).forEach(function(candidate){
+    if(!candidate.required){out.push(candidate);current=null;return;}
+    var family=candidate.type==='recommendation'?'recommendation':'evidence',lastRef=current&&current.refs[current.refs.length-1],canJoin=current&&current.required&&current.family===family&&lastRef&&candidate.ref.lineNumber-lastRef.lineNumber<=1&&current.refs.length<4&&(current.statement.length+candidate.statement.length)<650;
+    if(!canJoin){current={statement:candidate.statement,type:candidate.type,required:true,ref:candidate.ref,refs:[candidate.ref],components:[candidate.statement],family:family};out.push(current);return;}
+    current.statement=truthLedgerText(current.statement+' '+candidate.statement,700);current.refs.push(candidate.ref);current.components.push(candidate.statement);if(candidate.type==='technical')current.type='technical';
+  });
+  return out;
+}
 function truthExtractVoiceoverClaims(script){
-  var out=[];String(script||'').split(/\r?\n/).forEach(function(line,index){
+  var raw=[];String(script||'').split(/\r?\n/).forEach(function(line,index){
     var match=line.match(/^\s*\[VOICEOVER\]\s+(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})\s*[-:]\s*(.+)$/i);if(!match)return;
-    var sentences=match[3].match(/[^.!?\u2026]+[.!?\u2026]?/g)||[match[3]],partIndex=0;
+    var sentences=truthSplitSentences(match[3]),partIndex=0;
     sentences.forEach(function(sentence){
-      var fragments=String(sentence||'').split(/\s+(?:\u2014|\u2013)\s+|;\s+/).filter(Boolean);
-      fragments.forEach(function(part){var statement=truthLedgerText(part,700),currentIndex=partIndex++;if(statement.split(/\s+/).filter(Boolean).length<3)return;
-        var type=truthClassifyStatement(statement);
-        out.push({statement:statement,type:type,required:truthClaimNeedsSupport(type),ref:{lineNumber:index+1,partIndex:currentIndex,timecode:match[1]+'-'+match[2],blockType:'voiceover',fingerprint:'line-hash:'+creativeContractHashText(line)}});
-      });
+      var statement=truthLedgerText(sentence,700),currentIndex=partIndex++;if(statement.split(/\s+/).filter(Boolean).length<3)return;
+      var type=truthClassifyStatement(statement);
+      raw.push({statement:statement,type:type,required:truthClaimNeedsSupport(type),ref:{lineNumber:index+1,partIndex:currentIndex,timecode:match[1]+'-'+match[2],blockType:'voiceover',fingerprint:'line-hash:'+creativeContractHashText(line)}});
     });
-  });return out;
+  });return truthGroupEvidenceCandidates(raw);
 }
 function truthSourceClaimFingerprint(statement){return 'claim-hash:'+creativeContractHashText(truthLedgerStatementKey(statement));}
 function normalizeTruthSourceAssistant(raw,claimId,url){
@@ -3763,12 +3820,13 @@ function normalizeTruthClaim(raw,index){
   raw=raw&&typeof raw==='object'?raw:{};var id=typeof raw.id==='string'&&raw.id.indexOf('claim:')===0?raw.id:'claim:'+creativeContractHashText((raw.statement||'')+'|'+String(index||0));
   var type=TRUTH_CLAIM_TYPES[raw.type]?raw.type:'fact',status=TRUTH_CLAIM_STATUSES[raw.status]?raw.status:(truthClaimNeedsSupport(type)?'needs_source':'not_required');
   var refs=Array.isArray(raw.refs)?raw.refs:(raw.ref?[raw.ref]:[]);refs=refs.map(function(ref){return {lineNumber:Math.max(1,Number(ref&&ref.lineNumber)||1),partIndex:Math.max(0,Number(ref&&ref.partIndex)||0),timecode:truthLedgerText(ref&&ref.timecode,40),blockType:'voiceover',fingerprint:truthLedgerText(ref&&ref.fingerprint,80)};});
-  return {id:id,statement:truthLedgerText(raw.statement,700),type:type,status:status,required:raw.required==null?truthClaimNeedsSupport(type):!!raw.required,active:raw.active!==false,classificationSource:raw.classificationSource==='user'?'user':'local_classifier',refs:refs,sources:(Array.isArray(raw.sources)?raw.sources:[]).map(function(source,i){return normalizeTruthSource(source,id,i);}),createdAt:Number(raw.createdAt)||Date.now(),updatedAt:Number(raw.updatedAt)||Number(raw.createdAt)||Date.now(),retiredAt:Number(raw.retiredAt)||0};
+  return {id:id,statement:truthLedgerText(raw.statement,700),components:(Array.isArray(raw.components)?raw.components:[raw.statement]).map(function(item){return truthLedgerText(item,700);}).filter(Boolean).slice(0,8),mergedFrom:(Array.isArray(raw.mergedFrom)?raw.mergedFrom:[]).map(function(item){return truthLedgerText(item,100);}).filter(Boolean).slice(0,12),type:type,status:status,required:raw.required==null?truthClaimNeedsSupport(type):!!raw.required,active:raw.active!==false,classificationSource:raw.classificationSource==='user'?'user':'local_classifier',refs:refs,sources:(Array.isArray(raw.sources)?raw.sources:[]).map(function(source,i){return normalizeTruthSource(source,id,i);}),createdAt:Number(raw.createdAt)||Date.now(),updatedAt:Number(raw.updatedAt)||Number(raw.createdAt)||Date.now(),retiredAt:Number(raw.retiredAt)||0};
 }
 function normalizeTruthLedger(raw){
   if(!raw||typeof raw!=='object')return null;var now=Date.now(),id=typeof raw.id==='string'&&raw.id.indexOf('truth-ledger:')===0?raw.id:'truth-ledger:'+creativeContractHashText((raw.projectId||canonicalRuntimeProjectId||topic||'local')+'|'+String(raw.createdAt||0));
   var status=['unreviewed','current','stale'].indexOf(raw.status)>=0?raw.status:'unreviewed',strictness=['light','standard','strict'].indexOf(raw.strictness)>=0?raw.strictness:truthLedgerStrictness();
-  return {schema:TRUTH_LEDGER_SCHEMA,schemaVersion:TRUTH_LEDGER_VERSION,id:id,revision:Math.max(1,Number(raw.revision)||1),status:status,strictness:strictness,scriptFingerprint:truthLedgerText(raw.scriptFingerprint,80),contractRef:canonicalClone(raw.contractRef||null,null),claims:(Array.isArray(raw.claims)?raw.claims:[]).map(normalizeTruthClaim),provenance:Object.assign({createdBy:'local_classifier',createdAt:now,updatedAt:now,staleAt:0,staleReason:''},canonicalClone(raw.provenance||{},{})),migration:canonicalClone(raw.migration||null,null)};
+  var classifierVersion=Math.max(1,Number(raw.classifierVersion||(raw.provenance&&raw.provenance.classifierVersion))||1);
+  return {schema:TRUTH_LEDGER_SCHEMA,schemaVersion:TRUTH_LEDGER_VERSION,classifierVersion:classifierVersion,id:id,revision:Math.max(1,Number(raw.revision)||1),status:status,strictness:strictness,scriptFingerprint:truthLedgerText(raw.scriptFingerprint,80),contractRef:canonicalClone(raw.contractRef||null,null),claims:(Array.isArray(raw.claims)?raw.claims:[]).map(normalizeTruthClaim),provenance:Object.assign({createdBy:'local_classifier',classifierVersion:classifierVersion,createdAt:now,updatedAt:now,staleAt:0,staleReason:''},canonicalClone(raw.provenance||{},{})),migration:canonicalClone(raw.migration||null,null)};
 }
 function truthResearchUrlKey(value){try{var u=new URL(truthLedgerText(value,1000));u.hash='';u.hostname=u.hostname.toLowerCase();if(u.pathname.length>1)u.pathname=u.pathname.replace(/\/+$/,'');return u.toString();}catch(e){return '';}}
 function normalizeTruthResearchSource(raw,index){
@@ -3825,16 +3883,23 @@ function validateTruthResearch(value){
 }
 function truthLedgerReference(){return creativeContractGenerationReference()||canonicalClone(currentScriptGeneratedFrom||null,null);}
 function rebuildTruthLedgerFromScript(script,options){
-  options=options||{};script=String(script==null?(document.getElementById('scriptTa')||{}).value||'':script);var previous=normalizeTruthLedger(truthLedger),now=Date.now(),exact={},grouped={},reused={};
+  options=options||{};script=String(script==null?(document.getElementById('scriptTa')||{}).value||'':script);var previous=normalizeTruthLedger(truthLedger),previousClassifier=previous&&previous.classifierVersion||1,now=Date.now(),exact={},grouped={},reused={};
   (previous&&previous.claims||[]).forEach(function(claim){var statementKey=truthLedgerStatementKey(claim.statement),ref=claim.refs[0]||{};(grouped[statementKey]||(grouped[statementKey]=[])).push(claim);if(claim.active)exact[statementKey+'|'+(ref.timecode||'')]=claim;});
   var active=truthExtractVoiceoverClaims(script).map(function(candidate,index){
-    var statementKey=truthLedgerStatementKey(candidate.statement),key=statementKey+'|'+candidate.ref.timecode,prior=exact[key]||(grouped[statementKey]||[]).find(function(item){return !reused[item.id];}),claim;
-    if(prior){reused[prior.id]=1;claim=canonicalClone(prior,prior);claim.active=true;claim.statement=candidate.statement;claim.refs=[candidate.ref];if(claim.classificationSource!=='user'){claim.type=candidate.type;claim.required=candidate.required;if(!claim.required&&claim.status==='needs_source')claim.status='not_required';if(claim.required&&claim.status==='not_required')claim.status='needs_source';}else claim.required=truthClaimNeedsSupport(claim.type);if(claim.status==='stale')claim.status=truthClaimHasSource(claim)?'verified':(claim.required?'needs_source':'not_required');claim.retiredAt=0;claim.updatedAt=now;}
-    else claim={id:'claim:'+canonicalIdToken(),statement:candidate.statement,type:candidate.type,status:candidate.required?'needs_source':'not_required',required:candidate.required,active:true,classificationSource:'local_classifier',refs:[candidate.ref],sources:[],createdAt:now,updatedAt:now,retiredAt:0};
+    var refs=candidate.refs||[candidate.ref],components=candidate.components||[candidate.statement],statementKey=truthLedgerStatementKey(candidate.statement),key=statementKey+'|'+((refs[0]||{}).timecode||''),prior=exact[key]||(grouped[statementKey]||[]).find(function(item){return !reused[item.id];}),componentPriors=[],claim;
+    if(!prior&&components.length>1)components.forEach(function(component){var match=(grouped[truthLedgerStatementKey(component)]||[]).find(function(item){return item.active&&!reused[item.id]&&componentPriors.indexOf(item)<0;});if(match)componentPriors.push(match);});
+    if(!prior&&componentPriors.length)prior=componentPriors[0];
+    if(prior){
+      reused[prior.id]=1;claim=canonicalClone(prior,prior);claim.active=true;claim.statement=candidate.statement;claim.components=components.slice();claim.refs=refs.slice();claim.mergedFrom=componentPriors.map(function(item){return item.id;});
+      if(componentPriors.length){var sourceKeys={};claim.sources=[];componentPriors.forEach(function(item){(item.sources||[]).forEach(function(source){var sourceKey=truthLedgerText(source.url,1000)+'|'+truthLedgerText(source.note,800);if(sourceKeys[sourceKey])return;sourceKeys[sourceKey]=1;claim.sources.push(canonicalClone(source,source));});});claim.classificationSource='local_classifier';claim.type=candidate.type;claim.required=candidate.required;claim.status=claim.required?'needs_source':'not_required';if(claim.required&&componentPriors.every(function(item){return item.status==='verified'&&truthClaimHasSource(item);}))claim.status='verified';}
+      else if(claim.classificationSource!=='user'){claim.type=candidate.type;claim.required=candidate.required;if(!claim.required&&claim.status==='needs_source')claim.status='not_required';if(claim.required&&claim.status==='not_required')claim.status='needs_source';}else claim.required=truthClaimNeedsSupport(claim.type);
+      if(claim.status==='stale')claim.status=truthClaimHasSource(claim)?'verified':(claim.required?'needs_source':'not_required');claim.retiredAt=0;claim.updatedAt=now;
+    }
+    else claim={id:'claim:'+canonicalIdToken(),statement:candidate.statement,components:components.slice(),mergedFrom:[],type:candidate.type,status:candidate.required?'needs_source':'not_required',required:candidate.required,active:true,classificationSource:'local_classifier',refs:refs.slice(),sources:[],createdAt:now,updatedAt:now,retiredAt:0};
     return normalizeTruthClaim(claim,index);
   });
   var retired=[];(previous&&previous.claims||[]).forEach(function(claim){if(reused[claim.id])return;var old=normalizeTruthClaim(claim,retired.length);old.active=false;old.status='stale';old.retiredAt=old.retiredAt||now;retired.push(old);});
-  truthLedger=normalizeTruthLedger({schema:TRUTH_LEDGER_SCHEMA,schemaVersion:1,id:previous&&previous.id||('truth-ledger:'+canonicalIdToken()),revision:previous?previous.revision+1:1,status:'current',strictness:truthLedgerStrictness(),scriptFingerprint:truthLedgerScriptFingerprint(script),contractRef:truthLedgerReference(),claims:active.concat(retired),provenance:{createdBy:'local_classifier',createdAt:previous&&previous.provenance&&previous.provenance.createdAt||now,updatedAt:now,staleAt:0,staleReason:'',reviewReason:options.reason||'script_review'}});
+  truthLedger=normalizeTruthLedger({schema:TRUTH_LEDGER_SCHEMA,schemaVersion:TRUTH_LEDGER_VERSION,classifierVersion:TRUTH_LEDGER_CLASSIFIER_VERSION,id:previous&&previous.id||('truth-ledger:'+canonicalIdToken()),revision:previous?previous.revision+1:1,status:'current',strictness:truthLedgerStrictness(),scriptFingerprint:truthLedgerScriptFingerprint(script),contractRef:truthLedgerReference(),claims:active.concat(retired),provenance:{createdBy:'local_classifier',classifierVersion:TRUTH_LEDGER_CLASSIFIER_VERSION,createdAt:previous&&previous.provenance&&previous.provenance.createdAt||now,updatedAt:now,staleAt:0,staleReason:'',reviewReason:options.reason||'script_review'},migration:previousClassifier<TRUTH_LEDGER_CLASSIFIER_VERSION?{fromClassifierVersion:previousClassifier,toClassifierVersion:TRUTH_LEDGER_CLASSIFIER_VERSION,upgradedAt:now}:canonicalClone(previous&&previous.migration||null,null)});
   if(truthResearch){truthResearch=normalizeTruthResearch(truthResearch);truthResearch.status=truthResearch.ledgerRef&&truthResearch.ledgerRef.scriptFingerprint===truthLedger.scriptFingerprint?'current':'stale';truthResearch.provenance.updatedAt=now;}
   renderTruthLedger();planHighlight();
   var evidenceCount=active.filter(truthClaimVisibleInEvidenceQueue).length,skippedCount=active.length-evidenceCount,message=document.getElementById('truthLedgerMessage');if(message&&!options.silent)message.textContent=evidenceCount?'Review complete. '+evidenceCount+' evidence claim'+(evidenceCount===1?'':'s')+' found'+(skippedCount?'; '+skippedCount+' narrative line'+(skippedCount===1?'':'s')+' skipped.':'.'):'Review complete. No external factual claims need evidence.';
@@ -3893,18 +3958,21 @@ function truthSourceAssistantHtml(claim,source){
 }
 function renderTruthLedger(){
   var panel=document.getElementById('truthLedgerPanel'),ta=document.getElementById('scriptTa');if(!panel||!ta)return;var hasScript=projectType==='youtube'&&!!String(ta.value||'').trim();panel.hidden=!hasScript;if(!hasScript)return;
-  var summary=document.getElementById('truthLedgerSummary'),state=document.getElementById('truthLedgerState'),mode=document.getElementById('truthLedgerMode'),claimsEl=document.getElementById('truthLedgerClaims'),intro=document.getElementById('truthLedgerIntro'),message=document.getElementById('truthLedgerMessage'),researchBtn=document.getElementById('truthResearchBtn');
-  if(!truthLedger){panel.classList.remove('needs-review','has-conflict');if(summary)summary.textContent='Review the script when it is ready';if(state)state.textContent='Unreviewed';if(mode)mode.textContent=truthLedgerStrictness();if(researchBtn){researchBtn.disabled=true;researchBtn.textContent='Find evidence';}if(claimsEl)claimsEl.innerHTML='<div class="truth-empty">Run a review to separate sourced claims from personal experience, opinion and creative premise.</div>';if(message)message.textContent='';return;}
-  truthLedger=normalizeTruthLedger(truthLedger);if(truthLedger.status==='current'&&truthLedger.scriptFingerprint!==truthLedgerScriptFingerprint(ta.value))markTruthLedgerStale('Script changed',ta.value);
+  var summary=document.getElementById('truthLedgerSummary'),state=document.getElementById('truthLedgerState'),mode=document.getElementById('truthLedgerMode'),claimsEl=document.getElementById('truthLedgerClaims'),intro=document.getElementById('truthLedgerIntro'),overview=document.getElementById('truthLedgerOverview'),message=document.getElementById('truthLedgerMessage'),researchBtn=document.getElementById('truthResearchBtn');
+  if(!truthLedger){panel.classList.remove('needs-review','has-conflict');if(summary)summary.textContent='Review the script when it is ready';if(state)state.textContent='Unreviewed';if(mode)mode.textContent=truthLedgerStrictness();if(researchBtn){researchBtn.disabled=true;researchBtn.textContent='Find evidence';}if(overview)overview.innerHTML='';if(claimsEl)claimsEl.innerHTML='<div class="truth-empty">Run one review. GrainDistrict will keep personal and poetic lines out, then combine related factual lines into compact research topics.</div>';if(message)message.textContent='';return;}
+  truthLedger=normalizeTruthLedger(truthLedger);
+  if(truthLedger.classifierVersion<TRUTH_LEDGER_CLASSIFIER_VERSION&&!truthLedgerMigrating){truthLedgerMigrating=true;truthResearchFeedback='This older review was simplified automatically. Numbers, narrative context and prior evidence were preserved.';rebuildTruthLedgerFromScript(ta.value,{silent:true,reason:'classifier_v2_migration'});truthLedgerMigrating=false;if(window.gdAutosaveProject)window.gdAutosaveProject(true);return;}
+  if(truthLedger.status==='current'&&truthLedger.scriptFingerprint!==truthLedgerScriptFingerprint(ta.value))markTruthLedgerStale('Script changed',ta.value);
   var active=truthLedger.claims.filter(function(claim){return claim.active;}),reviewClaims=active.filter(truthClaimVisibleInEvidenceQueue),skipped=active.length-reviewClaims.length,needs=reviewClaims.filter(function(claim){return claim.required&&claim.status==='needs_source';}),verified=reviewClaims.filter(function(claim){return claim.status==='verified'||claim.status==='user_asserted';}),conflicts=reviewClaims.filter(function(claim){return claim.status==='conflict';}),readyStrong=needs.filter(function(claim){return !!truthResearchStrongAssessment(claim);});
   panel.classList.toggle('needs-review',truthLedger.status!=='current'||needs.length>0);panel.classList.toggle('has-conflict',conflicts.length>0);if(mode)mode.textContent=truthLedger.strictness+' review';
-  if(summary)summary.textContent=truthLedger.status==='stale'?'Script changed - review again':(reviewClaims.length+' evidence claims / '+needs.length+' need source / '+verified.length+' confirmed');
+  if(summary)summary.textContent=truthLedger.status==='stale'?'Script changed - refresh topics':(reviewClaims.length+' research topic'+(reviewClaims.length===1?'':'s')+' / '+needs.length+' need evidence / '+verified.length+' clear');
   if(state)state.textContent=conflicts.length?conflicts.length+' conflict'+(conflicts.length===1?'':'s'):(truthLedger.status==='stale'?'Review needed':'Current');
-  if(intro)intro.textContent=(truthLedger.strictness==='strict'?'Specifications, demonstrations and externally checkable facts appear here. ':'Only externally checkable claims appear here. ')+(skipped?skipped+' narrative or personal line'+(skipped===1?' was':'s were')+' kept out of the evidence queue.':'No narrative lines need manual review.');
+  if(intro)intro.textContent=(truthLedger.strictness==='strict'?'Specifications, demonstrations and externally checkable facts are grouped here. ':'Only externally checkable ideas are grouped here. ')+(skipped?skipped+' narrative or personal line'+(skipped===1?' stays':'s stay')+' in the script with no source work.':'No narrative lines need manual review.');
+  if(overview)overview.innerHTML='<div class="truth-overview-item"><b>'+reviewClaims.length+'</b><span>Research topics</span></div><div class="truth-overview-item needs"><b>'+needs.length+'</b><span>Need evidence</span></div><div class="truth-overview-item clear"><b>'+skipped+'</b><span>Story lines left alone</span></div>';
   if(researchBtn){researchBtn.disabled=truthResearchBusy||(!needs.length&&truthLedger.status==='current');researchBtn.textContent=truthResearchBusy?'Researching the web...':(readyStrong.length?'Accept '+readyStrong.length+' strong match'+(readyStrong.length===1?'':'es'):(needs.length?'Find evidence':'Evidence clear'));researchBtn.onclick=readyStrong.length&&!truthResearchBusy?acceptStrongTruthResearch:runTruthResearch;}
-  if(message)message.textContent=truthLedger.status==='stale'?'The script changed after this review. Run Review script to update the ledger.':truthResearchFeedback;
+  if(message)message.textContent=truthLedger.status==='stale'?'The voiceover changed. Refresh topics to update only the evidence queue.':truthResearchFeedback;
   if(!claimsEl)return;if(!reviewClaims.length){claimsEl.innerHTML='<div class="truth-empty">No external factual claims need evidence. Personal, poetic and narrative lines stay in the script without creating source work.</div>';return;}
-  claimsEl.innerHTML=reviewClaims.map(function(claim,index){var source=claim.sources[0]||{},assistant=source.assistant,sourceReady=claim.status==='needs_source'&&assistant&&assistant.origin==='automatic_research'&&truthSourceAssistantIsCurrent(claim,source),visualStatus=sourceReady?(assistant.relationship==='supports'?'Source ready':(assistant.relationship==='conflicts'?'Conflict found':'Needs review')):TRUTH_CLAIM_STATUSES[claim.status],ref=claim.refs[0]||{},open=truthClaimOpenState[claim.id]?' open':'';return '<details data-claim-id="'+creativeContractEscape(claim.id)+'" class="truth-claim '+creativeContractEscape(claim.status)+'"'+open+' ontoggle="rememberTruthClaimOpen(\''+claim.id+'\',this)"><summary><span class="truth-claim-index">'+String(index+1).padStart(2,'0')+'</span><span class="truth-claim-text">'+creativeContractEscape(claim.statement)+'</span><span class="truth-claim-chip">'+creativeContractEscape(TRUTH_CLAIM_TYPES[claim.type])+'</span><span class="truth-claim-chip truth-claim-status">'+creativeContractEscape(visualStatus)+'</span></summary><div class="truth-claim-form"><div class="truth-field"><label>Statement type</label><select onchange="updateTruthClaimFromControl(\''+claim.id+'\',\'type\',this)">'+truthTypeOptions(claim.type)+'</select></div><div class="truth-field"><label>Review state</label><select onchange="updateTruthClaimFromControl(\''+claim.id+'\',\'status\',this)">'+truthStatusOptions(claim.status)+'</select></div>'+truthSourceAssistantHtml(claim,source)+'<div class="truth-field wide"><label>Verification note</label><input type="text" value="'+creativeContractEscape(source.note||'')+'" placeholder="Your own note or manual confirmation" onchange="updateTruthClaimFromControl(\''+claim.id+'\',\'sourceNote\',this)"></div><div class="truth-claim-ref">Script line '+(ref.lineNumber||'-')+(ref.timecode?' &middot; '+creativeContractEscape(ref.timecode):'')+' &middot; '+(claim.classificationSource==='user'?'reviewed by you':'classified on device')+'</div></div></details>';}).join('');
+  claimsEl.innerHTML=reviewClaims.map(function(claim,index){var source=claim.sources[0]||{},assistant=source.assistant,sourceReady=claim.status==='needs_source'&&assistant&&assistant.origin==='automatic_research'&&truthSourceAssistantIsCurrent(claim,source),visualStatus=sourceReady?(assistant.relationship==='supports'?'Source ready':(assistant.relationship==='conflicts'?'Conflict found':'Needs review')):TRUTH_CLAIM_STATUSES[claim.status],ref=claim.refs[0]||{},refLabel=claim.refs.length>1?(claim.refs.length+' connected voiceover lines'):('Script line '+(ref.lineNumber||'-')+(ref.timecode?' · '+ref.timecode:'')),open=truthClaimOpenState[claim.id]?' open':'';return '<details data-claim-id="'+creativeContractEscape(claim.id)+'" class="truth-claim '+creativeContractEscape(claim.status)+'"'+open+' ontoggle="rememberTruthClaimOpen(\''+claim.id+'\',this)"><summary><span class="truth-claim-index">'+String(index+1).padStart(2,'0')+'</span><span class="truth-claim-text">'+creativeContractEscape(claim.statement)+'</span><span class="truth-claim-chip">'+creativeContractEscape(TRUTH_CLAIM_TYPES[claim.type])+'</span><span class="truth-claim-chip truth-claim-status">'+creativeContractEscape(visualStatus)+'</span></summary><div class="truth-claim-form"><div class="truth-field"><label>Statement type</label><select onchange="updateTruthClaimFromControl(\''+claim.id+'\',\'type\',this)">'+truthTypeOptions(claim.type)+'</select></div><div class="truth-field"><label>Review state</label><select onchange="updateTruthClaimFromControl(\''+claim.id+'\',\'status\',this)">'+truthStatusOptions(claim.status)+'</select></div>'+truthSourceAssistantHtml(claim,source)+'<div class="truth-field wide"><label>Verification note</label><input type="text" value="'+creativeContractEscape(source.note||'')+'" placeholder="Your own note or manual confirmation" onchange="updateTruthClaimFromControl(\''+claim.id+'\',\'sourceNote\',this)"></div><div class="truth-claim-ref">'+creativeContractEscape(refLabel)+' · '+(claim.classificationSource==='user'?'reviewed by you':'grouped privately on device')+'</div></div></details>';}).join('');
 }
 function toggleTruthLedger(){var panel=document.getElementById('truthLedgerPanel');if(!panel)return;panel.classList.toggle('open');var btn=panel.querySelector('.truth-ledger-toggle');if(btn)btn.setAttribute('aria-expanded',panel.classList.contains('open')?'true':'false');}
 function reviewTruthLedger(){var ta=document.getElementById('scriptTa');truthResearchFeedback='';rebuildTruthLedgerFromScript(ta?ta.value:'',{reason:'manual_review'});}
@@ -3949,7 +4017,7 @@ document.getElementById('constraintsIn').addEventListener('input',function(){
 });
 document.getElementById('creativeContractPanel').addEventListener('input',function(){
   if(!creativeContract)return;
-  creativeContract=editCreativeContract(creativeContractFormPatch());var state=document.getElementById('creativeContractState');if(state)state.textContent='draft / revision '+creativeContract.revision+' / ready to lock';renderScriptContract();
+  creativeContract=editCreativeContract(creativeContractFormPatch());var panel=document.getElementById('creativeContractPanel'),state=document.getElementById('creativeContractState'),details=document.getElementById('creativeContractDetails'),foot=document.getElementById('creativeContractFoot'),hasScript=document.getElementById('scriptTa')&&document.getElementById('scriptTa').value.trim();if(panel){panel.classList.remove('locked');panel.classList.add('details-open');panel.dataset.contractStatus='draft';}if(details)details.hidden=true;if(state)state.textContent='Editing · Revision '+creativeContract.revision;if(foot)foot.textContent='Changes save automatically while you review.';['creativeContractActionText','creativeContractLockText'].forEach(function(id){var label=document.getElementById(id);if(label)label.textContent=hasScript?'Save direction & regenerate':'Save direction & continue';});renderScriptContract();
 });
 function applyCreatorDnaDefaults(){
   if(!creatorDNA)return;
@@ -5457,7 +5525,10 @@ function buildGenSys(totalSec,li){
          exits. They are about writing, not arithmetic, which is what the
          prompt was missing entirely. */
       +'\n\nHOW THE VOICEOVER IS WRITTEN:\n'
-      +'- Say concrete things. A name, an object, a number, a time, a place - something a viewer could picture or check. Abstractions ("emptiness", "possibility", "fragmented identity") are what you write when you have not decided what happened. Decide.\n'
+      +'- Say concrete things the project actually knows. Specificity is earned, never decorative. Use names, numbers, dates, places, studies and quotes only when they came from the user, the locked Project Direction, or a Verified Truth Ledger item.\n'
+      +'- NEVER invent a first-person memory, encounter, purchase, location visit or observation for the creator. If the user did not say they walked in Brooklyn, touched the asphalt or looked at a photograph, do not write that they did.\n'
+      +'- NEVER invent a street age, resurfacing year, traffic count, measurement, expert consensus or phrases such as "a study showed". An unverified general mechanism may be written cautiously for later research; fabricated precision may not.\n'
+      +'- When a specific fact is not established, omit it, frame the genuine uncertainty as a question, or describe only what can actually be observed on camera. Do not use false certainty to make prose feel cinematic.\n'
       +'- Specifics belong in passing, not as the subject. One line mentioning what a thing cost is texture; a paragraph accounting for it is a different video. Mention and move.\n'
       +'- Something has to cost something. Someone is disappointed, something is thrown away, something does not work and stays not working for a while. If every problem is solved in the next sentence there is no middle.\n'
       +'- Anyone you introduce stays in the story. If a person speaks once, they come back or their question does - do not raise a voice and drop it.\n'

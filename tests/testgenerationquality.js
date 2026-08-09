@@ -50,6 +50,7 @@ const { chromium } = require('./node_modules/playwright');
   ok('the prompt carries the finite whole-film range',r.prompt.includes(r.profile.minCuts+'-'+r.profile.maxCuts+' BROLL camera shots'));
   ok('one voice line normally gets one or two shots',/normally needs 1-2 BROLL/.test(r.prompt));
   ok('literal semantic coverage is required',/must show that exact object or action/.test(r.prompt));
+  ok('voiceover specificity cannot fabricate creator memories, dates, studies or statistics',/NEVER invent a first-person memory/.test(r.prompt)&&/NEVER invent a street age/.test(r.prompt)&&/Verified Truth Ledger/.test(r.prompt),r.prompt);
   ok('the default style no longer reintroduces the banned writing templates',
     !/Insight lines use triple parallel/.test(r.prompt)&&!/Narrative arc: memory hook/.test(r.prompt));
   ok('and it no longer mandates generic handmade filler for every idea',

@@ -31,16 +31,32 @@ try{
     return {script,ledger,active,visible,summary:document.getElementById('truthLedgerSummary').textContent,intro:document.getElementById('truthLedgerIntro').textContent};
   });
 
-  const byText=Object.fromEntries(initial.active.map(claim=>[claim.statement,claim]));
+  const find=(prefix)=>initial.active.find(claim=>claim.statement.startsWith(prefix));
+  const poeticLoad=find('Ama her yük'),poeticCrack=find('Bir çatlak'),poeticStress=find('Asfalt, altındaki gerilimi'),personalTouch=find('Elimi koydum'),personalThought=find('Bunu o gün'),processTopic=find('Asfalt döküldüğünde'),lensTopic=find('A 24-70mm');
   ok('poetic asphalt language stays outside the evidence queue',
-    byText['Ama her yük bir şey bırakır'].type==='creative_premise'&&
-    byText['Bir çatlak tesadüf değildir.'].type==='creative_premise'&&
-    byText['Asfalt, altındaki gerilimi bir gün dışarı çıkarmak zorunda kalır.'].type==='creative_premise'&&
-    [byText['Ama her yük bir şey bırakır'],byText['Bir çatlak tesadüf değildir.'],byText['Asfalt, altındaki gerilimi bir gün dışarı çıkarmak zorunda kalır.']].every(claim=>!claim.required&&claim.status==='not_required'),byText);
-  ok('personal narration stays source-free',byText['Elimi koydum üstüne.'].type==='personal_experience'&&byText['Bunu o gün ilk kez asfaltın üzerinde düşündüm.'].type==='personal_experience',byText);
-  ok('mixed prose separates the checkable process from its poetic continuation',byText['Sonra katılaşır, sertleşir'].type==='technical'&&byText['ve o andan itibaren her şeyi altında taşımak zorunda kalır.'].type==='creative_premise',byText);
-  ok('only high-confidence technical claims enter the visible evidence queue',initial.visible.length===3&&initial.visible.includes('Asfalt döküldüğünde sıvıdır.')&&initial.visible.includes('Sonra katılaşır, sertleşir')&&initial.visible.includes('A 24-70mm lens covers most everyday shooting situations.')&&!initial.visible.includes('Bir çatlak tesadüf değildir.'),initial);
-  ok('the compact summary explains the evidence workload instead of all script sentences',/3 evidence claims/.test(initial.summary)&&/3 need source/.test(initial.summary)&&/narrative or personal line/.test(initial.intro),initial);
+    poeticLoad.type==='creative_premise'&&poeticCrack.type==='creative_premise'&&poeticStress.type==='creative_premise'&&
+    [poeticLoad,poeticCrack,poeticStress].every(claim=>!claim.required&&claim.status==='not_required'),initial.active);
+  ok('personal narration stays source-free',personalTouch.type==='personal_experience'&&personalThought.type==='personal_experience',initial.active);
+  ok('mixed technical prose keeps its context and adjacent evidence becomes one research topic',processTopic.type==='technical'&&processTopic.refs.length===2&&processTopic.statement.includes('ve o andan itibaren'),processTopic);
+  ok('only high-confidence technical topics enter the visible evidence queue',initial.visible.length===2&&initial.visible.some(text=>text.startsWith('Asfalt döküldüğünde'))&&initial.visible.includes('A 24-70mm lens covers most everyday shooting situations.')&&!initial.visible.includes('Bir çatlak tesadüf değildir.'),initial);
+  ok('the compact summary explains the research workload instead of all script sentences',/2 research topics/.test(initial.summary)&&/2 need evidence/.test(initial.summary)&&/narrative or personal line/.test(initial.intro),initial);
+
+  const numeric=await page.evaluate(()=>{
+    const script=[
+      "[VOICEOVER] 00:00-00:05 - Manhattan'ın bazı ana arterlerinde günde 10.000'i aşkın araç geçiyor.",
+      '[VOICEOVER] 00:05-00:10 - Bir araştırma şunu gösterdi: 10 ton ağırlığındaki bir aksın geçişi, 1 tonluk araçların 10.000 geçişine eşdeğer hasar bırakıyor.',
+      "[VOICEOVER] 00:10-00:15 - Ben bir araştırmada 10.000 araçlık bu ölçümü okudum.",
+      "[VOICEOVER] 00:15-00:20 - Birkaç hafta önce Brooklyn'de yürürken ayağım bir çatlağa takıldı."
+    ].join('\n');
+    const claims=window.gdExtractTruthClaims(script);return {claims,required:claims.filter(claim=>claim.required),personal:claims.filter(claim=>claim.type==='personal_experience')};
+  });
+  ok('Turkish thousands separators stay intact and adjacent research statements are grouped',numeric.required.length===1&&numeric.required[0].statement.includes("10.000'i")&&numeric.required[0].statement.includes('10.000 geçişine')&&numeric.required[0].refs.length===3&&!numeric.claims.some(claim=>/^000/.test(claim.statement)),numeric);
+  ok('research attribution overrides first-person framing but genuine lived experience stays source-free',numeric.required[0].type==='technical'&&numeric.personal.length===1&&numeric.personal[0].statement.includes("Brooklyn'de"),numeric);
+
+  const migrated=await page.evaluate(()=>{
+    const before=window.gdGetTruthLedger(),legacy=JSON.parse(JSON.stringify(before));legacy.schemaVersion=1;legacy.classifierVersion=1;legacy.provenance.classifierVersion=1;window.gdSetTruthLedger(legacy);const after=window.gdGetTruthLedger();return {beforeRevision:before.revision,after};
+  });
+  ok('saved v1 reviews upgrade automatically without asking the creator to redo the project',migrated.after.classifierVersion===2&&migrated.after.revision===migrated.beforeRevision+1&&migrated.after.migration.fromClassifierVersion===1&&migrated.after.migration.toClassifierVersion===2,migrated);
 
   const rescanned=await page.evaluate(script=>{
     const before=window.gdGetTruthLedger(),poetic=before.claims.find(claim=>claim.active&&claim.statement==='Bir çatlak tesadüf değildir.'),legacy=JSON.parse(JSON.stringify(before)),legacyClaim=legacy.claims.find(claim=>claim.id===poetic.id);

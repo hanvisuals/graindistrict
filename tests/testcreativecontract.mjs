@@ -44,7 +44,7 @@ try{
   }));
   ok('one AI call turns the idea, DNA and real limits into an editable Project Direction',prepared.panel&&prepared.screen==='s_equipment'&&prepared.calls.join(',')==='creative_contract'&&prepared.constraintInPrompt&&prepared.dnaInPrompt,prepared);
   ok('the generated direction distinguishes an educational presenter video from a cinematic story',prepared.format==='presenter'&&/Beginner solo filmmakers/.test(prepared.viewer)&&/three lenses/.test(prepared.promise),prepared);
-  ok('the flow pauses for review before script generation',prepared.action==='Lock direction & generate'&&prepared.calls.length===1,prepared);
+  ok('the flow pauses for review before script generation',prepared.action==='Save direction & continue'&&prepared.calls.length===1,prepared);
 
   await page.fill('#ccViewer','Busy solo filmmakers building their first practical kit');
   await page.click('#creativeContractLock');
@@ -79,7 +79,8 @@ try{
 
   await page.setViewportSize({width:390,height:844});
   await page.evaluate(()=>{document.getElementById('constraintsIn').value=projectConstraints;renderCreativeContract();show('s_equipment');});
-  const mobile=await page.evaluate(()=>({overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth,panel:document.getElementById('creativeContractPanel').getBoundingClientRect(),fields:[...document.querySelectorAll('.cc-field')].map(x=>x.getBoundingClientRect().width),viewport:document.documentElement.clientWidth}));
+  const mobile=await page.evaluate(()=>({overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth,panel:document.getElementById('creativeContractPanel').getBoundingClientRect(),fields:[...document.querySelectorAll('.cc-field')].map(x=>x.getBoundingClientRect().width),viewport:document.documentElement.clientWidth,snapshot:getComputedStyle(document.getElementById('creativeContractSnapshot')).display,sections:getComputedStyle(document.querySelector('.cc-sections')).display,details:document.getElementById('creativeContractDetails').textContent,state:document.getElementById('creativeContractState').textContent}));
+  ok('saved Project Direction opens as a compact summary instead of four dense sections',mobile.snapshot==='grid'&&mobile.sections==='none'&&mobile.details==='Edit details'&&/Direction saved/.test(mobile.state),mobile);
   ok('Project Direction remains a single-column, non-overflowing editor on phones',!mobile.overflow&&mobile.panel.width<=mobile.viewport&&mobile.fields.every(w=>w<=mobile.panel.width),mobile);
   ok('Creative Contract introduces no page errors',errors.length===0,errors);
 } finally {
