@@ -27,7 +27,7 @@ try{
   ok('voiceover statements receive stable claim identities and script references',active.length===4&&active.every(claim=>claim.id.startsWith('claim:')&&claim.refs.length===1&&claim.refs[0].lineNumber>0),active);
   ok('personal experience and opinion remain source-free',types['I learned this after filming for a year.']==='personal_experience'&&types['Bence bu his teknik mukemmellikten daha onemli.']==='opinion'&&active.filter(claim=>claim.type==='personal_experience'||claim.type==='opinion').every(claim=>!claim.required&&claim.status==='not_required'),active);
   ok('technical claims and recommendations ask for support',types['A 24-70mm lens covers most everyday shooting situations.']==='technical'&&types['You should carry one fast prime for low light.']==='recommendation'&&active.filter(claim=>claim.type==='technical'||claim.type==='recommendation').every(claim=>claim.required&&claim.status==='needs_source'),active);
-  ok('the Script Studio shows a compact review summary without another workflow screen',!initial.panelHidden&&/4 statements/.test(initial.summary)&&/2 need source/.test(initial.summary),initial);
+  ok('the Script Studio shows only the compact evidence queue without another workflow screen',!initial.panelHidden&&/2 evidence claims/.test(initial.summary)&&/2 need source/.test(initial.summary),initial);
 
   const stable=await page.evaluate(script=>{
     const before=window.gdGetTruthLedger(),again=window.gdRebuildTruthLedger(script,{silent:true});
@@ -89,7 +89,7 @@ try{
     renderTruthLedger();planHighlight();const panel=document.getElementById('truthLedgerPanel');panel.classList.add('open');
     return {rows:document.querySelectorAll('.truth-claim').length,needs:document.querySelectorAll('.p-truth-needs').length,verified:document.querySelectorAll('.p-truth-verified').length,conflicts:document.querySelectorAll('.p-truth-conflict').length};
   });
-  ok('claim state is visible both in the compact ledger and on the matching script lines',visual.rows===4&&visual.needs>=1&&visual.verified>=1&&visual.conflicts===0,visual);
+  ok('only evidence claims are visible in the compact ledger while claim state remains on matching script lines',visual.rows===2&&visual.needs>=1&&visual.verified>=1&&visual.conflicts===0,visual);
 
   await page.setViewportSize({width:390,height:844});
   await page.waitForTimeout(80);
