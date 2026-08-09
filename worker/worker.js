@@ -453,10 +453,16 @@ function crossrefWorkUrl(item) {
   return publicSourceUrl(item && item.URL);
 }
 async function crossrefSearch(query, queryRecord) {
-  const endpoint = 'https://api.crossref.org/works?rows=3&query.bibliographic=' + encodeURIComponent(queryRecord.query);
-  const response = await fetch(endpoint, {headers:{'Accept':'application/json','User-Agent':'GrainDistrict/1.0 (https://hanvisuals.github.io/graindistrict/)'},redirect:'error'});
-  let data;try{data=await response.json();}catch(e){data={};}
+  const endpoint = 'https://api.crossref.org/works?rows=3&select=DOI,title,URL,type&query.bibliographic=' + encodeURIComponent(queryRecord.query);
+  const response = await fetch(endpoint, {
+    headers:{'Accept':'application/json','User-Agent':'GrainDistrict/1.0 (https://hanvisuals.github.io/graindistrict/)'},
+    redirect:'error',signal:typeof AbortSignal!=='undefined'&&AbortSignal.timeout?AbortSignal.timeout(12000):undefined
+  });
   if (!response.ok) throw new Error('crossref_' + response.status);
+  const type = String(response.headers.get('content-type') || '').toLowerCase();
+  if (type && type.indexOf('application/json') < 0) throw new Error('crossref_invalid_content_type');
+  const raw = await responseTextLimited(response, 262144);
+  let data;try{data=JSON.parse(raw);}catch(e){throw new Error('crossref_invalid_json');}
   const requestId = textLimit(response.headers.get('x-request-id'), 120) || ('crossref:' + queryRecord.queryHash.slice(0, 24));
   const items = data && data.message && Array.isArray(data.message.items) ? data.message.items : [], candidates = [];
   for (let i = 0; i < items.length && candidates.length < 3; i++) {
