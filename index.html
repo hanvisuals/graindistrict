@@ -3707,23 +3707,32 @@ function truthLedgerStatementKey(value){
 function truthLedgerScriptFingerprint(value){return 'script-hash:'+creativeContractHashText(String(value||'').replace(/\r\n/g,'\n').trim());}
 function truthLedgerStrictness(){var mode=creativeContractFormat(creativeContract);return mode==='demo'||mode==='graphics'?'strict':(mode==='story'?'light':'standard');}
 function truthClaimNeedsSupport(type){return type==='fact'||type==='technical'||type==='recommendation';}
+function truthLedgerAscii(value){return truthLedgerText(value,1200).toLocaleLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\u0131/g,'i');}
 function truthClassifyStatement(statement){
-  var raw=truthLedgerText(statement,1000),low=raw.toLocaleLowerCase(),ascii=low.normalize?low.normalize('NFD').replace(/[\u0300-\u036f]/g,''):low;
-  if(/\b(bence|sanirim|bana gore|i think|i feel|in my view|personally|to me)\b/.test(ascii))return 'opinion';
-  if(/\b(ben|benim|bende|kendim|i|i've|i have|i learned|i tried|i used|my experience|we learned|we tried)\b/.test(low))return 'personal_experience';
-  if(/\b(should|must|need to|best|top\s+\d+|recommend|worth buying|yaninizda|yanında|gerekir|gerekiyor|olmali|olmalı|tavsiye|en iyi)\b/.test(low))return 'recommendation';
-  if(/\d|\b(mm|cm|hz|fps|mp|megapixel|iso|f\/?\d|stop|stops|codec|bitrate|sensor|lens|lenses|aperture|shutter|dynamic range|odak|diyafram|sens[oö]r|kare\/saniye)\b/.test(low))return 'technical';
-  if(/\b(is|are|was|were|can|cannot|causes?|provides?|means?|increases?|reduces?|opened|released|founded|invented|sa[ğg]lar|art[ıi]r[ıi]r|azalt[ıi]r|a[çc][ıi]ld[ıi]|kuruldu|üretilir|uretilir)\b/.test(low))return 'fact';
-  return creativeContractFormat(creativeContract)==='story'?'creative_premise':'fact';
+  var raw=truthLedgerText(statement,1000),ascii=truthLedgerAscii(raw);
+  /* Evidence review is intentionally high precision. Uncertain prose remains a
+     creative premise instead of creating dozens of false source chores. */
+  if(/\b(bence|sanirim|bana gore|bana kalirsa|i think|i feel|in my view|personally|to me)\b/.test(ascii))return 'opinion';
+  if(/\b(ben|benim|bende|benden|kendim|bunu dusundum|dusundum|hissettim|gordum|ogrendim|denedim|kullandim|yasadim|fark ettim|dokundum|koydum|hatirliyorum|i|i've|i have|i learned|i tried|i used|i remember|i noticed|my experience|we learned|we tried)\b/.test(ascii))return 'personal_experience';
+  if(/\b(should|must|need to|best|top\s+\d+|recommend|worth buying|yaninizda|yaninda|gerekir|gerekiyor|olmali|tavsiye|en iyi)\b/.test(ascii))return 'recommendation';
+  var measured=/\d+(?:[.,]\d+)?\s*(?:%|mm|cm|m|km|g|kg|hz|khz|fps|mp|megapixel|bit|bitrate|mbps|gb|tb|second|seconds|minute|minutes|hour|hours|saniye|dakika|saat)?\b|\bf\/?\d+(?:[.,]\d+)?\b/.test(ascii);
+  var technicalTopic=/\b(asfalt|bitum|binder|pavement|catlak|gerilim|sicaklik|thermal|stress|strain|pressure|basinc|deform|malzeme|material|lens|lenses|sensor|kamera|camera|iso|aperture|diyafram|shutter|codec|bitrate|dynamic range|odak|focal|megapixel|voltage|current|protein|calorie)\b/.test(ascii);
+  var technicalPredicate=/\b(katilasir|sertlesir|sividir|erir|donar|catlar|kirilir|deforme olur|genisler|daralir|uretilir|neden olur|etkiler|artirir|azaltir|saglar|hardens?|solidifies?|liquids?|melts?|freezes?|cracks?|deforms?|expands?|contracts?|causes?|increases?|reduces?|provides?)\b/.test(ascii);
+  var publicFact=/\b(acildi|kuruldu|yayinlandi|icat edildi|released|opened|founded|published|invented|according to|research shows|arastirmaya gore)\b/.test(ascii);
+  if(publicFact)return 'fact';
+  if(measured||(technicalTopic&&technicalPredicate)||/\b(katilasir|sertlesir|solidifies?|hardens?)\b/.test(ascii))return 'technical';
+  return 'creative_premise';
 }
 function truthExtractVoiceoverClaims(script){
   var out=[];String(script||'').split(/\r?\n/).forEach(function(line,index){
     var match=line.match(/^\s*\[VOICEOVER\]\s+(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})\s*[-:]\s*(.+)$/i);if(!match)return;
-    var parts=match[3].match(/[^.!?\u2026]+[.!?\u2026]?/g)||[match[3]];
-    parts.forEach(function(part,partIndex){
-      var statement=truthLedgerText(part,700);if(statement.split(/\s+/).filter(Boolean).length<3)return;
-      var type=truthClassifyStatement(statement);
-      out.push({statement:statement,type:type,required:truthClaimNeedsSupport(type),ref:{lineNumber:index+1,partIndex:partIndex,timecode:match[1]+'-'+match[2],blockType:'voiceover',fingerprint:'line-hash:'+creativeContractHashText(line)}});
+    var sentences=match[3].match(/[^.!?\u2026]+[.!?\u2026]?/g)||[match[3]],partIndex=0;
+    sentences.forEach(function(sentence){
+      var fragments=String(sentence||'').split(/\s+(?:\u2014|\u2013)\s+|;\s+/).filter(Boolean);
+      fragments.forEach(function(part){var statement=truthLedgerText(part,700),currentIndex=partIndex++;if(statement.split(/\s+/).filter(Boolean).length<3)return;
+        var type=truthClassifyStatement(statement);
+        out.push({statement:statement,type:type,required:truthClaimNeedsSupport(type),ref:{lineNumber:index+1,partIndex:currentIndex,timecode:match[1]+'-'+match[2],blockType:'voiceover',fingerprint:'line-hash:'+creativeContractHashText(line)}});
+      });
     });
   });return out;
 }
@@ -3754,14 +3763,14 @@ function rebuildTruthLedgerFromScript(script,options){
   (previous&&previous.claims||[]).forEach(function(claim){var statementKey=truthLedgerStatementKey(claim.statement),ref=claim.refs[0]||{};(grouped[statementKey]||(grouped[statementKey]=[])).push(claim);if(claim.active)exact[statementKey+'|'+(ref.timecode||'')]=claim;});
   var active=truthExtractVoiceoverClaims(script).map(function(candidate,index){
     var statementKey=truthLedgerStatementKey(candidate.statement),key=statementKey+'|'+candidate.ref.timecode,prior=exact[key]||(grouped[statementKey]||[]).find(function(item){return !reused[item.id];}),claim;
-    if(prior){reused[prior.id]=1;claim=canonicalClone(prior,prior);claim.active=true;claim.statement=candidate.statement;claim.refs=[candidate.ref];claim.required=truthClaimNeedsSupport(claim.type);if(claim.status==='stale')claim.status=truthClaimHasSource(claim)?'verified':(claim.required?'needs_source':'not_required');claim.retiredAt=0;claim.updatedAt=now;}
+    if(prior){reused[prior.id]=1;claim=canonicalClone(prior,prior);claim.active=true;claim.statement=candidate.statement;claim.refs=[candidate.ref];if(claim.classificationSource!=='user'){claim.type=candidate.type;claim.required=candidate.required;if(!claim.required&&claim.status==='needs_source')claim.status='not_required';if(claim.required&&claim.status==='not_required')claim.status='needs_source';}else claim.required=truthClaimNeedsSupport(claim.type);if(claim.status==='stale')claim.status=truthClaimHasSource(claim)?'verified':(claim.required?'needs_source':'not_required');claim.retiredAt=0;claim.updatedAt=now;}
     else claim={id:'claim:'+canonicalIdToken(),statement:candidate.statement,type:candidate.type,status:candidate.required?'needs_source':'not_required',required:candidate.required,active:true,classificationSource:'local_classifier',refs:[candidate.ref],sources:[],createdAt:now,updatedAt:now,retiredAt:0};
     return normalizeTruthClaim(claim,index);
   });
   var retired=[];(previous&&previous.claims||[]).forEach(function(claim){if(reused[claim.id])return;var old=normalizeTruthClaim(claim,retired.length);old.active=false;old.status='stale';old.retiredAt=old.retiredAt||now;retired.push(old);});
   truthLedger=normalizeTruthLedger({schema:TRUTH_LEDGER_SCHEMA,schemaVersion:1,id:previous&&previous.id||('truth-ledger:'+canonicalIdToken()),revision:previous?previous.revision+1:1,status:'current',strictness:truthLedgerStrictness(),scriptFingerprint:truthLedgerScriptFingerprint(script),contractRef:truthLedgerReference(),claims:active.concat(retired),provenance:{createdBy:'local_classifier',createdAt:previous&&previous.provenance&&previous.provenance.createdAt||now,updatedAt:now,staleAt:0,staleReason:'',reviewReason:options.reason||'script_review'}});
   renderTruthLedger();planHighlight();
-  var message=document.getElementById('truthLedgerMessage');if(message&&!options.silent)message.textContent=active.length?'Review complete. '+active.length+' spoken statement'+(active.length===1?'':'s')+' classified.':'No reviewable voiceover statements found.';
+  var evidenceCount=active.filter(truthClaimVisibleInEvidenceQueue).length,skippedCount=active.length-evidenceCount,message=document.getElementById('truthLedgerMessage');if(message&&!options.silent)message.textContent=evidenceCount?'Review complete. '+evidenceCount+' evidence claim'+(evidenceCount===1?'':'s')+' found'+(skippedCount?'; '+skippedCount+' narrative line'+(skippedCount===1?'':'s')+' skipped.':'.'):'Review complete. No external factual claims need evidence.';
   if(!options.silent&&window.gdAutosaveProject)window.gdAutosaveProject(true);return truthLedger;
 }
 function markTruthLedgerStale(reason,script,force){
@@ -3771,6 +3780,7 @@ function markTruthLedgerStale(reason,script,force){
   renderTruthLedger();return true;
 }
 function truthClaimHasSource(claim){return !!(claim&&claim.sources&&claim.sources.some(function(source){return !!(truthLedgerText(source.url,1000)||truthLedgerText(source.note,800));}));}
+function truthClaimVisibleInEvidenceQueue(claim){return !!(claim&&claim.active&&claim.status!=='not_required'&&(claim.status==='verified'||claim.status==='user_asserted'||claim.status==='conflict'||claim.required||truthClaimHasSource(claim)));}
 function truthSourceAssistantIsCurrent(claim,source){var a=source&&source.assistant;return !!(a&&a.status==='current'&&a.claimFingerprint===truthSourceClaimFingerprint(claim.statement)&&truthLedgerText(a.sourceUrl,1000)===truthLedgerText(source.url,1000));}
 function updateTruthClaim(id,patch){
   if(!truthLedger)return {ok:false,error:'Truth Ledger has not been reviewed.'};truthLedger=normalizeTruthLedger(truthLedger);var claim=truthLedger.claims.find(function(item){return item.id===id;});if(!claim)return {ok:false,error:'Claim not found.'};patch=patch||{};
@@ -3819,14 +3829,14 @@ function renderTruthLedger(){
   var summary=document.getElementById('truthLedgerSummary'),state=document.getElementById('truthLedgerState'),mode=document.getElementById('truthLedgerMode'),claimsEl=document.getElementById('truthLedgerClaims'),intro=document.getElementById('truthLedgerIntro'),message=document.getElementById('truthLedgerMessage');
   if(!truthLedger){panel.classList.remove('needs-review','has-conflict');if(summary)summary.textContent='Review the script when it is ready';if(state)state.textContent='Unreviewed';if(mode)mode.textContent=truthLedgerStrictness();if(claimsEl)claimsEl.innerHTML='<div class="truth-empty">Run a review to separate sourced claims from personal experience, opinion and creative premise.</div>';if(message)message.textContent='';return;}
   truthLedger=normalizeTruthLedger(truthLedger);if(truthLedger.status==='current'&&truthLedger.scriptFingerprint!==truthLedgerScriptFingerprint(ta.value))markTruthLedgerStale('Script changed',ta.value);
-  var active=truthLedger.claims.filter(function(claim){return claim.active;}),needs=active.filter(function(claim){return claim.required&&claim.status==='needs_source';}),verified=active.filter(function(claim){return claim.status==='verified'||claim.status==='user_asserted';}),conflicts=active.filter(function(claim){return claim.status==='conflict';});
+  var active=truthLedger.claims.filter(function(claim){return claim.active;}),reviewClaims=active.filter(truthClaimVisibleInEvidenceQueue),skipped=active.length-reviewClaims.length,needs=reviewClaims.filter(function(claim){return claim.required&&claim.status==='needs_source';}),verified=reviewClaims.filter(function(claim){return claim.status==='verified'||claim.status==='user_asserted';}),conflicts=reviewClaims.filter(function(claim){return claim.status==='conflict';});
   panel.classList.toggle('needs-review',truthLedger.status!=='current'||needs.length>0);panel.classList.toggle('has-conflict',conflicts.length>0);if(mode)mode.textContent=truthLedger.strictness+' review';
-  if(summary)summary.textContent=truthLedger.status==='stale'?'Script changed - review again':(active.length+' statements / '+needs.length+' need source / '+verified.length+' confirmed');
+  if(summary)summary.textContent=truthLedger.status==='stale'?'Script changed - review again':(reviewClaims.length+' evidence claims / '+needs.length+' need source / '+verified.length+' confirmed');
   if(state)state.textContent=conflicts.length?conflicts.length+' conflict'+(conflicts.length===1?'':'s'):(truthLedger.status==='stale'?'Review needed':'Current');
-  if(intro)intro.textContent=truthLedger.strictness==='light'?'A light review: personal story remains personal; only factual or recommendation language asks for support.':(truthLedger.strictness==='strict'?'A strict review: demonstrations, specifications and visualized facts should show their evidence.':'An adaptive review: claims need support, while experience and opinion stay source-free.');
+  if(intro)intro.textContent=(truthLedger.strictness==='strict'?'Specifications, demonstrations and externally checkable facts appear here. ':'Only externally checkable claims appear here. ')+(skipped?skipped+' narrative or personal line'+(skipped===1?' was':'s were')+' kept out of the evidence queue.':'No narrative lines need manual review.');
   if(message)message.textContent=truthLedger.status==='stale'?'The script changed after this review. Run Review current script to update the ledger.':'';
-  if(!claimsEl)return;if(!active.length){claimsEl.innerHTML='<div class="truth-empty">No reviewable voiceover statements were found in the current script.</div>';return;}
-  claimsEl.innerHTML=active.map(function(claim,index){var source=claim.sources[0]||{},ref=claim.refs[0]||{},open=truthClaimOpenState[claim.id]?' open':'';return '<details data-claim-id="'+creativeContractEscape(claim.id)+'" class="truth-claim '+creativeContractEscape(claim.status)+'"'+open+' ontoggle="rememberTruthClaimOpen(\''+claim.id+'\',this)"><summary><span class="truth-claim-index">'+String(index+1).padStart(2,'0')+'</span><span class="truth-claim-text">'+creativeContractEscape(claim.statement)+'</span><span class="truth-claim-chip">'+creativeContractEscape(TRUTH_CLAIM_TYPES[claim.type])+'</span><span class="truth-claim-chip truth-claim-status">'+creativeContractEscape(TRUTH_CLAIM_STATUSES[claim.status])+'</span></summary><div class="truth-claim-form"><div class="truth-field"><label>Statement type</label><select onchange="updateTruthClaimFromControl(\''+claim.id+'\',\'type\',this)">'+truthTypeOptions(claim.type)+'</select></div><div class="truth-field"><label>Review state</label><select onchange="updateTruthClaimFromControl(\''+claim.id+'\',\'status\',this)">'+truthStatusOptions(claim.status)+'</select></div>'+truthSourceAssistantHtml(claim,source)+'<div class="truth-field wide"><label>Verification note</label><input type="text" value="'+creativeContractEscape(source.note||'')+'" placeholder="Your own note or manual confirmation" onchange="updateTruthClaimFromControl(\''+claim.id+'\',\'sourceNote\',this)"></div><div class="truth-claim-ref">Script line '+(ref.lineNumber||'-')+(ref.timecode?' &middot; '+creativeContractEscape(ref.timecode):'')+' &middot; '+(claim.classificationSource==='user'?'reviewed by you':'classified on device')+'</div></div></details>';}).join('');
+  if(!claimsEl)return;if(!reviewClaims.length){claimsEl.innerHTML='<div class="truth-empty">No external factual claims need evidence. Personal, poetic and narrative lines stay in the script without creating source work.</div>';return;}
+  claimsEl.innerHTML=reviewClaims.map(function(claim,index){var source=claim.sources[0]||{},ref=claim.refs[0]||{},open=truthClaimOpenState[claim.id]?' open':'';return '<details data-claim-id="'+creativeContractEscape(claim.id)+'" class="truth-claim '+creativeContractEscape(claim.status)+'"'+open+' ontoggle="rememberTruthClaimOpen(\''+claim.id+'\',this)"><summary><span class="truth-claim-index">'+String(index+1).padStart(2,'0')+'</span><span class="truth-claim-text">'+creativeContractEscape(claim.statement)+'</span><span class="truth-claim-chip">'+creativeContractEscape(TRUTH_CLAIM_TYPES[claim.type])+'</span><span class="truth-claim-chip truth-claim-status">'+creativeContractEscape(TRUTH_CLAIM_STATUSES[claim.status])+'</span></summary><div class="truth-claim-form"><div class="truth-field"><label>Statement type</label><select onchange="updateTruthClaimFromControl(\''+claim.id+'\',\'type\',this)">'+truthTypeOptions(claim.type)+'</select></div><div class="truth-field"><label>Review state</label><select onchange="updateTruthClaimFromControl(\''+claim.id+'\',\'status\',this)">'+truthStatusOptions(claim.status)+'</select></div>'+truthSourceAssistantHtml(claim,source)+'<div class="truth-field wide"><label>Verification note</label><input type="text" value="'+creativeContractEscape(source.note||'')+'" placeholder="Your own note or manual confirmation" onchange="updateTruthClaimFromControl(\''+claim.id+'\',\'sourceNote\',this)"></div><div class="truth-claim-ref">Script line '+(ref.lineNumber||'-')+(ref.timecode?' &middot; '+creativeContractEscape(ref.timecode):'')+' &middot; '+(claim.classificationSource==='user'?'reviewed by you':'classified on device')+'</div></div></details>';}).join('');
 }
 function toggleTruthLedger(){var panel=document.getElementById('truthLedgerPanel');if(!panel)return;panel.classList.toggle('open');var btn=panel.querySelector('.truth-ledger-toggle');if(btn)btn.setAttribute('aria-expanded',panel.classList.contains('open')?'true':'false');}
 function reviewTruthLedger(){var ta=document.getElementById('scriptTa');rebuildTruthLedgerFromScript(ta?ta.value:'',{reason:'manual_review'});}
