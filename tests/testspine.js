@@ -47,6 +47,7 @@ server.listen(8926, async()=>{
     projectType='youtube'; tone='introspective'; inputLang='tr';
     topic='custom tshirt designlarimi yapip onlari giymem ile alakali bir video';
     durMin=3; durMax=3;
+    creativeContract=creativeContractFallback();creativeContract.projectInputKey=creativeContractKey(projectConstraints);creativeContract.provenance.projectInputKey=creativeContract.projectInputKey;lockCreativeContract();
   });
   await page.evaluate(()=>genPlanChunked(buildGenSys(180,''),'Topic: '+topic,180,''));
   await page.waitForTimeout(2500);

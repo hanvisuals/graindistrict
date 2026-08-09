@@ -1487,9 +1487,15 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,label:focus-with
 .cc-head p{margin-top:8px;font-family:var(--sans);font-size:11px;line-height:1.55;color:rgba(255,255,255,.34);}
 .cc-state{display:flex;align-items:center;gap:7px;white-space:nowrap;padding:8px 10px;border:1px solid rgba(109,155,211,.16);border-radius:999px;background:rgba(109,155,211,.045);font-family:var(--mono);font-size:7px;letter-spacing:.09em;text-transform:uppercase;color:rgba(109,155,211,.72);}
 .cc-state::before{content:'';width:5px;height:5px;border-radius:50%;background:#78a984;box-shadow:0 0 9px rgba(120,169,132,.55);}
+.cc-sections{position:relative;display:grid;gap:10px;}
+.cc-section{padding:13px;border:1px solid rgba(255,255,255,.065);border-radius:17px;background:rgba(4,5,4,.24);}
+.cc-section-head{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;}
+.cc-section-head b{font-family:var(--mono);font-size:7px;letter-spacing:.16em;text-transform:uppercase;color:rgba(215,185,88,.7);}
+.cc-section-head span{font-family:var(--sans);font-size:10px;color:rgba(255,255,255,.28);}
 .cc-grid{position:relative;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:9px;}
 .cc-field{grid-column:span 3;display:flex;flex-direction:column;gap:7px;min-width:0;padding:12px;border:1px solid rgba(255,255,255,.07);border-radius:14px;background:rgba(4,5,4,.38);transition:border-color .16s,background .16s;}
 .cc-field.wide{grid-column:span 6;}
+.cc-field.full{grid-column:1/-1;}
 .cc-field:hover,.cc-field:focus-within{border-color:rgba(215,185,88,.2);background:rgba(255,255,255,.025);}
 .cc-field label{font-family:var(--mono);font-size:6px;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.27);}
 .cc-field input,.cc-field textarea,.cc-field select{width:100%;border:0;outline:0;resize:none;background:transparent;color:rgba(255,255,255,.82);font-family:var(--sans);font-size:12px;line-height:1.5;user-select:text;}
@@ -1514,6 +1520,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,label:focus-with
 .script-contract-toggle>span:first-child{font-family:var(--mono);font-size:7px;letter-spacing:.16em;text-transform:uppercase;color:rgba(215,185,88,.72);white-space:nowrap;}
 .script-contract-promise{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--sans);font-size:11px;color:rgba(255,255,255,.55);}
 .script-contract-mode{padding:5px 8px;border:1px solid rgba(255,255,255,.08);border-radius:999px;font-family:var(--mono);font-size:6px;letter-spacing:.09em;text-transform:uppercase;color:rgba(109,155,211,.75);white-space:nowrap;}
+.script-contract-freshness{padding:5px 8px;border:1px solid rgba(120,169,132,.14);border-radius:999px;font-family:var(--mono);font-size:6px;letter-spacing:.09em;text-transform:uppercase;color:rgba(120,169,132,.72);white-space:nowrap;}
+.script-contract.stale-output .script-contract-freshness{border-color:rgba(215,185,88,.24);color:#d7b958;background:rgba(215,185,88,.06);}
 .script-contract-chevron{font-size:13px;color:rgba(255,255,255,.28);transition:transform .2s;}
 .script-contract.open .script-contract-chevron{transform:rotate(180deg);}
 .script-contract-body{display:none;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;border-top:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.055);}
@@ -1665,7 +1673,10 @@ body.location-mode #btnRebreak{display:inline-flex!important;}
   .cc-head{gap:12px;}
   .cc-state{display:none;}
   .cc-grid{grid-template-columns:1fr;}
-  .cc-field,.cc-field.wide{grid-column:1;}
+  .cc-field,.cc-field.wide,.cc-field.full{grid-column:1;}
+  .cc-section{padding:10px;}
+  .cc-section-head{display:block;}
+  .cc-section-head span{display:block;margin-top:4px;}
   .cc-field textarea{height:54px;}
   #s_equipment.contract-ready .brief-ta{height:150px;}
   .cc-foot{align-items:flex-start;flex-direction:column;}
@@ -2490,15 +2501,34 @@ body.free-mode .port-dot:hover{background:var(--board-gold);border-color:#f8e8a8
         <div><div class="cc-k">Creative Contract / Project Direction</div><h2>This is what the film is promising.</h2><p>Review the decisions, change anything that feels wrong, then lock the direction and generate.</p></div>
         <div class="cc-state" id="creativeContractState">Ready to edit</div>
       </div>
-      <div class="cc-grid">
-        <div class="cc-field"><label for="ccFormat">Format</label><select id="ccFormat"><option value="story">Cinematic story</option><option value="presenter">Educational presenter</option><option value="demo">Demonstration / review</option><option value="graphics">Graphics-led</option><option value="hybrid">Considered hybrid</option></select></div>
-        <div class="cc-field"><label for="ccPacing">Pacing</label><select id="ccPacing"><option value="reflective">Reflective</option><option value="balanced">Balanced</option><option value="energetic">Energetic</option></select></div>
-        <div class="cc-field wide"><label for="ccViewer">Viewer</label><input id="ccViewer" type="text" autocomplete="off" placeholder="Who needs this video?"></div>
-        <div class="cc-field wide"><label for="ccPromise">Core promise</label><textarea id="ccPromise" placeholder="What exactly will the viewer leave with?"></textarea></div>
-        <div class="cc-field wide"><label for="ccStructure">Story engine</label><textarea id="ccStructure" placeholder="How the argument or story moves forward"></textarea></div>
-        <div class="cc-field wide"><label for="ccVisualSystem">Visual system</label><textarea id="ccVisualSystem" placeholder="Presenter, B-roll, demonstrations, screens and graphics"></textarea></div>
-        <div class="cc-field wide"><label for="ccProof">Proof / evidence</label><textarea id="ccProof" placeholder="What makes the promise believable and useful?"></textarea></div>
-        <div class="cc-field wide"><label for="ccAvoid">Avoid</label><textarea id="ccAvoid" placeholder="What this project must not become"></textarea></div>
+      <div class="cc-sections">
+        <section class="cc-section"><div class="cc-section-head"><b>01 / Viewer &amp; Promise</b><span>Who changes, and what are we promising them?</span></div><div class="cc-grid">
+          <div class="cc-field wide"><label for="ccViewer">Primary viewer</label><input id="ccViewer" type="text" autocomplete="off" placeholder="Who needs this video?"></div>
+          <div class="cc-field wide"><label for="ccPromise">Core promise</label><textarea id="ccPromise" placeholder="What exactly will the viewer leave with?"></textarea></div>
+          <div class="cc-field wide"><label for="ccPriorState">Before watching</label><textarea id="ccPriorState" placeholder="What do they currently believe, feel or struggle with?"></textarea></div>
+          <div class="cc-field wide"><label for="ccDesiredState">After watching</label><textarea id="ccDesiredState" placeholder="What should become clear, possible or actionable?"></textarea></div>
+          <div class="cc-field full"><label for="ccSuccessCriteria">Success looks like</label><textarea id="ccSuccessCriteria" placeholder="One observable outcome per line"></textarea></div>
+        </div></section>
+        <section class="cc-section"><div class="cc-section-head"><b>02 / Story or Information Engine</b><span>The format decides which fields are required.</span></div><div class="cc-grid">
+          <div class="cc-field wide"><label for="ccDrivingQuestion">Driving question / learning goal</label><textarea id="ccDrivingQuestion" placeholder="What keeps the viewer moving forward?"></textarea></div>
+          <div class="cc-field wide"><label for="ccWhyItMatters">Why it matters</label><textarea id="ccWhyItMatters" placeholder="Why should this viewer care now?"></textarea></div>
+          <div class="cc-field wide"><label for="ccTransformation">Transformation / result</label><textarea id="ccTransformation" placeholder="What changes between the beginning and the end?"></textarea></div>
+          <div class="cc-field wide"><label for="ccStructure">Structure</label><textarea id="ccStructure" placeholder="Challenge → attempt → proof → takeaway, or another format-aware structure"></textarea></div>
+        </div></section>
+        <section class="cc-section"><div class="cc-section-head"><b>03 / Proof &amp; Payoff</b><span>Requirements now; real evidence arrives with Truth Ledger later.</span></div><div class="cc-grid">
+          <div class="cc-field wide"><label for="ccProof">Proof requirements</label><textarea id="ccProof" placeholder="What must be demonstrated or shown? One per line"></textarea></div>
+          <div class="cc-field wide"><label for="ccPayoffs">Payoffs</label><textarea id="ccPayoffs" placeholder="What does the viewer finally get to see, learn or decide? One per line"></textarea></div>
+        </div></section>
+        <section class="cc-section"><div class="cc-section-head"><b>04 / Format &amp; Constraints</b><span>Hard rules are never silently overridden by AI or Creator DNA.</span></div><div class="cc-grid">
+          <div class="cc-field"><label for="ccFormat">Format</label><select id="ccFormat"><option value="story">Cinematic story</option><option value="presenter">Educational presenter</option><option value="demo">Demonstration / review</option><option value="graphics">Graphics-led</option><option value="hybrid">Considered hybrid</option></select></div>
+          <div class="cc-field"><label for="ccPresence">Creator presence</label><select id="ccPresence"><option value="camera">On camera</option><option value="sometimes">Selective</option><option value="voice">Voice only</option><option value="none">No person</option></select></div>
+          <div class="cc-field"><label for="ccDeliveryMode">Delivery</label><select id="ccDeliveryMode"><option value="voiceover-led">Voiceover-led</option><option value="presenter-led">Presenter-led</option><option value="visual-led">Visual-led</option><option value="mixed">Mixed</option></select></div>
+          <div class="cc-field"><label for="ccPacing">Pacing</label><select id="ccPacing"><option value="reflective">Reflective</option><option value="balanced">Balanced</option><option value="energetic">Energetic</option></select></div>
+          <div class="cc-field wide"><label for="ccTone">Tone</label><input id="ccTone" type="text" autocomplete="off" placeholder="Confident but observational"></div>
+          <div class="cc-field wide"><label for="ccVisualSystem">Visual system</label><textarea id="ccVisualSystem" placeholder="Presenter, B-roll, demonstrations, screens and graphics"></textarea></div>
+          <div class="cc-field wide"><label for="ccMustInclude">Must include</label><textarea id="ccMustInclude" placeholder="Non-negotiable inclusions, one per line"></textarea></div>
+          <div class="cc-field wide"><label for="ccAvoid">Must avoid</label><textarea id="ccAvoid" placeholder="Non-negotiable exclusions, one per line"></textarea></div>
+        </div></section>
       </div>
       <div class="cc-foot"><span id="creativeContractFoot">Built from your idea, DNA and real production limits.</span><div class="cc-foot-actions"><button class="cc-rebuild" type="button" onclick="regenerateCreativeContract()">Rebuild from details</button><button class="cc-lock" id="creativeContractLock" type="button" onclick="handleCreativeContractAction()"><span id="creativeContractLockText">Lock direction & generate</span></button></div></div>
     </section>
@@ -2539,7 +2569,7 @@ body.free-mode .port-dot:hover{background:var(--board-gold);border-color:#f8e8a8
       <div class="s3-col-right">
         <section class="script-contract" id="scriptContract" hidden>
           <button class="script-contract-toggle" type="button" onclick="toggleScriptContract()" aria-expanded="false">
-            <span>Project Direction</span><span class="script-contract-promise" id="scriptContractPromise"></span><span class="script-contract-mode" id="scriptContractMode"></span><span class="script-contract-chevron">&#8964;</span>
+            <span>Project Direction</span><span class="script-contract-promise" id="scriptContractPromise"></span><span class="script-contract-freshness" id="scriptContractFreshness">Current</span><span class="script-contract-mode" id="scriptContractMode"></span><span class="script-contract-chevron">&#8964;</span>
           </button>
           <div class="script-contract-body" id="scriptContractBody"></div>
         </section>
@@ -2978,7 +3008,7 @@ var STYLE_PACKS={
 };
 function stylePack(part){
   if(projectType!=='youtube')return '';
-  var contractMode=creativeContract&&creativeContract.format;
+  var contractMode=creativeContractFormat(creativeContract);
   if(contractMode&&contractMode!=='story'){
     var contractStyles={
       presenter:{script:'PROJECT FORMAT STYLE (writing): Lead with the viewer problem and a precise promise. Teach in ordered sections with concrete examples and useful takeaways. Never manufacture a personal crisis or philosophical ending.',shots:'PROJECT FORMAT STYLE (visuals): Keep the presenter as the anchor. Use B-roll, screens and restrained graphics only to prove or clarify the spoken point.'},
@@ -2993,7 +3023,7 @@ function stylePack(part){
   return p?'\n\n'+p[part]:'';
 }
 var creatorDNA=null,dnaDraft=null,dnaStep=0,dnaReturnScreen='s1',dnaHubReturnScreen='s0',dnaRevealReturnScreen='s1';
-var creativeContract=null,creativeContractBusy=false;
+var creativeContract=null,creativeContractBusy=false,creativeContractHistory=[],creativeGenerationRecords=[],currentScriptGeneratedFrom=null;
 var ideaStudioIdeas=[],ideaStudioBusy=false;
 var dnaLabState={videos:[],traits:[],selected:{},busy:false};
 var DNA_QS=[
@@ -3232,6 +3262,8 @@ function creatorDnaStyle(part){
   if(mode==='graphics')return 'CREATOR DNA STYLE (visuals): No live-action camera footage unless the profile explicitly makes it available. Treat every BROLL line as a designed scene with layout, type, diagram, motion and asset notes.';
   return 'CREATOR DNA STYLE (visuals): Choose the clearest medium per beat and keep transitions between presenter, real footage, screens and graphics intentional.';
 }
+var CREATIVE_CONTRACT_SCHEMA='graindistrict.creative-contract';
+var CREATIVE_CONTRACT_VERSION=2;
 var CREATIVE_CONTRACT_FORMATS={story:'Cinematic story',presenter:'Educational presenter',demo:'Demonstration / review',graphics:'Graphics-led',hybrid:'Considered hybrid'};
 function creativeContractEscape(value){return String(value==null?'':value).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 function creativeContractText(value,max,fallback){
@@ -3239,7 +3271,42 @@ function creativeContractText(value,max,fallback){
   if(!out)out=fallback||'';
   return max&&out.length>max?out.slice(0,max-1).trim()+'…':out;
 }
-function creativeContractFallback(){
+/* Creative Contract v2 is a first-class, revisioned project entity. The old
+   compact v1 fields are migrated here rather than discarded, so canonical
+   backups remain deterministic and future Truth Ledger / Beat Graph entities
+   can reference stable contract-element identities. */
+function creativeContractLines(value){
+  var rows=Array.isArray(value)?value:String(value==null?'':value).split(/\r?\n|\s*;\s*/);
+  return rows.map(function(x){return creativeContractText(x&&x.statement!=null?x.statement:x,420,'');}).filter(Boolean);
+}
+function creativeContractHashText(value){
+  var text=String(value==null?'':value),h=2166136261;
+  for(var i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,16777619);}
+  return ('00000000'+(h>>>0).toString(16)).slice(-8);
+}
+function creativeContractStableStringify(value){
+  if(value==null||typeof value!=='object')return JSON.stringify(value);
+  if(Array.isArray(value))return '['+value.map(creativeContractStableStringify).join(',')+']';
+  return '{'+Object.keys(value).sort().map(function(k){return JSON.stringify(k)+':'+creativeContractStableStringify(value[k]);}).join(',')+'}';
+}
+function creativeContractFormat(contract){
+  if(!contract)return '';
+  return typeof contract.format==='string'?contract.format:String(contract.format&&contract.format.type||'');
+}
+function creativeContractPresence(value,fallback){
+  var raw=String(value||'').toLowerCase().trim(),map={'on camera':'camera','on-camera':'camera','selective':'sometimes','selective on-camera':'sometimes','voice only':'voice','voiceover only':'voice','no person':'none','no people':'none'};
+  raw=map[raw]||raw;return ['camera','sometimes','voice','none'].indexOf(raw)>=0?raw:(fallback||'sometimes');
+}
+function creativeContractStableId(raw){
+  if(raw&&typeof raw.id==='string'&&raw.id.indexOf('contract:')===0)return raw.id;
+  var seed=creativeContractStableStringify({topic:topic,createdAt:raw&&raw.createdAt||0,format:raw&&raw.format||'',viewer:raw&&raw.viewer||'',promise:raw&&raw.promise||''});
+  return 'contract:legacy-'+creativeContractHashText(seed);
+}
+function creativeContractElementId(existing,contractId,kind,index){
+  if(typeof existing==='string'&&existing.indexOf('contract-element:')===0)return existing;
+  return 'contract-element:'+creativeContractHashText(contractId+'|'+kind+'|'+String(index||0));
+}
+function creativeContractDefaults(){
   var d=creatorDNA||{},mode=d.carrier||((fmt==='vlog')?'presenter':(fmt==='essay'?'story':'hybrid'));
   if(!CREATIVE_CONTRACT_FORMATS[mode])mode='hybrid';
   var pace=d.pace==='energetic'?'energetic':(d.pace==='balanced'?'balanced':'reflective');
@@ -3247,16 +3314,148 @@ function creativeContractFallback(){
   var viewer={story:'People drawn to an honest personal process',presenter:'Viewers looking for a clear explanation',demo:'Viewers deciding what works in a real situation',graphics:'Visual learners who need a complex idea made simple',hybrid:'Viewers who value clarity, evidence and visual craft'}[mode];
   var proof={story:'Use real events, concrete details and a visible change instead of invented drama.',presenter:'Use specific examples, demonstrations and a takeaway the viewer can repeat.',demo:'Define criteria, show the test and result, then name the limitation.',graphics:'Make every claim visible through a diagram, comparison, number or changing graphic state.',hybrid:'Use the clearest available evidence for each claim: presenter, real footage, screen, demo or graphic.'}[mode];
   var avoids=dnaList('avoid',d.avoid).filter(function(x){return x!=='no fixed exclusions';});
-  return {v:1,format:mode,viewer:viewer,promise:'Help the viewer '+outcome+' through a specific treatment of “'+creativeContractText(topic,120,'this subject')+'”.',structure:creatorDnaStructure(d)||'Open with the real viewer problem, develop one clear argument and end with a usable change.',visualSystem:creatorDnaVisual(d)||'Choose the clearest visual medium for every beat and avoid decorative filler.',proof:proof,pacing:pace,avoid:avoids.join(', ')||'Generic filler, repeated ideas and claims without visible proof.',tone:tone||'introspective',presence:d.presence||'sometimes',source:'fallback',createdAt:Date.now(),updatedAt:Date.now(),inputKey:''};
+  return {mode:mode,pace:pace,viewer:viewer,promise:'Help the viewer '+outcome+' through a specific treatment of '+creativeContractText(topic,120,'this subject')+'.',priorState:'They have a real question or friction this video should resolve.',desiredState:'They leave with '+outcome+'.',drivingQuestion:mode==='story'?'What changes when this idea is tested in real life?':(mode==='presenter'?'What should the viewer understand or be able to do?':''),whyItMatters:'The result should be useful with the viewer\'s real constraints.',transformation:'Uncertainty becomes a clear, observable result.',structure:creatorDnaStructure(d)||'Open with the real viewer problem, develop one clear argument and end with a usable change.',visualSystem:creatorDnaVisual(d)||'Choose the clearest visual medium for every beat and avoid decorative filler.',proof:proof,pacing:pace,avoid:avoids.length?avoids:['Generic filler','Repeated ideas','Claims without visible proof'],tone:tone||'introspective',presence:d.presence||'sometimes',deliveryMode:d.presence==='camera'?'presenter-led':(d.presence==='none'?'visual-led':'voiceover-led')};
+}
+function migrateCreativeContractV1(raw,source){
+  raw=raw&&typeof raw==='object'?canonicalClone(raw,{}):{};
+  var base=creativeContractDefaults(),format=String(raw.format||base.mode).toLowerCase();if(!CREATIVE_CONTRACT_FORMATS[format])format=base.mode;
+  var id=creativeContractStableId(raw),created=Number(raw.createdAt)||Date.now(),avoid=creativeContractLines(raw.avoid);if(!avoid.length)avoid=base.avoid.slice();
+  var proof=creativeContractText(raw.proof,420,base.proof),promise=creativeContractText(raw.promise,420,base.promise),structure=creativeContractText(raw.structure,480,base.structure);
+  return {schema:CREATIVE_CONTRACT_SCHEMA,schemaVersion:CREATIVE_CONTRACT_VERSION,id:id,revision:Math.max(1,Number(raw.revision)||1),status:Number(raw.lockedAt)>0?'locked':'draft',
+    format:{type:format,creatorPresence:creativeContractPresence(raw.presence,base.presence),deliveryMode:base.deliveryMode},
+    audience:{primary:creativeContractText(raw.viewer,260,base.viewer),priorState:creativeContractText(raw.beliefBefore||raw.priorState,420,base.priorState),desiredState:creativeContractText(raw.beliefAfter||raw.desiredState,420,base.desiredState)},
+    promise:{id:creativeContractElementId(null,id,'promise',0),statement:promise,successCriteria:[proof]},
+    storyEngine:{drivingQuestion:creativeContractText(raw.centralQuestion||raw.drivingQuestion,420,format==='story'?'What changes as this real process unfolds?':(format==='presenter'?'What should the viewer understand or be able to do?':'')),whyItMatters:creativeContractText(raw.stakes||raw.whyItMatters,420,base.whyItMatters),transformation:creativeContractText(raw.transformation,420,base.transformation),structure:structure},
+    payoffs:[{id:creativeContractElementId(null,id,'payoff',0),type:format==='demo'?'observable_result':(format==='presenter'?'learning_result':'visual_reveal'),statement:promise,required:true}],
+    proofRequirements:[{id:creativeContractElementId(null,id,'proof',0),statement:proof,evidenceType:format==='graphics'?'visual_explanation':(format==='demo'?'demonstration':'visible_support'),required:true}],
+    constraints:{mustInclude:[],mustAvoid:avoid.map(function(statement,i){return {id:creativeContractElementId(null,id,'avoid',i),statement:statement,severity:'hard'};}),production:[]},
+    style:{tone:creativeContractText(raw.tone,100,base.tone),visualSystem:creativeContractText(raw.visualSystem,520,base.visualSystem),pacingIntent:String(raw.pacing||base.pacing)},
+    provenance:{createdBy:source==='ai'?'ai':(source==='fallback'?'fallback':'migration'),editedByUser:source==='edited',projectInputKey:String(raw.inputKey||raw.projectInputKey||''),createdAt:created,updatedAt:Number(raw.updatedAt)||created,lockedAt:Number(raw.lockedAt)||0,staleAt:0,staleReason:''},
+    projectInputKey:String(raw.inputKey||raw.projectInputKey||''),source:source||raw.source||'migration',migration:{sourceVersion:Number(raw.schemaVersion||raw.v)||1,legacy:raw}};
 }
 function normalizeCreativeContract(raw,source){
-  raw=raw&&typeof raw==='object'?raw:{};
-  var base=creativeContractFallback(),format=String(raw.format||base.format).toLowerCase();
-  if(!CREATIVE_CONTRACT_FORMATS[format])format=base.format;
-  var pacing=String(raw.pacing||base.pacing).toLowerCase();
-  if(['reflective','balanced','energetic'].indexOf(pacing)<0)pacing=base.pacing;
-  var avoid=Array.isArray(raw.avoid)?raw.avoid.join(', '):raw.avoid;
-  return {v:1,format:format,viewer:creativeContractText(raw.viewer,260,base.viewer),promise:creativeContractText(raw.promise,420,base.promise),structure:creativeContractText(raw.structure,480,base.structure),visualSystem:creativeContractText(raw.visualSystem,520,base.visualSystem),proof:creativeContractText(raw.proof,420,base.proof),pacing:pacing,avoid:creativeContractText(avoid,420,base.avoid),tone:creativeContractText(raw.tone,60,base.tone),presence:creativeContractText(raw.presence,80,base.presence),source:source||raw.source||base.source,createdAt:Number(raw.createdAt)||base.createdAt,updatedAt:Date.now(),lockedAt:Number(raw.lockedAt)||0,inputKey:String(raw.inputKey||'')};
+  raw=raw&&typeof raw==='object'?canonicalClone(raw,{}):{};
+  if(raw.schema!==CREATIVE_CONTRACT_SCHEMA||Number(raw.schemaVersion)!==CREATIVE_CONTRACT_VERSION)return migrateCreativeContractV1(raw,source);
+  var base=creativeContractDefaults(),id=creativeContractStableId(raw),format=creativeContractFormat(raw)||base.mode;if(!CREATIVE_CONTRACT_FORMATS[format])format=base.mode;
+  var status=['draft','locked','stale','superseded'].indexOf(raw.status)>=0?raw.status:'draft',aud=raw.audience||{},prom=raw.promise||{},engine=raw.storyEngine||{},constraints=raw.constraints||{},style=raw.style||{},prov=raw.provenance||{};
+  function elements(items,kind,fallback,type){
+    var values=Array.isArray(items)?items:creativeContractLines(items).map(function(statement){return {statement:statement};});
+    if(!values.length&&fallback)values=[{statement:fallback}];
+    return values.map(function(item,i){item=item&&typeof item==='object'?item:{statement:item};var out=Object.assign({},item,{id:creativeContractElementId(item.id,id,kind,i),statement:creativeContractText(item.statement,520,fallback||''),required:item.required!==false});if(kind==='proof'){out.evidenceType=item.evidenceType||item.type||type;delete out.type;}else out.type=item.type||type;return out;});
+  }
+  function rules(items,kind){return (Array.isArray(items)?items:creativeContractLines(items)).map(function(item,i){item=item&&typeof item==='object'?item:{statement:item};return {id:creativeContractElementId(item.id,id,kind,i),statement:creativeContractText(item.statement,420,''),severity:item.severity==='soft'?'soft':'hard'};}).filter(function(x){return !!x.statement;});}
+  var proofReq=elements(raw.proofRequirements,'proof','',format==='demo'?'demonstration':'visible_support');
+  var payoffs=elements(raw.payoffs,'payoff','',format==='presenter'?'learning_result':'visual_reveal');
+  var success=Array.isArray(prom.successCriteria)?creativeContractLines(prom.successCriteria):creativeContractLines(prom.successCriteria||'');
+  return {schema:CREATIVE_CONTRACT_SCHEMA,schemaVersion:CREATIVE_CONTRACT_VERSION,id:id,revision:Math.max(1,Number(raw.revision)||1),status:status,
+    format:{type:format,creatorPresence:creativeContractPresence(raw.format&&raw.format.creatorPresence,base.presence),deliveryMode:creativeContractText(raw.format&&raw.format.deliveryMode,80,base.deliveryMode)},
+    audience:{primary:creativeContractText(aud.primary,260,''),priorState:creativeContractText(aud.priorState,420,''),desiredState:creativeContractText(aud.desiredState,420,'')},
+    promise:{id:creativeContractElementId(prom.id,id,'promise',0),statement:creativeContractText(prom.statement,420,''),successCriteria:success},
+    storyEngine:{drivingQuestion:creativeContractText(engine.drivingQuestion,420,''),whyItMatters:creativeContractText(engine.whyItMatters,420,''),transformation:creativeContractText(engine.transformation,420,''),structure:creativeContractText(engine.structure,480,'')},
+    payoffs:payoffs,proofRequirements:proofReq,
+    constraints:{mustInclude:rules(constraints.mustInclude,'include'),mustAvoid:rules(constraints.mustAvoid,'avoid'),production:Array.isArray(constraints.production)?canonicalClone(constraints.production,[]):[]},
+    style:{tone:creativeContractText(style.tone,100,''),visualSystem:creativeContractText(style.visualSystem,520,''),pacingIntent:['reflective','balanced','energetic'].indexOf(style.pacingIntent)>=0?style.pacingIntent:base.pacing},
+    provenance:{createdBy:prov.createdBy||'ai',editedByUser:!!prov.editedByUser,projectInputKey:String(prov.projectInputKey||raw.projectInputKey||''),createdAt:Number(prov.createdAt)||Date.now(),updatedAt:Number(prov.updatedAt)||Number(prov.createdAt)||Date.now(),lockedAt:Number(prov.lockedAt)||0,staleAt:Number(prov.staleAt)||0,staleReason:prov.staleReason||''},
+    projectInputKey:String(raw.projectInputKey||prov.projectInputKey||''),source:source||raw.source||prov.createdBy||'ai',migration:canonicalClone(raw.migration||null,null)};
+}
+function creativeContractFallback(){
+  var base=creativeContractDefaults(),now=Date.now(),id='contract:'+canonicalIdToken();
+  return normalizeCreativeContract({schema:CREATIVE_CONTRACT_SCHEMA,schemaVersion:2,id:id,revision:1,status:'draft',format:{type:base.mode,creatorPresence:base.presence,deliveryMode:base.deliveryMode},audience:{primary:base.viewer,priorState:base.priorState,desiredState:base.desiredState},promise:{id:creativeContractElementId(null,id,'promise',0),statement:base.promise,successCriteria:[base.proof]},storyEngine:{drivingQuestion:base.drivingQuestion,whyItMatters:base.whyItMatters,transformation:base.transformation,structure:base.structure},payoffs:[{statement:base.promise,type:base.mode==='presenter'?'learning_result':'visual_reveal',required:true}],proofRequirements:[{statement:base.proof,evidenceType:base.mode==='demo'?'demonstration':'visible_support',required:true}],constraints:{mustInclude:[],mustAvoid:base.avoid.map(function(x){return {statement:x,severity:'hard'};}),production:[]},style:{tone:base.tone,visualSystem:base.visualSystem,pacingIntent:base.pacing},provenance:{createdBy:'fallback',editedByUser:false,projectInputKey:'',createdAt:now,updatedAt:now,lockedAt:0},projectInputKey:'',source:'fallback'},'fallback');
+}
+function creativeContractSemantic(contract){
+  contract=normalizeCreativeContract(contract,contract&&contract.source);
+  return {id:contract.id,revision:contract.revision,format:contract.format,audience:contract.audience,promise:contract.promise,storyEngine:contract.storyEngine,payoffs:contract.payoffs,proofRequirements:contract.proofRequirements,constraints:contract.constraints,style:contract.style,projectInputKey:contract.projectInputKey};
+}
+function creativeContractHash(contract){return 'cc-hash:'+creativeContractHashText(creativeContractStableStringify(creativeContractSemantic(contract)));}
+function validateCreativeContract(contract,options){
+  options=options||{};var c=contract&&normalizeCreativeContract(contract,contract.source),issues=[];
+  function add(code,path,message){issues.push({severity:'error',code:code,path:path,message:message,blocking:true});}
+  if(!c||c.schema!==CREATIVE_CONTRACT_SCHEMA)add('CONTRACT_SCHEMA_INVALID','creative.contract.schema','Creative Contract must use the v2 schema.');
+  if(!c)return {valid:false,issues:issues,errors:issues.map(function(x){return x.code;})};
+  if(!c.id||c.id.indexOf('contract:')!==0)add('CONTRACT_ID_INVALID','creative.contract.id','Creative Contract is missing its stable identity.');
+  if(c.revision<1)add('CONTRACT_REVISION_INVALID','creative.contract.revision','Creative Contract revision must be one or greater.');
+  if(options.requireLocked&&c.status!=='locked')add('CONTRACT_NOT_LOCKED','creative.contract.status','Lock this Creative Contract before generating new work.');
+  if(!c.audience.primary)add('CONTRACT_AUDIENCE_REQUIRED','creative.contract.audience.primary','Define the primary viewer.');
+  if(!c.audience.priorState)add('CONTRACT_PRIOR_STATE_REQUIRED','creative.contract.audience.priorState','Define the viewer\'s starting state.');
+  if(!c.audience.desiredState)add('CONTRACT_DESIRED_STATE_REQUIRED','creative.contract.audience.desiredState','Define the viewer\'s desired state.');
+  if(!c.promise.statement)add('CONTRACT_PROMISE_REQUIRED','creative.contract.promise.statement','Define the project promise.');
+  if(!c.storyEngine.structure)add('CONTRACT_STRUCTURE_REQUIRED','creative.contract.storyEngine.structure','Define how the video moves forward.');
+  var mode=creativeContractFormat(c);
+  if(mode==='story'){
+    if(!c.storyEngine.drivingQuestion)add('CONTRACT_STORY_QUESTION_REQUIRED','creative.contract.storyEngine.drivingQuestion','Story projects need a real driving question.');
+    if(!c.storyEngine.transformation)add('CONTRACT_STORY_TRANSFORMATION_REQUIRED','creative.contract.storyEngine.transformation','Story projects need a visible change.');
+    if(!c.payoffs.length)add('CONTRACT_STORY_PAYOFF_REQUIRED','creative.contract.payoffs','Story projects need a payoff.');
+  }else if(mode==='presenter'){
+    if(!c.promise.successCriteria.length)add('CONTRACT_LEARNING_RESULT_REQUIRED','creative.contract.promise.successCriteria','Presenter projects need a clear learning result.');
+  }else if(mode==='demo'){
+    if(!c.proofRequirements.length)add('CONTRACT_DEMO_PROOF_REQUIRED','creative.contract.proofRequirements','Demonstration projects need observable proof requirements.');
+    if(!c.payoffs.length)add('CONTRACT_DEMO_RESULT_REQUIRED','creative.contract.payoffs','Demonstration projects need an observable result.');
+  }else if(mode==='graphics'){
+    if(!c.style.visualSystem)add('CONTRACT_GRAPHICS_SYSTEM_REQUIRED','creative.contract.style.visualSystem','Graphics-led projects need a visual explanation system.');
+  }else if(mode==='hybrid'&&!c.format.deliveryMode)add('CONTRACT_HYBRID_DELIVERY_REQUIRED','creative.contract.format.deliveryMode','Hybrid projects need a clear delivery mode.');
+  return {valid:issues.length===0,issues:issues,errors:issues.map(function(x){return x.code;}),format:mode};
+}
+function rememberCreativeContractRevision(contract,status){
+  if(!contract)return null;var snapshot=canonicalClone(normalizeCreativeContract(contract,contract.source),null);if(!snapshot)return null;
+  if(status)snapshot.status=status;
+  var found=(creativeContractHistory||[]).findIndex(function(x){return x&&x.id===snapshot.id&&Number(x.revision)===Number(snapshot.revision);});
+  if(found>=0)creativeContractHistory[found]=snapshot;else creativeContractHistory.push(snapshot);
+  creativeContractHistory.sort(function(a,b){return Number(a.revision)-Number(b.revision);});return snapshot;
+}
+function applyCreativeContractPatch(contract,patch){
+  var out=canonicalClone(contract,{}),p=patch||{};
+  ['format','audience','promise','storyEngine','constraints','style','provenance'].forEach(function(k){if(p[k])out[k]=Object.assign({},out[k]||{},p[k]);});
+  ['payoffs','proofRequirements'].forEach(function(k){if(p[k])out[k]=p[k];});
+  if(p.projectInputKey!=null)out.projectInputKey=p.projectInputKey;
+  out.provenance=Object.assign({},out.provenance||{},{editedByUser:true,updatedAt:Date.now(),projectInputKey:out.projectInputKey||''});out.source='edited';
+  return normalizeCreativeContract(out,'edited');
+}
+function preserveHardCreativeConstraints(candidate,previous){
+  if(!candidate||!previous)return candidate;
+  ['mustInclude','mustAvoid'].forEach(function(key){
+    var current=candidate.constraints&&candidate.constraints[key]||[],seen={};current.forEach(function(x){seen[String(x.statement).toLowerCase()]=1;});
+    (previous.constraints&&previous.constraints[key]||[]).filter(function(x){return x.severity==='hard';}).forEach(function(x){if(!seen[String(x.statement).toLowerCase()])current.push(canonicalClone(x,x));});
+    candidate.constraints[key]=current;
+  });
+  return normalizeCreativeContract(candidate,candidate.source);
+}
+function editCreativeContract(patch){
+  if(!creativeContract)return null;
+  var base=normalizeCreativeContract(creativeContract,creativeContract.source);
+  if(base.status==='locked'||base.status==='stale'||base.status==='superseded'){
+    rememberCreativeContractRevision(base,base.status);
+    base=canonicalClone(base,{});base.revision=Number(base.revision)+1;base.status='draft';base.provenance=Object.assign({},base.provenance,{lockedAt:0,staleAt:0,staleReason:'',updatedAt:Date.now(),editedByUser:true});
+  }
+  creativeContract=applyCreativeContractPatch(base,patch);return creativeContract;
+}
+function lockCreativeContract(){
+  if(!creativeContract)return null;var validation=validateCreativeContract(creativeContract);
+  if(!validation.valid)return {contract:creativeContract,validation:validation};
+  creativeContractHistory=(creativeContractHistory||[]).map(function(x){var copy=canonicalClone(x,x);if(copy&&copy.id===creativeContract.id&&Number(copy.revision)<Number(creativeContract.revision)&&(copy.status==='locked'||copy.status==='stale'))copy.status='superseded';return copy;});
+  creativeContract=canonicalClone(creativeContract,{});creativeContract.status='locked';creativeContract.provenance=Object.assign({},creativeContract.provenance,{lockedAt:Date.now(),updatedAt:Date.now(),projectInputKey:creativeContract.projectInputKey||''});
+  return {contract:creativeContract,validation:validateCreativeContract(creativeContract,{requireLocked:true})};
+}
+function markCreativeContractStale(reason,nextKey){
+  if(!creativeContract)return false;creativeContract=normalizeCreativeContract(creativeContract,creativeContract.source);
+  if(creativeContract.status!=='locked')return false;
+  nextKey=nextKey||creativeContractKey(projectConstraints);if(creativeContract.projectInputKey===nextKey)return false;
+  creativeContract=canonicalClone(creativeContract,{});creativeContract.status='stale';creativeContract.provenance=Object.assign({},creativeContract.provenance,{staleAt:Date.now(),staleReason:reason||'Project Reality changed',updatedAt:Date.now()});renderCreativeContract();renderScriptContract();return true;
+}
+function creativeContractGenerationReference(){
+  if(projectType!=='youtube')return null;
+  var validation=validateCreativeContract(creativeContract,{requireLocked:true});if(!validation.valid)return null;
+  return {contractId:creativeContract.id,contractRevision:creativeContract.revision,contractHash:creativeContractHash(creativeContract)};
+}
+function creativeContractBoundFeature(feature){return /^(shot_plan|shot_plan_segment|shot_plan_redraft|shot_plan_fallback|shot_plan_continuation|plan_outline|script_revision|block_revision|block_shot_details|shot_details_batch|storyboard_prompt|storyboard_revision)$/.test(String(feature||''));}
+function recordCreativeGeneration(feature,reference,text){
+  if(!reference)return null;var entry={id:'generation:'+canonicalIdToken(),feature:String(feature||'ai_request'),generatedFrom:canonicalClone(reference,reference),outputHash:'output:'+creativeContractHashText(String(text||'')),createdAt:Date.now()};
+  creativeGenerationRecords.push(entry);if(/shot_plan|script_revision/.test(entry.feature))currentScriptGeneratedFrom=canonicalClone(reference,reference);renderScriptContract();return entry;
+}
+function creativeContractOutputFreshness(){
+  if(!creativeContract||!currentScriptGeneratedFrom)return {stale:false,label:creativeContract&&creativeContract.status==='stale'?'Direction stale':'Not generated'};
+  var active={contractId:creativeContract.id,contractRevision:creativeContract.revision,contractHash:creativeContractHash(creativeContract)},old=currentScriptGeneratedFrom;
+  var stale=creativeContract.status!=='locked'||old.contractId!==active.contractId||Number(old.contractRevision)!==Number(active.contractRevision)||old.contractHash!==active.contractHash;
+  return {stale:stale,label:stale?'From revision '+old.contractRevision:'Revision '+active.contractRevision};
 }
 function parseCreativeContract(raw){
   var text=String(raw||'').trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'').trim();
@@ -3270,16 +3469,19 @@ function creativeContractKey(constraints){
 }
 function creativeContractContext(){
   var c=creativeContract;if(projectType!=='youtube'||!c)return '';
-  return '\n\nPROJECT-SPECIFIC CREATIVE CONTRACT — AUTHORITATIVE FOR THIS VIDEO:\n'
-    +'- Format: '+(CREATIVE_CONTRACT_FORMATS[c.format]||c.format)+'\n'
-    +'- Viewer: '+c.viewer+'\n'
-    +'- Core promise: '+c.promise+'\n'
-    +'- Story engine: '+c.structure+'\n'
-    +'- Visual system: '+c.visualSystem+'\n'
-    +'- Proof / evidence: '+c.proof+'\n'
-    +'- Pacing: '+c.pacing+'\n'
-    +'- Avoid: '+c.avoid+'\n\n'
-    +'Every voiceover line and visual beat must serve this promise. Use the specified proof system and format instead of defaulting to a cinematic essay. This project contract may override the channel\'s usual storytelling style, but it may not invent unavailable production methods or contradict creator visibility and exclusions.';
+  c=normalizeCreativeContract(c,c.source);
+  var includes=(c.constraints.mustInclude||[]).filter(function(x){return x.severity==='hard';}).map(function(x){return x.statement;});
+  var avoids=(c.constraints.mustAvoid||[]).filter(function(x){return x.severity==='hard';}).map(function(x){return x.statement;});
+  return '\n\nPROJECT-SPECIFIC CREATIVE CONTRACT - AUTHORITATIVE FOR THIS VIDEO:\n'
+    +'- Contract: '+c.id+' / revision '+c.revision+' / '+c.status+' / '+creativeContractHash(c)+'\n'
+    +'- Format: '+(CREATIVE_CONTRACT_FORMATS[creativeContractFormat(c)]||creativeContractFormat(c))+' / '+c.format.deliveryMode+' / creator '+c.format.creatorPresence+'\n'
+    +'- Primary viewer: '+c.audience.primary+'\n- Viewer before: '+c.audience.priorState+'\n- Viewer after: '+c.audience.desiredState+'\n'
+    +'- Core promise: '+c.promise.statement+'\n- Success criteria: '+c.promise.successCriteria.join(' | ')+'\n'
+    +'- Driving question / goal: '+c.storyEngine.drivingQuestion+'\n- Why it matters: '+c.storyEngine.whyItMatters+'\n- Transformation: '+c.storyEngine.transformation+'\n- Structure: '+c.storyEngine.structure+'\n'
+    +'- Payoffs: '+c.payoffs.map(function(x){return x.statement;}).join(' | ')+'\n- Proof requirements: '+c.proofRequirements.map(function(x){return x.statement;}).join(' | ')+'\n'
+    +'- Visual system: '+c.style.visualSystem+'\n- Tone: '+c.style.tone+'\n- Pacing: '+c.style.pacingIntent+'\n'
+    +'\nNON-NEGOTIABLE HARD MUST INCLUDE:\n- '+(includes.length?includes.join('\n- '):'None specified')+'\nNON-NEGOTIABLE HARD MUST AVOID:\n- '+(avoids.length?avoids.join('\n- '):'None specified')+'\n\n'
+    +'Every voiceover line and visual beat must serve this promise. Hard constraints override Creator DNA and any AI-generated preference. Never silently weaken, remove or reinterpret them.';
 }
 function setCreativeContractBusy(busy,message){
   creativeContractBusy=busy;
@@ -3293,24 +3495,28 @@ function renderCreativeContract(){
   if(!panel||!screen)return;
   if(!creativeContract){panel.classList.remove('show');screen.classList.remove('contract-ready');var emptyLabel=document.getElementById('creativeContractActionText');if(emptyLabel)emptyLabel.textContent='Build project direction';return;}
   creativeContract=normalizeCreativeContract(creativeContract,creativeContract.source);
-  var values={ccFormat:creativeContract.format,ccPacing:creativeContract.pacing,ccViewer:creativeContract.viewer,ccPromise:creativeContract.promise,ccStructure:creativeContract.structure,ccVisualSystem:creativeContract.visualSystem,ccProof:creativeContract.proof,ccAvoid:creativeContract.avoid};
+  var values={ccFormat:creativeContractFormat(creativeContract),ccPresence:creativeContract.format.creatorPresence,ccDeliveryMode:creativeContract.format.deliveryMode,ccPacing:creativeContract.style.pacingIntent,ccTone:creativeContract.style.tone,ccViewer:creativeContract.audience.primary,ccPriorState:creativeContract.audience.priorState,ccDesiredState:creativeContract.audience.desiredState,ccPromise:creativeContract.promise.statement,ccSuccessCriteria:creativeContract.promise.successCriteria.join('\n'),ccDrivingQuestion:creativeContract.storyEngine.drivingQuestion,ccWhyItMatters:creativeContract.storyEngine.whyItMatters,ccTransformation:creativeContract.storyEngine.transformation,ccStructure:creativeContract.storyEngine.structure,ccVisualSystem:creativeContract.style.visualSystem,ccProof:creativeContract.proofRequirements.map(function(x){return x.statement;}).join('\n'),ccPayoffs:creativeContract.payoffs.map(function(x){return x.statement;}).join('\n'),ccMustInclude:creativeContract.constraints.mustInclude.map(function(x){return x.statement;}).join('\n'),ccAvoid:creativeContract.constraints.mustAvoid.map(function(x){return x.statement;}).join('\n')};
   Object.keys(values).forEach(function(id){var el=document.getElementById(id);if(el)el.value=values[id];});
   panel.classList.add('show');screen.classList.add('contract-ready');
-  var hasScript=document.getElementById('scriptTa')&&document.getElementById('scriptTa').value.trim(),actionCopy=hasScript?'Lock direction & regenerate':'Lock direction & generate';
+  var hasScript=document.getElementById('scriptTa')&&document.getElementById('scriptTa').value.trim();
+  var actionCopy=creativeContract.status==='locked'?(hasScript?'Regenerate from revision '+creativeContract.revision:'Generate from revision '+creativeContract.revision):(creativeContract.status==='stale'?'Rebuild stale direction':(hasScript?'Lock direction & regenerate':'Lock direction & generate'));
   ['creativeContractActionText','creativeContractLockText'].forEach(function(id){var label=document.getElementById(id);if(label)label.textContent=actionCopy;});
-  var state=document.getElementById('creativeContractState');if(state)state.textContent=creativeContract.source==='fallback'?'Built from your DNA':'Ready to edit';
-  var foot=document.getElementById('creativeContractFoot');if(foot)foot.textContent='Built from your idea, DNA and real production limits. Every field is editable.';
+  var state=document.getElementById('creativeContractState');if(state)state.textContent=creativeContract.status+' / revision '+creativeContract.revision;
+  var foot=document.getElementById('creativeContractFoot');if(foot)foot.textContent='Contract '+creativeContract.id+' / revision '+creativeContract.revision+' / '+creativeContractHash(creativeContract);
+}
+function creativeContractFormPatch(){
+  var read=function(id){var el=document.getElementById(id);return el?el.value:'';};
+  var c=normalizeCreativeContract(creativeContract,creativeContract&&creativeContract.source),id=c.id;
+  function rebuild(lines,existing,kind,extra){return creativeContractLines(lines).map(function(statement,i){var prior=existing&&existing[i]||{};return Object.assign({},prior,extra||{},{id:creativeContractElementId(prior.id,id,kind,i),statement:statement});});}
+  return {format:{type:read('ccFormat'),creatorPresence:read('ccPresence'),deliveryMode:read('ccDeliveryMode')},audience:{primary:read('ccViewer'),priorState:read('ccPriorState'),desiredState:read('ccDesiredState')},promise:{id:c.promise.id,statement:read('ccPromise'),successCriteria:creativeContractLines(read('ccSuccessCriteria'))},storyEngine:{drivingQuestion:read('ccDrivingQuestion'),whyItMatters:read('ccWhyItMatters'),transformation:read('ccTransformation'),structure:read('ccStructure')},payoffs:rebuild(read('ccPayoffs'),c.payoffs,'payoff',{type:'visual_reveal',required:true}),proofRequirements:rebuild(read('ccProof'),c.proofRequirements,'proof',{evidenceType:'visible_support',required:true}),constraints:{mustInclude:rebuild(read('ccMustInclude'),c.constraints.mustInclude,'include',{severity:'hard'}),mustAvoid:rebuild(read('ccAvoid'),c.constraints.mustAvoid,'avoid',{severity:'hard'}),production:c.constraints.production},style:{tone:read('ccTone'),visualSystem:read('ccVisualSystem'),pacingIntent:read('ccPacing')},projectInputKey:creativeContractKey(projectConstraints)};
 }
 function captureCreativeContract(){
-  if(!creativeContract)return null;
-  var read=function(id){var el=document.getElementById(id);return el?el.value:'';};
-  creativeContract=normalizeCreativeContract(Object.assign({},creativeContract,{format:read('ccFormat'),pacing:read('ccPacing'),viewer:read('ccViewer'),promise:read('ccPromise'),structure:read('ccStructure'),visualSystem:read('ccVisualSystem'),proof:read('ccProof'),avoid:read('ccAvoid'),source:'edited'}),'edited');
-  return creativeContract;
+  if(!creativeContract)return null;return editCreativeContract(creativeContractFormPatch());
 }
 function creativeContractPrompt(){
   return 'You are a YouTube creative director. Create a compact project contract before any script is written. It must be specific to this exact idea, useful during production and faithful to the creator\'s real resources. Do not write a synopsis, script, shot list, title or motivational copy. Do not imitate a reference creator.\n\n'
-    +'Choose exactly one format enum: story, presenter, demo, graphics, hybrid. Distinguish an educational or technical video from a cinematic personal story. The visualSystem should give a concise percentage mix whose parts total 100% (presenter, B-roll, demonstration, screen or graphics as relevant). The proof field states what evidence makes the promise believable. The avoid field names concrete failure modes for this project. Write all viewer-facing field values in the same language as the user\'s idea.\n\n'
-    +'Return ONLY valid JSON with exactly these keys: {"format":"story|presenter|demo|graphics|hybrid","viewer":"...","promise":"...","structure":"...","visualSystem":"...","proof":"...","pacing":"reflective|balanced|energetic","avoid":["..."],"tone":"...","presence":"..."}.'+creatorDnaContext();
+    +'Choose exactly one format enum: story, presenter, demo, graphics, hybrid. Do not force dramatic tension onto presenter, demonstration or graphics-led work. Proof requirements describe what the finished video must demonstrate; they are not claims that evidence already exists. Write all viewer-facing values in the same language as the user\'s idea.\n\n'
+    +'Return ONLY valid JSON with this shape: {"format":{"type":"story|presenter|demo|graphics|hybrid","creatorPresence":"camera|sometimes|voice|none","deliveryMode":"voiceover-led|presenter-led|visual-led|mixed"},"audience":{"primary":"...","priorState":"...","desiredState":"..."},"promise":{"statement":"...","successCriteria":["..."]},"storyEngine":{"drivingQuestion":"...","whyItMatters":"...","transformation":"...","structure":"..."},"payoffs":[{"type":"visual_reveal|learning_result|observable_result","statement":"...","required":true}],"proofRequirements":[{"statement":"...","evidenceType":"...","required":true}],"constraints":{"mustInclude":[{"statement":"...","severity":"hard"}],"mustAvoid":[{"statement":"...","severity":"hard"}]},"style":{"tone":"...","visualSystem":"...","pacingIntent":"reflective|balanced|energetic"}}.'+creatorDnaContext();
 }
 function buildCreativeContract(skipDetails){
   if(creativeContractBusy)return;
@@ -3319,25 +3525,33 @@ function buildCreativeContract(skipDetails){
   projectConstraints=constraints?constraints.value.trim():'';projectBrief='';
   setCreativeContractBusy(true,'Reading your idea + DNA');
   var user='VIDEO IDEA:\n'+topic+'\n\nDURATION:\n'+durMin+'-'+durMax+' minutes\n\nSELECTED TONE / FORMAT:\n'+tone+' / '+fmt+'\n\nREAL PRODUCTION RESOURCES AND LIMITS:\n'+(projectConstraints||'No project-specific production details were supplied. Stay within the Creator DNA capabilities.');
+  var previous=creativeContract?normalizeCreativeContract(creativeContract,creativeContract.source):null;
   api(creativeContractPrompt(),user,'creative_contract').then(function(raw){
-    creativeContract=normalizeCreativeContract(parseCreativeContract(raw),'ai');
+    var parsed=parseCreativeContract(raw),structured=parsed&&parsed.format&&typeof parsed.format==='object'?Object.assign({},parsed,{schema:CREATIVE_CONTRACT_SCHEMA,schemaVersion:2}):parsed,candidate=normalizeCreativeContract(structured,'ai');
+    if(previous){rememberCreativeContractRevision(previous,previous.status);candidate.id=previous.id;candidate.revision=Number(previous.revision)+1;candidate=preserveHardCreativeConstraints(normalizeCreativeContract(candidate,'ai'),previous);}
+    creativeContract=candidate;
   }).catch(function(e){
     console.warn('[creative contract] using DNA fallback:',e&&e.message?e.message:e);
-    creativeContract=normalizeCreativeContract(creativeContractFallback(),'fallback');
+    var candidate=creativeContractFallback();if(previous){rememberCreativeContractRevision(previous,previous.status);candidate.id=previous.id;candidate.revision=Number(previous.revision)+1;candidate=preserveHardCreativeConstraints(normalizeCreativeContract(candidate,'fallback'),previous);}creativeContract=candidate;
   }).then(function(){
-    creativeContract.inputKey=creativeContractKey(projectConstraints);creativeContract.updatedAt=Date.now();
+    creativeContract.projectInputKey=creativeContractKey(projectConstraints);creativeContract.provenance.projectInputKey=creativeContract.projectInputKey;creativeContract.provenance.updatedAt=Date.now();creativeContract.status='draft';
     setCreativeContractBusy(false);renderCreativeContract();
     var panel=document.getElementById('creativeContractPanel');if(panel)panel.scrollIntoView({behavior:(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)?'auto':'smooth',block:'nearest'});
   });
 }
 function regenerateCreativeContract(){
-  creativeContract=null;buildCreativeContract(false);
+  buildCreativeContract(false);
 }
 function handleCreativeContractAction(){
   if(creativeContractBusy)return;
   var constraints=document.getElementById('constraintsIn');projectConstraints=constraints?constraints.value.trim():'';projectBrief='';
-  if(!creativeContract||creativeContract.inputKey!==creativeContractKey(projectConstraints)){buildCreativeContract(false);return;}
-  captureCreativeContract();creativeContract.lockedAt=Date.now();creativeContract.updatedAt=Date.now();
+  var activeKey=creativeContractKey(projectConstraints);
+  if(!creativeContract){buildCreativeContract(false);return;}
+  if(creativeContract.projectInputKey!==activeKey){markCreativeContractStale('Project Reality changed',activeKey);buildCreativeContract(false);return;}
+  if(creativeContract.status!=='locked')captureCreativeContract();
+  var locked=creativeContract.status==='locked'?{contract:creativeContract,validation:validateCreativeContract(creativeContract,{requireLocked:true})}:lockCreativeContract();
+  if(!locked.validation.valid){var state=document.getElementById('creativeContractState');if(state)state.textContent='Needs review / '+locked.validation.issues[0].message;return;}
+  creativeContract=locked.contract;renderCreativeContract();
   var ta=document.getElementById('scriptTa'),hasScript=ta&&ta.value.trim();
   if(!hasScript){genScript();return;}
   var prompt={title:'Regenerate this script?',message:'Your current script is already saved. A new script will be generated from the updated Project Direction.',ok:'Regenerate'};
@@ -3348,10 +3562,13 @@ function renderScriptContract(){
   var wrap=document.getElementById('scriptContract');if(!wrap)return;
   if(!creativeContract){wrap.hidden=true;return;}
   wrap.hidden=false;
+  creativeContract=normalizeCreativeContract(creativeContract,creativeContract.source);
   var promise=document.getElementById('scriptContractPromise'),mode=document.getElementById('scriptContractMode'),body=document.getElementById('scriptContractBody');
-  if(promise)promise.textContent=creativeContract.promise;if(mode)mode.textContent=CREATIVE_CONTRACT_FORMATS[creativeContract.format]||creativeContract.format;
+  var freshness=creativeContractOutputFreshness();wrap.classList.toggle('stale-output',freshness.stale);
+  var freshEl=document.getElementById('scriptContractFreshness');if(freshEl)freshEl.textContent=freshness.label;
+  if(promise)promise.textContent=creativeContract.promise.statement;if(mode)mode.textContent=CREATIVE_CONTRACT_FORMATS[creativeContractFormat(creativeContract)]||creativeContractFormat(creativeContract);
   if(body){
-    var items=[['Viewer',creativeContract.viewer],['Story engine',creativeContract.structure],['Visual system',creativeContract.visualSystem],['Proof',creativeContract.proof],['Pacing',creativeContract.pacing],['Avoid',creativeContract.avoid]];
+    var items=[['Viewer',creativeContract.audience.primary],['Before to after',creativeContract.audience.priorState+' -> '+creativeContract.audience.desiredState],['Story / information engine',creativeContract.storyEngine.structure],['Visual system',creativeContract.style.visualSystem],['Proof requirements',creativeContract.proofRequirements.map(function(x){return x.statement;}).join(' / ')],['Hard constraints',creativeContract.constraints.mustAvoid.map(function(x){return 'Avoid '+x.statement;}).concat(creativeContract.constraints.mustInclude.map(function(x){return 'Include '+x.statement;})).join(' / ')]];
     body.innerHTML=items.map(function(item){return '<div class="script-contract-item"><b>'+creativeContractEscape(item[0])+'</b><span>'+creativeContractEscape(item[1])+'</span></div>';}).join('')+'<div class="script-contract-edit"><button type="button" onclick="editProjectDirectionFromScript()">Edit project direction &rarr;</button></div>';
   }
 }
@@ -3365,19 +3582,29 @@ function editProjectDirectionFromScript(){
 }
 window.gdCreativeContractFallback=creativeContractFallback;
 window.gdNormalizeCreativeContract=normalizeCreativeContract;
+window.gdMigrateCreativeContract=function(value){return normalizeCreativeContract(value,value&&value.source||'migration');};
+window.gdValidateCreativeContract=validateCreativeContract;
+window.gdCreativeContractHash=creativeContractHash;
+window.gdLockCreativeContract=function(){var result=lockCreativeContract();renderCreativeContract();renderScriptContract();return canonicalClone(result,result);};
+window.gdEditCreativeContract=function(patch){var result=editCreativeContract(patch||{});renderCreativeContract();renderScriptContract();return canonicalClone(result,result);};
+window.gdMarkCreativeContractStale=function(reason,key){return markCreativeContractStale(reason,key);};
+window.gdCreativeContractGenerationReference=creativeContractGenerationReference;
+window.gdRecordCreativeGeneration=function(feature,reference,text){return canonicalClone(recordCreativeGeneration(feature,reference,text),null);};
+window.gdGetCreativeContractHistory=function(){return canonicalClone(creativeContractHistory,[]);};
+window.gdGetCreativeGenerationRecords=function(){return canonicalClone(creativeGenerationRecords,[]);};
 window.gdCreativeContractContext=creativeContractContext;
-window.gdSetCreativeContract=function(value){creativeContract=value?normalizeCreativeContract(value,value.source):null;renderCreativeContract();renderScriptContract();return creativeContract;};
+window.gdSetCreativeContract=function(value){creativeContract=value?normalizeCreativeContract(value,value.source):null;creativeContractHistory=[];creativeGenerationRecords=[];currentScriptGeneratedFrom=null;renderCreativeContract();renderScriptContract();return canonicalClone(creativeContract,creativeContract);};
 window.gdGetCreativeContract=function(){return creativeContract?JSON.parse(JSON.stringify(creativeContract)):null;};
 document.getElementById('constraintsIn').addEventListener('input',function(){
   if(!creativeContract)return;
-  var changed=creativeContract.inputKey!==creativeContractKey(this.value.trim());
+  var changed=creativeContract.projectInputKey!==creativeContractKey(this.value.trim());
   var state=document.getElementById('creativeContractState');
   if(changed)['creativeContractActionText','creativeContractLockText'].forEach(function(id){var label=document.getElementById(id);if(label)label.textContent='Rebuild project direction';});
-  if(changed&&state)state.textContent='Production details changed';
+  if(changed){markCreativeContractStale('Project Reality changed',creativeContractKey(this.value.trim()));if(state)state.textContent='stale / production details changed';}
 });
 document.getElementById('creativeContractPanel').addEventListener('input',function(){
   if(!creativeContract)return;
-  var state=document.getElementById('creativeContractState');if(state)state.textContent='Edited / ready to lock';
+  creativeContract=editCreativeContract(creativeContractFormPatch());var state=document.getElementById('creativeContractState');if(state)state.textContent='draft / revision '+creativeContract.revision+' / ready to lock';renderScriptContract();
 });
 function applyCreatorDnaDefaults(){
   if(!creatorDNA)return;
@@ -3968,7 +4195,7 @@ function performNewProject(){
   canonicalRuntimeProjectId=null;canonicalProjectState=null;canonicalValidationState=null;canonicalMigrationBackup=null;canonicalLastKnownValid=null;canonicalTombstones=[];
   resetLocationViewState();
   nodes=[];attShots=[];imgNodes=[];noteNodes=[];conns=[];nid=1;nodeDrawerClosed={};
-  topic='';projectBrief='';projectConstraints='';creativeContract=null;creativeContractBusy=false;projectBreakdown=null;projectBreakdownKey=null;
+  topic='';projectBrief='';projectConstraints='';creativeContract=null;creativeContractBusy=false;creativeContractHistory=[];creativeGenerationRecords=[];currentScriptGeneratedFrom=null;projectBreakdown=null;projectBreakdownKey=null;
   scriptVersions=[];scriptSelectionState=null;scriptRevisionState=null;
   clearRecce();songName='';songDuration=0;songAnalysis=null;songURL=null;
   undoStack=[];undoIdx=-1;scale=1;px=60;py=180;selId=null;selImgId=null;selNoteId=null;selectedNodeIds=[];selectedImgIds=[];selectedNoteIds=[];
@@ -4016,7 +4243,7 @@ function stopMvHints(){if(mvHintTimer){clearInterval(mvHintTimer);mvHintTimer=nu
 function setProjectType(type){
   if(type==='music'||type==='film')return;
   projectType=type;
-  creativeContract=null;creativeContractBusy=false;renderCreativeContract();
+  creativeContract=null;creativeContractBusy=false;creativeContractHistory=[];creativeGenerationRecords=[];currentScriptGeneratedFrom=null;renderCreativeContract();
   // Gawx is the house visual language for new work. The old style picker was
   // an extra decision before the user had even described the film.
   styleMode='gawx';
@@ -4773,9 +5000,16 @@ function langInstr(lang,type){
 // Still understands the old single-JSON shape, so a Worker that hasn't been
 // updated yet keeps working exactly as before.
 function api(sys,usr,feature){
-  if(!canonicalBoundary('ai'))return Promise.reject(new Error('Project relationships need attention before AI can continue.'));
+  feature=feature||'ai_request';
+  if(!canonicalBoundary('ai',{ignoreCreativeContract:feature==='creative_contract'}))return Promise.reject(new Error('Project relationships need attention before AI can continue.'));
+  var contractRef=creativeContractBoundFeature(feature)?creativeContractGenerationReference(feature):null;
+  if(projectType==='youtube'&&creativeContractBoundFeature(feature)&&!contractRef){
+    renderCreativeContract();renderScriptContract();
+    return Promise.reject(new Error('Lock the current Creative Contract before generating or revising project work.'));
+  }
+  var usageContext=workerUsageContext();if(contractRef)usageContext=Object.assign({},usageContext,{generatedFrom:contractRef});
   return fetch(WORKER,{method:'POST',headers:workerHeaders(),body:JSON.stringify({
-    system:sys,user:usr,stream:true,feature:feature||'ai_request',context:workerUsageContext()
+    system:sys,user:usr,stream:true,feature:feature,context:usageContext
   })})
     .then(function(r){
       if(!r.ok)return r.text().then(function(t){throw new Error('API '+r.status+': '+t);});
@@ -4801,7 +5035,7 @@ function api(sys,usr,feature){
       // an empty body is a failure, not a valid answer - let apiRetry see it
       // as one instead of quietly passing '' along as if it were a plan
       if(!text||!text.trim())throw new Error('Empty response from the model');
-      return text;
+      recordCreativeGeneration(feature,contractRef,text);return text;
     });
 }
 
@@ -4838,7 +5072,7 @@ function splitLongMusicBlocks(text){
    unrealistic for one person to shoot. Keep one shared pacing budget in code
    so the prompt, parallel segments and final guardrail all use the same math. */
 function ytPacingProfile(totalSec){
-  var dnaPace=creativeContract&&creativeContract.pacing?creativeContract.pacing:(creatorDNA&&creatorDNA.pace);
+  var dnaPace=creativeContract&&creativeContract.style&&creativeContract.style.pacingIntent?creativeContract.style.pacingIntent:(creatorDNA&&creatorDNA.pace);
   var fast=dnaPace?dnaPace==='energetic':tone==='energetic';
   var balanced=dnaPace==='balanced';
   var avgHold=fast?3:(balanced?4.5:6);
@@ -4984,6 +5218,9 @@ function migrateCanonicalSchema(project){
     if(!migrate)break;
     out=migrate(out);from=Number(out.schemaVersion)||from+1;
   }
+  if(out.creative&&out.creative.contract)out.creative.contract=normalizeCreativeContract(out.creative.contract,out.creative.contract.source);
+  if(out.creative&&Array.isArray(out.creative.contractHistory))out.creative.contractHistory=out.creative.contractHistory.map(function(c){return normalizeCreativeContract(c,c&&c.source);});
+  if(out.creative&&!Array.isArray(out.creative.generatedOutputs))out.creative.generatedOutputs=[];
   return out;
 }
 function canonicalProjectId(seed){
@@ -5077,8 +5314,8 @@ function canonicalProjectFromLegacy(data){
     schema:CANONICAL_PROJECT_SCHEMA,schemaVersion:CANONICAL_PROJECT_VERSION,project:project,
     workflow:{stage:data.stage||'board'},
     creative:{tone:data.tone||'',format:data.fmt||'',houseLook:data.styleMode||'',language:data.inputLang||'en',
-      durationRange:{min:Number(data.durMin)||0,max:Number(data.durMax)||0},brief:data.projectBrief||'',constraints:data.projectConstraints||'',creatorDNA:canonicalClone(data.creatorDNA||null,null),contract:canonicalClone(data.creativeContract||null,null)},
-    script:{text:data.script||'',versions:canonicalClone(data.scriptVersions||[],[])},
+      durationRange:{min:Number(data.durMin)||0,max:Number(data.durMax)||0},brief:data.projectBrief||'',constraints:data.projectConstraints||'',creatorDNA:canonicalClone(data.creatorDNA||null,null),contract:data.creativeContract?normalizeCreativeContract(data.creativeContract,data.creativeContract.source):null,contractHistory:canonicalClone(data.creativeContractHistory||[],[]).map(function(c){return normalizeCreativeContract(c,c&&c.source);}),generatedOutputs:canonicalClone(data.creativeGenerationRecords||[],[])},
+    script:{text:data.script||'',versions:canonicalClone(data.scriptVersions||[],[]),generatedFrom:canonicalClone(data.currentScriptGeneratedFrom||null,null)},
     timeline:{blocks:blocks},
     production:{details:details,locations:locations,breakdownKey:data.projectBreakdownKey||null},
     assets:{images:images,recce:recce,audio:{name:data.songName||'',duration:Number(data.songDuration)||0,analysis:canonicalClone(data.songAnalysis||null,null)}},
@@ -5130,20 +5367,28 @@ function legacyProjectFromCanonical(project,fallback){
   out.projectType=project.project&&project.project.type||out.projectType||'youtube';out.topic=project.project&&project.project.title||out.topic||'';out.projectFps=project.project&&project.project.fps||24;
   out.tone=creative.tone||out.tone||'';out.fmt=creative.format||out.fmt||'';out.styleMode=creative.houseLook||out.styleMode||'';out.inputLang=creative.language||out.inputLang||'en';
   out.durMin=creative.durationRange&&creative.durationRange.min||out.durMin;out.durMax=creative.durationRange&&creative.durationRange.max||out.durMax;
-  out.projectBrief=creative.brief||'';out.projectConstraints=creative.constraints||'';out.creatorDNA=canonicalClone(creative.creatorDNA||null,null);out.creativeContract=canonicalClone(creative.contract||null,null);
-  out.script=project.script&&project.script.text||'';out.scriptVersions=canonicalClone(project.script&&project.script.versions||[],[]);
+  out.projectBrief=creative.brief||'';out.projectConstraints=creative.constraints||'';out.creatorDNA=canonicalClone(creative.creatorDNA||null,null);out.creativeContract=creative.contract?normalizeCreativeContract(creative.contract,creative.contract.source):null;out.creativeContractHistory=canonicalClone(creative.contractHistory||[],[]).map(function(c){return normalizeCreativeContract(c,c&&c.source);});out.creativeGenerationRecords=canonicalClone(creative.generatedOutputs||[],[]);
+  out.script=project.script&&project.script.text||'';out.scriptVersions=canonicalClone(project.script&&project.script.versions||[],[]);out.currentScriptGeneratedFrom=canonicalClone(project.script&&project.script.generatedFrom||null,null);
   out.boardViewMode=workspace.mode||'free';out.boardDensity=workspace.density||'compact';out.boardCardDetail=workspace.detail||'standard';out.view=canonicalClone(workspace.view||null,null);out.boardCamera=canonicalClone(workspace.camera||null,null);
   out.stage=project.workflow&&project.workflow.stage||out.stage||'board';out.aiMode=workspace.aiMode!==false;
   out.decisions=canonicalClone(project.decisions||[],[]);out.canonicalTombstones=canonicalClone(project.tombstones||[],[]);out.nid=Math.max(Number(workspace.nextLegacyId)||1,maxId+1);out.v=4;out.canonical=canonicalClone(project,project);
   return out;
 }
 function validateCanonicalProject(project){
-  var errors=[],issues=[],seen={},timeline=project&&project.timeline||{},production=project&&project.production||{},assets=project&&project.assets||{},workspace=project&&project.workspace||{};
+  var errors=[],issues=[],seen={},timeline=project&&project.timeline||{},production=project&&project.production||{},assets=project&&project.assets||{},workspace=project&&project.workspace||{},creative=project&&project.creative||{};
   function issue(code,legacy,entityId,path,message,blocking){
     errors.push(legacy||code.toLowerCase());issues.push({severity:blocking===false?'warning':'error',code:code,entityId:entityId||null,path:path||'',message:message,blocking:blocking!==false});
   }
   if(!project||project.schema!==CANONICAL_PROJECT_SCHEMA)issue('SCHEMA_INVALID','schema_invalid',null,'schema','This project does not use the GrainDistrict canonical schema.');
   if(!project||project.schemaVersion!==CANONICAL_PROJECT_VERSION)issue('SCHEMA_VERSION_UNSUPPORTED','schema_version_unsupported',null,'schemaVersion','This project schema needs a supported migration.');
+  if(creative.contract){
+    var contractValidation=validateCreativeContract(creative.contract),contractId=creative.contract.id,elementSeen={};
+    (contractValidation.issues||[]).forEach(function(item){issue(item.code,'creative_contract:'+item.code,contractId,item.path,item.message,item.blocking);});
+    var contractElements=[creative.contract.promise].concat(creative.contract.payoffs||[],creative.contract.proofRequirements||[],creative.contract.constraints&&creative.contract.constraints.mustInclude||[],creative.contract.constraints&&creative.contract.constraints.mustAvoid||[]);
+    contractElements.forEach(function(element,index){if(!element||!element.id||element.id.indexOf('contract-element:')!==0)issue('CONTRACT_ELEMENT_ID_INVALID','contract_element_id_invalid',contractId,'creative.contract.elements['+index+']','A Creative Contract element is missing its stable identity.');else if(elementSeen[element.id])issue('DUPLICATE_CONTRACT_ELEMENT_ID','duplicate_contract_element:'+element.id,element.id,'creative.contract.elements['+index+']','Two active Contract elements share the same identity.');else elementSeen[element.id]=1;});
+    var revisionSeen={},revisionContracts={};[creative.contract].concat(creative.contractHistory||[]).forEach(function(c,index){var normalized=normalizeCreativeContract(c,c&&c.source),key=normalized.id+'@'+normalized.revision;if(revisionSeen[key])issue('DUPLICATE_CONTRACT_REVISION','duplicate_contract_revision:'+key,normalized.id,index?'creative.contractHistory['+(index-1)+']':'creative.contract','A Creative Contract revision is stored more than once.');revisionSeen[key]=1;revisionContracts[key]=normalized;});
+    (creative.generatedOutputs||[]).forEach(function(output,index){var ref=output&&output.generatedFrom,path='creative.generatedOutputs['+index+'].generatedFrom';if(!ref||!ref.contractId||!ref.contractRevision||!ref.contractHash){issue('GENERATION_PROVENANCE_MISSING','generation_provenance_missing',output&&output.id,path,'An AI output is missing its Contract revision reference.');return;}var refKey=ref.contractId+'@'+ref.contractRevision,sourceContract=revisionContracts[refKey];if(!sourceContract)issue('GENERATION_CONTRACT_REVISION_MISSING','generation_contract_revision_missing',output&&output.id,path,'An AI output references a Contract revision that is no longer stored.');else if(ref.contractHash!==creativeContractHash(sourceContract))issue('GENERATION_CONTRACT_HASH_MISMATCH','generation_contract_hash_mismatch',output&&output.id,path,'An AI output Contract hash does not match the stored revision.');});
+  }
   function addAll(items,label,path){(items||[]).forEach(function(item,index){
     if(!item||!item.id){issue('ENTITY_ID_MISSING',label+'_id_missing',null,path+'['+index+'].id','A '+label+' is missing its permanent identity.');return;}
     if(String(item.id).indexOf(label+':')!==0)issue('ENTITY_ID_TYPE_MISMATCH','id_type_mismatch:'+item.id,item.id,path+'['+index+'].id','This '+label+' has an identity for a different entity type.');
@@ -5162,7 +5407,7 @@ function validateCanonicalProject(project){
     if(tombSeen[tomb.id])issue('DUPLICATE_TOMBSTONE','duplicate_tombstone:'+tomb.id,tomb.id,'tombstones['+index+'].id','This deleted item was recorded more than once.');
     if(seen[tomb.id])issue('ACTIVE_TOMBSTONE_CONFLICT','active_tombstone:'+tomb.id,tomb.id,'tombstones['+index+'].id','An item is marked as both active and deleted.');tombSeen[tomb.id]=1;
   });
-  return {valid:issues.every(function(x){return !x.blocking;}),errors:errors,issues:issues,counts:{blocks:(timeline.blocks||[]).length,details:(production.details||[]).length,images:(assets.images||[]).length,notes:(workspace.notes||[]).length,connections:(workspace.connections||[]).length,locations:(production.locations||[]).length,tombstones:(project&&project.tombstones||[]).length}};
+  return {valid:issues.every(function(x){return !x.blocking;}),errors:errors,issues:issues,counts:{blocks:(timeline.blocks||[]).length,details:(production.details||[]).length,images:(assets.images||[]).length,notes:(workspace.notes||[]).length,connections:(workspace.connections||[]).length,locations:(production.locations||[]).length,contractRevisions:(creative.contract?1:0)+(creative.contractHistory||[]).length,generationOutputs:(creative.generatedOutputs||[]).length,tombstones:(project&&project.tombstones||[]).length}};
 }
 function migrateProjectData(data){
   data=canonicalClone(data||{},{});
@@ -5185,7 +5430,7 @@ function canonicalRuntimeSnapshot(){
   var ta=document.getElementById('scriptTa');
   var active=document.getElementById('s3')&&document.getElementById('s3').classList.contains('active')?'script':'board';
   return canonicalProjectFromLegacy({v:4,stage:active,projectType:projectType,topic:topic,tone:tone,fmt:fmt,styleMode:styleMode,inputLang:inputLang,durMin:durMin,durMax:durMax,
-    projectBrief:projectBrief,projectConstraints:projectConstraints,creatorDNA:creatorDNA,creativeContract:creativeContract,projectBreakdown:projectBreakdown,projectBreakdownKey:projectBreakdownKey,
+    projectBrief:projectBrief,projectConstraints:projectConstraints,creatorDNA:creatorDNA,creativeContract:creativeContract,creativeContractHistory:creativeContractHistory,creativeGenerationRecords:creativeGenerationRecords,currentScriptGeneratedFrom:currentScriptGeneratedFrom,projectBreakdown:projectBreakdown,projectBreakdownKey:projectBreakdownKey,
     songName:songName,songDuration:songDuration,songAnalysis:songAnalysis,recceImages:recceImages,nodes:itemsAtStoryPositions(nodes,'nodes'),attShots:itemsAtStoryPositions(attShots,'atts'),
     imgNodes:imgNodes,noteNodes:noteNodes,conns:conns,nid:nid,canonicalTombstones:canonicalTombstones,script:ta?ta.value:'',scriptVersions:scriptVersions,view:storyViewForSave(),boardCamera:{scale:scale,px:px,py:py},
     boardViewMode:canvasViewMode,boardDensity:boardDensity,boardCardDetail:boardCardDetail,aiMode:(typeof aiMode!=='undefined'?aiMode:true)});
@@ -5197,10 +5442,16 @@ function canonicalPreflight(){
   else console.warn('[gd] canonical preflight',canonicalValidationState.errors);
   return canonicalValidationState;
 }
-function canonicalBoundary(kind){
-  var validation=canonicalPreflight();
+function canonicalBoundary(kind,options){
+  options=options||{};var validation;
+  if(options.ignoreCreativeContract){
+    canonicalProjectState=canonicalRuntimeSnapshot();var validationProject=canonicalClone(canonicalProjectState,canonicalProjectState);
+    if(validationProject.creative)validationProject.creative.contract=null;
+    validation=validateCanonicalProject(validationProject);canonicalValidationState=validation;window.gdLastCanonicalValidation=validation;
+  }else validation=canonicalPreflight();
   if(!validation.valid){showCanonicalValidationPanel(validation,kind||'project');return null;}
   var snapshot=canonicalClone(canonicalProjectState,canonicalProjectState);
+  if(options.ignoreCreativeContract&&snapshot.creative)snapshot.creative.contract=null;
   if(kind==='ai')window.gdLastAiCanonicalSnapshot=snapshot;
   if(kind==='export')window.gdLastExportCanonicalSnapshot=snapshot;
   return snapshot;
@@ -5763,8 +6014,9 @@ function goToEquipment(){
   if(!captureSetup())return;
   if(projectConstraints)document.getElementById('constraintsIn').value=projectConstraints;
   var currentKey=creativeContractKey(document.getElementById('constraintsIn').value.trim());
-  if(creativeContract&&creativeContract.inputKey===currentKey)renderCreativeContract();
-  else{creativeContract=null;renderCreativeContract();var ccLabel=document.getElementById('creativeContractActionText');if(ccLabel)ccLabel.textContent='Build project direction';}
+  if(creativeContract&&creativeContract.projectInputKey===currentKey)renderCreativeContract();
+  else if(creativeContract){markCreativeContractStale('Project setup changed',currentKey);renderCreativeContract();var ccLabel=document.getElementById('creativeContractActionText');if(ccLabel)ccLabel.textContent='Rebuild project direction';}
+  else{renderCreativeContract();var emptyCcLabel=document.getElementById('creativeContractActionText');if(emptyCcLabel)emptyCcLabel.textContent='Build project direction';}
   var el=document.getElementById('s1');
   el.classList.add('screen-blur-out');
   setTimeout(function(){el.classList.remove('screen-blur-out');show('s_equipment');},270);
@@ -5804,7 +6056,7 @@ function generateBrief(){generateScriptFromDetails();}
 function skipEquipment(){
   projectConstraints='';projectBrief='';
   var constraints=document.getElementById('constraintsIn');if(constraints)constraints.value='';
-  creativeContract=null;buildCreativeContract(true);
+  buildCreativeContract(true);
 }
 
 function goToChoice(){
@@ -5928,10 +6180,10 @@ function planHighlight(){
 
 function scriptDirectionLabels(){
   var d=creatorDNA||loadCreatorDna()||{};
-  var projectCarrier=creativeContract&&creativeContract.format||d.carrier;
+  var projectCarrier=creativeContractFormat(creativeContract)||d.carrier;
   var carrier={story:'story-led',presenter:'presenter-led',demo:'demonstration-led',graphics:'graphics-led',hybrid:'hybrid'}[projectCarrier]||'creator-led';
   var presence={camera:'on camera',sometimes:'selective on-camera',voice:'voiceover-led',none:'no presenter'}[d.presence]||fmt;
-  var pace=creativeContract&&creativeContract.pacing||tone;
+  var pace=creativeContract&&creativeContract.style&&creativeContract.style.pacingIntent||tone;
   return [(durMin===durMax?durMin:(durMin+'-'+durMax))+' min',String(pace||'').replace(/_/g,' '),carrier,presence];
 }
 function refreshScriptStudio(){
@@ -6132,7 +6384,7 @@ function parseBlocks(text){
 /* Timeline blocks and things the camera crew must physically capture are not
    the same count. Calling both of them "shots" made a 70-shot film look like a
    120-shot day once voiceover, music and edit transitions were included. */
-function isGraphicsLed(){return projectType==='youtube'&&((creativeContract&&creativeContract.format==='graphics')||(creatorDNA&&creatorDNA.carrier==='graphics'));}
+function isGraphicsLed(){return projectType==='youtube'&&((creativeContractFormat(creativeContract)==='graphics')||(creatorDNA&&creatorDNA.carrier==='graphics'));}
 function isCameraBlock(type){
   if(isGraphicsLed()&&String(type||'').toLowerCase()==='broll')return false;
   return !{voiceover:1,music:1,transition:1}[String(type||'').toLowerCase()];
@@ -8563,9 +8815,9 @@ function docTitle(){
    Without a breakdown there is nothing to group by, so the document falls back
    to story order - the beats with their cuts nested underneath. */
 function withCanonicalRuntimeProjection(snapshot,run){
-  var projection=legacyProjectFromCanonical(snapshot,{}),previous={nodes:nodes,attShots:attShots,imgNodes:imgNodes,noteNodes:noteNodes,conns:conns,projectBreakdown:projectBreakdown,projectType:projectType,topic:topic,creativeContract:creativeContract};
-  nodes=projection.nodes||[];attShots=projection.attShots||[];imgNodes=projection.imgNodes||[];noteNodes=projection.noteNodes||[];conns=projection.conns||[];projectBreakdown=projection.projectBreakdown||null;projectType=projection.projectType||projectType;topic=projection.topic||topic;creativeContract=projection.creativeContract||creativeContract;
-  try{return run(projection);}finally{nodes=previous.nodes;attShots=previous.attShots;imgNodes=previous.imgNodes;noteNodes=previous.noteNodes;conns=previous.conns;projectBreakdown=previous.projectBreakdown;projectType=previous.projectType;topic=previous.topic;creativeContract=previous.creativeContract;}
+  var projection=legacyProjectFromCanonical(snapshot,{}),previous={nodes:nodes,attShots:attShots,imgNodes:imgNodes,noteNodes:noteNodes,conns:conns,projectBreakdown:projectBreakdown,projectType:projectType,topic:topic,creativeContract:creativeContract,creativeContractHistory:creativeContractHistory,creativeGenerationRecords:creativeGenerationRecords,currentScriptGeneratedFrom:currentScriptGeneratedFrom};
+  nodes=projection.nodes||[];attShots=projection.attShots||[];imgNodes=projection.imgNodes||[];noteNodes=projection.noteNodes||[];conns=projection.conns||[];projectBreakdown=projection.projectBreakdown||null;projectType=projection.projectType||projectType;topic=projection.topic||topic;creativeContract=projection.creativeContract||creativeContract;creativeContractHistory=projection.creativeContractHistory||[];creativeGenerationRecords=projection.creativeGenerationRecords||[];currentScriptGeneratedFrom=projection.currentScriptGeneratedFrom||null;
+  try{return run(projection);}finally{nodes=previous.nodes;attShots=previous.attShots;imgNodes=previous.imgNodes;noteNodes=previous.noteNodes;conns=previous.conns;projectBreakdown=previous.projectBreakdown;projectType=previous.projectType;topic=previous.topic;creativeContract=previous.creativeContract;creativeContractHistory=previous.creativeContractHistory;creativeGenerationRecords=previous.creativeGenerationRecords;currentScriptGeneratedFrom=previous.currentScriptGeneratedFrom;}
 }
 function buildPrintView(){
   // Export reads through a canonical snapshot projection. The editor can keep
@@ -9808,7 +10060,7 @@ document.addEventListener('mouseup',function(e){
     var data={
       v:4, stage:active,projectRecordId:currentProjectId,projectType:projectType, topic:topic, tone:tone, fmt:fmt, styleMode:styleMode, inputLang:inputLang,
       boardViewMode:canvasViewMode,boardDensity:boardDensity,boardCardDetail:boardCardDetail,
-      creatorDNA:creatorDNA,creativeContract:creativeContract,
+      creatorDNA:creatorDNA,creativeContract:creativeContract,creativeContractHistory:creativeContractHistory,creativeGenerationRecords:creativeGenerationRecords,currentScriptGeneratedFrom:currentScriptGeneratedFrom,
       durMin:durMin, durMax:durMax, projectBrief:projectBrief, projectConstraints:projectConstraints,
       projectBreakdown:projectBreakdown, projectBreakdownKey:projectBreakdownKey,
       aiMode:(typeof aiMode!=='undefined'?aiMode:true),
@@ -9838,6 +10090,7 @@ document.addEventListener('mouseup',function(e){
     creatorDNA=d.creatorDNA||loadCreatorDna()||creatorDNA;
     if(d.creatorDNA)storeCreatorDna(d.creatorDNA);
     creativeContract=d.creativeContract?normalizeCreativeContract(d.creativeContract,d.creativeContract.source):null;
+    creativeContractHistory=(d.creativeContractHistory||[]).map(function(c){return normalizeCreativeContract(c,c&&c.source);});creativeGenerationRecords=d.creativeGenerationRecords||[];currentScriptGeneratedFrom=d.currentScriptGeneratedFrom||null;
     inputLang=d.inputLang||'en'; durMin=d.durMin||durMin; durMax=d.durMax||durMax;
     projectBrief=d.projectBrief||''; projectConstraints=d.projectConstraints||'';
     projectBreakdown=d.projectBreakdown||null; projectBreakdownKey=d.projectBreakdownKey||null;
@@ -9978,7 +10231,7 @@ document.addEventListener('mouseup',function(e){
     resetLocationViewState();
     nodes=[]; attShots=[]; imgNodes=[]; noteNodes=[]; conns=[]; nid=1;
     nodeDrawerClosed={};
-    topic=''; projectBrief=''; projectConstraints=''; creativeContract=null; creativeContractBusy=false; projectBreakdown=null; projectBreakdownKey=null;
+    topic=''; projectBrief=''; projectConstraints=''; creativeContract=null; creativeContractBusy=false; creativeContractHistory=[]; creativeGenerationRecords=[]; currentScriptGeneratedFrom=null; projectBreakdown=null; projectBreakdownKey=null;
     recceImages=[];
     songName=''; songDuration=0; songAnalysis=null; songURL=null;
     var sta=byId('scriptTa'); if(sta) sta.value='';

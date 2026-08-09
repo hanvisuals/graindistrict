@@ -52,10 +52,11 @@ try{
   const generated=await page.evaluate(()=>{
     const shot=window.__ccCalls.find(x=>x.feature==='shot_plan');
     const saved=window.gdSerializeProjectData();
+    const promptFlags={contract:!!shot&&/PROJECT-SPECIFIC CREATIVE CONTRACT/.test(shot.sys),viewer:!!shot&&/Busy solo filmmakers/.test(shot.sys),visual:!!shot&&/45% presenter/.test(shot.sys),avoid:!!shot&&/Unexplained jargon/.test(shot.sys),hard:!!shot&&/NON-NEGOTIABLE HARD MUST AVOID/.test(shot.sys)};
     return {screen:document.querySelector('.screen.active').id,calls:window.__ccCalls.map(x=>x.feature),script:document.getElementById('scriptTa').value,
-      promptHasContract:!!shot&&/PROJECT-SPECIFIC CREATIVE CONTRACT/.test(shot.sys)&&/Busy solo filmmakers/.test(shot.sys)&&/45% presenter/.test(shot.sys)&&/Unexplained jargon/.test(shot.sys),
-      canonicalViewer:saved.canonical.creative.contract&&saved.canonical.creative.contract.viewer,
-      canonicalFormat:saved.canonical.creative.contract&&saved.canonical.creative.contract.format,
+      promptHasContract:Object.values(promptFlags).every(Boolean),promptFlags,
+      canonicalViewer:saved.canonical.creative.contract&&saved.canonical.creative.contract.audience.primary,
+      canonicalFormat:saved.canonical.creative.contract&&saved.canonical.creative.contract.format.type,
       contractVisible:!document.getElementById('scriptContract').hidden,
       contractPromise:document.getElementById('scriptContractPromise').textContent,
       saved
@@ -72,7 +73,7 @@ try{
   const roundTrip=await page.evaluate(saved=>{
     window.gdRestoreProjectData({v:4,canonical:saved.canonical});
     const c=window.gdGetCreativeContract();
-    return {viewer:c&&c.viewer,format:c&&c.format,screen:document.querySelector('.screen.active').id,visible:!document.getElementById('scriptContract').hidden};
+    return {viewer:c&&c.audience.primary,format:c&&c.format.type,screen:document.querySelector('.screen.active').id,visible:!document.getElementById('scriptContract').hidden};
   },generated.saved);
   ok('canonical-only backups reopen with the same Project Direction',roundTrip.viewer==='Busy solo filmmakers building their first practical kit'&&roundTrip.format==='presenter'&&roundTrip.screen==='s3'&&roundTrip.visible,roundTrip);
 

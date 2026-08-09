@@ -30,6 +30,7 @@ server.listen(8927, async()=>{
     document.getElementById('gdAuthOv').classList.remove('show','gate');
     document.body.classList.remove('gd-gated');
     projectType='youtube'; tone='introspective'; inputLang='tr'; topic='T'; durMin=3; durMax=3;
+    creativeContract=creativeContractFallback();creativeContract.projectInputKey=creativeContractKey(projectConstraints);creativeContract.provenance.projectInputKey=creativeContract.projectInputKey;lockCreativeContract();
   });
 
   for(const m of ['old','junk']){
