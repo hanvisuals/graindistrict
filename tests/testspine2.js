@@ -16,7 +16,7 @@ const server=http.createServer((req,res)=>{
     seen.push(sys);
     res.writeHead(200,{'Content-Type':'text/plain','Access-Control-Allow-Origin':'*'});
     if(/story editor/.test(sys)) return res.end(mode==='old'?OLD:'sorry, I cannot help with that');
-    res.end('[VOICEOVER] 00:00-00:07 - Bir sey.\n[BROLL] 00:00-00:03 - Bir cekim.');
+    res.end('[VOICEOVER] 00:00-03:00 - '+Array(300).fill('anlatim').join(' ')+'\n[BROLL] 00:00-03:00 - Sureci gosteren tek uzun test goruntusu.');
   });
 });
 server.listen(8927, async()=>{

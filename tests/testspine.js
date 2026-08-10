@@ -30,7 +30,7 @@ const server=http.createServer((req,res)=>{
     seen.push(sys);
     res.writeHead(200,{'Content-Type':'text/plain','Access-Control-Allow-Origin':'*'});
     if(/story editor/.test(sys)) return res.end(OUTLINE);
-    res.end('[VOICEOVER] 00:00-00:07 - Bir sey.\n[BROLL] 00:00-00:03 - Bir cekim.\n[BROLL] 00:03-00:07 - Baska bir cekim.');
+    res.end('[VOICEOVER] 00:00-03:00 - '+Array(300).fill('anlatim').join(' ')+'\n[BROLL] 00:00-03:00 - Sureci gosteren tek uzun test goruntusu.');
   });
 });
 server.listen(8926, async()=>{

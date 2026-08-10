@@ -20,7 +20,12 @@ await page.evaluate(()=>{
   window.__features=[];
   api=function(sys,user,feature){
     window.__features.push({feature,user:String(user)});
-    return Promise.resolve('[VOICEOVER] 00:00-00:06 - I thought beginning again had to feel dramatic.\n[BROLL] 00:00-00:06 - Static wide shot of the apartment desk.\n[VOICEOVER] 00:06-00:12 - Mostly, it looked like opening the same notebook one more time.');
+    if(feature==='narrative_plan')return Promise.resolve(JSON.stringify({narrativeMode:'experiential_process',centralQuestion:'What does beginning again actually look like?',viewerJourney:'A vague wish becomes one observable action.',openingApproach:'Begin on the closed notebook at the apartment desk.',endingPayoff:'The notebook is open and the next action is clear.',chapters:[
+      {title:'The Closed Notebook',role:'opening',start:'00:00',end:'00:20',purpose:'Make the desire to begin tangible.',concreteProgress:'The notebook moves from closed to open.',questionIn:'Why does beginning feel dramatic?',turn:'Beginning becomes a small physical action.',transitionOut:'An open page creates the question of what belongs on it.'},
+      {title:'The First Mark',role:'development',start:'00:20',end:'00:40',purpose:'Test the first imperfect action.',concreteProgress:'One line is written and revised.',questionIn:'What can happen without a grand plan?',turn:'The imperfect mark is allowed to remain.',transitionOut:'Keeping it makes a second action possible.'},
+      {title:'Tomorrow Is Smaller',role:'resolution',start:'00:40',end:'01:00',purpose:'Resolve the promise through a repeatable next step.',concreteProgress:'A short note names tomorrow\'s action.',questionIn:'What makes this repeatable?',turn:'Beginning again becomes a practice.',transitionOut:''}
+    ]}));
+    return Promise.resolve('[VOICEOVER] 00:00-00:06 - I thought beginning again had to feel dramatic.\n[BROLL] 00:00-00:06 - Static wide shot of the apartment desk.\n[VOICEOVER] 00:06-00:20 - Mostly, it looked like opening the same notebook one more time.\n[BROLL] 00:06-00:20 - The closed notebook opens to a blank page.\n[VOICEOVER] 00:20-00:32 - The first line on the page was ordinary, but it was finally there.\n[BROLL] 00:20-00:32 - A short sentence appears at the top of the page.\n[VOICEOVER] 00:32-00:40 - I left the imperfect words where they were.\n[BROLL] 00:32-00:40 - The pen lifts while the crossed-out words remain visible.\n[VOICEOVER] 00:40-00:52 - Underneath, one small note made tomorrow easier to enter.\n[BROLL] 00:40-00:52 - A second line names one clear task for tomorrow.\n[VOICEOVER] 00:52-01:00 - Beginning again no longer needed to announce itself.\n[BROLL] 00:52-01:00 - The open notebook remains on the cleared desk.');
   };
   ensureFullPlan=function(sys,text){return Promise.resolve(text);};
   generateScriptFromDetails();
@@ -37,7 +42,7 @@ const entry=await page.evaluate(()=>({
   save:document.getElementById('gdSaveState').textContent
 }));
 ok('production details go directly to Script Studio',entry.screen==='s3'&&!entry.briefScreen,entry);
-ok('the removed brief does not consume a second AI request',entry.calls.length===1&&entry.calls[0].feature==='shot_plan'&&/35mm lens/.test(entry.calls[0].user)&&entry.brief==='',entry.calls);
+ok('the removed brief is replaced by one chapter-plan call before voiceover writing',entry.calls.length===2&&entry.calls[0].feature==='narrative_plan'&&entry.calls[1].feature==='shot_plan'&&/35mm lens/.test(entry.calls[1].user)&&entry.brief==='',entry.calls);
 ok('the first generated script is immediately saved as a draft',/saved/i.test(entry.save),entry.save);
 
 const savedBefore=await page.evaluate(()=>new Promise(resolve=>{

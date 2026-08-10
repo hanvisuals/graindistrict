@@ -28,7 +28,12 @@ try{
         proof:'Show the same real scene through every lens and name one limitation for each.',
         pacing:'balanced',avoid:['Moody filler','Unexplained jargon','Fake personal drama'],tone:'clear and energetic',presence:'on camera'
       }));
-      if(feature==='shot_plan')return Promise.resolve('[VOICEOVER] 00:00-00:10 - You do not need a shelf full of lenses.\n[BROLL] 00:00-00:10 - Presenter places three labeled lenses on the desk, medium locked shot.\n[VOICEOVER] 00:10-01:00 - These three jobs cover the way most solo filmmakers actually shoot.\n[BROLL] 00:10-01:00 - Three-way comparison graphic followed by matching sample footage from each lens.');
+      if(feature==='narrative_plan')return Promise.resolve(JSON.stringify({narrativeMode:'tutorial',centralQuestion:'Which three lens jobs cover a practical solo kit?',viewerJourney:'Lens shopping becomes a job-based decision.',openingApproach:'Open on an overcrowded shelf beside the three-lens kit.',endingPayoff:'The viewer can assign one lens to each real shooting job.',chapters:[
+        {title:'Too Many Lenses',role:'opening',start:'00:00',end:'00:20',purpose:'Establish the buying problem and promise.',concreteProgress:'A crowded shelf is reduced to three labeled positions.',questionIn:'How many lenses are actually necessary?',turn:'The choice shifts from products to jobs.',transitionOut:'The three jobs now need a real test.'},
+        {title:'Three Real Jobs',role:'development',start:'00:20',end:'00:40',purpose:'Demonstrate the three distinct shooting needs.',concreteProgress:'The same scene is filmed wide, normal and close.',questionIn:'Does each job earn a lens?',turn:'The samples reveal distinct coverage.',transitionOut:'Coverage alone is not enough without limitations.'},
+        {title:'The Practical Kit',role:'resolution',start:'00:40',end:'01:00',purpose:'Name trade-offs and give the final kit.',concreteProgress:'Three lenses remain on the desk with one limitation each.',questionIn:'Which trade-offs are acceptable?',turn:'The viewer gets a usable recommendation.',transitionOut:''}
+      ]}));
+      if(feature==='shot_plan')return Promise.resolve('[VOICEOVER] 00:00-00:10 - You do not need a shelf full of lenses.\n[BROLL] 00:00-00:10 - Presenter places three labeled lenses on the desk, medium locked shot.\n[VOICEOVER] 00:10-00:20 - Start with the three jobs your camera has to perform.\n[BROLL] 00:10-00:20 - Three cards label wide, everyday and detail coverage.\n[VOICEOVER] 00:20-00:30 - The wide lens establishes the room without forcing the camera into a corner.\n[BROLL] 00:20-00:30 - The same small room is shown through the wide lens.\n[VOICEOVER] 00:30-00:40 - A normal lens handles the everyday frame while the longer lens isolates detail.\n[BROLL] 00:30-00:40 - Matching samples compare the normal and longer lens.\n[VOICEOVER] 00:40-00:50 - Each choice still has a limitation worth seeing before you buy.\n[BROLL] 00:40-00:50 - Edge distortion, working distance and shake are compared.\n[VOICEOVER] 00:50-01:00 - These three jobs cover the way most solo filmmakers actually shoot.\n[BROLL] 00:50-01:00 - The final three-lens kit remains on the desk.');
       return Promise.resolve('');
     };
     ensureFullPlan=function(sys,text){return Promise.resolve(text);};
@@ -63,7 +68,7 @@ try{
       saved
     };
   });
-  ok('locking the contract generates the script with the edited direction as an authoritative prompt',generated.screen==='s3'&&generated.calls.join(',')==='creative_contract,shot_plan'&&generated.promptHasContract,generated);
+  ok('locking the contract generates a chapter plan and script from the edited direction',generated.screen==='s3'&&generated.calls.join(',')==='creative_contract,narrative_plan,shot_plan'&&generated.promptHasContract,generated);
   ok('the Creative Contract is stored inside CanonicalProject',generated.canonicalViewer==='Busy solo filmmakers building their first practical kit'&&generated.canonicalFormat==='presenter',generated);
   ok('Script Studio keeps the project promise visible without another full screen',generated.contractVisible&&/Choose three lenses/.test(generated.contractPromise)&&/VOICEOVER/.test(generated.script),generated);
 

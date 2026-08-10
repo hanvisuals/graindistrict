@@ -2327,6 +2327,10 @@ body.free-mode .port-dot:hover{background:var(--board-gold);border-color:#f8e8a8
 .script-view-toggle:hover{border-color:rgba(255,255,255,.16);color:rgba(255,255,255,.68);}
 .voiceover-reader{position:absolute;inset:0;overflow-y:auto;padding:52px clamp(25px,5vw,72px) 120px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.09) transparent;}
 .voiceover-reader::before{content:'VOICEOVER  /  AUTO-SAVED';display:block;margin-bottom:23px;font-family:var(--mono);font-size:7px;letter-spacing:.16em;color:rgba(109,155,211,.6);}
+.voiceover-chapter{display:grid;grid-template-columns:auto 1fr auto;align-items:end;gap:11px;margin:38px 0 3px;padding:0 0 10px;border-bottom:1px solid rgba(215,185,88,.2);}
+.voiceover-chapter:first-of-type{margin-top:0;}
+.voiceover-chapter-index,.voiceover-chapter-time{font-family:var(--mono);font-size:7px;letter-spacing:.13em;text-transform:uppercase;color:rgba(215,185,88,.55);}
+.voiceover-chapter-title{font-family:var(--sans);font-size:13px;font-weight:560;letter-spacing:-.01em;color:rgba(255,255,255,.72);}
 .voiceover-reader button{position:relative;display:block;width:100%;padding:15px 42px 17px 0;border:0;border-bottom:1px solid rgba(255,255,255,.055);background:none;color:rgba(255,255,255,.78);font-family:var(--sans);font-size:clamp(16px,1.65vw,22px);font-weight:430;line-height:1.64;letter-spacing:-.016em;text-align:left;cursor:text;transition:color .16s,background .16s,padding .16s;}
 .voiceover-reader button::after{content:attr(data-number);position:absolute;right:3px;top:21px;font-family:var(--mono);font-size:7px;letter-spacing:.1em;color:rgba(255,255,255,.15);}
 .voiceover-reader button:hover,.voiceover-reader button.selected{padding-left:12px;color:#fff;background:linear-gradient(90deg,rgba(215,185,88,.055),transparent 76%);}
@@ -3339,7 +3343,7 @@ function stylePack(part){
   return p?'\n\n'+p[part]:'';
 }
 var creatorDNA=null,dnaDraft=null,dnaStep=0,dnaReturnScreen='s1',dnaHubReturnScreen='s0',dnaRevealReturnScreen='s1';
-var creativeContract=null,creativeContractBusy=false,creativeContractHistory=[],creativeGenerationRecords=[],currentScriptGeneratedFrom=null,truthLedger=null,truthResearch=null;
+var creativeContract=null,creativeContractBusy=false,creativeContractHistory=[],creativeGenerationRecords=[],currentScriptGeneratedFrom=null,currentNarrativePlan=null,truthLedger=null,truthResearch=null;
 /* First-person biography is a different authority domain from research.
    Creator DNA may shape voice, but only explicit project input may authorize
    something as having happened to the creator. Candidate scripts are audited
@@ -3691,27 +3695,13 @@ function sanitizeCreativeContractBiography(contract){
   c.provenance=Object.assign({},c.provenance||{});var allChanges=priorChanges.concat(changes),seen={};allChanges=allChanges.filter(function(change){var key=String(change.path||'')+'|'+String(change.originalStatement||'');if(seen[key])return false;seen[key]=1;return true;});c.provenance.epistemicBoundary={policy:EPISTEMIC_POLICY,policyVersion:EPISTEMIC_POLICY_VERSION,changes:allChanges,checkedAt:Date.now()};return c;
 }
 function epistemicContext(){refreshFirstPartyAssertions();return '\n\nEPISTEMIC SAFETY - OVERRIDES CREATOR DNA AND THE CREATIVE CONTRACT:\n- You may imitate the creator\'s tone; you may not invent the creator\'s biography.\n- External sources can support facts about the world. They can NEVER authorize a memory, action, location visit, job, purchase, possession, feeling or observation as belonging to the creator.\n- Past or present first-person events are allowed only when they are entailed by the explicit project-input assertions below. Do not infer biography from a topic, style choice, reference video or Creator DNA.\n- When no assertion authorizes a personal beat, use a present-tense observation that can be filmed now, a clearly hypothetical frame, or neutral narration.\nAUTHORIZED FIRST-PARTY ASSERTIONS:\n- '+((firstPartyAssertions||[]).length?firstPartyAssertions.map(function(a){return a.statement+' ['+a.id+']';}).join('\n- '):'None. Keep creator biography out of the script.');}
-function epistemicRewriteScript(candidate,audit){var blocked=(audit&&audit.blocked||[]).map(function(x){return '- '+x.statement;}).join('\n');var sys='You are GrainDistrict\'s biography safety editor. Return the COMPLETE shot plan in exactly the same one-line [TYPE] timecode format. Rewrite ONLY unsupported first-person biography in VOICEOVER. Preserve verified facts, meaning, language, timecodes and all non-offending blocks. Replace invented memories with present observable, neutral or explicitly hypothetical wording. Do not add any new date, job, purchase, visit, possession, feeling or personal event.'+epistemicContext();return api(sys,'BLOCKED FIRST-PERSON CLAUSES:\n'+blocked+'\n\nCANDIDATE SHOT PLAN:\n'+candidate,'epistemic_rewrite');}
-function epistemicFallbackObservation(value,index){
-  var original=truthLedgerText(value,900),combined=epistemicAscii(original+' '+(topic||'')),isTurkish=inputLang==='tr'||/[ğüşıöç]/i.test(original+' '+(topic||'')),isLoneliness=/\b(lonely|loneliness|yalniz|yalnizlik)\b/.test(combined),tail='';
-  var colon=original.indexOf(':');if(colon>=0)tail=truthLedgerText(original.slice(colon+1),700);
-  if(tail&&!epistemicPersonalSignal(tail))return tail.charAt(0).toLocaleUpperCase()+tail.slice(1);
-  if(isLoneliness&&/\b(omuz|shoulder|saydim|counted)\b/.test(combined))return isTurkish?'Kalabalıkta omuz omuza geçmek, gerçekten karşılaşmakla aynı şey değil.':'Passing shoulder to shoulder in a crowd is not the same as truly meeting.';
-  if(isLoneliness&&/\b(kafe|cafe|café|coffee|calis|work)\w*\b/.test(combined))return isTurkish?'Kalabalık kafelerde bile fiziksel yakınlık her zaman gerçek bir bağa dönüşmüyor.':'Even crowded cafés can create physical proximity without creating a real connection.';
-  if(isLoneliness&&/\b(metro|subway|platform|peron|vagon)\b/.test(combined))return isTurkish?'Dolu metro vagonları insanları birbirine yaklaştırıyor, fakat bu yakınlık her zaman bağlantı yaratmıyor.':'Packed subway cars bring people close together without necessarily creating connection.';
-  if(isLoneliness)return isTurkish?'New York’ta kalabalık, insanları fiziksel olarak yakınlaştırsa da her zaman bağ kurdurmuyor.':'In New York, a crowd can create physical proximity without making connection automatic.';
-  var safe=epistemicSplitClauses(original).filter(function(part){return !epistemicPersonalSignal(part)&&part.length>12;});
-  if(safe.length)return safe.join(' ');
-  return isTurkish?'Konu, bugün gözlemlenebilen somut ayrıntılar üzerinden ilerliyor.':'The subject unfolds through concrete details that can be observed today.';
-}
-function epistemicDeterministicRepair(candidate,audit){
-  var blockedLines={};(audit&&audit.blocked||[]).forEach(function(atom){var line=atom&&atom.ref&&Number(atom.ref.lineNumber);if(line)blockedLines[line]=1;});
-  return String(candidate||'').split(/\r?\n/).map(function(line,index){if(!blockedLines[index+1])return line;var match=line.match(/^(\s*\[VOICEOVER\]\s+\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}\s*[-:]\s*)(.+)$/i);return match?match[1]+epistemicFallbackObservation(match[2],index):line;}).join('\n').trim();
-}
+function epistemicRewriteScript(candidate,audit){var blocked=(audit&&audit.blocked||[]).map(function(x){return '- '+x.statement;}).join('\n');var sys='You are GrainDistrict\'s biography safety editor. Return the COMPLETE shot plan in exactly the same one-line [TYPE] timecode format. Rewrite ONLY unsupported first-person biography in VOICEOVER. Preserve verified facts, chapter purpose, cause and effect, language, timecodes and all non-offending blocks. Replace invented memories with a context-specific present observation, neutral formulation or explicit hypothetical. Never insert a generic safety sentence and never repeat the same replacement in two lines. Do not add any new date, job, purchase, visit, possession, feeling or personal event.'+narrativePlanContext(currentNarrativePlan)+epistemicContext();return apiRetry(sys,'BLOCKED FIRST-PERSON CLAUSES:\n'+blocked+'\n\nCANDIDATE SHOT PLAN:\n'+candidate,'epistemic_rewrite');}
 function epistemicPromoteLocalRepair(candidate,audit,parentFingerprint){
-  var repaired=epistemicDeterministicRepair(candidate,audit),finalAudit=epistemicAuditScript(repaired,'epistemic_local_repair');
-  if(!parseBlocks(repaired).length||finalAudit.status!=='clear'){recordScriptEpistemic(repaired||candidate,'rejected','epistemic_local_repair',finalAudit,parentFingerprint);throw new Error('Grain District protected your voice, but this draft needs to be generated again.');}
-  recordScriptEpistemic(repaired,'promoted','epistemic_local_repair',finalAudit,parentFingerprint);currentScriptGeneratedFrom=creativeContractGenerationReference()||currentScriptGeneratedFrom;return {script:repaired,audit:finalAudit,rewritten:true,repairMode:'local_safe_fallback'};
+  /* A generic sentence cannot safely replace a lived event: it may pass the
+     biography audit while destroying the chapter's cause and effect. If the
+     contextual rewrite fails, reject the draft instead of publishing filler. */
+  recordScriptEpistemic(candidate,'rejected','epistemic_rewrite_failed',audit,parentFingerprint);
+  throw new Error('Grain District protected your biography, but the contextual rewrite failed. Please generate the draft again.');
 }
 function epistemicGateCandidateScript(candidate,origin,parentFingerprint){
   var first=epistemicAuditScript(candidate,origin);if(first.status==='clear'){recordScriptEpistemic(candidate,'promoted',origin,first,parentFingerprint);currentScriptGeneratedFrom=creativeContractGenerationReference()||currentScriptGeneratedFrom;return Promise.resolve({script:candidate,audit:first,rewritten:false,repairMode:'none'});}recordScriptEpistemic(candidate,'quarantined',origin,first,parentFingerprint);
@@ -3839,7 +3829,7 @@ function editCreativeContract(patch){
     rememberCreativeContractRevision(base,base.status);
     base=canonicalClone(base,{});base.revision=Number(base.revision)+1;base.status='draft';base.provenance=Object.assign({},base.provenance,{lockedAt:0,staleAt:0,staleReason:'',updatedAt:Date.now(),editedByUser:true});
   }
-  creativeContract=applyCreativeContractPatch(base,patch);if(truthLedger)markTruthLedgerStale('Project Direction changed',null,true);return creativeContract;
+  creativeContract=applyCreativeContractPatch(base,patch);currentNarrativePlan=null;if(truthLedger)markTruthLedgerStale('Project Direction changed',null,true);return creativeContract;
 }
 function lockCreativeContract(){
   if(!creativeContract)return null;refreshFirstPartyAssertions();creativeContract=normalizeCreativeContract(sanitizeCreativeContractBiography(normalizeCreativeContract(creativeContract,creativeContract.source)),creativeContract.source);var validation=validateCreativeContract(creativeContract);
@@ -3852,14 +3842,108 @@ function markCreativeContractStale(reason,nextKey){
   if(!creativeContract)return false;creativeContract=normalizeCreativeContract(creativeContract,creativeContract.source);
   if(creativeContract.status!=='locked')return false;
   nextKey=nextKey||creativeContractKey(projectConstraints);if(creativeContract.projectInputKey===nextKey)return false;
-  creativeContract=canonicalClone(creativeContract,{});creativeContract.status='stale';creativeContract.provenance=Object.assign({},creativeContract.provenance,{staleAt:Date.now(),staleReason:reason||'Project Reality changed',updatedAt:Date.now()});if(truthLedger)markTruthLedgerStale(reason||'Project Reality changed',null,true);renderCreativeContract();renderScriptContract();return true;
+  creativeContract=canonicalClone(creativeContract,{});creativeContract.status='stale';creativeContract.provenance=Object.assign({},creativeContract.provenance,{staleAt:Date.now(),staleReason:reason||'Project Reality changed',updatedAt:Date.now()});currentNarrativePlan=null;if(truthLedger)markTruthLedgerStale(reason||'Project Reality changed',null,true);renderCreativeContract();renderScriptContract();return true;
 }
 function creativeContractGenerationReference(){
   if(projectType!=='youtube')return null;
   var validation=validateCreativeContract(creativeContract,{requireLocked:true});if(!validation.valid)return null;
   return {contractId:creativeContract.id,contractRevision:creativeContract.revision,contractHash:creativeContractHash(creativeContract)};
 }
-function creativeContractBoundFeature(feature){return /^(shot_plan|shot_plan_segment|shot_plan_redraft|shot_plan_fallback|shot_plan_continuation|plan_outline|script_revision|epistemic_rewrite|broll_sync|broll_replan|block_revision|block_shot_details|shot_details_batch|storyboard_prompt|storyboard_revision)$/.test(String(feature||''));}
+var NARRATIVE_PLAN_SCHEMA='graindistrict.narrative-plan';
+var NARRATIVE_PLAN_VERSION=1;
+var NARRATIVE_MODES=['experiential_process','tutorial','essay','documentary','review','investigation','journey','structured_list'];
+function narrativeChapterTarget(totalSec){
+  var minutes=Math.max(1,Number(totalSec)||180)/60;
+  if(minutes<=2)return 3;if(minutes<=4)return 4;if(minutes<=8)return 6;if(minutes<=12)return 7;if(minutes<=16)return 8;return 9;
+}
+function narrativePlanIsTurkish(){return inputLang==='tr'||/[\u011f\u00fc\u015f\u0131\u00f6\u00e7]/i.test(topic||'');}
+function narrativeModeFallback(){
+  var format=creativeContractFormat(creativeContract),map={story:'experiential_process',presenter:'tutorial',demo:'review',graphics:'essay',hybrid:'essay'};
+  return map[format]||'essay';
+}
+function narrativeArcTemplates(mode,isTurkish){
+  var en={
+    experiential_process:[['opening','A concrete beginning'],['orientation','The want'],['development','The search'],['choice','The choice'],['complication','The friction'],['turn','What changes'],['resolution','The result'],['closing','What remains']],
+    tutorial:[['opening','The real problem'],['orientation','The promise'],['development','The foundation'],['development','The method'],['complication','Where it breaks'],['turn','The correction'],['resolution','The result'],['closing','Put it to use']],
+    essay:[['opening','A concrete observation'],['orientation','The question'],['development','The first argument'],['development','The evidence'],['complication','The counterpoint'],['turn','A different reading'],['resolution','The synthesis'],['closing','The thought that remains']],
+    documentary:[['opening','Meet the subject'],['orientation','What is at stake'],['development','The context'],['development','The pressure'],['complication','The complication'],['turn','The change'],['resolution','What it means'],['closing','Where it leaves us']],
+    review:[['opening','The need'],['orientation','The criteria'],['development','The real test'],['development','The evidence'],['complication','The trade-off'],['turn','The comparison'],['resolution','The verdict'],['closing','Who it is for']],
+    investigation:[['opening','The mystery'],['orientation','The question'],['development','The possibilities'],['development','The evidence'],['complication','The contradiction'],['turn','The discovery'],['resolution','The implication'],['closing','What is still open']],
+    journey:[['opening','The expectation'],['orientation','The arrival'],['development','The exploration'],['development','The encounter'],['complication','The obstacle'],['turn','The discovery'],['resolution','The return'],['closing','What travelled home']],
+    structured_list:[['opening','The useful promise'],['orientation','The rule for choosing'],['development','The first case'],['development','The next case'],['complication','The exception'],['turn','The pattern'],['resolution','The combined answer'],['closing','The next step']]
+  };
+  var tr={
+    experiential_process:[['opening','Somut bir ba\u015flang\u0131\u00e7'],['orientation','\u0130stek'],['development','Aray\u0131\u015f'],['choice','Se\u00e7im'],['complication','Zorluk'],['turn','De\u011fi\u015fen \u015fey'],['resolution','Ortaya \u00e7\u0131kan'],['closing','Geriye kalan']],
+    tutorial:[['opening','Ger\u00e7ek problem'],['orientation','Vaat'],['development','Temel'],['development','Y\u00f6ntem'],['complication','Nerede bozuluyor'],['turn','D\u00fczeltme'],['resolution','Y\u00f6ntemin sonucu'],['closing','Uygulama']],
+    essay:[['opening','Somut bir g\u00f6zlem'],['orientation','Soru'],['development','\u0130lk d\u00fc\u015f\u00fcnce'],['development','Kan\u0131t'],['complication','Kar\u015f\u0131 g\u00f6r\u00fc\u015f'],['turn','Ba\u015fka bir okuma'],['resolution','Sentez'],['closing','Geriye kalan d\u00fc\u015f\u00fcnce']],
+    documentary:[['opening','Konuyla tan\u0131\u015fma'],['orientation','Mesele'],['development','Ba\u011flam'],['development','Bask\u0131'],['complication','D\u00fc\u011f\u00fcm'],['turn','De\u011fi\u015fim'],['resolution','Anlam\u0131'],['closing','Bug\u00fcn geldi\u011fi yer']],
+    review:[['opening','\u0130htiya\u00e7'],['orientation','\u00d6l\u00e7\u00fctler'],['development','Ger\u00e7ek deneme'],['development','Kan\u0131t'],['complication','Taviz'],['turn','Kar\u015f\u0131la\u015ft\u0131rma'],['resolution','Karar'],['closing','Kimin i\u00e7in']],
+    investigation:[['opening','Gizem'],['orientation','Soru'],['development','Olas\u0131l\u0131klar'],['development','Kan\u0131t'],['complication','\u00c7eli\u015fki'],['turn','Bulgu'],['resolution','Anlam\u0131'],['closing','A\u00e7\u0131k kalan']],
+    journey:[['opening','Beklenti'],['orientation','Var\u0131\u015f'],['development','Ke\u015fif'],['development','Kar\u015f\u0131la\u015fma'],['complication','Engel'],['turn','Buluntu'],['resolution','D\u00f6n\u00fc\u015f'],['closing','Yan\u0131m\u0131zda kalan']],
+    structured_list:[['opening','Kullan\u0131\u015fl\u0131 vaat'],['orientation','Se\u00e7im \u00f6l\u00e7\u00fct\u00fc'],['development','\u0130lk \u00f6rnek'],['development','Sonraki \u00f6rnek'],['complication','\u0130stisna'],['turn','Ortak desen'],['resolution','Birle\u015fik cevap'],['closing','Sonraki ad\u0131m']]
+  };
+  return (isTurkish?tr:en)[mode]||(isTurkish?tr:en).essay;
+}
+function narrativeFallbackPlan(totalSec){
+  totalSec=Math.max(30,Math.round(Number(totalSec)||180));var mode=narrativeModeFallback(),count=narrativeChapterTarget(totalSec),source=narrativeArcTemplates(mode,narrativePlanIsTurkish()),chosen=[];
+  for(var i=0;i<count;i++){var at=Math.round(i*(source.length-1)/Math.max(1,count-1));chosen.push(source[at]);}
+  var chapters=chosen.map(function(item,index){var start=Math.round(totalSec*index/count),end=index===count-1?totalSec:Math.round(totalSec*(index+1)/count),turkish=narrativePlanIsTurkish(),progress=turkish?item[1]+' a\u015famas\u0131 konuya \u00f6zg\u00fc g\u00f6r\u00fclebilir bir eylem, \u00f6rnek veya kan\u0131tla ilerler.':item[1]+' advances through a visible action, example or piece of evidence specific to the subject.',purpose=turkish?item[1]+' b\u00f6l\u00fcm\u00fc anlat\u0131da yeni ve ayr\u0131 bir i\u015flev \u00fcstlenir.':item[1]+' performs one new and distinct job in the progression.',turn=turkish?item[1]+' tamamland\u0131\u011f\u0131nda izleyicinin bildi\u011fi, g\u00f6rd\u00fc\u011f\u00fc veya yapabildi\u011fi \u015fey de\u011fi\u015fir.':item[1]+' changes what the viewer knows, sees or can do.';return {id:'chapter:'+(index+1),index:index+1,title:item[1],role:item[0],start:fmtTime(start),end:fmtTime(end),startSeconds:start,endSeconds:end,targetWords:Math.max(18,Math.round((end-start)*2)),purpose:purpose,concreteProgress:progress,questionIn:index?turkish?'\u00d6nceki b\u00f6l\u00fcmden kalan soru.':'The question left by the previous chapter.':creativeContract&&creativeContract.storyEngine&&creativeContract.storyEngine.drivingQuestion||topic,turn:turn,transitionOut:index===count-1?'':(turkish?'Bu de\u011fi\u015fim bir sonraki b\u00f6l\u00fcm\u00fc gerekli k\u0131lar.':'This change makes the next chapter necessary.')};});
+  return {schema:NARRATIVE_PLAN_SCHEMA,schemaVersion:NARRATIVE_PLAN_VERSION,id:'narrative:'+canonicalIdToken(),source:'structural_fallback',narrativeMode:mode,centralQuestion:creativeContract&&creativeContract.storyEngine&&creativeContract.storyEngine.drivingQuestion||topic,viewerJourney:creativeContract&&creativeContract.storyEngine&&creativeContract.storyEngine.transformation||'',openingApproach:chapters[0].concreteProgress,endingPayoff:creativeContract&&creativeContract.promise&&creativeContract.promise.statement||'',durationSeconds:totalSec,chapters:chapters,createdAt:Date.now()};
+}
+function narrativeSeconds(value,fallback){if(typeof value==='number'&&isFinite(value))return Math.max(0,Math.round(value));var parsed=tcToSec(String(value||''));return isFinite(parsed)?Math.max(0,Math.round(parsed)):fallback;}
+function normalizeNarrativePlan(raw,totalSec,source){
+  raw=raw&&typeof raw==='object'?canonicalClone(raw,{}):{};totalSec=Math.max(30,Math.round(Number(totalSec)||Number(raw.durationSeconds)||180));
+  var mode=NARRATIVE_MODES.indexOf(raw.narrativeMode)>=0?raw.narrativeMode:narrativeModeFallback(),chapters=Array.isArray(raw.chapters)?raw.chapters:[];
+  chapters=chapters.map(function(ch,index){ch=ch&&typeof ch==='object'?ch:{};var start=narrativeSeconds(ch.start!=null?ch.start:ch.startSeconds,NaN),end=narrativeSeconds(ch.end!=null?ch.end:ch.endSeconds,NaN);return {id:String(ch.id||('chapter:'+(index+1))),index:index+1,title:creativeContractText(ch.title,100,''),role:creativeContractText(ch.role,40,''),start:isFinite(start)?fmtTime(start):'',end:isFinite(end)?fmtTime(end):'',startSeconds:start,endSeconds:end,targetWords:isFinite(start)&&isFinite(end)?Math.max(12,Math.round((end-start)*2)):0,purpose:creativeContractText(ch.purpose,360,''),concreteProgress:creativeContractText(ch.concreteProgress||ch.observableProgress,420,''),questionIn:creativeContractText(ch.questionIn,300,''),turn:creativeContractText(ch.turn||ch.change,360,''),transitionOut:creativeContractText(ch.transitionOut||ch.bridge,360,'')};});
+  return {schema:NARRATIVE_PLAN_SCHEMA,schemaVersion:NARRATIVE_PLAN_VERSION,id:String(raw.id||('narrative:'+canonicalIdToken())),source:source||raw.source||'ai',narrativeMode:mode,centralQuestion:creativeContractText(raw.centralQuestion,420,''),viewerJourney:creativeContractText(raw.viewerJourney||raw.transformation,420,''),openingApproach:creativeContractText(raw.openingApproach,420,''),endingPayoff:creativeContractText(raw.endingPayoff||raw.payoff,420,''),durationSeconds:totalSec,chapters:chapters,createdAt:Number(raw.createdAt)||Date.now()};
+}
+function validateNarrativePlan(plan,totalSec){
+  var p=plan&&normalizeNarrativePlan(plan,totalSec,plan.source),issues=[],expected=narrativeChapterTarget(totalSec);function add(code,path,message){issues.push({code:code,path:path,message:message});}
+  if(!p||p.schema!==NARRATIVE_PLAN_SCHEMA)add('NARRATIVE_SCHEMA_INVALID','script.narrativePlan','Narrative Plan schema is invalid.');
+  if(!p)return {valid:false,issues:issues};
+  if(NARRATIVE_MODES.indexOf(p.narrativeMode)<0)add('NARRATIVE_MODE_INVALID','script.narrativePlan.narrativeMode','Choose a supported narrative mode.');
+  if(!p.centralQuestion)add('NARRATIVE_QUESTION_REQUIRED','script.narrativePlan.centralQuestion','The video needs one central viewer question or goal.');
+  if(!p.openingApproach)add('NARRATIVE_OPENING_REQUIRED','script.narrativePlan.openingApproach','Define the concrete way into the subject.');
+  if(!p.endingPayoff)add('NARRATIVE_PAYOFF_REQUIRED','script.narrativePlan.endingPayoff','Define what the ending resolves or reframes.');
+  if(p.chapters.length!==expected)add('NARRATIVE_CHAPTER_COUNT','script.narrativePlan.chapters','Expected '+expected+' chapters for this runtime.');
+  var seen={},seenProgress={},seenTurns={};p.chapters.forEach(function(ch,index){var path='script.narrativePlan.chapters['+index+']',prev=p.chapters[index-1];if(!ch.title)add('NARRATIVE_CHAPTER_TITLE',path+'.title','Every chapter needs a title.');if(/^(intro|introduction|development|conclusion|giri\u015f|geli\u015fme|sonu\u00e7)$/i.test(ch.title))add('NARRATIVE_CHAPTER_GENERIC_TITLE',path+'.title','Use a subject-specific chapter title, not a structural label.');var key=epistemicAscii(ch.title);if(key&&seen[key])add('NARRATIVE_CHAPTER_DUPLICATE_TITLE',path+'.title','Chapter titles must be distinct.');seen[key]=1;if(!ch.role)add('NARRATIVE_CHAPTER_ROLE',path+'.role','Every chapter needs a narrative role.');if(ch.purpose.length<8)add('NARRATIVE_CHAPTER_PURPOSE',path+'.purpose','Every chapter must do one distinct job.');if(ch.concreteProgress.length<18)add('NARRATIVE_CHAPTER_CONCRETE',path+'.concreteProgress','Every chapter must advance through something visible, actionable or evidential.');if(ch.turn.length<6)add('NARRATIVE_CHAPTER_CHANGE',path+'.turn','Every chapter must change the viewer\'s information, action or understanding.');var progressKey=epistemicAscii(ch.concreteProgress),turnKey=epistemicAscii(ch.turn);if(progressKey&&seenProgress[progressKey])add('NARRATIVE_CHAPTER_REPEATED_PROGRESS',path+'.concreteProgress','Two chapters cannot advance through the same event, example or evidence.');if(turnKey&&seenTurns[turnKey])add('NARRATIVE_CHAPTER_REPEATED_CHANGE',path+'.turn','Each chapter needs a distinct change.');seenProgress[progressKey]=1;seenTurns[turnKey]=1;if(index<p.chapters.length-1&&!ch.transitionOut)add('NARRATIVE_CHAPTER_BRIDGE',path+'.transitionOut','Every non-final chapter must make the next one necessary.');if(!isFinite(ch.startSeconds)||!isFinite(ch.endSeconds)||ch.endSeconds<=ch.startSeconds)add('NARRATIVE_CHAPTER_TIMING',path,'Chapter timecodes are invalid.');if(index===0&&ch.startSeconds!==0)add('NARRATIVE_START','script.narrativePlan.chapters[0].start','The first chapter must begin at 00:00.');if(prev&&Math.abs(ch.startSeconds-prev.endSeconds)>1)add('NARRATIVE_GAP',path+'.start','Chapters must be contiguous without gaps or overlaps.');});
+  if(p.chapters.length&&Math.abs(p.chapters[p.chapters.length-1].endSeconds-Math.round(totalSec))>1)add('NARRATIVE_END','script.narrativePlan.chapters','The final chapter must reach the selected runtime.');
+  return {valid:issues.length===0,issues:issues,plan:p};
+}
+function parseNarrativePlan(raw,totalSec,source){var text=String(raw||'').trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'').trim(),match=text.match(/\{[\s\S]*\}/);if(!match)throw new Error('No narrative plan returned.');return normalizeNarrativePlan(JSON.parse(match[0]),totalSec,source);}
+function narrativePlanPrompt(totalSec,li){
+  var count=narrativeChapterTarget(totalSec);
+  return (li?li+'\n\n':'')+'You are GrainDistrict\'s senior story editor. Build the chapter architecture BEFORE anyone writes voiceover or B-roll. This is not a prose-writing task.\n\nChoose exactly one narrativeMode: experiential_process, tutorial, essay, documentary, review, investigation, journey, structured_list. The universal requirement is understandable progression; do not force a personal three-act drama onto every format.\n\nOPENING PRINCIPLE: enter through the most natural concrete action, image, problem, result, question or piece of evidence for THIS subject. An alarm, coffee, waking up, a window, hands, dust and a morning routine are examples, never defaults. Use them only when the user\'s input actually makes them relevant. Do not invent a lived memory, routine, failure or location for the creator.\n\nCHAPTER PRINCIPLE: create exactly '+count+' contiguous chapters covering 00:00-'+fmtTime(totalSec)+'. Structural roles may include opening, orientation, development, choice, complication, turn, resolution and closing, but give every chapter a short subject-specific viewer-facing title rather than Intro, Development or Conclusion. Each chapter must contribute new information, action, evidence or a real change. Its transitionOut must explain why the next chapter is necessary. Poetry may shape the eventual language; it may never replace events, reasoning or cause and effect.\n\nFORMAT ARCS:\n- experiential_process: concrete situation -> desire -> search/attempt -> choice -> friction -> discovery -> visible result/change.\n- tutorial: viewer problem -> precise promise -> foundations -> ordered practice -> mistake/pitfall -> corrected result -> application.\n- essay: concrete observation -> question -> argument -> examples/evidence -> counterpoint -> synthesis.\n- documentary: subject -> stakes -> context -> pressure/conflict -> change -> meaning.\n- review: need -> criteria -> real tests -> evidence -> trade-offs -> verdict and audience.\n- investigation: unknown -> hypotheses -> evidence -> contradiction -> discovery -> implication.\n- journey: expectation -> arrival -> exploration -> obstacle -> discovery -> return/reflection.\n- structured_list: useful promise -> selection logic -> distinct items/cases -> exception -> synthesis -> next action.\n\nReturn ONLY JSON in the same language as the user\'s idea: {"narrativeMode":"...","centralQuestion":"...","viewerJourney":"...","openingApproach":"...","endingPayoff":"...","chapters":[{"title":"...","role":"...","start":"mm:ss","end":"mm:ss","purpose":"...","concreteProgress":"...","questionIn":"...","turn":"...","transitionOut":"..."}]}'+creatorDnaContext()+creativeContractContext()+epistemicContext();
+}
+function buildNarrativePlan(totalSec,li){
+  var sys=narrativePlanPrompt(totalSec,li),user='PROJECT IDEA:\n'+topic+'\n\nSELECTED RUNTIME: '+videoDurationPrompt()+(projectConstraints?'\n\nREAL PRODUCTION LIMITS:\n'+projectConstraints:'');
+  setLoadProgress('s2',18,'Building the chapters','Choosing the natural way in, the progression and the ending payoff');
+  return apiRetry(sys,buildUserContent(user),'narrative_plan').then(function(raw){
+    var first;try{first=parseNarrativePlan(raw,totalSec,'ai');}catch(e){first=null;}var report=validateNarrativePlan(first,totalSec);if(report.valid)return report.plan;
+    var issueText=(report.issues||[]).map(function(x){return '- '+x.code+': '+x.message;}).join('\n');
+    var repairSys=sys+'\n\nREPAIR TASK: Return the complete JSON plan again. Correct every listed structural problem without changing the project premise.';
+    return apiRetry(repairSys,'INVALID PLAN:\n'+String(raw||'')+'\n\nPROBLEMS:\n'+issueText,'narrative_plan_repair').then(function(repaired){var second=parseNarrativePlan(repaired,totalSec,'ai_repair'),secondReport=validateNarrativePlan(second,totalSec);if(!secondReport.valid)throw new Error('The chapter plan did not pass structural review.');return secondReport.plan;});
+  }).catch(function(error){console.warn('[narrative plan] rejected:',error&&error.message?error.message:error);throw new Error('The chapter plan did not pass structural review. Please try again.');});
+}
+function narrativePlanContext(plan){
+  var report=validateNarrativePlan(plan||currentNarrativePlan,(plan&&plan.durationSeconds)||((durMin+durMax)/2*60));if(!report.valid)return '';var p=report.plan;
+  return '\n\nLOCKED NARRATIVE PLAN - WRITE THIS VIDEO CHAPTER BY CHAPTER:\n- Mode: '+p.narrativeMode+'\n- Central question / goal: '+p.centralQuestion+'\n- Viewer journey: '+p.viewerJourney+'\n- Concrete opening approach: '+p.openingApproach+'\n- Ending payoff: '+p.endingPayoff+'\n\n'+p.chapters.map(function(ch){return 'CHAPTER '+ch.index+' / '+ch.start+'-'+ch.end+' / '+ch.title+' / role '+ch.role+'\nPurpose: '+ch.purpose+'\nConcrete progress: '+ch.concreteProgress+'\nQuestion entering: '+ch.questionIn+'\nWhat changes: '+ch.turn+'\nBridge out: '+(ch.transitionOut||'Final payoff; no new topic.');}).join('\n\n')+'\n\nDo not speak chapter headings aloud and do not write them as timeline blocks. Stay inside each chapter\'s time range. The opening approach is project-specific: never substitute a stock alarm, coffee, waking-up, window, hands or morning montage. Every abstract reflection must be earned by a nearby concrete action, example, observation or piece of evidence. No chapter may merely restate the premise.';
+}
+function narrativeChapterAt(seconds,plan){var chapters=plan&&plan.chapters||[];for(var i=0;i<chapters.length;i++)if(seconds>=chapters[i].startSeconds&&(seconds<chapters[i].endSeconds||i===chapters.length-1&&seconds<=chapters[i].endSeconds))return chapters[i];return null;}
+function narrativeScriptQuality(script,plan){
+  var report=validateNarrativePlan(plan,(plan&&plan.durationSeconds)||((durMin+durMax)/2*60)),issues=[];if(!report.valid)return {valid:false,issues:[{code:'NARRATIVE_PLAN_INVALID'}]};var p=report.plan,seen={},chapterWords={};p.chapters.forEach(function(ch){chapterWords[ch.id]=0;});
+  parseBlocks(script).filter(function(block){return block.type==='voiceover';}).forEach(function(block){var normalized=epistemicAscii(block.content).replace(/[^\p{L}\p{N}]+/gu,' ').trim();if(normalized.length>18){if(seen[normalized])issues.push({code:'VOICEOVER_EXACT_REPEAT',text:block.content});seen[normalized]=1;}var chapter=narrativeChapterAt(tcToSec(block.tcStart),p);if(chapter)chapterWords[chapter.id]+=String(block.content||'').trim().split(/\s+/).filter(Boolean).length;});
+  p.chapters.forEach(function(ch){var duration=Math.max(1,ch.endSeconds-ch.startSeconds),minimum=Math.max(6,Math.round(duration*.22));if((chapterWords[ch.id]||0)<minimum)issues.push({code:'CHAPTER_UNDERWRITTEN',chapter:ch.title,words:chapterWords[ch.id]||0,minimum:minimum});});
+  return {valid:issues.length===0,issues:issues,chapterWords:chapterWords};
+}
+function assertNarrativeScriptQuality(script,plan){var report=narrativeScriptQuality(script,plan);if(!report.valid)throw new Error('The draft did not follow its chapter plan: '+report.issues.map(function(x){return x.code+(x.chapter?' ('+x.chapter+')':'');}).join(', ')+'. Please generate it again.');return report;}
+window.gdNarrativeChapterTarget=narrativeChapterTarget;
+window.gdNarrativeFallbackPlan=function(totalSec){return canonicalClone(narrativeFallbackPlan(totalSec),null);};
+window.gdNormalizeNarrativePlan=function(value,totalSec){return canonicalClone(normalizeNarrativePlan(value,totalSec,value&&value.source),null);};
+window.gdValidateNarrativePlan=function(value,totalSec){return canonicalClone(validateNarrativePlan(value,totalSec),null);};
+window.gdNarrativePlanContext=narrativePlanContext;
+window.gdNarrativeScriptQuality=function(script,plan){return canonicalClone(narrativeScriptQuality(script,plan),null);};
+function creativeContractBoundFeature(feature){return /^(narrative_plan|narrative_plan_repair|shot_plan|shot_plan_segment|shot_plan_redraft|shot_plan_fallback|shot_plan_continuation|plan_outline|script_revision|epistemic_rewrite|broll_sync|broll_replan|block_revision|block_shot_details|shot_details_batch|storyboard_prompt|storyboard_revision)$/.test(String(feature||''));}
 function recordCreativeGeneration(feature,reference,text){
   if(!reference)return null;var entry={id:'generation:'+canonicalIdToken(),feature:String(feature||'ai_request'),generatedFrom:canonicalClone(reference,reference),outputHash:'output:'+creativeContractHashText(String(text||'')),createdAt:Date.now()};
   creativeGenerationRecords.push(entry);if(/shot_plan|script_revision/.test(entry.feature))currentScriptGeneratedFrom=canonicalClone(reference,reference);renderScriptContract();return entry;
@@ -4032,7 +4116,7 @@ window.gdRecordCreativeGeneration=function(feature,reference,text){return canoni
 window.gdGetCreativeContractHistory=function(){return canonicalClone(creativeContractHistory,[]);};
 window.gdGetCreativeGenerationRecords=function(){return canonicalClone(creativeGenerationRecords,[]);};
 window.gdCreativeContractContext=creativeContractContext;
-window.gdSetCreativeContract=function(value){refreshFirstPartyAssertions();creativeContract=value?normalizeCreativeContract(value,value.source):null;creativeContractHistory=[];creativeGenerationRecords=[];currentScriptGeneratedFrom=null;truthLedger=null;truthResearch=null;scriptEpistemicRevisions=[];currentScriptEpistemic=null;renderCreativeContract();renderScriptContract();renderTruthLedger();return canonicalClone(creativeContract,creativeContract);};
+window.gdSetCreativeContract=function(value){refreshFirstPartyAssertions();creativeContract=value?normalizeCreativeContract(value,value.source):null;creativeContractHistory=[];creativeGenerationRecords=[];currentScriptGeneratedFrom=null;currentNarrativePlan=null;truthLedger=null;truthResearch=null;scriptEpistemicRevisions=[];currentScriptEpistemic=null;renderCreativeContract();renderScriptContract();renderTruthLedger();return canonicalClone(creativeContract,creativeContract);};
 window.gdGetCreativeContract=function(){return creativeContract?JSON.parse(JSON.stringify(creativeContract)):null;};
 
 /* Truth Ledger v2 is a project memory for statements that may need support.
@@ -4965,7 +5049,7 @@ function performNewProject(){
   resetLocationViewState();
   nodes=[];attShots=[];imgNodes=[];noteNodes=[];conns=[];nid=1;nodeDrawerClosed={};
   durMin=3;durMax=3;videoDurationCommitted=3;syncVideoDurationControl();
-  topic='';projectBrief='';projectConstraints='';projectGuidance={outcome:'understand',approach:'observe',production:'voice-footage'};projectGuidanceTouched={};creativeContract=null;creativeContractBusy=false;creativeContractHistory=[];creativeGenerationRecords=[];currentScriptGeneratedFrom=null;truthLedger=null;truthResearch=null;firstPartyAssertions=[];scriptEpistemicRevisions=[];currentScriptEpistemic=null;projectBreakdown=null;projectBreakdownKey=null;
+  topic='';projectBrief='';projectConstraints='';projectGuidance={outcome:'understand',approach:'observe',production:'voice-footage'};projectGuidanceTouched={};creativeContract=null;creativeContractBusy=false;creativeContractHistory=[];creativeGenerationRecords=[];currentScriptGeneratedFrom=null;currentNarrativePlan=null;truthLedger=null;truthResearch=null;firstPartyAssertions=[];scriptEpistemicRevisions=[];currentScriptEpistemic=null;projectBreakdown=null;projectBreakdownKey=null;
   scriptVersions=[];scriptSelectionState=null;scriptRevisionState=null;brollVisualDirtyRanges=[];
   clearRecce();songName='';songDuration=0;songAnalysis=null;songURL=null;
   undoStack=[];undoIdx=-1;scale=1;px=60;py=180;selId=null;selImgId=null;selNoteId=null;selectedNodeIds=[];selectedImgIds=[];selectedNoteIds=[];
@@ -5014,7 +5098,7 @@ function stopMvHints(){if(mvHintTimer){clearInterval(mvHintTimer);mvHintTimer=nu
 function setProjectType(type){
   if(type==='music'||type==='film')return;
   projectType=type;
-  creativeContract=null;creativeContractBusy=false;creativeContractHistory=[];creativeGenerationRecords=[];currentScriptGeneratedFrom=null;truthLedger=null;truthResearch=null;firstPartyAssertions=[];scriptEpistemicRevisions=[];currentScriptEpistemic=null;renderCreativeContract();renderTruthLedger();
+  creativeContract=null;creativeContractBusy=false;creativeContractHistory=[];creativeGenerationRecords=[];currentScriptGeneratedFrom=null;currentNarrativePlan=null;truthLedger=null;truthResearch=null;firstPartyAssertions=[];scriptEpistemicRevisions=[];currentScriptEpistemic=null;renderCreativeContract();renderTruthLedger();
   // Gawx is the house visual language for new work. The old style picker was
   // an extra decision before the user had even described the film.
   styleMode='gawx';
@@ -5899,7 +5983,7 @@ function buildGenSys(totalSec,li){
       +'- Rhetorical questions the narrator immediately answers, and openers of the "these days" / "have you ever" family.'
       +stylePack('script')+stylePack('shots');
   }
-  return (li?li+'\n\n':'')+base+creatorDnaContext()+creativeContractContext()+truthLedgerContext()+epistemicContext()+(li?'\n\n'+li:'')+'\n\nLANGUAGE: Write ALL block content - voiceover words, visual descriptions, everything after the timecode - in the SAME LANGUAGE the user wrote the topic in. Keep the [TYPE] tags in English.\n\nReturn ONLY plain text. Each block is EXACTLY ONE line - never split a block across two lines, never repeat the timecode on its own line:\n[TYPE] 00:00-00:00 - content';
+  return (li?li+'\n\n':'')+base+creatorDnaContext()+creativeContractContext()+narrativePlanContext(currentNarrativePlan)+truthLedgerContext()+epistemicContext()+(li?'\n\n'+li:'')+'\n\nLANGUAGE: Write ALL block content - voiceover words, visual descriptions, everything after the timecode - in the SAME LANGUAGE the user wrote the topic in. Keep the [TYPE] tags in English.\n\nReturn ONLY plain text. Each block is EXACTLY ONE line - never split a block across two lines, never repeat the timecode on its own line:\n[TYPE] 00:00-00:00 - content';
 }
 
 var pcChoice='ai';
@@ -6004,7 +6088,7 @@ function migrateCanonicalSchema(project){
   if(out.creative&&out.creative.truthLedger)out.creative.truthLedger=normalizeTruthLedger(out.creative.truthLedger);
   if(out.creative&&out.creative.truthResearch)out.creative.truthResearch=normalizeTruthResearch(out.creative.truthResearch);
   if(out.creative)out.creative.firstPartyAssertions=(Array.isArray(out.creative.firstPartyAssertions)?out.creative.firstPartyAssertions:[]).map(normalizeFirstPartyAssertion);
-  if(out.script){var epi=out.script.epistemic||{},visualSync=out.script.visualSync||{};out.script.epistemic={policy:EPISTEMIC_POLICY,policyVersion:EPISTEMIC_POLICY_VERSION,current:epi.current?normalizeScriptEpistemicRecord(epi.current,0):null,history:(Array.isArray(epi.history)?epi.history:[]).map(normalizeScriptEpistemicRecord)};out.script.visualSync={tracked:visualSync.tracked===true,dirtyRanges:normalizeBrollVisualDirtyRanges(visualSync.dirtyRanges||[])};}
+  if(out.script){var epi=out.script.epistemic||{},visualSync=out.script.visualSync||{},runtimeSeconds=out.project&&out.project.fps?Number(out.project.durationTargetFrames||0)/Number(out.project.fps):Number(out.script.narrativePlan&&out.script.narrativePlan.durationSeconds)||180;out.script.epistemic={policy:EPISTEMIC_POLICY,policyVersion:EPISTEMIC_POLICY_VERSION,current:epi.current?normalizeScriptEpistemicRecord(epi.current,0):null,history:(Array.isArray(epi.history)?epi.history:[]).map(normalizeScriptEpistemicRecord)};out.script.visualSync={tracked:visualSync.tracked===true,dirtyRanges:normalizeBrollVisualDirtyRanges(visualSync.dirtyRanges||[])};out.script.narrativePlan=out.script.narrativePlan?normalizeNarrativePlan(out.script.narrativePlan,runtimeSeconds,out.script.narrativePlan.source):null;}
   return out;
 }
 function canonicalProjectId(seed){
@@ -6099,7 +6183,7 @@ function canonicalProjectFromLegacy(data){
     workflow:{stage:data.stage||'board'},
     creative:{tone:data.tone||'',format:data.fmt||'',houseLook:data.styleMode||'',language:data.inputLang||'en',
       durationRange:{min:Number(data.durMin)||0,max:Number(data.durMax)||0},brief:data.projectBrief||'',constraints:data.projectConstraints||'',guidance:canonicalClone(data.projectGuidance||projectGuidance||{},{}),creatorDNA:canonicalClone(data.creatorDNA||null,null),contract:data.creativeContract?normalizeCreativeContract(data.creativeContract,data.creativeContract.source):null,contractHistory:canonicalClone(data.creativeContractHistory||[],[]).map(function(c){return normalizeCreativeContract(c,c&&c.source);}),generatedOutputs:canonicalClone(data.creativeGenerationRecords||[],[]),truthLedger:data.truthLedger?normalizeTruthLedger(data.truthLedger):null,truthResearch:data.truthResearch?normalizeTruthResearch(data.truthResearch):null,firstPartyAssertions:canonicalClone(data.firstPartyAssertions||firstPartyAssertions||[],[]).map(normalizeFirstPartyAssertion)},
-    script:{text:data.script||'',versions:canonicalClone(data.scriptVersions||[],[]),generatedFrom:canonicalClone(data.currentScriptGeneratedFrom||null,null),visualSync:{tracked:data.brollVisualSyncTracked===true||Object.prototype.hasOwnProperty.call(data,'brollVisualDirtyRanges'),dirtyRanges:normalizeBrollVisualDirtyRanges(data.brollVisualDirtyRanges||brollVisualDirtyRanges||[])},epistemic:{policy:EPISTEMIC_POLICY,policyVersion:EPISTEMIC_POLICY_VERSION,current:data.currentScriptEpistemic?normalizeScriptEpistemicRecord(data.currentScriptEpistemic,0):null,history:canonicalClone(data.scriptEpistemicRevisions||scriptEpistemicRevisions||[],[]).map(normalizeScriptEpistemicRecord)}},
+    script:{text:data.script||'',versions:canonicalClone(data.scriptVersions||[],[]),generatedFrom:canonicalClone(data.currentScriptGeneratedFrom||null,null),narrativePlan:data.currentNarrativePlan?normalizeNarrativePlan(data.currentNarrativePlan,Number(data.currentNarrativePlan.durationSeconds)||maxEnd||((Number(data.durMin)||3)*60),data.currentNarrativePlan.source):null,visualSync:{tracked:data.brollVisualSyncTracked===true||Object.prototype.hasOwnProperty.call(data,'brollVisualDirtyRanges'),dirtyRanges:normalizeBrollVisualDirtyRanges(data.brollVisualDirtyRanges||brollVisualDirtyRanges||[])},epistemic:{policy:EPISTEMIC_POLICY,policyVersion:EPISTEMIC_POLICY_VERSION,current:data.currentScriptEpistemic?normalizeScriptEpistemicRecord(data.currentScriptEpistemic,0):null,history:canonicalClone(data.scriptEpistemicRevisions||scriptEpistemicRevisions||[],[]).map(normalizeScriptEpistemicRecord)}},
     timeline:{blocks:blocks},
     production:{details:details,locations:locations,breakdownKey:data.projectBreakdownKey||null},
     assets:{images:images,recce:recce,audio:{name:data.songName||'',duration:Number(data.songDuration)||0,analysis:canonicalClone(data.songAnalysis||null,null)}},
@@ -6152,7 +6236,7 @@ function legacyProjectFromCanonical(project,fallback){
   out.tone=creative.tone||out.tone||'';out.fmt=creative.format||out.fmt||'';out.styleMode=creative.houseLook||out.styleMode||'';out.inputLang=creative.language||out.inputLang||'en';
   out.durMin=creative.durationRange&&creative.durationRange.min||out.durMin;out.durMax=creative.durationRange&&creative.durationRange.max||out.durMax;
   out.projectBrief=creative.brief||'';out.projectConstraints=creative.constraints||'';out.projectGuidance=canonicalClone(creative.guidance||out.projectGuidance||{},{});out.creatorDNA=canonicalClone(creative.creatorDNA||null,null);out.creativeContract=creative.contract?normalizeCreativeContract(creative.contract,creative.contract.source):null;out.creativeContractHistory=canonicalClone(creative.contractHistory||[],[]).map(function(c){return normalizeCreativeContract(c,c&&c.source);});out.creativeGenerationRecords=canonicalClone(creative.generatedOutputs||[],[]);out.truthLedger=creative.truthLedger?normalizeTruthLedger(creative.truthLedger):null;out.truthResearch=creative.truthResearch?normalizeTruthResearch(creative.truthResearch):null;out.firstPartyAssertions=(creative.firstPartyAssertions||[]).map(normalizeFirstPartyAssertion);
-  var scriptEpistemic=project.script&&project.script.epistemic||{},visualSync=project.script&&project.script.visualSync||{};out.script=project.script&&project.script.text||'';out.scriptVersions=canonicalClone(project.script&&project.script.versions||[],[]);out.brollVisualSyncTracked=visualSync.tracked===true;out.brollVisualDirtyRanges=normalizeBrollVisualDirtyRanges(visualSync.dirtyRanges||[]);out.currentScriptGeneratedFrom=canonicalClone(project.script&&project.script.generatedFrom||null,null);out.currentScriptEpistemic=scriptEpistemic.current?normalizeScriptEpistemicRecord(scriptEpistemic.current,0):null;out.scriptEpistemicRevisions=(scriptEpistemic.history||[]).map(normalizeScriptEpistemicRecord);
+  var scriptEpistemic=project.script&&project.script.epistemic||{},visualSync=project.script&&project.script.visualSync||{};out.script=project.script&&project.script.text||'';out.scriptVersions=canonicalClone(project.script&&project.script.versions||[],[]);out.brollVisualSyncTracked=visualSync.tracked===true;out.brollVisualDirtyRanges=normalizeBrollVisualDirtyRanges(visualSync.dirtyRanges||[]);out.currentScriptGeneratedFrom=canonicalClone(project.script&&project.script.generatedFrom||null,null);out.currentNarrativePlan=project.script&&project.script.narrativePlan?normalizeNarrativePlan(project.script.narrativePlan,project.script.narrativePlan.durationSeconds,project.script.narrativePlan.source):null;out.currentScriptEpistemic=scriptEpistemic.current?normalizeScriptEpistemicRecord(scriptEpistemic.current,0):null;out.scriptEpistemicRevisions=(scriptEpistemic.history||[]).map(normalizeScriptEpistemicRecord);
   out.boardViewMode=workspace.mode||'free';out.boardDensity=workspace.density||'compact';out.boardCardDetail=workspace.detail||'standard';out.view=canonicalClone(workspace.view||null,null);out.boardCamera=canonicalClone(workspace.camera||null,null);
   out.stage=project.workflow&&project.workflow.stage||out.stage||'board';out.aiMode=workspace.aiMode!==false;
   out.decisions=canonicalClone(project.decisions||[],[]);out.canonicalTombstones=canonicalClone(project.tombstones||[],[]);out.nid=Math.max(Number(workspace.nextLegacyId)||1,maxId+1);out.v=4;out.canonical=canonicalClone(project,project);
@@ -6181,6 +6265,7 @@ function validateCanonicalProject(project){
   }
   if(creative.truthResearch){var research=normalizeTruthResearch(creative.truthResearch),researchValidation=validateTruthResearch(research),acceptedResearch={};(researchValidation.issues||[]).forEach(function(item){issue(item.code,'truth_research:'+item.code,research.id,item.path,item.message,item.blocking);});research.decisions.forEach(function(decision){if(decision.action==='accepted')acceptedResearch[decision.linkId+'@'+decision.linkRevision]=1;});var canonicalLedger=normalizeTruthLedger(creative.truthLedger);(canonicalLedger&&canonicalLedger.claims||[]).forEach(function(claim,claimIndex){if(!claim.active||claim.status!=='verified')return;(claim.sources||[]).forEach(function(source,sourceIndex){var assistant=source.assistant,ref=assistant&&assistant.researchRef;if(assistant&&assistant.origin==='automatic_research'&&(!ref||!acceptedResearch[ref.linkId+'@'+ref.linkRevision]))issue('AUTO_RESEARCH_VERIFIED_WITHOUT_USER_DECISION','auto_research_verified_without_user_decision',claim.id,'creative.truthLedger.claims['+claimIndex+'].sources['+sourceIndex+'].assistant.researchRef','Automatic research cannot make a claim Verified without a recorded user decision.');});});}
   var assertionSeen={};(creative.firstPartyAssertions||[]).forEach(function(assertion,index){var normalized=normalizeFirstPartyAssertion(assertion,index);if(!normalized.statement)issue('FIRST_PARTY_ASSERTION_EMPTY','first_party_assertion_empty',normalized.id,'creative.firstPartyAssertions['+index+'].statement','A first-party assertion has no text.');if(assertionSeen[normalized.id])issue('DUPLICATE_FIRST_PARTY_ASSERTION','duplicate_first_party_assertion:'+normalized.id,normalized.id,'creative.firstPartyAssertions['+index+'].id','A first-party assertion is stored more than once.');assertionSeen[normalized.id]=1;});
+  var narrative=project&&project.script&&project.script.narrativePlan;if(narrative){var narrativeValidation=validateNarrativePlan(narrative,narrative.durationSeconds);(narrativeValidation.issues||[]).forEach(function(item){issue(item.code,'narrative_plan:'+item.code,narrative.id,item.path,item.message);});}
   var epi=project&&project.script&&project.script.epistemic||{},epiSeen={};(epi.history||[]).map(normalizeScriptEpistemicRecord).forEach(function(record,index){var key=record.id+'@'+record.revision;if(epiSeen[key])issue('DUPLICATE_SCRIPT_EPISTEMIC_REVISION','duplicate_script_epistemic_revision:'+key,record.id,'script.epistemic.history['+index+']','A script safety revision is stored more than once.');epiSeen[key]=1;});if(epi.current){var current=normalizeScriptEpistemicRecord(epi.current,0),scriptFingerprint=truthLedgerScriptFingerprint(project&&project.script&&project.script.text||'');if(current.status!=='promoted')issue('SCRIPT_EPISTEMIC_CURRENT_NOT_PROMOTED','script_epistemic_current_not_promoted',current.id,'script.epistemic.current.status','Only a promoted script safety revision may be current.');if(current.scriptFingerprint!==scriptFingerprint)issue('SCRIPT_EPISTEMIC_FINGERPRINT_MISMATCH','script_epistemic_fingerprint_mismatch',current.id,'script.epistemic.current.scriptFingerprint','The current script changed after its biography-safety promotion.',false);}
   function addAll(items,label,path){(items||[]).forEach(function(item,index){
     if(!item||!item.id){issue('ENTITY_ID_MISSING',label+'_id_missing',null,path+'['+index+'].id','A '+label+' is missing its permanent identity.');return;}
@@ -6224,7 +6309,7 @@ function canonicalRuntimeSnapshot(){
   var ta=document.getElementById('scriptTa');
   var active=document.getElementById('s3')&&document.getElementById('s3').classList.contains('active')?'script':'board';
   return canonicalProjectFromLegacy({v:4,stage:active,projectType:projectType,topic:topic,tone:tone,fmt:fmt,styleMode:styleMode,inputLang:inputLang,durMin:durMin,durMax:durMax,
-    projectBrief:projectBrief,projectConstraints:projectConstraints,projectGuidance:projectGuidance,creatorDNA:creatorDNA,creativeContract:creativeContract,creativeContractHistory:creativeContractHistory,creativeGenerationRecords:creativeGenerationRecords,currentScriptGeneratedFrom:currentScriptGeneratedFrom,truthLedger:truthLedger,truthResearch:truthResearch,firstPartyAssertions:firstPartyAssertions,scriptEpistemicRevisions:scriptEpistemicRevisions,currentScriptEpistemic:currentScriptEpistemic,projectBreakdown:projectBreakdown,projectBreakdownKey:projectBreakdownKey,
+    projectBrief:projectBrief,projectConstraints:projectConstraints,projectGuidance:projectGuidance,creatorDNA:creatorDNA,creativeContract:creativeContract,creativeContractHistory:creativeContractHistory,creativeGenerationRecords:creativeGenerationRecords,currentScriptGeneratedFrom:currentScriptGeneratedFrom,currentNarrativePlan:currentNarrativePlan,truthLedger:truthLedger,truthResearch:truthResearch,firstPartyAssertions:firstPartyAssertions,scriptEpistemicRevisions:scriptEpistemicRevisions,currentScriptEpistemic:currentScriptEpistemic,projectBreakdown:projectBreakdown,projectBreakdownKey:projectBreakdownKey,
     songName:songName,songDuration:songDuration,songAnalysis:songAnalysis,recceImages:recceImages,nodes:itemsAtStoryPositions(nodes,'nodes'),attShots:itemsAtStoryPositions(attShots,'atts'),
     imgNodes:imgNodes,noteNodes:noteNodes,conns:conns,nid:nid,canonicalTombstones:canonicalTombstones,script:ta?ta.value:'',scriptVersions:scriptVersions,brollVisualSyncTracked:true,brollVisualDirtyRanges:brollVisualDirtyRanges,view:storyViewForSave(),boardCamera:{scale:scale,px:px,py:py},
     boardViewMode:canvasViewMode,boardDensity:boardDensity,boardCardDetail:boardCardDetail,aiMode:(typeof aiMode!=='undefined'?aiMode:true)});
@@ -6902,7 +6987,7 @@ function goToChoice(){
     goToEquipment();
   }else{
     if(!captureSetup())return;
-    truthLedger=null;truthResearch=null;brollVisualDirtyRanges=[];document.getElementById('scriptTa').value='';planHighlight();renderTruthLedger();
+    currentNarrativePlan=null;truthLedger=null;truthResearch=null;brollVisualDirtyRanges=[];document.getElementById('scriptTa').value='';planHighlight();renderTruthLedger();
     document.getElementById('wc').textContent='0 blocks';
     show('s3');
   }
@@ -6922,7 +7007,7 @@ function pcContinue(){
   if(pcChoice==='ai'){
     genScript();
   }else{
-    truthLedger=null;truthResearch=null;brollVisualDirtyRanges=[];document.getElementById('scriptTa').value='';planHighlight();renderTruthLedger();
+    currentNarrativePlan=null;truthLedger=null;truthResearch=null;brollVisualDirtyRanges=[];document.getElementById('scriptTa').value='';planHighlight();renderTruthLedger();
     document.getElementById('wc').textContent='0 blocks';
     show('s3');
   }
@@ -6930,20 +7015,24 @@ function pcContinue(){
 
 function genScript(){
   show('s2');startLoad('s2');
-  var scriptTa=document.getElementById('scriptTa'),previousScript=scriptTa?scriptTa.value:'',previousFingerprint=previousScript?truthLedgerScriptFingerprint(previousScript):'',previousGeneratedFrom=canonicalClone(currentScriptGeneratedFrom,null);
+  var scriptTa=document.getElementById('scriptTa'),previousScript=scriptTa?scriptTa.value:'',previousFingerprint=previousScript?truthLedgerScriptFingerprint(previousScript):'',previousGeneratedFrom=canonicalClone(currentScriptGeneratedFrom,null),previousNarrativePlan=canonicalClone(currentNarrativePlan,null);
   var totalSec=(durMin+durMax)/2*60;
   var li=langInstr(inputLang,'shot plan content');
-  var planSys=buildGenSys(totalSec,li);
   var extra=recceContext()+songAnalysisSummary();
   var productionContext='';
   if(projectConstraints)productionContext+='\n\nAvailable production resources and constraints:\n'+projectConstraints;
   var planMsg='Create shot plan for: '+topic+'. Duration: '+videoDurationPrompt()+'. Tone: '+tone+productionContext+extra;
-  setLoadProgress('s2',28,'Shaping the voiceover','Building a structure around your promise');
-  // long plans: draft a beat outline then write segments in parallel instead
-  // of one request at a time (much faster for 10+ min cut-by-cut videos)
-  var planPromise=totalSec>240
-    ? genPlanChunked(planSys,planMsg,totalSec,li)
-    : api(planSys,buildUserContent(planMsg),'shot_plan').then(function(t){return ensureFullPlan(planSys,t);});
+  var narrativePromise=projectType==='youtube'?buildNarrativePlan(totalSec,li):Promise.resolve(null);
+  var planPromise=narrativePromise.then(function(narrativePlan){
+    currentNarrativePlan=narrativePlan;
+    var planSys=buildGenSys(totalSec,li);
+    setLoadProgress('s2',34,'Writing chapter by chapter','Turning the approved progression into natural spoken scenes');
+    // Longer plans use the locked chapters as parallel writing units. Shorter
+    // plans still receive the same chapter contract in one coherent request.
+    return (totalSec>240
+      ? genPlanChunked(planSys,planMsg,totalSec,li,narrativePlan)
+      : api(planSys,buildUserContent(planMsg),'shot_plan').then(function(t){return ensureFullPlan(planSys,t);}));
+  });
 
   planPromise.then(function(planResult){
     setLoadProgress('s2',76,'Checking the draft','Removing repetition and keeping the story focused');
@@ -6961,12 +7050,13 @@ function genScript(){
     return projectType==='youtube'?epistemicGateCandidateScript(planText,'shot_plan',previousFingerprint):Promise.resolve({script:planText,audit:null,rewritten:false});
   }).then(function(result){
     var planText=result.script;projectBrief='';
+    if(projectType==='youtube')assertNarrativeScriptQuality(planText,currentNarrativePlan);
     scriptTa.value=planText;brollVisualDirtyRanges=[];
     rebuildTruthLedgerFromScript(planText,{reason:result.rewritten?'generated_script_safety_rewrite':'generated_script',silent:true});
     document.getElementById('wc').textContent=planStatsLabel(planText);
     refreshScriptStudio();
     return finishLoad('s2','Your voiceover is ready').then(function(){stopLoad();show('s3');maybeAutoResearchEvidence();if(window.gdAutosaveProject)window.gdAutosaveProject(true);});
-  }).catch(function(e){stopLoad();currentScriptGeneratedFrom=previousGeneratedFrom;if(scriptTa)scriptTa.value=previousScript;alert('Error: '+e.message);show(previousScript?'s3':'s1');});
+  }).catch(function(e){stopLoad();currentScriptGeneratedFrom=previousGeneratedFrom;currentNarrativePlan=previousNarrativePlan;if(scriptTa)scriptTa.value=previousScript;alert('Error: '+e.message);show(previousScript?'s3':'s1');});
 }
 
 /* The plan is edited as plain text but reads far better with its block types
@@ -7040,7 +7130,9 @@ function scriptDirectionLabels(){
   var carrier={story:'story-led',presenter:'presenter-led',demo:'demonstration-led',graphics:'graphics-led',hybrid:'hybrid'}[projectCarrier]||'creator-led';
   var presence={camera:'on camera',sometimes:'selective on-camera',voice:'voiceover-led',none:'no presenter'}[d.presence]||fmt;
   var pace=creativeContract&&creativeContract.style&&creativeContract.style.pacingIntent||tone;
-  return [(durMin===durMax?durMin:(durMin+'-'+durMax))+' min',String(pace||'').replace(/_/g,' '),carrier,presence];
+  var labels=[(durMin===durMax?durMin:(durMin+'-'+durMax))+' min',String(pace||'').replace(/_/g,' '),carrier,presence];
+  var narrative=validateNarrativePlan(currentNarrativePlan,(currentNarrativePlan&&currentNarrativePlan.durationSeconds)||((durMin+durMax)/2*60));if(narrative.valid)labels.push(narrative.plan.chapters.length+' chapters');
+  return labels;
 }
 function refreshScriptStudio(){
   var labels=scriptDirectionLabels(),wrap=document.getElementById('scriptDirection');
@@ -7054,13 +7146,18 @@ function refreshScriptStudio(){
 }
 var activeVoiceoverRange=null;
 function voiceoverReaderLines(value){
-  var out=[],offset=0;String(value||'').split('\n').forEach(function(line,index){var head=line.match(/^\s*\[VOICEOVER\]\s+\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}\s*[-:]\s*/i);if(head){var start=offset+head[0].length,end=offset+line.length,text=line.slice(head[0].length).trim();if(text)out.push({start:start,end:end,text:text,line:index+1});}offset+=line.length+1;});return out;
+  var out=[],offset=0;String(value||'').split('\n').forEach(function(line,index){var head=line.match(/^\s*\[VOICEOVER\]\s+(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})\s*[-:]\s*/i);if(head){var start=offset+head[0].length,end=offset+line.length,text=line.slice(head[0].length).trim();if(text)out.push({start:start,end:end,text:text,line:index+1,tcStart:head[1],tcEnd:head[2],startSeconds:tcToSec(head[1])});}offset+=line.length+1;});return out;
 }
 function renderVoiceoverReader(){
   var reader=document.getElementById('voiceoverReader'),ta=document.getElementById('scriptTa');if(!reader||!ta)return;
   var lines=voiceoverReaderLines(ta.value);reader.innerHTML='';
   if(!lines.length){reader.innerHTML='<div class="voiceover-empty">Your continuous voiceover will appear here.</div>';return;}
-  lines.forEach(function(item,index){var button=document.createElement('button');button.type='button';button.dataset.number=String(index+1).padStart(2,'0');button.textContent=item.text;if(activeVoiceoverRange&&activeVoiceoverRange.start===item.start)button.classList.add('selected');button.addEventListener('click',function(){selectVoiceoverParagraph(item.start,item.end,button);});reader.appendChild(button);});
+  var narrative=validateNarrativePlan(currentNarrativePlan,(currentNarrativePlan&&currentNarrativePlan.durationSeconds)||((durMin+durMax)/2*60)),lastChapter='';
+  lines.forEach(function(item,index){
+    var chapter=narrative.valid?narrativeChapterAt(item.startSeconds,narrative.plan):null;
+    if(chapter&&chapter.id!==lastChapter){var head=document.createElement('div');head.className='voiceover-chapter';head.dataset.chapterId=chapter.id;var number=document.createElement('span');number.className='voiceover-chapter-index';number.textContent='Chapter '+String(chapter.index).padStart(2,'0');var title=document.createElement('strong');title.className='voiceover-chapter-title';title.textContent=chapter.title;var time=document.createElement('span');time.className='voiceover-chapter-time';time.textContent=chapter.start+' — '+chapter.end;head.appendChild(number);head.appendChild(title);head.appendChild(time);reader.appendChild(head);lastChapter=chapter.id;}
+    var button=document.createElement('button');button.type='button';button.dataset.number=String(index+1).padStart(2,'0');if(chapter)button.dataset.chapterId=chapter.id;button.textContent=item.text;if(activeVoiceoverRange&&activeVoiceoverRange.start===item.start)button.classList.add('selected');button.addEventListener('click',function(){selectVoiceoverParagraph(item.start,item.end,button);});reader.appendChild(button);
+  });
   var wc=document.getElementById('wc');if(wc)wc.textContent=lines.length+' voiceover line'+(lines.length===1?'':'s');
 }
 function selectVoiceoverParagraph(start,end,button){
@@ -7144,7 +7241,7 @@ function requestScriptRevision(instruction){
   document.getElementById('scriptRevBefore').textContent=sel.original;
   document.getElementById('scriptRevAfter').textContent='Thinking in the voice of this project…';
   setScriptRevisionLoading(true);
-  var sys='You are a precise spoken-script editor. Rewrite ONLY the selected words. Return replacement text only: no quotation marks, labels, timecodes, commentary or markdown. Keep the same language, facts, names, point of view and continuity. Make it natural to say aloud. Do not rewrite the surrounding line.'+creatorDnaContext()+creativeContractContext()+truthLedgerContext()+epistemicContext();
+  var sys='You are a precise spoken-script editor. Rewrite ONLY the selected words. Return replacement text only: no quotation marks, labels, timecodes, commentary or markdown. Keep the same language, facts, names, point of view, chapter purpose and continuity. Make it natural to say aloud. Do not rewrite the surrounding line.'+creatorDnaContext()+creativeContractContext()+narrativePlanContext(currentNarrativePlan)+truthLedgerContext()+epistemicContext();
   var user='PROJECT: '+topic+'\n\nNEARBY SCRIPT CONTEXT:\n'+scriptRevisionState.context+'\n\nSELECTED TEXT:\n'+sel.original+'\n\nREVISION INSTRUCTION:\n'+instruction;
   api(sys,user,'script_revision').then(function(raw){
     if(!scriptRevisionState)return;
@@ -7481,7 +7578,7 @@ function runLimited(taskFns,limit){
   });
 }
 
-function genPlanChunked(planSys,planMsg,totalSec,li){
+function genPlanChunked(planSys,planMsg,totalSec,li,narrativePlan){
   // segment length drives how much text ONE request has to generate, which
   // is the thing that actually decides whether it finishes in time. Older cut
   // rules asked for roughly one BROLL cut every 3s plus voiceover lines, so a
@@ -7490,8 +7587,8 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
   // That's why long videos failed while short ones (a single untimed call)
   // always worked. Smaller segments = each call finishes well inside its
   // window, and more of them run in parallel, so total time still drops.
-  var segLen=110;
-  var numSegments=Math.min(9,Math.max(2,Math.round(totalSec/segLen)));
+  var segLen=110,lockedNarrativeReport=validateNarrativePlan(narrativePlan||currentNarrativePlan,totalSec),lockedNarrative=lockedNarrativeReport.valid?lockedNarrativeReport.plan:null;
+  var numSegments=lockedNarrative?lockedNarrative.chapters.length:Math.min(9,Math.max(2,Math.round(totalSec/segLen)));
   var pace=projectType==='youtube'?ytPacingProfile(totalSec):null;
   // keep the beat short - this is a quick outline, not the script itself.
   // asking for "2-3 sentences" per segment used to make even this "fast"
@@ -7520,7 +7617,13 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
   // isn't back in time, just split the runtime evenly and move on. This one
   // really is small (a few sentences of JSON) so it stays comparatively
   // tight, but 8s was cutting off a call that simply hadn't started yet
-  return withTimeout(apiRetry(outlineSys,outlineMsg,'plan_outline'),25000,null).then(function(raw){
+  var outlineRequest;
+  if(lockedNarrative){
+    outlineRequest=Promise.resolve(JSON.stringify({thesis:lockedNarrative.centralQuestion,specifics:[],continuity:{narrativeMode:lockedNarrative.narrativeMode,openingApproach:lockedNarrative.openingApproach,endingPayoff:lockedNarrative.endingPayoff},motifs:[],segments:lockedNarrative.chapters.map(function(ch){return {start:ch.start,end:ch.end,beat:ch.title+' — '+ch.purpose,newInformation:ch.turn,visualGoal:ch.concreteProgress,openingState:ch.questionIn,closingState:ch.turn,usesSpecifics:[],motifStep:'',forbiddenRepeats:['the premise of earlier chapters','generic poetic summary without a new event or idea']};})}));
+  }else{
+    outlineRequest=withTimeout(apiRetry(outlineSys,outlineMsg,'plan_outline'),25000,null);
+  }
+  return outlineRequest.then(function(raw){
     var segs=[],thesis='',specifics=[],continuity={},motifs=[];
     if(raw){
       // the outline used to be a bare array; accept either shape so a model
@@ -9849,9 +9952,9 @@ function docTitle(){
    Without a breakdown there is nothing to group by, so the document falls back
    to story order - the beats with their cuts nested underneath. */
 function withCanonicalRuntimeProjection(snapshot,run){
-  var projection=legacyProjectFromCanonical(snapshot,{}),previous={nodes:nodes,attShots:attShots,imgNodes:imgNodes,noteNodes:noteNodes,conns:conns,projectBreakdown:projectBreakdown,projectType:projectType,topic:topic,creativeContract:creativeContract,creativeContractHistory:creativeContractHistory,creativeGenerationRecords:creativeGenerationRecords,currentScriptGeneratedFrom:currentScriptGeneratedFrom,truthLedger:truthLedger,truthResearch:truthResearch,firstPartyAssertions:firstPartyAssertions,scriptEpistemicRevisions:scriptEpistemicRevisions,currentScriptEpistemic:currentScriptEpistemic};
-  nodes=projection.nodes||[];attShots=projection.attShots||[];imgNodes=projection.imgNodes||[];noteNodes=projection.noteNodes||[];conns=projection.conns||[];projectBreakdown=projection.projectBreakdown||null;projectType=projection.projectType||projectType;topic=projection.topic||topic;creativeContract=projection.creativeContract||creativeContract;creativeContractHistory=projection.creativeContractHistory||[];creativeGenerationRecords=projection.creativeGenerationRecords||[];currentScriptGeneratedFrom=projection.currentScriptGeneratedFrom||null;truthLedger=projection.truthLedger?normalizeTruthLedger(projection.truthLedger):null;truthResearch=projection.truthResearch?normalizeTruthResearch(projection.truthResearch):null;firstPartyAssertions=(projection.firstPartyAssertions||[]).map(normalizeFirstPartyAssertion);scriptEpistemicRevisions=(projection.scriptEpistemicRevisions||[]).map(normalizeScriptEpistemicRecord);currentScriptEpistemic=projection.currentScriptEpistemic?normalizeScriptEpistemicRecord(projection.currentScriptEpistemic,0):null;
-  try{return run(projection);}finally{nodes=previous.nodes;attShots=previous.attShots;imgNodes=previous.imgNodes;noteNodes=previous.noteNodes;conns=previous.conns;projectBreakdown=previous.projectBreakdown;projectType=previous.projectType;topic=previous.topic;creativeContract=previous.creativeContract;creativeContractHistory=previous.creativeContractHistory;creativeGenerationRecords=previous.creativeGenerationRecords;currentScriptGeneratedFrom=previous.currentScriptGeneratedFrom;truthLedger=previous.truthLedger;truthResearch=previous.truthResearch;firstPartyAssertions=previous.firstPartyAssertions;scriptEpistemicRevisions=previous.scriptEpistemicRevisions;currentScriptEpistemic=previous.currentScriptEpistemic;}
+  var projection=legacyProjectFromCanonical(snapshot,{}),previous={nodes:nodes,attShots:attShots,imgNodes:imgNodes,noteNodes:noteNodes,conns:conns,projectBreakdown:projectBreakdown,projectType:projectType,topic:topic,creativeContract:creativeContract,creativeContractHistory:creativeContractHistory,creativeGenerationRecords:creativeGenerationRecords,currentScriptGeneratedFrom:currentScriptGeneratedFrom,currentNarrativePlan:currentNarrativePlan,truthLedger:truthLedger,truthResearch:truthResearch,firstPartyAssertions:firstPartyAssertions,scriptEpistemicRevisions:scriptEpistemicRevisions,currentScriptEpistemic:currentScriptEpistemic};
+  nodes=projection.nodes||[];attShots=projection.attShots||[];imgNodes=projection.imgNodes||[];noteNodes=projection.noteNodes||[];conns=projection.conns||[];projectBreakdown=projection.projectBreakdown||null;projectType=projection.projectType||projectType;topic=projection.topic||topic;creativeContract=projection.creativeContract||creativeContract;creativeContractHistory=projection.creativeContractHistory||[];creativeGenerationRecords=projection.creativeGenerationRecords||[];currentScriptGeneratedFrom=projection.currentScriptGeneratedFrom||null;currentNarrativePlan=projection.currentNarrativePlan||null;truthLedger=projection.truthLedger?normalizeTruthLedger(projection.truthLedger):null;truthResearch=projection.truthResearch?normalizeTruthResearch(projection.truthResearch):null;firstPartyAssertions=(projection.firstPartyAssertions||[]).map(normalizeFirstPartyAssertion);scriptEpistemicRevisions=(projection.scriptEpistemicRevisions||[]).map(normalizeScriptEpistemicRecord);currentScriptEpistemic=projection.currentScriptEpistemic?normalizeScriptEpistemicRecord(projection.currentScriptEpistemic,0):null;
+  try{return run(projection);}finally{nodes=previous.nodes;attShots=previous.attShots;imgNodes=previous.imgNodes;noteNodes=previous.noteNodes;conns=previous.conns;projectBreakdown=previous.projectBreakdown;projectType=previous.projectType;topic=previous.topic;creativeContract=previous.creativeContract;creativeContractHistory=previous.creativeContractHistory;creativeGenerationRecords=previous.creativeGenerationRecords;currentScriptGeneratedFrom=previous.currentScriptGeneratedFrom;currentNarrativePlan=previous.currentNarrativePlan;truthLedger=previous.truthLedger;truthResearch=previous.truthResearch;firstPartyAssertions=previous.firstPartyAssertions;scriptEpistemicRevisions=previous.scriptEpistemicRevisions;currentScriptEpistemic=previous.currentScriptEpistemic;}
 }
 function buildPrintView(){
   // Export reads through a canonical snapshot projection. The editor can keep
@@ -11094,7 +11197,7 @@ document.addEventListener('mouseup',function(e){
     var data={
       v:4, stage:active,projectRecordId:currentProjectId,projectType:projectType, topic:topic, tone:tone, fmt:fmt, styleMode:styleMode, inputLang:inputLang,
       boardViewMode:canvasViewMode,boardDensity:boardDensity,boardCardDetail:boardCardDetail,
-      creatorDNA:creatorDNA,creativeContract:creativeContract,creativeContractHistory:creativeContractHistory,creativeGenerationRecords:creativeGenerationRecords,currentScriptGeneratedFrom:currentScriptGeneratedFrom,truthLedger:truthLedger,truthResearch:truthResearch,firstPartyAssertions:firstPartyAssertions,scriptEpistemicRevisions:scriptEpistemicRevisions,currentScriptEpistemic:currentScriptEpistemic,
+      creatorDNA:creatorDNA,creativeContract:creativeContract,creativeContractHistory:creativeContractHistory,creativeGenerationRecords:creativeGenerationRecords,currentScriptGeneratedFrom:currentScriptGeneratedFrom,currentNarrativePlan:currentNarrativePlan,truthLedger:truthLedger,truthResearch:truthResearch,firstPartyAssertions:firstPartyAssertions,scriptEpistemicRevisions:scriptEpistemicRevisions,currentScriptEpistemic:currentScriptEpistemic,
       durMin:durMin, durMax:durMax, projectBrief:projectBrief, projectConstraints:projectConstraints, projectGuidance:projectGuidance,
       projectBreakdown:projectBreakdown, projectBreakdownKey:projectBreakdownKey,
       aiMode:(typeof aiMode!=='undefined'?aiMode:true),
@@ -11124,7 +11227,7 @@ document.addEventListener('mouseup',function(e){
     creatorDNA=d.creatorDNA||loadCreatorDna()||creatorDNA;
     if(d.creatorDNA)storeCreatorDna(d.creatorDNA);
     creativeContract=d.creativeContract?normalizeCreativeContract(d.creativeContract,d.creativeContract.source):null;
-    creativeContractHistory=(d.creativeContractHistory||[]).map(function(c){return normalizeCreativeContract(c,c&&c.source);});creativeGenerationRecords=d.creativeGenerationRecords||[];currentScriptGeneratedFrom=d.currentScriptGeneratedFrom||null;truthLedger=d.truthLedger?normalizeTruthLedger(d.truthLedger):null;truthResearch=d.truthResearch?normalizeTruthResearch(d.truthResearch):null;firstPartyAssertions=(d.firstPartyAssertions||[]).map(normalizeFirstPartyAssertion);scriptEpistemicRevisions=(d.scriptEpistemicRevisions||[]).map(normalizeScriptEpistemicRecord);currentScriptEpistemic=d.currentScriptEpistemic?normalizeScriptEpistemicRecord(d.currentScriptEpistemic,0):null;
+    creativeContractHistory=(d.creativeContractHistory||[]).map(function(c){return normalizeCreativeContract(c,c&&c.source);});creativeGenerationRecords=d.creativeGenerationRecords||[];currentScriptGeneratedFrom=d.currentScriptGeneratedFrom||null;currentNarrativePlan=d.currentNarrativePlan?normalizeNarrativePlan(d.currentNarrativePlan,d.currentNarrativePlan.durationSeconds,d.currentNarrativePlan.source):null;truthLedger=d.truthLedger?normalizeTruthLedger(d.truthLedger):null;truthResearch=d.truthResearch?normalizeTruthResearch(d.truthResearch):null;firstPartyAssertions=(d.firstPartyAssertions||[]).map(normalizeFirstPartyAssertion);scriptEpistemicRevisions=(d.scriptEpistemicRevisions||[]).map(normalizeScriptEpistemicRecord);currentScriptEpistemic=d.currentScriptEpistemic?normalizeScriptEpistemicRecord(d.currentScriptEpistemic,0):null;
     inputLang=d.inputLang||'en'; durMin=d.durMin||durMin; durMax=d.durMax||durMax;
     projectBrief=d.projectBrief||''; projectConstraints=d.projectConstraints||''; projectGuidance=Object.assign({outcome:'understand',approach:'observe',production:'voice-footage'},d.projectGuidance||{}); renderProjectGuidance();
     projectBreakdown=d.projectBreakdown||null; projectBreakdownKey=d.projectBreakdownKey||null;
@@ -11266,7 +11369,7 @@ document.addEventListener('mouseup',function(e){
     resetLocationViewState();
     nodes=[]; attShots=[]; imgNodes=[]; noteNodes=[]; conns=[]; nid=1;
     nodeDrawerClosed={};
-    topic=''; projectBrief=''; projectConstraints=''; projectGuidance={outcome:'understand',approach:'observe',production:'voice-footage'}; projectGuidanceTouched={}; creativeContract=null; creativeContractBusy=false; creativeContractHistory=[]; creativeGenerationRecords=[]; currentScriptGeneratedFrom=null; truthLedger=null; truthResearch=null; firstPartyAssertions=[]; scriptEpistemicRevisions=[]; currentScriptEpistemic=null; projectBreakdown=null; projectBreakdownKey=null;
+    topic=''; projectBrief=''; projectConstraints=''; projectGuidance={outcome:'understand',approach:'observe',production:'voice-footage'}; projectGuidanceTouched={}; creativeContract=null; creativeContractBusy=false; creativeContractHistory=[]; creativeGenerationRecords=[]; currentScriptGeneratedFrom=null; currentNarrativePlan=null; truthLedger=null; truthResearch=null; firstPartyAssertions=[]; scriptEpistemicRevisions=[]; currentScriptEpistemic=null; projectBreakdown=null; projectBreakdownKey=null;
     durMin=3;durMax=3;videoDurationCommitted=3;syncVideoDurationControl();
     recceImages=[];
     songName=''; songDuration=0; songAnalysis=null; songURL=null;
