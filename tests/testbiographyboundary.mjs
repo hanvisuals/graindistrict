@@ -34,10 +34,11 @@ try{
 
     creativeContract=sanitized;creativeContract.status='draft';creativeContract.projectInputKey=creativeContractKey(projectConstraints);creativeContract.provenance.projectInputKey=creativeContract.projectInputKey;
     const locked=window.gdLockCreativeContract();
-    const safePlan='[VOICEOVER] 00:00-00:12 - New York kalabalik olabilir ve yine de baglanti kurmak zor hissedilebilir.\n[BROLL] 00:00-00:12 - Kalabalik bir metro peronunda insanlar farkli yonlere bakiyor.';
-    const originalApi=api;api=(sys,user,feature)=>feature==='epistemic_rewrite'?Promise.resolve(safePlan):Promise.reject(new Error('unexpected '+feature));
+    const safeLines=['New York kalabalik olabilir ve yine de baglanti kendiliginden kurulmayabilir.','Bir gunde yan yana gecilen insan sayisi, kurulan bagin olcusu degildir.','Bir kafedeki calisma duzeni, kalabaligin icinde ayri bir ritim kurabilir.'];
+    const repairPayload=(user,keepUnsafe)=>{const items=JSON.parse(user.match(/\[[\s\S]*\]/)[0]);return JSON.stringify(items.map((item,index)=>({lineNumber:item.lineNumber,content:keepUnsafe?item.original:safeLines[index%safeLines.length]})));};
+    const originalApi=api;api=(sys,user,feature)=>feature==='epistemic_rewrite'?Promise.resolve(repairPayload(user,false)):Promise.reject(new Error('unexpected '+feature));
     const gate=await epistemicGateCandidateScript(unsafe,'shot_plan','');
-    api=(sys,user,feature)=>feature==='epistemic_rewrite'?Promise.resolve(unsafe):Promise.reject(new Error('unexpected '+feature));
+    api=(sys,user,feature)=>feature==='epistemic_rewrite'?Promise.resolve(repairPayload(user,true)):Promise.reject(new Error('unexpected '+feature));
     let fallbackError='';try{await epistemicGateCandidateScript(unsafe,'shot_plan','');}catch(error){fallbackError=error.message;}
     api=originalApi;
     const history=window.gdGetScriptEpistemicHistory();
@@ -53,7 +54,7 @@ try{
     const legacyV2=JSON.parse(JSON.stringify(saved));legacyV2.canonical.schemaVersion=2;delete legacyV2.canonical.script.epistemic;delete legacyV2.canonical.creative.firstPartyAssertions;
     window.gdRestoreProjectData(legacyV2);
     const migrated=window.gdSerializeProjectData().canonical;
-    return {assertions0,sanitized,unsafeAudit,personal,inference,locked,gate,fallbackError,history,assertions1,authorized,schema:saved.canonical.schemaVersion,canonicalEpi,canonicalAssertions,migratedVersion:migrated.schemaVersion,migratedEpi:migrated.script.epistemic};
+    return {assertions0,sanitized,unsafe,unsafeAudit,personal,inference,locked,gate,fallbackError,history,assertions1,authorized,schema:saved.canonical.schemaVersion,canonicalEpi,canonicalAssertions,migratedVersion:migrated.schemaVersion,migratedEpi:migrated.script.epistemic};
   });
 
   ok('a topic alone creates no first-party authority',result.assertions0.length===0,result.assertions0);
@@ -62,6 +63,7 @@ try{
   ok('creator biography can never become an external research task',result.personal.length>=3&&result.personal.every(x=>x.required===false&&x.researchEligibility==='forbidden_personal'),result.personal);
   ok('a conditional narrative inference is not mislabeled as a recommendation requiring a source',!result.inference||result.inference.required===false,result.inference);
   ok('a blocked AI draft is quarantined, safely rewritten and only the clean revision is promoted',result.gate.rewritten===true&&result.gate.audit.status==='clear'&&result.history.some(x=>x.status==='quarantined')&&result.history.some(x=>x.status==='promoted'),result.history);
+  ok('biography repair patches only blocked voiceover lines instead of regenerating the complete long plan',result.gate.repairMode==='line_patch'&&result.gate.dirtyRanges.length===3&&result.gate.script.split('\n').length===result.unsafe.split('\n').length,{gate:result.gate});
   ok('an unsafe contextual repair rejects the draft instead of inserting repeated generic filler',/contextual rewrite failed/i.test(result.fallbackError)&&result.history.some(x=>x.status==='rejected'&&x.origin==='epistemic_rewrite_failed'),{error:result.fallbackError,history:result.history});
   ok('an explicit user-supplied life event authorizes only matching first-person narration',result.assertions1.length===1&&result.authorized.status==='clear'&&result.authorized.atoms.some(x=>x.authority.state==='authorized_first_party'),{assertions:result.assertions1,audit:result.authorized});
   ok('CanonicalProject v3 preserves first-party authority and immutable script-safety history',result.schema===3&&result.canonicalAssertions.length===1&&result.canonicalEpi.current&&result.canonicalEpi.history.length>=2,{schema:result.schema,assertions:result.canonicalAssertions,epistemic:result.canonicalEpi});

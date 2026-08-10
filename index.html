@@ -3639,7 +3639,13 @@ function epistemicPersonalSignal(value){
   var s=epistemicAscii(value);if(!s||epistemicHypothetical(s))return false;
   var explicit=/\b(i|i've|i have|i'm|my|me|we|we've|we have|our|us|ben|benim|bana|bende|benden|biz|bizim|bize|bizi|aklimda|ayagim|elim|gozum)\b/.test(s);
   var event=epistemicEventRoots(s).length>0;
-  var implicit=/\b[\p{L}]+(?:dim|dimde|digimda|digimde|tim|timde|tigimda|tigimde|dum|dumda|dugumda|tum|tumda|tugumda|yordum|misim|misimdir|ecegim|acagim|dik|tik|duk|tuk)\b/u.test(s)||/\bafter (?:moving|living|working|visiting|walking|buying|using|seeing|starting)\b/.test(s);
+  /* Turkish first-person suffixes cannot be detected from the suffix alone:
+     ordinary nouns such as "ritim" end in -tim. Require the same word to
+     begin with a relevant action root so vocabulary is not mistaken for a
+     creator memory. */
+  var implicitRoot='(?:tasin|yasa|calis|ziyaret|yuru|al|kullan|dene|gor|fark|say|otur|basla|ogren|dokun|hatirla|hisset|deneyim|ara|sec|yap|ciz|boya|resmet|cek|tas|bak|oku|yaz|kur|ac|kapat|tut|iste)';
+  var implicitSuffix='(?:dim|dimde|digimda|digimde|tim|timde|tigimda|tigimde|dum|dumda|dugumda|tum|tumda|tugumda|yordum|yorum|iyorum|uyorum|misim|misimdir|ecegim|acagim|dik|tik|duk|tuk)';
+  var implicit=new RegExp('\\b'+implicitRoot+'[\\p{L}]*'+implicitSuffix+'\\b','u').test(s)||/\bafter (?:moving|living|working|visiting|walking|buying|using|seeing|starting)\b/.test(s);
   var safeOpinion=/\b(i think|i believe|in my view|bence|bana gore|sanirim)\b/.test(s)&&!event&&!implicit;
   return !safeOpinion&&((explicit&&event)||implicit);
 }
@@ -3650,7 +3656,7 @@ function epistemicBiographyRequirement(value){
 function epistemicBiographyRequirementAuthorized(value){var roots=epistemicEventRoots(value),tokens=epistemicTokens(value);return (firstPartyAssertions||[]).some(function(assertion){var otherRoots=assertion.eventRoots||epistemicEventRoots(assertion.statement),rootMatch=roots.some(function(root){return otherRoots.indexOf(root)>=0;}),other=epistemicTokens(assertion.statement),overlap=tokens.filter(function(token){return other.indexOf(token)>=0;}).length;return rootMatch||overlap>=2;});}
 function epistemicEventRoots(value){
   var s=epistemicAscii(value),roots=[];
-  [{r:'move',p:/\b(moved|moving|tasin\w*)\b/},{r:'live',p:/\b(lived|living|yasa\w*)\b/},{r:'work',p:/\b(worked|working|calis\w*)\b/},{r:'visit',p:/\b(visited|ziyaret\w*)\b/},{r:'walk',p:/\b(walked|walking|yuru\w*)\b/},{r:'buy',p:/\b(bought|owned|aldi\w*|satin al\w*)\b/},{r:'use',p:/\b(used|tried|kullan\w*|dene\w*)\b/},{r:'see',p:/\b(saw|noticed|realized|gordu\w*|fark\w*)\b/},{r:'count',p:/\b(counted|saydi\w*)\b/},{r:'sit',p:/\b(sat|otur\w*)\b/},{r:'start',p:/\b(started|basla\w*)\b/},{r:'learn',p:/\b(learned|ogren\w*)\b/},{r:'touch',p:/\b(touched|dokun\w*)\b/},{r:'remember',p:/\b(remembered|remember|hatirla\w*)\b/},{r:'feel',p:/\b(felt|experienced|hisset\w*|deneyim\w*)\b/}].forEach(function(item){if(item.p.test(s))roots.push(item.r);});return roots;
+  [{r:'move',p:/\b(moved|moving|tasin\w*)\b/},{r:'live',p:/\b(lived|living|yasa\w*)\b/},{r:'work',p:/\b(worked|working|calis\w*)\b/},{r:'visit',p:/\b(visited|ziyaret\w*)\b/},{r:'walk',p:/\b(walked|walking|yuru\w*)\b/},{r:'buy',p:/\b(bought|owned|aldi\w*|satin al\w*)\b/},{r:'use',p:/\b(used|tried|kullan\w*|dene\w*)\b/},{r:'see',p:/\b(saw|noticed|realized|gordu\w*|fark\w*|bak\w*)\b/},{r:'count',p:/\b(counted|saydi\w*)\b/},{r:'sit',p:/\b(sat|otur\w*)\b/},{r:'start',p:/\b(started|basla\w*)\b/},{r:'learn',p:/\b(learned|ogren\w*)\b/},{r:'touch',p:/\b(touched|dokun\w*|tut\w*)\b/},{r:'remember',p:/\b(remembered|remember|hatirla\w*)\b/},{r:'feel',p:/\b(felt|experienced|hisset\w*|deneyim\w*)\b/},{r:'make',p:/\b(made|making|make|yap\w*|ciz\w*|boya\w*|resmet\w*)\b/},{r:'search',p:/\b(searched|searching|ara\w*)\b/},{r:'choose',p:/\b(chose|chosen|choosing|sec\w*)\b/}].forEach(function(item){if(item.p.test(s))roots.push(item.r);});return roots;
 }
 function epistemicTokens(value){
   var stop={the:1,and:1,that:1,this:1,with:1,from:1,have:1,when:1,then:1,icin:1,ama:1,bir:1,ben:1,benim:1,biz:1,bizim:1,ve:1,da:1,de:1,bu:1,su:1,olarak:1};
@@ -3695,7 +3701,38 @@ function sanitizeCreativeContractBiography(contract){
   c.provenance=Object.assign({},c.provenance||{});var allChanges=priorChanges.concat(changes),seen={};allChanges=allChanges.filter(function(change){var key=String(change.path||'')+'|'+String(change.originalStatement||'');if(seen[key])return false;seen[key]=1;return true;});c.provenance.epistemicBoundary={policy:EPISTEMIC_POLICY,policyVersion:EPISTEMIC_POLICY_VERSION,changes:allChanges,checkedAt:Date.now()};return c;
 }
 function epistemicContext(){refreshFirstPartyAssertions();return '\n\nEPISTEMIC SAFETY - OVERRIDES CREATOR DNA AND THE CREATIVE CONTRACT:\n- You may imitate the creator\'s tone; you may not invent the creator\'s biography.\n- External sources can support facts about the world. They can NEVER authorize a memory, action, location visit, job, purchase, possession, feeling or observation as belonging to the creator.\n- Past or present first-person events are allowed only when they are entailed by the explicit project-input assertions below. Do not infer biography from a topic, style choice, reference video or Creator DNA.\n- When no assertion authorizes a personal beat, use a present-tense observation that can be filmed now, a clearly hypothetical frame, or neutral narration.\nAUTHORIZED FIRST-PARTY ASSERTIONS:\n- '+((firstPartyAssertions||[]).length?firstPartyAssertions.map(function(a){return a.statement+' ['+a.id+']';}).join('\n- '):'None. Keep creator biography out of the script.');}
-function epistemicRewriteScript(candidate,audit){var blocked=(audit&&audit.blocked||[]).map(function(x){return '- '+x.statement;}).join('\n');var sys='You are GrainDistrict\'s biography safety editor. Return the COMPLETE shot plan in exactly the same one-line [TYPE] timecode format. Rewrite ONLY unsupported first-person biography in VOICEOVER. Preserve verified facts, chapter purpose, cause and effect, language, timecodes and all non-offending blocks. Replace invented memories with a context-specific present observation, neutral formulation or explicit hypothetical. Never insert a generic safety sentence and never repeat the same replacement in two lines. Do not add any new date, job, purchase, visit, possession, feeling or personal event.'+narrativePlanContext(currentNarrativePlan)+epistemicContext();return apiRetry(sys,'BLOCKED FIRST-PERSON CLAUSES:\n'+blocked+'\n\nCANDIDATE SHOT PLAN:\n'+candidate,'epistemic_rewrite');}
+function epistemicBlockedLines(candidate,audit){
+  var source=String(candidate||'').split(/\r?\n/),byLine={};
+  (audit&&audit.blocked||[]).forEach(function(atom){var number=Math.max(1,Number(atom&&atom.ref&&atom.ref.lineNumber)||0),line=source[number-1]||'',match=line.match(/^\s*\[VOICEOVER\]\s+(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})\s*[-:]\s*(.+)$/i);if(!match)return;if(!byLine[number])byLine[number]={lineNumber:number,start:match[1],end:match[2],original:match[3],blockedClauses:[]};byLine[number].blockedClauses.push(atom.statement);});
+  return Object.keys(byLine).map(function(key){return byLine[key];}).sort(function(a,b){return a.lineNumber-b.lineNumber;});
+}
+function epistemicLineRepairPrompt(){
+  return 'You are GrainDistrict\'s biography safety editor. Repair only the listed VOICEOVER lines; the rest of the long draft is intentionally withheld and must remain byte-for-byte unchanged. For each item, return replacement spoken content that preserves its useful project-specific meaning, chapter purpose and causal role while removing only unsupported creator biography. A present opinion or intention may remain. An action, memory, visit, purchase, possession, feeling or observation may belong to the creator only when AUTHORIZED FIRST-PARTY ASSERTIONS support it. Otherwise use a neutral present observation, a filmable action stated without claiming it already happened, or an explicit hypothetical. Do not delete the substance, add a generic safety sentence, repeat one replacement across items, or invent a new fact. Return ONLY JSON: [{"lineNumber":12,"content":"replacement spoken words only"}]. No labels, timecodes, markdown or commentary.'+narrativePlanContext(currentNarrativePlan)+epistemicContext();
+}
+function parseEpistemicLineRepairs(raw,items){
+  var text=String(raw||'').trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'').trim(),match=text.match(/\[[\s\S]*\]/),rows=[];
+  if(match){try{rows=JSON.parse(match[0]);}catch(error){rows=[];}}
+  if(!Array.isArray(rows))rows=[];
+  var expected={};items.forEach(function(item){expected[item.lineNumber]=1;});var seen={},out=[];
+  rows.forEach(function(row){var lineNumber=Math.round(Number(row&&row.lineNumber)),content=String(row&&row.content||'').replace(/\s+/g,' ').trim();if(!expected[lineNumber]||seen[lineNumber]||!content||/\[(?:VOICEOVER|BROLL|MUSIC|TRANSITION)\]/i.test(content)||/\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}/.test(content))return;seen[lineNumber]=1;out.push({lineNumber:lineNumber,content:content});});
+  if(out.length!==items.length)throw new Error('Biography line repair returned an incomplete patch.');return out;
+}
+function applyEpistemicLineRepairs(candidate,repairs){
+  var lines=String(candidate||'').split(/\r?\n/),ranges=[];
+  repairs.forEach(function(repair){var index=repair.lineNumber-1,line=lines[index]||'',match=line.match(/^(\s*\[VOICEOVER\]\s+(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})\s*[-:]\s*)(.+)$/i);if(!match)throw new Error('Biography line repair lost its target.');lines[index]=match[1]+repair.content;ranges.push({start:tcToSec(match[2]),end:tcToSec(match[3]),reason:'epistemic_voiceover_rewrite'});});
+  return {script:lines.join('\n'),dirtyRanges:ranges};
+}
+function epistemicRewriteScript(candidate,audit,attempt,dirtyRanges){
+  attempt=Math.max(0,Number(attempt)||0);dirtyRanges=dirtyRanges||[];var blocked=epistemicBlockedLines(candidate,audit);if(!blocked.length)return Promise.resolve({script:candidate,dirtyRanges:dirtyRanges});if(attempt>=2)return Promise.reject(new Error('Biography line repair remained unsafe.'));
+  var batches=[];for(var i=0;i<blocked.length;i+=4)batches.push(blocked.slice(i,i+4));var sourceLines=String(candidate||'').split(/\r?\n/),sys=epistemicLineRepairPrompt();
+  var tasks=batches.map(function(items){return function(){var payload=items.map(function(item){return {lineNumber:item.lineNumber,blockedClauses:item.blockedClauses,original:item.original,before:sourceLines[item.lineNumber-2]||'',after:sourceLines[item.lineNumber]||''};});return withTimeout(apiRetry(sys,'VOICEOVER LINE REPAIR ITEMS:\n'+JSON.stringify(payload),'epistemic_rewrite'),60000,null,'biography line repair').then(function(raw){if(!raw)throw new Error('Biography line repair timed out.');return parseEpistemicLineRepairs(raw,items);});};});
+  return runLimited(tasks,3).then(function(results){if(results.some(function(rows){return !Array.isArray(rows);}))throw new Error('Biography line repair did not complete every batch.');var applied=applyEpistemicLineRepairs(candidate,[].concat.apply([],results)),nextAudit=epistemicAuditScript(applied.script,'epistemic_rewrite');var allRanges=dirtyRanges.concat(applied.dirtyRanges);if(nextAudit.status==='clear')return {script:applied.script,dirtyRanges:allRanges};return epistemicRewriteScript(applied.script,nextAudit,attempt+1,allRanges);});
+}
+function syncEpistemicRewriteVisuals(result){
+  var ranges=normalizeBrollVisualDirtyRanges(result&&result.dirtyRanges||[]);if(!ranges.length)return Promise.resolve(result);var previous=canonicalClone(brollVisualDirtyRanges,[]);brollVisualDirtyRanges=ranges;
+  setLoadProgress('s2',90,'Matching visuals to the protected voiceover','Rebuilding only the shots beneath the corrected spoken lines');
+  return syncBrollWithFinalVoiceover(result.script).then(function(sync){result.script=sync.text;result.visualsRebuilt=sync.changed;result.dirtyRanges=[];return result;},function(error){brollVisualDirtyRanges=previous;throw error;});
+}
 function epistemicPromoteLocalRepair(candidate,audit,parentFingerprint){
   /* A generic sentence cannot safely replace a lived event: it may pass the
      biography audit while destroying the chapter's cause and effect. If the
@@ -3705,7 +3742,7 @@ function epistemicPromoteLocalRepair(candidate,audit,parentFingerprint){
 }
 function epistemicGateCandidateScript(candidate,origin,parentFingerprint){
   var first=epistemicAuditScript(candidate,origin);if(first.status==='clear'){recordScriptEpistemic(candidate,'promoted',origin,first,parentFingerprint);currentScriptGeneratedFrom=creativeContractGenerationReference()||currentScriptGeneratedFrom;return Promise.resolve({script:candidate,audit:first,rewritten:false,repairMode:'none'});}recordScriptEpistemic(candidate,'quarantined',origin,first,parentFingerprint);
-  return epistemicRewriteScript(candidate,first).then(function(raw){var rewritten=String(raw||'').trim(),second=epistemicAuditScript(rewritten,'epistemic_rewrite');if(!parseBlocks(rewritten).length||second.status!=='clear'){recordScriptEpistemic(rewritten||candidate,'rejected','epistemic_rewrite',second,parentFingerprint);return epistemicPromoteLocalRepair(candidate,first,parentFingerprint);}recordScriptEpistemic(rewritten,'promoted','epistemic_rewrite',second,parentFingerprint);currentScriptGeneratedFrom=creativeContractGenerationReference()||currentScriptGeneratedFrom;return {script:rewritten,audit:second,rewritten:true,repairMode:'model_rewrite'};},function(){return epistemicPromoteLocalRepair(candidate,first,parentFingerprint);});
+  return epistemicRewriteScript(candidate,first).then(function(repair){var rewritten=String(repair&&repair.script||'').trim(),second=epistemicAuditScript(rewritten,'epistemic_rewrite');if(!parseBlocks(rewritten).length||second.status!=='clear'){recordScriptEpistemic(rewritten||candidate,'rejected','epistemic_rewrite',second,parentFingerprint);return epistemicPromoteLocalRepair(candidate,first,parentFingerprint);}recordScriptEpistemic(rewritten,'promoted','epistemic_rewrite',second,parentFingerprint);currentScriptGeneratedFrom=creativeContractGenerationReference()||currentScriptGeneratedFrom;return {script:rewritten,audit:second,rewritten:true,repairMode:'line_patch',dirtyRanges:repair.dirtyRanges||[]};},function(){return epistemicPromoteLocalRepair(candidate,first,parentFingerprint);});
 }
 function creativeContractDefaults(){
   var d=creatorDNA||{},mode=d.carrier||((fmt==='vlog')?'presenter':(fmt==='essay'?'story':'hybrid'));
@@ -3986,7 +4023,7 @@ function autoRepairNarrativeScript(script,plan,previousFingerprint,state,attempt
   return runLimited(tasks,Math.min(2,tasks.length)).then(function(replacements){
     var repaired=script;chapters.forEach(function(chapter,index){if(!replacements[index])throw new Error('The automatic chapter repair did not return a usable section.');repaired=replaceNarrativeChapter(repaired,chapter,replacements[index]);});
     repaired=compactGeneratedYouTubePlan(repaired,totalSec);
-    return epistemicGateCandidateScript(repaired,'shot_plan_redraft',previousFingerprint).then(function(safe){return autoRepairNarrativeScript(safe.script,plan,previousFingerprint,{audit:safe.audit||state.audit,rewritten:!!(state.rewritten||safe.rewritten)},attempt+1);});
+    return epistemicGateCandidateScript(repaired,'shot_plan_redraft',previousFingerprint).then(syncEpistemicRewriteVisuals).then(function(safe){return autoRepairNarrativeScript(safe.script,plan,previousFingerprint,{audit:safe.audit||state.audit,rewritten:!!(state.rewritten||safe.rewritten)},attempt+1);});
   });
 }
 window.gdNarrativeChapterTarget=narrativeChapterTarget;
@@ -7102,6 +7139,8 @@ function genScript(){
     }
     setLoadProgress('s2',88,'Protecting your voice','Checking facts, personal history and project boundaries');
     return projectType==='youtube'?epistemicGateCandidateScript(planText,'shot_plan',previousFingerprint):Promise.resolve({script:planText,audit:null,rewritten:false});
+  }).then(function(result){
+    return projectType==='youtube'?syncEpistemicRewriteVisuals(result):result;
   }).then(function(result){
     return projectType==='youtube'?autoRepairNarrativeScript(result.script,currentNarrativePlan,previousFingerprint,result,0):result;
   }).then(function(result){
