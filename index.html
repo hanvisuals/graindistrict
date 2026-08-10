@@ -3932,17 +3932,71 @@ function narrativePlanContext(plan){
 function narrativeChapterAt(seconds,plan){var chapters=plan&&plan.chapters||[];for(var i=0;i<chapters.length;i++)if(seconds>=chapters[i].startSeconds&&(seconds<chapters[i].endSeconds||i===chapters.length-1&&seconds<=chapters[i].endSeconds))return chapters[i];return null;}
 function narrativeScriptQuality(script,plan){
   var report=validateNarrativePlan(plan,(plan&&plan.durationSeconds)||((durMin+durMax)/2*60)),issues=[];if(!report.valid)return {valid:false,issues:[{code:'NARRATIVE_PLAN_INVALID'}]};var p=report.plan,seen={},chapterWords={};p.chapters.forEach(function(ch){chapterWords[ch.id]=0;});
-  parseBlocks(script).filter(function(block){return block.type==='voiceover';}).forEach(function(block){var normalized=epistemicAscii(block.content).replace(/[^\p{L}\p{N}]+/gu,' ').trim();if(normalized.length>18){if(seen[normalized])issues.push({code:'VOICEOVER_EXACT_REPEAT',text:block.content});seen[normalized]=1;}var chapter=narrativeChapterAt(tcToSec(block.tcStart),p);if(chapter)chapterWords[chapter.id]+=String(block.content||'').trim().split(/\s+/).filter(Boolean).length;});
-  p.chapters.forEach(function(ch){var duration=Math.max(1,ch.endSeconds-ch.startSeconds),minimum=Math.max(6,Math.round(duration*.22));if((chapterWords[ch.id]||0)<minimum)issues.push({code:'CHAPTER_UNDERWRITTEN',chapter:ch.title,words:chapterWords[ch.id]||0,minimum:minimum});});
+  parseBlocks(script).filter(function(block){return block.type==='voiceover';}).forEach(function(block){var chapter=narrativeChapterAt(tcToSec(block.tcStart),p),normalized=epistemicAscii(block.content).replace(/[^\p{L}\p{N}]+/gu,' ').trim();if(normalized.length>18){if(seen[normalized])issues.push({code:'VOICEOVER_EXACT_REPEAT',text:block.content,chapter:chapter&&chapter.title||'',chapterId:chapter&&chapter.id||'',startSeconds:tcToSec(block.tcStart)});seen[normalized]=1;}if(chapter)chapterWords[chapter.id]+=String(block.content||'').trim().split(/\s+/).filter(Boolean).length;});
+  p.chapters.forEach(function(ch){var duration=Math.max(1,ch.endSeconds-ch.startSeconds),minimum=Math.max(6,Math.round(duration*.22));if((chapterWords[ch.id]||0)<minimum)issues.push({code:'CHAPTER_UNDERWRITTEN',chapter:ch.title,chapterId:ch.id,startSeconds:ch.startSeconds,endSeconds:ch.endSeconds,words:chapterWords[ch.id]||0,minimum:minimum});});
   return {valid:issues.length===0,issues:issues,chapterWords:chapterWords};
 }
 function assertNarrativeScriptQuality(script,plan){var report=narrativeScriptQuality(script,plan);if(!report.valid)throw new Error('The draft did not follow its chapter plan: '+report.issues.map(function(x){return x.code+(x.chapter?' ('+x.chapter+')':'');}).join(', ')+'. Please generate it again.');return report;}
+function narrativeRepairChapters(report,plan){
+  var chapters=plan&&plan.chapters||[],picked={},out=[];
+  (report&&report.issues||[]).forEach(function(issue){
+    var chapter=null;
+    if(issue.chapterId)chapter=chapters.filter(function(ch){return ch.id===issue.chapterId;})[0]||null;
+    if(!chapter&&isFinite(issue.startSeconds))chapter=narrativeChapterAt(Number(issue.startSeconds),plan);
+    if(!chapter&&issue.chapter)chapter=chapters.filter(function(ch){return ch.title===issue.chapter;})[0]||null;
+    if(chapter&&!picked[chapter.id]){picked[chapter.id]=1;out.push(chapter);}
+  });
+  return out;
+}
+function narrativeChapterBlocks(script,chapter,padding){
+  padding=Math.max(0,Number(padding)||0);
+  return parseBlocks(script||'').filter(function(block){var start=tcToSec(block.tcStart),end=tcToSec(block.tcEnd);return end>chapter.startSeconds-padding&&start<chapter.endSeconds+padding;}).map(formatPlanBlock).join('\n');
+}
+function narrativeReplacementReport(text,chapter){
+  var blocks=parseBlocks(text||''),outside=blocks.some(function(block){var start=tcToSec(block.tcStart),end=tcToSec(block.tcEnd);return start<chapter.startSeconds||start>=chapter.endSeconds||end>chapter.endSeconds+1;});
+  var duration=planDurationReport(text||'',chapter.endSeconds,chapter.startSeconds);
+  return {valid:!!blocks.length&&!outside&&duration.complete,blocks:blocks,duration:duration,outside:outside};
+}
+function replaceNarrativeChapter(script,chapter,replacement){
+  var old=parseBlocks(script||''),fresh=parseBlocks(replacement||''),all=[],order=0;
+  old.forEach(function(block){var start=tcToSec(block.tcStart),end=tcToSec(block.tcEnd);if(end>chapter.startSeconds&&start<chapter.endSeconds)return;block.__order=order++;all.push(block);});
+  fresh.forEach(function(block){block.__order=order++;all.push(block);});
+  var typeRank={voiceover:0,music:0,broll:1,transition:2};
+  all.sort(function(a,b){var byStart=tcToSec(a.tcStart)-tcToSec(b.tcStart);if(byStart)return byStart;var byType=(typeRank[a.type]==null?3:typeRank[a.type])-(typeRank[b.type]==null?3:typeRank[b.type]);return byType||a.__order-b.__order;});
+  return all.map(formatPlanBlock).join('\n');
+}
+function repairNarrativeChapter(script,plan,chapter,totalSec,li){
+  var seconds=Math.max(1,chapter.endSeconds-chapter.startSeconds),spokenFloor=Math.max(40,Math.round(seconds*1.45));
+  var system=buildGenSys(totalSec,li)+'\n\nCHAPTER REPAIR TASK: The complete draft already exists, but this one chapter failed quality control. Return ONLY a complete replacement set of timeline blocks for '+chapter.start+'-'+chapter.end+'. Do not return blocks outside that range and do not return chapter headings or commentary. Start at exactly '+chapter.start+' and keep spoken audio plus its literal B-roll coverage active through the chapter. Write at least '+spokenFloor+' natural VOICEOVER words; do not stretch a few sentences across long timecodes. Preserve the locked chapter purpose, causal progression, project language and factual/biographical boundaries. Do not recap earlier chapters, steal a later chapter\'s payoff, repeat an existing sentence, or add generic poetic filler. Every changed VOICEOVER line needs newly matched BROLL inside the same time range.';
+  var nearby=narrativeChapterBlocks(script,{startSeconds:Math.max(0,chapter.startSeconds-18),endSeconds:Math.min(totalSec,chapter.endSeconds+18)},0);
+  var user='PROJECT: '+topic+'\n\nFAILED CHAPTER:\n'+JSON.stringify({title:chapter.title,role:chapter.role,start:chapter.start,end:chapter.end,purpose:chapter.purpose,concreteProgress:chapter.concreteProgress,questionIn:chapter.questionIn,turn:chapter.turn,transitionOut:chapter.transitionOut})+'\n\nCURRENT CHAPTER AND NEARBY CONTINUITY (context only; output the failed chapter window only):\n'+nearby;
+  return withTimeout(apiRetry(system,buildUserContent(user),'shot_plan_redraft'),90000,'','chapter repair '+chapter.title).then(function(raw){
+    var cleaned=String(raw||'').trim(),replacement=narrativeReplacementReport(cleaned,chapter);
+    if(!replacement.valid)throw new Error('The automatic chapter repair was incomplete.');
+    return cleaned;
+  });
+}
+function autoRepairNarrativeScript(script,plan,previousFingerprint,state,attempt){
+  attempt=Math.max(0,Number(attempt)||0);state=state||{audit:null,rewritten:false};
+  var report=narrativeScriptQuality(script,plan);if(report.valid)return Promise.resolve({script:script,audit:state.audit||null,rewritten:!!state.rewritten,repaired:attempt>0,quality:report});
+  var chapters=narrativeRepairChapters(report,plan);if(!chapters.length||attempt>=2)throw new Error('The draft could not complete every chapter after automatic repair. Please try again.');
+  var totalSec=(plan&&plan.durationSeconds)||((durMin+durMax)/2*60),li=langInstr(inputLang,'shot plan content');
+  setLoadProgress('s2',91,'Completing '+chapters.length+' short chapter'+(chapters.length===1?'':'s'),'Keeping the story intact while filling only the missing section');
+  var tasks=chapters.map(function(chapter){return function(){return repairNarrativeChapter(script,plan,chapter,totalSec,li);};});
+  return runLimited(tasks,Math.min(2,tasks.length)).then(function(replacements){
+    var repaired=script;chapters.forEach(function(chapter,index){if(!replacements[index])throw new Error('The automatic chapter repair did not return a usable section.');repaired=replaceNarrativeChapter(repaired,chapter,replacements[index]);});
+    repaired=compactGeneratedYouTubePlan(repaired,totalSec);
+    return epistemicGateCandidateScript(repaired,'shot_plan_redraft',previousFingerprint).then(function(safe){return autoRepairNarrativeScript(safe.script,plan,previousFingerprint,{audit:safe.audit||state.audit,rewritten:!!(state.rewritten||safe.rewritten)},attempt+1);});
+  });
+}
 window.gdNarrativeChapterTarget=narrativeChapterTarget;
 window.gdNarrativeFallbackPlan=function(totalSec){return canonicalClone(narrativeFallbackPlan(totalSec),null);};
 window.gdNormalizeNarrativePlan=function(value,totalSec){return canonicalClone(normalizeNarrativePlan(value,totalSec,value&&value.source),null);};
 window.gdValidateNarrativePlan=function(value,totalSec){return canonicalClone(validateNarrativePlan(value,totalSec),null);};
 window.gdNarrativePlanContext=narrativePlanContext;
 window.gdNarrativeScriptQuality=function(script,plan){return canonicalClone(narrativeScriptQuality(script,plan),null);};
+window.gdNarrativeReplacementReport=function(text,chapter){return canonicalClone(narrativeReplacementReport(text,chapter),null);};
+window.gdReplaceNarrativeChapter=replaceNarrativeChapter;
 function creativeContractBoundFeature(feature){return /^(narrative_plan|narrative_plan_repair|shot_plan|shot_plan_segment|shot_plan_redraft|shot_plan_fallback|shot_plan_continuation|plan_outline|script_revision|epistemic_rewrite|broll_sync|broll_replan|block_revision|block_shot_details|shot_details_batch|storyboard_prompt|storyboard_revision)$/.test(String(feature||''));}
 function recordCreativeGeneration(feature,reference,text){
   if(!reference)return null;var entry={id:'generation:'+canonicalIdToken(),feature:String(feature||'ai_request'),generatedFrom:canonicalClone(reference,reference),outputHash:'output:'+creativeContractHashText(String(text||'')),createdAt:Date.now()};
@@ -7048,6 +7102,8 @@ function genScript(){
     }
     setLoadProgress('s2',88,'Protecting your voice','Checking facts, personal history and project boundaries');
     return projectType==='youtube'?epistemicGateCandidateScript(planText,'shot_plan',previousFingerprint):Promise.resolve({script:planText,audit:null,rewritten:false});
+  }).then(function(result){
+    return projectType==='youtube'?autoRepairNarrativeScript(result.script,currentNarrativePlan,previousFingerprint,result,0):result;
   }).then(function(result){
     var planText=result.script;projectBrief='';
     if(projectType==='youtube')assertNarrativeScriptQuality(planText,currentNarrativePlan);

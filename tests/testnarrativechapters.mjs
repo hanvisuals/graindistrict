@@ -12,7 +12,7 @@ const ok=(name,pass,detail)=>{console.log((pass?'PASS':'FAIL')+' - '+name+(!pass
 try{
   const app=process.env.APP||path.resolve(import.meta.dirname,'..','index.html');
   await page.goto(pathToFileURL(app).href);await page.waitForTimeout(250);
-  const result=await page.evaluate(()=>{
+  const result=await page.evaluate(async()=>{
     document.getElementById('gdAuthOv').classList.remove('show','gate');document.body.classList.remove('gd-gated');
     projectType='youtube';inputLang='tr';durMin=6;durMax=6;tone='introspective';topic='İlk resmim için ilham ararken resim ile filmmaking arasındaki bağı keşfetmek.';
     creativeContract=creativeContractFallback();creativeContract.format.type='story';creativeContract.storyEngine.drivingQuestion='İlk resmim için neyi seçmeliyim?';creativeContract.storyEngine.transformation='Ne çizeceğini bilmemek, nasıl baktığını fark etmeye dönüşür.';creativeContract.promise.statement='İlk resmin arayışını somut bir süreç olarak göstermek.';
@@ -21,12 +21,24 @@ try{
     const modes={};['story','presenter','demo','graphics'].forEach(format=>{creativeContract.format.type=format;modes[format]=window.gdNarrativeFallbackPlan(360).narrativeMode;});creativeContract.format.type='story';
     currentNarrativePlan=fallback;
     const script=fallback.chapters.map((chapter,index)=>'[VOICEOVER] '+chapter.start+'-'+fmtTime(Math.min(chapter.endSeconds,chapter.startSeconds+12))+' - Bölüm '+(index+1)+' somut bir eylemle ilerler ve önceki sorudan farklı yeni bir karar üretir.').join('\n');
+    const repairChapter=fallback.chapters[2],repairLines=[];
+    for(let i=0;i<12;i++){
+      const start=repairChapter.startSeconds+i*5,end=start+5;
+      repairLines.push('[VOICEOVER] '+fmtTime(start)+'-'+fmtTime(end)+' - Attempt '+(i+1)+' adds a concrete decision and moves this chapter into genuinely new territory.');
+      repairLines.push('[BROLL] '+fmtTime(start)+'-'+fmtTime(end)+' - Attempt '+(i+1)+' and its concrete result remain visible in the same frame.');
+    }
+    const replacement=repairLines.join('\n'),replacementReport=window.gdNarrativeReplacementReport(replacement,repairChapter),spliced=window.gdReplaceNarrativeChapter(script,repairChapter,replacement),splicedQuality=window.gdNarrativeScriptQuality(spliced,fallback);
+    const underwritten=fallback.chapters.filter(ch=>ch.id!==repairChapter.id).map((chapter,index)=>'[VOICEOVER] '+chapter.start+'-'+fmtTime(Math.min(chapter.endSeconds,chapter.startSeconds+12))+' - Remaining chapter '+(index+1)+' keeps a concrete action, distinct decision, and enough spoken context.').join('\n');
+    const originalRepair=repairNarrativeChapter,originalGate=epistemicGateCandidateScript;
+    repairNarrativeChapter=()=>Promise.resolve(replacement);epistemicGateCandidateScript=candidate=>Promise.resolve({script:candidate,audit:null,rewritten:false});
+    const autoResult=await autoRepairNarrativeScript(underwritten,fallback,'',{audit:null,rewritten:false},0);
+    repairNarrativeChapter=originalRepair;epistemicGateCandidateScript=originalGate;
     document.getElementById('scriptTa').value=script;refreshScriptStudio();
     const headers=Array.from(document.querySelectorAll('#voiceoverReader .voiceover-chapter')).map(node=>({title:node.querySelector('.voiceover-chapter-title').textContent,time:node.querySelector('.voiceover-chapter-time').textContent}));
     const quality=window.gdNarrativeScriptQuality(script,fallback),duplicate=window.gdNarrativeScriptQuality(fallback.chapters.map(ch=>'[VOICEOVER] '+ch.start+'-'+fmtTime(Math.min(ch.endSeconds,ch.startSeconds+12))+' - Aynı soyut cümle burada hiçbir yeni olay ya da bilgi olmadan tekrar ediliyor.').join('\n'),fallback);
     const saved=window.gdSerializeProjectData(),savedPlan=saved.canonical.script.narrativePlan;
     currentNarrativePlan=null;window.gdRestoreProjectData(saved);
-    return {fallback,validation,repeatedValidation,context,prompt,modes,headers,quality,duplicate,savedPlan,restored:currentNarrativePlan,direction:Array.from(document.querySelectorAll('#scriptDirection span')).map(x=>x.textContent)};
+    return {fallback,validation,repeatedValidation,context,prompt,modes,headers,quality,duplicate,replacementReport,spliced,splicedQuality,autoResult,savedPlan,restored:currentNarrativePlan,direction:Array.from(document.querySelectorAll('#scriptDirection span')).map(x=>x.textContent)};
   });
   ok('six-minute videos receive six contiguous narrative chapters',result.fallback.chapters.length===6&&result.validation.valid&&/^0?0:00$/.test(result.fallback.chapters[0].start)&&/^0?6:00$/.test(result.fallback.chapters.at(-1).end),result.validation);
   ok('chapter titles are distinct and describe story jobs instead of generic intro/development/conclusion labels',new Set(result.fallback.chapters.map(ch=>ch.title)).size===6&&!result.fallback.chapters.some(ch=>/^(giriş|gelişme|sonuç)$/i.test(ch.title)),result.fallback.chapters);
@@ -35,8 +47,11 @@ try{
   ok('one architecture routes different video types to different narrative modes',result.modes.story==='experiential_process'&&result.modes.presenter==='tutorial'&&result.modes.demo==='review'&&result.modes.graphics==='essay',result.modes);
   ok('Script Studio visibly groups the spoken text by its stored chapters',result.headers.length===6&&result.headers[0].title===result.fallback.chapters[0].title&&result.direction.includes('6 chapters'),result.headers);
   ok('chapter coverage passes while exact repeated voiceover is rejected',result.quality.valid&&!result.duplicate.valid&&result.duplicate.issues.some(issue=>issue.code==='VOICEOVER_EXACT_REPEAT'),{quality:result.quality,duplicate:result.duplicate});
+  ok('an underwritten chapter can be replaced locally without discarding the rest of the draft',result.replacementReport.valid&&result.splicedQuality.valid&&/Bölüm 2 /.test(result.spliced)&&/Bölüm 4 /.test(result.spliced)&&!/Bölüm 3 /.test(result.spliced),{replacement:result.replacementReport,quality:result.splicedQuality});
+  ok('automatic repair promotes the completed draft without asking the user to regenerate it',result.autoResult.repaired&&result.autoResult.quality.valid&&result.autoResult.script.includes('Attempt 12'),result.autoResult);
   ok('the Narrative Plan survives canonical save and restore',result.savedPlan&&result.restored&&result.restored.chapters.length===6&&result.savedPlan.centralQuestion===result.restored.centralQuestion,{saved:result.savedPlan,restored:result.restored});
   const source=fs.readFileSync(app,'utf8');
+  ok('generation routes failed chapter coverage through automatic repair before showing the script',/autoRepairNarrativeScript\(result\.script,currentNarrativePlan/.test(source)&&/CHAPTER REPAIR TASK/.test(source),null);
   ok('the former canned biography fallback can no longer enter a script',!source.includes('Konu, bugün gözlemlenebilen somut ayrıntılar üzerinden ilerliyor.')&&!source.includes('The subject unfolds through concrete details that can be observed today.'),null);
   ok('chapter architecture raises no page errors',errors.length===0,errors);
 } finally {await browser.close();}
