@@ -18,7 +18,7 @@ try {
     const tasks=claims.map((claim,index)=>({id:'claim-research-task:mock-'+runNo+'-'+index,claimId:claim.id,queryClusterId:cluster.id,state:'ready_for_review',eligibility:'eligible'}));
     await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({research:{schema:'graindistrict.evidence-research-result',schemaVersion:1,runId,provider:'gemini',model:'gemini-3.6-flash',status:'ready_for_review',stage:'completed',claimIds:claims.map(x=>x.id),inputSnapshot:body.snapshot||{truthLedgerId:'truth-ledger:mock',truthLedgerRevision:1,scriptFingerprint:'script-hash:mock'},policySnapshot:{version:2,maxClaims:4,maxSearchQueries:3,discoveryProvider:'crossref',providerPolicy:policy},claimTasks:tasks,queryClusters:[cluster],queries:[query],queryCount:1,sources:[source],sourceVersions:[version],evidenceSpans:spans,links,startedAt:Date.now()-50,completedAt:Date.now(),remainingRunsToday:5-runNo,privacy:{scope:'selected factual claims only',discoveryProvider:'crossref',searchRetentionDays:0,automaticVerification:false}}})});
   });
-  await page.goto(pathToFileURL(path.resolve('index.html')).href);await page.waitForTimeout(250);
+  await page.goto(pathToFileURL(process.env.APP||path.resolve('index.html')).href);await page.waitForTimeout(250);
   await page.evaluate(()=>{
     localStorage.setItem('gd_truth_research_consent_v2','1');
     document.getElementById('gdAuthOv').classList.remove('show','gate');document.body.classList.remove('gd-gated');projectType='youtube';topic='Asphalt under load';

@@ -11,7 +11,7 @@ page.on('pageerror',e=>errors.push(e.message));
 
 try {
   await page.route('**/api/truth-source/analyze',async route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({source:{url:'https://example.com/lens-guide',kind:'webpage',title:'Practical Lens Guide',relationship:'supports',confidence:91,excerpt:evidence.excerpt,locator:evidence.locator,explanation:evidence.explanation,provider:'gemini',model:'gemini-3.6-flash',analyzedAt:Date.now()}})}));
-  await page.goto(pathToFileURL(path.resolve('index.html')).href);await page.waitForTimeout(200);
+  await page.goto(pathToFileURL(process.env.APP||path.resolve('index.html')).href);await page.waitForTimeout(200);
   const claimId=await page.evaluate(()=>{
     document.getElementById('gdAuthOv').classList.remove('show','gate');document.body.classList.remove('gd-gated');projectType='youtube';topic='Three useful lenses';
     const contract=window.gdCreativeContractFallback();contract.format.type='presenter';window.gdSetCreativeContract(contract);window.gdLockCreativeContract();

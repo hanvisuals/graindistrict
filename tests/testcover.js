@@ -60,11 +60,16 @@ server.listen(8931, async()=>{
               [].map.call(el.querySelectorAll('.pv-loc-list .pv-num'),n=>n.textContent).join(', ')),
             text:v.textContent, count:(v.querySelector('.pv-bd h2')||{}).textContent};
   });
-  ok('the five shots nobody placed are surfaced, not swallowed',
+  // 01 and 02 are the voiceover and the music - they are not shot at a
+  // location and are printed in their own sections, so what the location
+  // pages have to account for is the six camera cuts.
+  ok('the camera shots nobody placed are surfaced, not swallowed',
      /Unplaced/.test(r.text) && /01c/.test(r.text) && /02c/.test(r.text), r.names);
   ok('and exactly the missing ones are printed under it',
-     (r.shots[1]||'')==='01c, 02, 02a, 02b, 02c', r.shots);
-  ok('the ones the model did place are left alone', (r.shots[0]||'')==='01, 01a, 01b', r.shots);
+     (r.shots[1]||'')==='01c, 02a, 02b, 02c', r.shots);
+  ok('the ones the model did place are left alone', (r.shots[0]||'')==='01a, 01b', r.shots);
+  ok('and the two that are not camera work are not counted as missing either',
+     !/Unplaced[\s\S]*?\b01\b(?!\w)/.test(r.text.replace(/01[a-z]/g,'')), r.shots);
   ok('it says what to do about them', /before you pack/.test(r.text));
 
   // a complete breakdown must gain nothing
@@ -94,7 +99,7 @@ server.listen(8931, async()=>{
   // counting them as placed is only half the job - a label the lookup does not
   // recognise would drop the shot off the page while still looking accounted for
   ok('and the shot itself still reaches the page, under the plan\'s own label',
-     sloppy.printed==='01,01a,01b,01c,02,02a,02b,02c', sloppy.printed);
+     sloppy.printed==='01a,01b,01c,02a,02b,02c', sloppy.printed);
 
   await browser.close(); server.close();
 });

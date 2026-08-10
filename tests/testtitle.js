@@ -45,9 +45,21 @@ const { chromium } = require('./node_modules/playwright');
   });
   ok('the heading stays on one line on paper', lines===1, lines);
 
-  // the PDF filename should not carry an ellipsis
-  const fn=await page.evaluate(()=>{ var p=document.title; printNow(); var t=document.title; document.title=p; return t; });
-  ok('the PDF is named after the same short title, without the ellipsis', !/…/.test(fn)&&/shot list$/.test(fn), fn);
+  // The PDF filename should not carry an ellipsis. printNow() now offers the
+  // clean-PDF reminder before it prints anything, and only reaches the title
+  // once that has been answered - so answer it, the way a person does.
+  const fn=await page.evaluate(async()=>{
+    window.gdAsk=function(){ return Promise.resolve(true); };
+    window.print=function(){};
+    var before=document.title;
+    printNow();
+    await new Promise(r=>setTimeout(r,120));
+    var t=document.title;
+    document.title=before;
+    return t;
+  });
+  ok('the PDF is named after the same short title, without the ellipsis',
+     !/…/.test(fn)&&/shot list$/.test(fn), fn);
 
   await page.screenshot({path:'title.png', clip:{x:0,y:0,width:794,height:200}});
   await browser.close();
