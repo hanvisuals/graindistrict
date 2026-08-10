@@ -87,6 +87,15 @@ const accepted=await page.evaluate(()=>({
 ok('accept changes only the selected words and preserves every surrounding block',/I thought beginning again needed a grand moment\./.test(accepted.script)&&/Static wide shot of the apartment desk/.test(accepted.script)&&/opening the same notebook/.test(accepted.script)&&!/had to feel dramatic/.test(accepted.script),accepted.script);
 ok('accepted revisions are versioned and autosaved',!accepted.panel&&accepted.undo&&accepted.versions===1&&/saved/i.test(accepted.save),accepted);
 
+const brollSync=await page.evaluate(async()=>{
+  const finalScript=document.getElementById('scriptTa').value;
+  window.__features=[];
+  api=function(sys,user,feature){window.__features.push({feature,user:String(user)});return Promise.resolve('[{"i":1,"t":"Close-up of a small handwritten note beside the open notebook."}]');};
+  const result=await syncBrollWithFinalVoiceover(finalScript);
+  return {result,call:window.__features[0],buildUsesSync:/syncBrollWithFinalVoiceover\(text\)/.test(String(buildCanvas))};
+});
+ok('B-roll is reconciled against the accepted final voiceover before the visual board is built',brollSync.call&&brollSync.call.feature==='broll_sync'&&/needed a grand moment/.test(brollSync.call.user)&&!/had to feel dramatic/.test(brollSync.call.user)&&/Close-up of a small handwritten note/.test(brollSync.result.text)&&/I thought beginning again needed a grand moment/.test(brollSync.result.text)&&brollSync.result.updated===1&&brollSync.buildUsesSync,brollSync);
+
 await page.evaluate(()=>undoLastScriptRevision());
 await page.waitForTimeout(180);
 ok('the last accepted AI edit can be undone',await page.evaluate(()=>/had to feel dramatic/.test(document.getElementById('scriptTa').value)&&scriptVersions.length===0));
@@ -117,6 +126,26 @@ await page.waitForTimeout(180);
 const mobile=await page.evaluate(()=>({bar:document.getElementById('scriptAiBar').classList.contains('show'),selected:document.getElementById('scriptSelectedText').textContent,width:document.getElementById('scriptAiBar').getBoundingClientRect().width}));
 ok('Clicking a voiceover paragraph opens a touch-friendly rewrite control on phones',mobile.bar&&/Mostly/.test(mobile.selected)&&mobile.width<=370,mobile);
 if(process.env.QA_DIR)await page.screenshot({path:process.env.QA_DIR+'/script-selection-mobile.png'});
+
+await page.evaluate(()=>{
+  document.getElementById('scriptTa').value='[VOICEOVER] 00:00-00:06 - The final line is about a handwritten note.\n[BROLL] 00:00-00:06 - An old visual of an empty apartment desk.';
+  window.__features=[];
+  api=function(sys,user,feature){
+    window.__features.push({feature,user:String(user)});
+    if(feature==='broll_sync')return Promise.resolve('[{"i":1,"t":"Close-up of the handwritten note as the pen finishes the last word."}]');
+    if(feature==='shot_details_batch')return Promise.resolve('[{"i":1,"shots":[]}]');
+    return Promise.resolve('[]');
+  };
+  buildCanvas();
+});
+await page.waitForTimeout(1300);
+const board=await page.evaluate(()=>({
+  screen:document.querySelector('.screen.active').id,
+  voiceover:(nodes.find(node=>node.type==='voiceover')||{}).content,
+  broll:(nodes.find(node=>node.type==='broll')||{}).content,
+  features:window.__features.map(call=>call.feature)
+}));
+ok('the visual board nodes use the re-aligned B-roll instead of the first-draft visual',board.screen==='s5'&&/final line/.test(board.voiceover)&&/handwritten note/.test(board.broll)&&!/empty apartment desk/.test(board.broll)&&board.features[0]==='broll_sync'&&board.features.includes('shot_details_batch'),board);
 ok('Script Studio raises no page errors',pageError===null,pageError);
 
 await browser.close();
