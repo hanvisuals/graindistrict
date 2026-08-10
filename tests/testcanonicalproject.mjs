@@ -25,7 +25,7 @@ try{
       noteNodes:[{id:21,text:'Confirm access time',x:850,y:160,w:180}],
       conns:[{id:22,fromType:'node',fromId:2,toType:'img',toId:20}],nid:30,
       projectBreakdown:[{name:'Main room',timeOfDay:'Morning',shots:['01A'],props:['Folded call sheet'],equipment:['24mm lens'],wardrobe:[],cast:['Creator']}],
-      projectBreakdownKey:'legacy-key',script:'[VOICEOVER] 00:00 - 00:06\nThe room is empty when we arrive.',scriptVersions:[],
+      projectBreakdownKey:'legacy-key',script:'[VOICEOVER] 00:00 - 00:06\nThe room is empty when we arrive.',scriptVersions:[],brollVisualDirtyRanges:[{start:0,end:6,reason:'test_revision'}],
       view:{scale:.9,px:60,py:80},boardCamera:{scale:.9,px:60,py:80},boardViewMode:'free',boardDensity:'compact',boardCardDetail:'standard'
     };
     const migrated=window.gdMigrateProjectData(legacy),cp=migrated.canonical,validation=window.gdValidateCanonicalProject(cp);
@@ -45,7 +45,7 @@ try{
       canonicalCounts:{blocks:cp.timeline.blocks.length,details:cp.production.details.length,images:cp.assets.images.length,notes:cp.workspace.notes.length,connections:cp.workspace.connections.length,locations:cp.production.locations.length},
       refs:{detail:cp.production.details[0].parentBlockId,image:cp.assets.images[0].attachedDetailId,from:cp.workspace.connections[0].from,to:cp.workspace.connections[0].to},
       frames:{start:cp.timeline.blocks[1].start.frame,end:cp.timeline.blocks[1].end.frame,target:cp.project.durationTargetFrames},
-      runtimeAfterLegacy,canonicalOnly,sharedDomId,firstIds,secondIds,movedX:moved.position.x,brokenValidation,
+      runtimeAfterLegacy,canonicalOnly,sharedDomId,firstIds,secondIds,movedX:moved.position.x,brokenValidation,visualSync:{canonical:first.canonical.script.visualSync,runtime:brollVisualDirtyRanges},
       printValidation:window.gdLastCanonicalValidation,voiceovers:document.querySelectorAll('#printView .pv-vo-row').length
     };
   });
@@ -58,6 +58,7 @@ try{
   ok('a canonical-only backup hydrates the complete editable board',result.canonicalOnly.topic==='Canonical migration test'&&result.canonicalOnly.nodeIds.join(',')==='1,2'&&result.canonicalOnly.detailParent===2&&result.canonicalOnly.imageAttachment===10&&result.canonicalOnly.connection.fromId===2&&result.canonicalOnly.connection.toId===20,result.canonicalOnly);
   ok('canvas, timeline and assets expose the same canonical identities',result.sharedDomId.canvas==='block:2'&&result.sharedDomId.timeline==='block:2'&&result.sharedDomId.image==='image:20',result.sharedDomId);
   ok('stable canonical IDs survive edits while positions update',result.firstIds.join(',')===result.secondIds.join(',')&&result.movedX===515,{first:result.firstIds,second:result.secondIds,movedX:result.movedX});
+  ok('voiceover-to-B-roll dirty ranges survive canonical save and restore',result.visualSync.canonical.tracked===true&&result.visualSync.canonical.dirtyRanges.length===1&&result.visualSync.canonical.dirtyRanges[0].end===6&&result.visualSync.runtime.length===1&&result.visualSync.runtime[0].reason==='test_revision',result.visualSync);
   ok('preflight accepts complete projects and catches orphaned references',result.validation.valid&&result.printValidation.valid&&!result.brokenValidation.valid&&result.brokenValidation.errors.some(x=>x.startsWith('orphan_connection:')),{valid:result.validation,print:result.printValidation,broken:result.brokenValidation});
   ok('the existing PDF adapter still renders from a preflighted project',result.voiceovers===1,result.voiceovers);
   ok('canonical migration creates no page errors',errors.length===0,errors);

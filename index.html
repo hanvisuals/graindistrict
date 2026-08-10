@@ -3303,7 +3303,7 @@ var DC={voiceover:'var(--c-vo)',broll:'var(--c-br)',music:'var(--c-mu)',transiti
 var PT_BLOCKS={youtube:['VOICEOVER','BROLL','MUSIC','TRANSITION'],music:['VERSE','CHORUS','HOOK','LIP_SYNC','BRIDGE','INTRO','OUTRO','TRANSITION'],film:['SCENE','DIALOGUE','ACTION','MONTAGE','TRANSITION'],other:['INTRO','MAIN','SEGMENT','OUTRO','TRANSITION']};
 
 var tone='introspective',fmt='voiceover',styleMode='gawx',topic='',inputLang='en',projectType='youtube';
-var scriptVersions=[],scriptSelectionState=null,scriptRevisionState=null;
+var scriptVersions=[],scriptSelectionState=null,scriptRevisionState=null,brollVisualDirtyRanges=[];
 
 var STYLE_PACKS={
  gawx:{
@@ -3859,7 +3859,7 @@ function creativeContractGenerationReference(){
   var validation=validateCreativeContract(creativeContract,{requireLocked:true});if(!validation.valid)return null;
   return {contractId:creativeContract.id,contractRevision:creativeContract.revision,contractHash:creativeContractHash(creativeContract)};
 }
-function creativeContractBoundFeature(feature){return /^(shot_plan|shot_plan_segment|shot_plan_redraft|shot_plan_fallback|shot_plan_continuation|plan_outline|script_revision|epistemic_rewrite|broll_sync|block_revision|block_shot_details|shot_details_batch|storyboard_prompt|storyboard_revision)$/.test(String(feature||''));}
+function creativeContractBoundFeature(feature){return /^(shot_plan|shot_plan_segment|shot_plan_redraft|shot_plan_fallback|shot_plan_continuation|plan_outline|script_revision|epistemic_rewrite|broll_sync|broll_replan|block_revision|block_shot_details|shot_details_batch|storyboard_prompt|storyboard_revision)$/.test(String(feature||''));}
 function recordCreativeGeneration(feature,reference,text){
   if(!reference)return null;var entry={id:'generation:'+canonicalIdToken(),feature:String(feature||'ai_request'),generatedFrom:canonicalClone(reference,reference),outputHash:'output:'+creativeContractHashText(String(text||'')),createdAt:Date.now()};
   creativeGenerationRecords.push(entry);if(/shot_plan|script_revision/.test(entry.feature))currentScriptGeneratedFrom=canonicalClone(reference,reference);renderScriptContract();return entry;
@@ -4966,7 +4966,7 @@ function performNewProject(){
   nodes=[];attShots=[];imgNodes=[];noteNodes=[];conns=[];nid=1;nodeDrawerClosed={};
   durMin=3;durMax=3;videoDurationCommitted=3;syncVideoDurationControl();
   topic='';projectBrief='';projectConstraints='';projectGuidance={outcome:'understand',approach:'observe',production:'voice-footage'};projectGuidanceTouched={};creativeContract=null;creativeContractBusy=false;creativeContractHistory=[];creativeGenerationRecords=[];currentScriptGeneratedFrom=null;truthLedger=null;truthResearch=null;firstPartyAssertions=[];scriptEpistemicRevisions=[];currentScriptEpistemic=null;projectBreakdown=null;projectBreakdownKey=null;
-  scriptVersions=[];scriptSelectionState=null;scriptRevisionState=null;
+  scriptVersions=[];scriptSelectionState=null;scriptRevisionState=null;brollVisualDirtyRanges=[];
   clearRecce();songName='';songDuration=0;songAnalysis=null;songURL=null;
   undoStack=[];undoIdx=-1;scale=1;px=60;py=180;selId=null;selImgId=null;selNoteId=null;selectedNodeIds=[];selectedImgIds=[];selectedNoteIds=[];
   var topicEl=document.getElementById('topicIn'),scriptEl=document.getElementById('scriptTa');
@@ -6004,7 +6004,7 @@ function migrateCanonicalSchema(project){
   if(out.creative&&out.creative.truthLedger)out.creative.truthLedger=normalizeTruthLedger(out.creative.truthLedger);
   if(out.creative&&out.creative.truthResearch)out.creative.truthResearch=normalizeTruthResearch(out.creative.truthResearch);
   if(out.creative)out.creative.firstPartyAssertions=(Array.isArray(out.creative.firstPartyAssertions)?out.creative.firstPartyAssertions:[]).map(normalizeFirstPartyAssertion);
-  if(out.script){var epi=out.script.epistemic||{};out.script.epistemic={policy:EPISTEMIC_POLICY,policyVersion:EPISTEMIC_POLICY_VERSION,current:epi.current?normalizeScriptEpistemicRecord(epi.current,0):null,history:(Array.isArray(epi.history)?epi.history:[]).map(normalizeScriptEpistemicRecord)};}
+  if(out.script){var epi=out.script.epistemic||{},visualSync=out.script.visualSync||{};out.script.epistemic={policy:EPISTEMIC_POLICY,policyVersion:EPISTEMIC_POLICY_VERSION,current:epi.current?normalizeScriptEpistemicRecord(epi.current,0):null,history:(Array.isArray(epi.history)?epi.history:[]).map(normalizeScriptEpistemicRecord)};out.script.visualSync={tracked:visualSync.tracked===true,dirtyRanges:normalizeBrollVisualDirtyRanges(visualSync.dirtyRanges||[])};}
   return out;
 }
 function canonicalProjectId(seed){
@@ -6099,7 +6099,7 @@ function canonicalProjectFromLegacy(data){
     workflow:{stage:data.stage||'board'},
     creative:{tone:data.tone||'',format:data.fmt||'',houseLook:data.styleMode||'',language:data.inputLang||'en',
       durationRange:{min:Number(data.durMin)||0,max:Number(data.durMax)||0},brief:data.projectBrief||'',constraints:data.projectConstraints||'',guidance:canonicalClone(data.projectGuidance||projectGuidance||{},{}),creatorDNA:canonicalClone(data.creatorDNA||null,null),contract:data.creativeContract?normalizeCreativeContract(data.creativeContract,data.creativeContract.source):null,contractHistory:canonicalClone(data.creativeContractHistory||[],[]).map(function(c){return normalizeCreativeContract(c,c&&c.source);}),generatedOutputs:canonicalClone(data.creativeGenerationRecords||[],[]),truthLedger:data.truthLedger?normalizeTruthLedger(data.truthLedger):null,truthResearch:data.truthResearch?normalizeTruthResearch(data.truthResearch):null,firstPartyAssertions:canonicalClone(data.firstPartyAssertions||firstPartyAssertions||[],[]).map(normalizeFirstPartyAssertion)},
-    script:{text:data.script||'',versions:canonicalClone(data.scriptVersions||[],[]),generatedFrom:canonicalClone(data.currentScriptGeneratedFrom||null,null),epistemic:{policy:EPISTEMIC_POLICY,policyVersion:EPISTEMIC_POLICY_VERSION,current:data.currentScriptEpistemic?normalizeScriptEpistemicRecord(data.currentScriptEpistemic,0):null,history:canonicalClone(data.scriptEpistemicRevisions||scriptEpistemicRevisions||[],[]).map(normalizeScriptEpistemicRecord)}},
+    script:{text:data.script||'',versions:canonicalClone(data.scriptVersions||[],[]),generatedFrom:canonicalClone(data.currentScriptGeneratedFrom||null,null),visualSync:{tracked:data.brollVisualSyncTracked===true||Object.prototype.hasOwnProperty.call(data,'brollVisualDirtyRanges'),dirtyRanges:normalizeBrollVisualDirtyRanges(data.brollVisualDirtyRanges||brollVisualDirtyRanges||[])},epistemic:{policy:EPISTEMIC_POLICY,policyVersion:EPISTEMIC_POLICY_VERSION,current:data.currentScriptEpistemic?normalizeScriptEpistemicRecord(data.currentScriptEpistemic,0):null,history:canonicalClone(data.scriptEpistemicRevisions||scriptEpistemicRevisions||[],[]).map(normalizeScriptEpistemicRecord)}},
     timeline:{blocks:blocks},
     production:{details:details,locations:locations,breakdownKey:data.projectBreakdownKey||null},
     assets:{images:images,recce:recce,audio:{name:data.songName||'',duration:Number(data.songDuration)||0,analysis:canonicalClone(data.songAnalysis||null,null)}},
@@ -6152,7 +6152,7 @@ function legacyProjectFromCanonical(project,fallback){
   out.tone=creative.tone||out.tone||'';out.fmt=creative.format||out.fmt||'';out.styleMode=creative.houseLook||out.styleMode||'';out.inputLang=creative.language||out.inputLang||'en';
   out.durMin=creative.durationRange&&creative.durationRange.min||out.durMin;out.durMax=creative.durationRange&&creative.durationRange.max||out.durMax;
   out.projectBrief=creative.brief||'';out.projectConstraints=creative.constraints||'';out.projectGuidance=canonicalClone(creative.guidance||out.projectGuidance||{},{});out.creatorDNA=canonicalClone(creative.creatorDNA||null,null);out.creativeContract=creative.contract?normalizeCreativeContract(creative.contract,creative.contract.source):null;out.creativeContractHistory=canonicalClone(creative.contractHistory||[],[]).map(function(c){return normalizeCreativeContract(c,c&&c.source);});out.creativeGenerationRecords=canonicalClone(creative.generatedOutputs||[],[]);out.truthLedger=creative.truthLedger?normalizeTruthLedger(creative.truthLedger):null;out.truthResearch=creative.truthResearch?normalizeTruthResearch(creative.truthResearch):null;out.firstPartyAssertions=(creative.firstPartyAssertions||[]).map(normalizeFirstPartyAssertion);
-  var scriptEpistemic=project.script&&project.script.epistemic||{};out.script=project.script&&project.script.text||'';out.scriptVersions=canonicalClone(project.script&&project.script.versions||[],[]);out.currentScriptGeneratedFrom=canonicalClone(project.script&&project.script.generatedFrom||null,null);out.currentScriptEpistemic=scriptEpistemic.current?normalizeScriptEpistemicRecord(scriptEpistemic.current,0):null;out.scriptEpistemicRevisions=(scriptEpistemic.history||[]).map(normalizeScriptEpistemicRecord);
+  var scriptEpistemic=project.script&&project.script.epistemic||{},visualSync=project.script&&project.script.visualSync||{};out.script=project.script&&project.script.text||'';out.scriptVersions=canonicalClone(project.script&&project.script.versions||[],[]);out.brollVisualSyncTracked=visualSync.tracked===true;out.brollVisualDirtyRanges=normalizeBrollVisualDirtyRanges(visualSync.dirtyRanges||[]);out.currentScriptGeneratedFrom=canonicalClone(project.script&&project.script.generatedFrom||null,null);out.currentScriptEpistemic=scriptEpistemic.current?normalizeScriptEpistemicRecord(scriptEpistemic.current,0):null;out.scriptEpistemicRevisions=(scriptEpistemic.history||[]).map(normalizeScriptEpistemicRecord);
   out.boardViewMode=workspace.mode||'free';out.boardDensity=workspace.density||'compact';out.boardCardDetail=workspace.detail||'standard';out.view=canonicalClone(workspace.view||null,null);out.boardCamera=canonicalClone(workspace.camera||null,null);
   out.stage=project.workflow&&project.workflow.stage||out.stage||'board';out.aiMode=workspace.aiMode!==false;
   out.decisions=canonicalClone(project.decisions||[],[]);out.canonicalTombstones=canonicalClone(project.tombstones||[],[]);out.nid=Math.max(Number(workspace.nextLegacyId)||1,maxId+1);out.v=4;out.canonical=canonicalClone(project,project);
@@ -6226,7 +6226,7 @@ function canonicalRuntimeSnapshot(){
   return canonicalProjectFromLegacy({v:4,stage:active,projectType:projectType,topic:topic,tone:tone,fmt:fmt,styleMode:styleMode,inputLang:inputLang,durMin:durMin,durMax:durMax,
     projectBrief:projectBrief,projectConstraints:projectConstraints,projectGuidance:projectGuidance,creatorDNA:creatorDNA,creativeContract:creativeContract,creativeContractHistory:creativeContractHistory,creativeGenerationRecords:creativeGenerationRecords,currentScriptGeneratedFrom:currentScriptGeneratedFrom,truthLedger:truthLedger,truthResearch:truthResearch,firstPartyAssertions:firstPartyAssertions,scriptEpistemicRevisions:scriptEpistemicRevisions,currentScriptEpistemic:currentScriptEpistemic,projectBreakdown:projectBreakdown,projectBreakdownKey:projectBreakdownKey,
     songName:songName,songDuration:songDuration,songAnalysis:songAnalysis,recceImages:recceImages,nodes:itemsAtStoryPositions(nodes,'nodes'),attShots:itemsAtStoryPositions(attShots,'atts'),
-    imgNodes:imgNodes,noteNodes:noteNodes,conns:conns,nid:nid,canonicalTombstones:canonicalTombstones,script:ta?ta.value:'',scriptVersions:scriptVersions,view:storyViewForSave(),boardCamera:{scale:scale,px:px,py:py},
+    imgNodes:imgNodes,noteNodes:noteNodes,conns:conns,nid:nid,canonicalTombstones:canonicalTombstones,script:ta?ta.value:'',scriptVersions:scriptVersions,brollVisualSyncTracked:true,brollVisualDirtyRanges:brollVisualDirtyRanges,view:storyViewForSave(),boardCamera:{scale:scale,px:px,py:py},
     boardViewMode:canvasViewMode,boardDensity:boardDensity,boardCardDetail:boardCardDetail,aiMode:(typeof aiMode!=='undefined'?aiMode:true)});
 }
 function canonicalPreflight(){
@@ -6902,7 +6902,7 @@ function goToChoice(){
     goToEquipment();
   }else{
     if(!captureSetup())return;
-    truthLedger=null;truthResearch=null;document.getElementById('scriptTa').value='';planHighlight();renderTruthLedger();
+    truthLedger=null;truthResearch=null;brollVisualDirtyRanges=[];document.getElementById('scriptTa').value='';planHighlight();renderTruthLedger();
     document.getElementById('wc').textContent='0 blocks';
     show('s3');
   }
@@ -6922,7 +6922,7 @@ function pcContinue(){
   if(pcChoice==='ai'){
     genScript();
   }else{
-    truthLedger=null;truthResearch=null;document.getElementById('scriptTa').value='';planHighlight();renderTruthLedger();
+    truthLedger=null;truthResearch=null;brollVisualDirtyRanges=[];document.getElementById('scriptTa').value='';planHighlight();renderTruthLedger();
     document.getElementById('wc').textContent='0 blocks';
     show('s3');
   }
@@ -6961,7 +6961,7 @@ function genScript(){
     return projectType==='youtube'?epistemicGateCandidateScript(planText,'shot_plan',previousFingerprint):Promise.resolve({script:planText,audit:null,rewritten:false});
   }).then(function(result){
     var planText=result.script;projectBrief='';
-    scriptTa.value=planText;
+    scriptTa.value=planText;brollVisualDirtyRanges=[];
     rebuildTruthLedgerFromScript(planText,{reason:result.rewritten?'generated_script_safety_rewrite':'generated_script',silent:true});
     document.getElementById('wc').textContent=planStatsLabel(planText);
     refreshScriptStudio();
@@ -6995,8 +6995,15 @@ function planHighlight(){
 (function(){
   var ta=document.getElementById('scriptTa');
   if(!ta) return;
+  var beforeInputState=null;
+  ta.addEventListener('beforeinput',function(){beforeInputState={value:ta.value,start:ta.selectionStart||0,end:ta.selectionEnd||0};});
   ta.addEventListener('input',function(){
     markTruthLedgerStale('Script edited',ta.value);
+    if(projectType==='youtube'){
+      markVoiceoverVisualsDirtyAt(ta.value,ta.selectionStart,'manual_voiceover_edit',false);
+      if(beforeInputState)markVoiceoverVisualsDirtyAt(beforeInputState.value,beforeInputState.start,'manual_voiceover_edit',false);
+    }
+    beforeInputState=null;
     activeVoiceoverRange=null;
     planHighlight();
     var wc=document.getElementById('wc');if(wc)wc.textContent=planStatsLabel(ta.value);
@@ -7177,7 +7184,7 @@ function acceptScriptRevision(){
   recordScriptEpistemic(after,'promoted','script_revision',audit,truthLedgerScriptFingerprint(before));
   scriptVersions.push({at:Date.now(),before:before,after:after,original:state.original,replacement:replacement});
   if(scriptVersions.length>20)scriptVersions.shift();
-  ta.value=after;ta.focus();ta.setSelectionRange(state.start,state.start+replacement.length);
+  ta.value=after;markVoiceoverVisualsDirtyAt(after,state.start,'accepted_voiceover_revision');ta.focus();ta.setSelectionRange(state.start,state.start+replacement.length);
   markTruthLedgerStale('AI script revision accepted',after);
   cancelScriptRevision();refreshScriptStudio();
   if(window.gdAutosaveProject)window.gdAutosaveProject(true);
@@ -7189,7 +7196,7 @@ function renderScriptVersionButton(){
 function undoLastScriptRevision(){
   var ta=document.getElementById('scriptTa'),last=scriptVersions[scriptVersions.length-1];
   if(!ta||!last||ta.value!==last.after){renderScriptVersionButton();return;}
-  scriptVersions.pop();ta.value=last.before;markTruthLedgerStale('Script revision undone',last.before);refreshScriptStudio();
+  scriptVersions.pop();ta.value=last.before;markAllVoiceoverVisualsDirty(last.before,'voiceover_revision_undone');markTruthLedgerStale('Script revision undone',last.before);refreshScriptStudio();
   if(window.gdAutosaveProject)window.gdAutosaveProject(true);
 }
 
@@ -7259,6 +7266,36 @@ function parseBlocks(text){
   });
   return out.filter(function(b){return b.content;});
 }
+
+function normalizeBrollVisualDirtyRanges(ranges){
+  var cleaned=(Array.isArray(ranges)?ranges:[]).map(function(range){
+    var start=Math.max(0,Math.round(Number(range&&range.start)||0)),end=Math.max(0,Math.round(Number(range&&range.end)||0));
+    return {start:start,end:end,reason:String(range&&range.reason||'voiceover_edit').slice(0,80)};
+  }).filter(function(range){return range.end>range.start;}).sort(function(a,b){return a.start-b.start||a.end-b.end;});
+  var merged=[];cleaned.forEach(function(range){
+    var last=merged[merged.length-1];
+    if(last&&range.start<=last.end){last.end=Math.max(last.end,range.end);if(last.reason.indexOf(range.reason)<0)last.reason=(last.reason+'+'+range.reason).slice(0,80);}
+    else merged.push(range);
+  });
+  return merged.slice(0,80);
+}
+function markBrollVisualRangeDirty(start,end,reason){
+  brollVisualDirtyRanges=normalizeBrollVisualDirtyRanges((brollVisualDirtyRanges||[]).concat([{start:start,end:end,reason:reason}]));
+  return brollVisualDirtyRanges;
+}
+function markAllVoiceoverVisualsDirty(text,reason){
+  parseBlocks(text||'').forEach(function(block){if(block.type==='voiceover')markBrollVisualRangeDirty(tcToSec(block.tcStart),tcToSec(block.tcEnd),reason);});
+  return brollVisualDirtyRanges;
+}
+function markVoiceoverVisualsDirtyAt(text,offset,reason,fallbackAll){
+  text=String(text||'');offset=Math.max(0,Math.min(text.length,Number(offset)||0));
+  var lineStart=text.lastIndexOf('\n',Math.max(0,offset-1))+1,lineEnd=text.indexOf('\n',offset);if(lineEnd<0)lineEnd=text.length;
+  var block=parseBlocks(text.slice(lineStart,lineEnd))[0];
+  if(block&&block.type==='voiceover')markBrollVisualRangeDirty(tcToSec(block.tcStart),tcToSec(block.tcEnd),reason);
+  else if(fallbackAll!==false)markAllVoiceoverVisualsDirty(text,reason);
+  return brollVisualDirtyRanges;
+}
+function brollRangeOverlapsBlock(range,block){return tcToSec(block.tcEnd)>range.start&&tcToSec(block.tcStart)<range.end;}
 
 /* Timeline blocks and things the camera crew must physically capture are not
    the same count. Calling both of them "shots" made a 70-shot film look like a
@@ -7672,58 +7709,85 @@ function buildCanvasSys(li){
       'Write all "t" values in the same language as the script blocks.'+stylePack('shots')+(li?'\n'+li:'');
 }
 
-/* Script Studio lets the creator make the spoken words final before the visual
-   board exists. The generated B-roll still belongs to the first draft unless
-   we deliberately reconcile it here. Keep the timeline/block structure fixed
-   and ask only for replacement descriptions, using the final overlapping
-   voiceover as the authority. */
-function brollVoiceoverContext(block,blocks){
-  var start=tcToSec(block.tcStart),end=tcToSec(block.tcEnd);
-  var voices=(blocks||[]).filter(function(candidate){
-    return candidate.type==='voiceover'&&tcToSec(candidate.tcEnd)>start&&tcToSec(candidate.tcStart)<end;
-  });
-  if(!voices.length){
-    voices=(blocks||[]).filter(function(candidate){return candidate.type==='voiceover';}).sort(function(a,b){
-      function distance(candidate){var aStart=tcToSec(candidate.tcStart),aEnd=tcToSec(candidate.tcEnd);return aEnd<=start?start-aEnd:(aStart>=end?aStart-end:0);}
-      return distance(a)-distance(b);
-    }).slice(0,1);
-  }
-  return voices.map(function(voice){return voice.tcStart+'-'+voice.tcEnd+' - '+voice.content;});
+/* A spoken revision invalidates visual dependants, not just their prose. For a
+   dirty time range the old B-roll is intentionally withheld from the model,
+   then replaced structurally with as many short, literal shots as the FINAL
+   voiceover needs. This removes the anchoring failure where a broadly related
+   first-draft visual survived simply because it still mentioned the topic. */
+function brollVoiceoverForRange(range,blocks){
+  return (blocks||[]).filter(function(block){return block.type==='voiceover'&&brollRangeOverlapsBlock(range,block);}).map(function(block){return {start:block.tcStart,end:block.tcEnd,text:block.content};});
 }
-function parseBrollSyncResponse(raw){
+function brollVisualBeats(voiceover){
+  var beats=[];(voiceover||[]).forEach(function(line){
+    var text=String(line.text||'').trim(),focus=text.indexOf('—')>=0?text.split('—').slice(1).join('—').trim():text;
+    var parts=focus.split(/\s*;\s*|,\s+(?=[A-ZÀ-ÖØ-ÞÇĞİÖŞÜ"“])/).map(function(part){return part.replace(/^[\s—-]+|[\s.]+$/g,'').trim();}).filter(function(part){return part.length>5;});
+    if(parts.length<2)parts=[focus.replace(/[\s.]+$/g,'').trim()];
+    parts.filter(Boolean).forEach(function(part){beats.push({id:beats.length,text:part});});
+  });
+  return beats.length?beats:[{id:0,text:'The final spoken idea in this range'}];
+}
+function brollVisualBeatFloor(range,beats){
+  var duration=Math.max(1,range.end-range.start),cadence=Math.max(1,Math.ceil(duration/6));
+  return Math.max(1,Math.min(Math.floor(duration),Math.max(cadence,(beats||[]).length)));
+}
+function parseBrollReplanResponse(raw){
   var text=String(raw||'').trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'').trim();
-  var match=text.match(/\[[\s\S]*\]/);if(!match)throw new Error('No B-roll alignment list returned.');
-  var rows=JSON.parse(match[0]);if(!Array.isArray(rows))throw new Error('Invalid B-roll alignment list.');
+  var match=text.match(/\[[\s\S]*\]/);if(!match)throw new Error('No replacement B-roll plan returned.');
+  var rows=JSON.parse(match[0]);if(!Array.isArray(rows))throw new Error('Invalid replacement B-roll plan.');
   return rows;
+}
+function brollTimeValue(value){
+  var match=String(value||'').trim().match(/^(\d{1,2}):(\d{2})$/);if(!match||Number(match[2])>59)return null;
+  return Number(match[1])*60+Number(match[2]);
+}
+function brollUnexpectedQuotedReference(text,voiceText){
+  var source=String(voiceText||'').toLowerCase().replace(/[“”]/g,'"'),match,quoted=/["“]([^"”]{2,90})["”]/g;
+  while((match=quoted.exec(String(text||''))))if(source.indexOf(match[1].toLowerCase())<0)return match[1];
+  var possessive=String(text||'').match(/\b([A-Z][A-Za-zÀ-ÖØ-öø-ÿ]+(?:\s+[A-Z][A-Za-zÀ-ÖØ-öø-ÿ]+)*)[’']s\b/);
+  if(possessive&&source.indexOf(possessive[1].toLowerCase())<0)return possessive[1];
+  return '';
+}
+function validateBrollReplanRows(rows,spec){
+  if(!Array.isArray(rows)||!rows.length)throw new Error('The revised voiceover returned no filmable B-roll.');
+  var voiceText=spec.voiceover.map(function(line){return line.text;}).join(' '),covered={},out=rows.map(function(row){
+    var start=brollTimeValue(row&&row.start),end=brollTimeValue(row&&row.end),content=String(row&&row.t||'').replace(/\s+/g,' ').trim();
+    var beat=Math.round(Number(row&&row.beat));if(!isFinite(beat)||beat<0||beat>=spec.beats.length)throw new Error('Replacement B-roll did not identify the final voiceover beat it covers.');covered[beat]=1;
+    if(start==null||end==null||end<=start||start<spec.start||end>spec.end)throw new Error('Replacement B-roll escaped its revised voiceover time range.');
+    if(end-start>6)throw new Error('One replacement B-roll tried to hold more than one visual beat.');
+    if(!content||planWordCount(content)>32)throw new Error('Replacement B-roll must be one concise, filmable shot.');
+    var unexpected=brollUnexpectedQuotedReference(content,voiceText);if(unexpected)throw new Error('Replacement B-roll introduced an unspoken reference: '+unexpected+'.');
+    if(/\bfilms? like\b|\bmovies? like\b|\bincluding films?\b/i.test(content))throw new Error('Replacement B-roll turned into a list of unrelated film references.');
+    return {type:'broll',tcStart:fmtPlanTime(start),tcEnd:fmtPlanTime(end),content:content,shots:[]};
+  }).sort(function(a,b){return tcToSec(a.tcStart)-tcToSec(b.tcStart)||tcToSec(a.tcEnd)-tcToSec(b.tcEnd);});
+  if(out.length<spec.minimumShots)throw new Error('The revised voiceover contains more visual beats than the replacement B-roll covered.');
+  var uncovered=spec.beats.filter(function(beat){return !covered[beat.id];});if(uncovered.length)throw new Error('Replacement B-roll skipped a concrete beat from the final voiceover.');
+  var cursor=spec.start;out.forEach(function(block){var start=tcToSec(block.tcStart),end=tcToSec(block.tcEnd);if(start>cursor)throw new Error('Replacement B-roll left part of the revised voiceover uncovered.');cursor=Math.max(cursor,end);});
+  if(cursor<spec.end)throw new Error('Replacement B-roll stops before the revised voiceover ends.');
+  return out;
+}
+function requestBrollReplan(spec,attempt){
+  attempt=attempt||0;
+  var sys='You are rebuilding B-roll after the creator changed the FINAL VOICEOVER. This is a dependency rebuild, not a brainstorm. You are NOT given the old B-roll and must not guess what it was. Use only facts, named works, people, places, objects and actions literally present in the final voiceover or production limits below. Never introduce another film title, artist, landmark, neighbourhood, brand or historical reference. Every numbered REQUIRED VISUAL BEAT must be covered by at least one shot carrying that exact beat number. Break enumerations into separate shots: one card equals one concrete camera-visible subject/action, never a paragraph or a montage list. Create at least '+spec.minimumShots+' shots. Together their timecodes must continuously cover '+fmtPlanTime(spec.start)+'-'+fmtPlanTime(spec.end)+' with no gaps; every shot must stay inside that range and last 1-6 seconds. Keep each description under 32 words. Do not write lenses, lighting, interpretation, rationale or voiceover. Return ONLY JSON: [{"beat":0,"start":"mm:ss","end":"mm:ss","t":"one filmable shot"}].';
+  var user='PROJECT TOPIC: '+topic+'\nLANGUAGE: '+inputLang+'\nPRODUCTION LIMITS: '+(projectConstraints||'Use only what the final voiceover establishes.')+'\n\nFINAL VOICEOVER (AUTHORITATIVE):\n'+spec.voiceover.map(function(line){return line.start+'-'+line.end+' - '+line.text;}).join('\n')+'\n\nREQUIRED VISUAL BEATS:\n'+spec.beats.map(function(beat){return beat.id+': '+beat.text;}).join('\n');
+  if(attempt)user+='\n\nThe previous answer failed structural validation. Return a complete, literal replacement with every time second covered and no outside references.';
+  return withTimeout(apiRetry(sys,user,'broll_replan'),60000,null,'B-roll dependency rebuild').then(function(raw){if(!raw)throw new Error('B-roll dependency rebuild timed out.');return validateBrollReplanRows(parseBrollReplanResponse(raw),spec);}).catch(function(error){if(attempt>=1)throw error;return requestBrollReplan(spec,attempt+1);});
 }
 function syncBrollWithFinalVoiceover(text){
   text=String(text||'').trim();
-  var blocks=parseBlocks(text),voices=blocks.filter(function(block){return block.type==='voiceover';});
-  var targets=blocks.map(function(block,index){return {block:block,index:index};}).filter(function(item){return item.block.type==='broll';});
-  if(projectType!=='youtube'||!voices.length||!targets.length)return Promise.resolve({text:text,changed:false,updated:0,total:targets.length});
-  var sys='You are GrainDistrict\'s B-roll continuity editor. The FINAL VOICEOVER supplied for every item is authoritative; ignore any wording from an earlier draft. For each BROLL item, decide whether its existing visual directly supports the final overlapping voiceover. If it does, copy the existing description exactly. If it does not, replace it with one concrete, filmable visual that depicts the objects, actions or idea actually spoken in that final voiceover. Preserve every supplied index. Return one result for every item and no extra items. Do not return timecodes, labels, explanations or markdown. Do not invent facts, people, locations, possessions or biography. Keep the language of the existing plan. Return ONLY JSON: [{"i":0,"t":"visual description"}].'+creatorDnaContext()+creativeContractContext()+truthLedgerContext();
-  var chunks=[],CH=24;
-  for(var i=0;i<targets.length;i+=CH)chunks.push(targets.slice(i,i+CH));
-  var tasks=chunks.map(function(chunk){return function(){
-    var payload=chunk.map(function(item){return {i:item.index,start:item.block.tcStart,end:item.block.tcEnd,finalVoiceover:brollVoiceoverContext(item.block,blocks),existingBroll:item.block.content};});
-    return withTimeout(apiRetry(sys,'BROLL ITEMS:\n'+JSON.stringify(payload),'broll_sync'),60000,null,'B-roll alignment').then(function(raw){if(!raw)throw new Error('B-roll alignment timed out.');return parseBrollSyncResponse(raw);});
-  };});
+  var blocks=parseBlocks(text),dirty=normalizeBrollVisualDirtyRanges(brollVisualDirtyRanges||[]);
+  var specs=dirty.map(function(range){var voiceover=brollVoiceoverForRange(range,blocks),beats=brollVisualBeats(voiceover);return {start:range.start,end:range.end,reason:range.reason,voiceover:voiceover,beats:beats,minimumShots:brollVisualBeatFloor(range,beats)};});
+  if(projectType!=='youtube'||!specs.length)return Promise.resolve({text:text,changed:false,updated:0,total:0,rebuiltRanges:0});
+  var tasks=specs.map(function(spec){return function(){return spec.voiceover.length?requestBrollReplan(spec,0):Promise.resolve([]);};});
   return runLimited(tasks,3).then(function(results){
-    var replacements={},expected={};targets.forEach(function(item){expected[item.index]=1;});
-    results.forEach(function(rows){
-      if(!Array.isArray(rows))throw new Error('Could not align B-roll with the final voiceover.');
-      rows.forEach(function(row){
-        var index=Number(row&&row.i),value=String(row&&row.t||'').replace(/\s+/g,' ').trim();
-        if(!expected[index]||!value||replacements[index])return;
-        replacements[index]=value.slice(0,700);
-      });
-    });
-    var missing=targets.filter(function(item){return !replacements[item.index];});
-    if(missing.length)throw new Error('The visual plan did not cover every final voiceover line. Please try again.');
-    var changed=0;targets.forEach(function(item){if(replacements[item.index]!==item.block.content){blocks[item.index].content=replacements[item.index];changed++;}});
-    var syncedText=changed?blocks.map(formatPlanBlock).join('\n'):text;
-    window.__lastBrollSyncReport={changed:changed,total:targets.length};
-    return {text:syncedText,changed:changed>0,updated:changed,total:targets.length};
+    if(results.some(function(rows,index){return !Array.isArray(rows)||(specs[index].voiceover.length&&!rows.length);}))throw new Error('Could not rebuild every B-roll dependency from the final voiceover.');
+    var removed=blocks.filter(function(block){return block.type==='broll'&&specs.some(function(spec){return brollRangeOverlapsBlock(spec,block);});}).length;
+    var kept=blocks.filter(function(block){return !(block.type==='broll'&&specs.some(function(spec){return brollRangeOverlapsBlock(spec,block);}));});
+    var replacements=[].concat.apply([],results),order={voiceover:0,music:0,broll:1,transition:2};
+    function layer(block){return order[block.type]==null?1:order[block.type];}
+    var rebuilt=kept.concat(replacements).sort(function(a,b){var start=tcToSec(a.tcStart)-tcToSec(b.tcStart);if(start)return start;var visualLayer=layer(a)-layer(b);return visualLayer||tcToSec(a.tcEnd)-tcToSec(b.tcEnd);});
+    var rebuiltText=rebuilt.map(formatPlanBlock).join('\n');brollVisualDirtyRanges=[];
+    window.__lastBrollSyncReport={changed:true,rebuiltRanges:specs.length,removed:removed,created:replacements.length};
+    return {text:rebuiltText,changed:rebuiltText!==text,updated:replacements.length,total:replacements.length,removed:removed,rebuiltRanges:specs.length};
   });
 }
 function renderCanvasScriptPreview(blocks){
@@ -10579,7 +10643,7 @@ document.addEventListener('mouseup',function(e){
     try{return new Date(ts).toLocaleString(undefined,withTime?{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}:{month:'short',day:'numeric'});}catch(e){return '—';}
   }
   function featureLabel(id){
-    var labels={creative_brief:'Creative brief',creative_contract:'Project direction',shot_plan:'Shot plan',script_revision:'Script revision',broll_sync:'B-roll alignment',plan_outline:'Plan outline',
+    var labels={creative_brief:'Creative brief',creative_contract:'Project direction',shot_plan:'Shot plan',script_revision:'Script revision',broll_sync:'B-roll alignment',broll_replan:'B-roll dependency rebuild',plan_outline:'Plan outline',
       shot_plan_segment:'Plan segment',shot_plan_redraft:'Segment redraft',shot_plan_fallback:'Plan fallback',
       shot_plan_continuation:'Plan continuation',shot_details_batch:'Shot details',block_shot_details:'Block planning',
       block_revision:'Block revision',translation:'Translation',location_bible:'Location bible',
@@ -11038,7 +11102,7 @@ document.addEventListener('mouseup',function(e){
       recceImages:recceImages,
       nodes:itemsAtStoryPositions(nodes,'nodes'), attShots:itemsAtStoryPositions(attShots,'atts'), imgNodes:imgNodes, noteNodes:noteNodes, conns:conns, nid:nid,
       canonicalTombstones:canonicalTombstones,
-      script:(byId('scriptTa')?byId('scriptTa').value:''),scriptVersions:scriptVersions,
+      script:(byId('scriptTa')?byId('scriptTa').value:''),scriptVersions:scriptVersions,brollVisualSyncTracked:true,brollVisualDirtyRanges:brollVisualDirtyRanges,
       view:storyViewForSave(),boardCamera:{scale:scale,px:px,py:py}
     };
     data.canonical=canonicalProjectFromLegacy(data);
@@ -11073,8 +11137,9 @@ document.addEventListener('mouseup',function(e){
     else canonicalLastKnownValid=canonicalClone(d.recovery&&d.recovery.lastKnownValid||null,null);
     boardDensity=d.boardDensity==='comfortable'?'comfortable':'compact';
     boardCardDetail=['essential','standard','full'].indexOf(d.boardCardDetail)>=0?d.boardCardDetail:'standard';
-    scriptVersions=d.scriptVersions||[];scriptSelectionState=null;scriptRevisionState=null;
+    scriptVersions=d.scriptVersions||[];scriptSelectionState=null;scriptRevisionState=null;brollVisualDirtyRanges=normalizeBrollVisualDirtyRanges(d.brollVisualDirtyRanges||[]);
     var sta=byId('scriptTa'); if(sta) sta.value=d.script||'';
+    if(!d.brollVisualSyncTracked&&!brollVisualDirtyRanges.length&&scriptVersions.length&&d.stage==='script')markAllVoiceoverVisualsDirty(d.script||'','legacy_voiceover_revision');
     if(d.view){ scale=d.view.scale||1; px=(d.view.px==null?60:d.view.px); py=(d.view.py==null?80:d.view.py); }
     undoStack=[]; undoIdx=-1;
     var scriptStage=d.stage==='script'||(!nodes.length&&!!String(d.script||'').trim());
