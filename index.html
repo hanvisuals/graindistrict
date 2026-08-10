@@ -3731,11 +3731,14 @@ function epistemicRewriteScript(candidate,audit,attempt,dirtyRanges){
   return runLimited(tasks,3).then(function(results){if(results.some(function(rows){return !Array.isArray(rows);}))throw new Error('Biography line repair did not complete every batch.');var applied=applyEpistemicLineRepairs(candidate,[].concat.apply([],results)),nextAudit=epistemicAuditScript(applied.script,'epistemic_rewrite');var allRanges=dirtyRanges.concat(applied.dirtyRanges);if(nextAudit.status==='clear')return {script:applied.script,dirtyRanges:allRanges};return epistemicRewriteScript(applied.script,nextAudit,attempt+1,allRanges);});
 }
 function epistemicPromoteLocalRepair(candidate,audit,parentFingerprint){
-  /* A generic sentence cannot safely replace a lived event: it may pass the
-     biography audit while destroying the chapter's cause and effect. If the
-     contextual rewrite fails, reject the draft instead of publishing filler. */
-  recordScriptEpistemic(candidate,'rejected','epistemic_rewrite_failed',audit,parentFingerprint);
-  throw new Error('Grain District protected your biography, but the contextual rewrite failed. Please generate the draft again.');
+  /* A failed model patch must not discard a long generation. Remove only the
+     blocked VO lines, keep every unaffected block byte-for-byte, and ask the
+     narrative layer to regenerate the affected chapters. This fails closed
+     on biography without falling back to repeated generic prose. */
+  var blockedLines=epistemicBlockedLines(candidate,audit),blockedSet={},chapterIds=[];blockedLines.forEach(function(item){blockedSet[item.lineNumber]=1;var chapter=narrativeChapterAt(tcToSec(item.start),currentNarrativePlan);if(chapter&&chapterIds.indexOf(chapter.id)<0)chapterIds.push(chapter.id);});
+  var quarantined=String(candidate||'').split(/\r?\n/).filter(function(line,index){return !blockedSet[index+1];}).join('\n').trim(),cleanAudit=epistemicAuditScript(quarantined,'epistemic_local_quarantine');
+  recordScriptEpistemic(candidate,'rejected','epistemic_rewrite_failed',audit,parentFingerprint);recordScriptEpistemic(quarantined,'promoted','epistemic_local_quarantine',cleanAudit,parentFingerprint);currentScriptGeneratedFrom=creativeContractGenerationReference()||currentScriptGeneratedFrom;
+  return {script:quarantined,audit:cleanAudit,rewritten:true,repairMode:'local_quarantine',forcedRepairChapterIds:chapterIds};
 }
 function epistemicGateCandidateScript(candidate,origin,parentFingerprint){
   var first=epistemicAuditScript(candidate,origin);if(first.status==='clear'){recordScriptEpistemic(candidate,'promoted',origin,first,parentFingerprint);currentScriptGeneratedFrom=creativeContractGenerationReference()||currentScriptGeneratedFrom;return Promise.resolve({script:candidate,audit:first,rewritten:false,repairMode:'none'});}recordScriptEpistemic(candidate,'quarantined',origin,first,parentFingerprint);
@@ -4012,15 +4015,17 @@ function repairNarrativeChapter(script,plan,chapter,totalSec,li){
 }
 function autoRepairNarrativeScript(script,plan,previousFingerprint,state,attempt){
   attempt=Math.max(0,Number(attempt)||0);state=state||{audit:null,rewritten:false};
-  var report=narrativeScriptQuality(script,plan);if(report.valid)return Promise.resolve({script:script,audit:state.audit||null,rewritten:!!state.rewritten,repaired:attempt>0,quality:report});
-  var chapters=narrativeRepairChapters(report,plan);if(!chapters.length||attempt>=2)throw new Error('The draft could not complete every chapter after automatic repair. Please try again.');
+  var report=narrativeScriptQuality(script,plan),forcedIds=Array.isArray(state.forcedRepairChapterIds)?state.forcedRepairChapterIds:[];
+  if(report.valid&&!forcedIds.length)return Promise.resolve({script:script,audit:state.audit||null,rewritten:!!state.rewritten,repaired:attempt>0,repairMode:state.repairMode||'none',quality:report});
+  if(attempt>=2){if(report.valid)return Promise.resolve({script:script,audit:state.audit||null,rewritten:true,repaired:true,repairMode:'safe_quarantine',quality:report});throw new Error('The draft could not complete every chapter after automatic repair. Please try again.');}
+  var chapters=narrativeRepairChapters(report,plan),known={};chapters.forEach(function(ch){known[ch.id]=1;});(plan&&plan.chapters||[]).forEach(function(ch){if(forcedIds.indexOf(ch.id)>=0&&!known[ch.id]){known[ch.id]=1;chapters.push(ch);}});if(!chapters.length)throw new Error('The draft could not identify the chapter that needs repair.');
   var totalSec=(plan&&plan.durationSeconds)||((durMin+durMax)/2*60),li=langInstr(inputLang,'shot plan content');
   setLoadProgress('s2',91,'Completing '+chapters.length+' short chapter'+(chapters.length===1?'':'s'),'Keeping the story intact while filling only the missing section');
   var tasks=chapters.map(function(chapter){return function(){return repairNarrativeChapter(script,plan,chapter,totalSec,li);};});
   return runLimited(tasks,Math.min(2,tasks.length)).then(function(replacements){
     var repaired=script;chapters.forEach(function(chapter,index){if(!replacements[index])throw new Error('The automatic chapter repair did not return a usable section.');repaired=replaceNarrativeChapter(repaired,chapter,replacements[index]);});
     repaired=compactGeneratedYouTubePlan(repaired,totalSec);
-    return epistemicGateCandidateScript(repaired,'shot_plan_redraft',previousFingerprint).then(function(safe){return autoRepairNarrativeScript(safe.script,plan,previousFingerprint,{audit:safe.audit||state.audit,rewritten:!!(state.rewritten||safe.rewritten)},attempt+1);});
+    return epistemicGateCandidateScript(repaired,'shot_plan_redraft',previousFingerprint).then(function(safe){return autoRepairNarrativeScript(safe.script,plan,previousFingerprint,{audit:safe.audit||state.audit,rewritten:!!(state.rewritten||safe.rewritten),repairMode:safe.repairMode||state.repairMode,forcedRepairChapterIds:safe.forcedRepairChapterIds||[]},attempt+1);});
   });
 }
 window.gdNarrativeChapterTarget=narrativeChapterTarget;
