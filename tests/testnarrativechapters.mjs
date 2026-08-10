@@ -33,13 +33,15 @@ try{
     repairNarrativeChapter=()=>Promise.resolve(replacement);epistemicGateCandidateScript=candidate=>Promise.resolve({script:candidate,audit:null,rewritten:false});
     const autoResult=await autoRepairNarrativeScript(underwritten,fallback,'',{audit:null,rewritten:false},0);
     const forcedResult=await autoRepairNarrativeScript(script,fallback,'',{audit:null,rewritten:true,repairMode:'local_quarantine',forcedRepairChapterIds:[repairChapter.id]},0);
+    repairNarrativeChapter=()=>Promise.reject(new Error('simulated repair failure'));
+    const advisoryResult=await autoRepairNarrativeScript(underwritten,fallback,'',{audit:null,rewritten:false},0);
     repairNarrativeChapter=originalRepair;epistemicGateCandidateScript=originalGate;
     document.getElementById('scriptTa').value=script;refreshScriptStudio();
     const headers=Array.from(document.querySelectorAll('#voiceoverReader .voiceover-chapter')).map(node=>({title:node.querySelector('.voiceover-chapter-title').textContent,time:node.querySelector('.voiceover-chapter-time').textContent}));
     const quality=window.gdNarrativeScriptQuality(script,fallback),duplicate=window.gdNarrativeScriptQuality(fallback.chapters.map(ch=>'[VOICEOVER] '+ch.start+'-'+fmtTime(Math.min(ch.endSeconds,ch.startSeconds+12))+' - Aynı soyut cümle burada hiçbir yeni olay ya da bilgi olmadan tekrar ediliyor.').join('\n'),fallback);
     const saved=window.gdSerializeProjectData(),savedPlan=saved.canonical.script.narrativePlan;
     currentNarrativePlan=null;window.gdRestoreProjectData(saved);
-    return {fallback,validation,repeatedValidation,context,prompt,modes,headers,quality,duplicate,replacementReport,spliced,splicedQuality,autoResult,forcedResult,savedPlan,restored:currentNarrativePlan,direction:Array.from(document.querySelectorAll('#scriptDirection span')).map(x=>x.textContent)};
+    return {fallback,validation,repeatedValidation,context,prompt,modes,headers,quality,duplicate,replacementReport,spliced,splicedQuality,autoResult,forcedResult,advisoryResult,savedPlan,restored:currentNarrativePlan,direction:Array.from(document.querySelectorAll('#scriptDirection span')).map(x=>x.textContent)};
   });
   ok('six-minute videos receive six contiguous narrative chapters',result.fallback.chapters.length===6&&result.validation.valid&&/^0?0:00$/.test(result.fallback.chapters[0].start)&&/^0?6:00$/.test(result.fallback.chapters.at(-1).end),result.validation);
   ok('chapter titles are distinct and describe story jobs instead of generic intro/development/conclusion labels',new Set(result.fallback.chapters.map(ch=>ch.title)).size===6&&!result.fallback.chapters.some(ch=>/^(giriş|gelişme|sonuç)$/i.test(ch.title)),result.fallback.chapters);
@@ -51,9 +53,11 @@ try{
   ok('an underwritten chapter can be replaced locally without discarding the rest of the draft',result.replacementReport.valid&&result.splicedQuality.valid&&/Bölüm 2 /.test(result.spliced)&&/Bölüm 4 /.test(result.spliced)&&!/Bölüm 3 /.test(result.spliced),{replacement:result.replacementReport,quality:result.splicedQuality});
   ok('automatic repair promotes the completed draft without asking the user to regenerate it',result.autoResult.repaired&&result.autoResult.quality.valid&&result.autoResult.script.includes('Attempt 12'),result.autoResult);
   ok('a quarantined biography line forces only its owning chapter through the same automatic repair path',result.forcedResult.repaired&&result.forcedResult.quality.valid&&result.forcedResult.script.includes('Attempt 12')&&!/Bölüm 3 /.test(result.forcedResult.script),result.forcedResult);
+  ok('a failed chapter repair opens the safe draft with an advisory instead of aborting generation',result.advisoryResult.repairIncomplete===true&&result.advisoryResult.script.includes('Remaining chapter')&&!result.advisoryResult.quality.valid,result.advisoryResult);
   ok('the Narrative Plan survives canonical save and restore',result.savedPlan&&result.restored&&result.restored.chapters.length===6&&result.savedPlan.centralQuestion===result.restored.centralQuestion,{saved:result.savedPlan,restored:result.restored});
   const source=fs.readFileSync(app,'utf8');
   ok('generation routes failed chapter coverage through automatic repair before showing the script',/autoRepairNarrativeScript\(result\.script,currentNarrativePlan/.test(source)&&/CHAPTER REPAIR TASK/.test(source),null);
+  ok('chapter quality is advisory and no repair failure can throw away a generated draft',!/automatic chapter repair did not return a usable section|draft could not complete every chapter/i.test(source)&&/draft opened with advisory issues/.test(source),null);
   ok('the former canned biography fallback can no longer enter a script',!source.includes('Konu, bugün gözlemlenebilen somut ayrıntılar üzerinden ilerliyor.')&&!source.includes('The subject unfolds through concrete details that can be observed today.'),null);
   ok('chapter architecture raises no page errors',errors.length===0,errors);
 } finally {await browser.close();}

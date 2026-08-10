@@ -3973,7 +3973,7 @@ function narrativeScriptQuality(script,plan){
   p.chapters.forEach(function(ch){var duration=Math.max(1,ch.endSeconds-ch.startSeconds),minimum=Math.max(6,Math.round(duration*.22));if((chapterWords[ch.id]||0)<minimum)issues.push({code:'CHAPTER_UNDERWRITTEN',chapter:ch.title,chapterId:ch.id,startSeconds:ch.startSeconds,endSeconds:ch.endSeconds,words:chapterWords[ch.id]||0,minimum:minimum});});
   return {valid:issues.length===0,issues:issues,chapterWords:chapterWords};
 }
-function assertNarrativeScriptQuality(script,plan){var report=narrativeScriptQuality(script,plan);if(!report.valid)throw new Error('The draft did not follow its chapter plan: '+report.issues.map(function(x){return x.code+(x.chapter?' ('+x.chapter+')':'');}).join(', ')+'. Please generate it again.');return report;}
+function assertNarrativeScriptQuality(script,plan){var report=narrativeScriptQuality(script,plan);window.__lastNarrativeQuality=canonicalClone(report,report);if(!report.valid)console.warn('[narrative] draft opened with advisory issues',report.issues);return report;}
 function narrativeRepairChapters(report,plan){
   var chapters=plan&&plan.chapters||[],picked={},out=[];
   (report&&report.issues||[]).forEach(function(issue){
@@ -3990,9 +3990,9 @@ function narrativeChapterBlocks(script,chapter,padding){
   return parseBlocks(script||'').filter(function(block){var start=tcToSec(block.tcStart),end=tcToSec(block.tcEnd);return end>chapter.startSeconds-padding&&start<chapter.endSeconds+padding;}).map(formatPlanBlock).join('\n');
 }
 function narrativeReplacementReport(text,chapter){
-  var blocks=parseBlocks(text||''),outside=blocks.some(function(block){var start=tcToSec(block.tcStart),end=tcToSec(block.tcEnd);return start<chapter.startSeconds||start>=chapter.endSeconds||end>chapter.endSeconds+1;});
-  var duration=planDurationReport(text||'',chapter.endSeconds,chapter.startSeconds);
-  return {valid:!!blocks.length&&!outside&&duration.complete,blocks:blocks,duration:duration,outside:outside};
+  var blocks=parseBlocks(text||'').map(function(block){var start=Math.max(chapter.startSeconds,tcToSec(block.tcStart)),end=Math.min(chapter.endSeconds,tcToSec(block.tcEnd));if(end<=start)return null;block.tcStart=fmtPlanTime(start);block.tcEnd=fmtPlanTime(end);return block;}).filter(Boolean),normalized=blocks.map(formatPlanBlock).join('\n');
+  var voiceWords=blocks.filter(function(block){return block.type==='voiceover';}).reduce(function(total,block){return total+planWordCount(block.content);},0),timelineEnd=blocks.reduce(function(end,block){return Math.max(end,tcToSec(block.tcEnd));},0),seconds=Math.max(1,chapter.endSeconds-chapter.startSeconds),minimumWords=Math.max(12,Math.round(seconds*.22)),nearEnd=timelineEnd>=chapter.endSeconds-Math.max(10,seconds*.2);
+  return {valid:!!blocks.length&&voiceWords>=minimumWords&&nearEnd,blocks:blocks,text:normalized,voiceWords:voiceWords,minimumWords:minimumWords,timelineEnd:timelineEnd};
 }
 function replaceNarrativeChapter(script,chapter,replacement){
   var old=parseBlocks(script||''),fresh=parseBlocks(replacement||''),all=[],order=0;
@@ -4003,29 +4003,30 @@ function replaceNarrativeChapter(script,chapter,replacement){
   return all.map(formatPlanBlock).join('\n');
 }
 function repairNarrativeChapter(script,plan,chapter,totalSec,li){
-  var seconds=Math.max(1,chapter.endSeconds-chapter.startSeconds),spokenFloor=Math.max(40,Math.round(seconds*1.45));
+  var seconds=Math.max(1,chapter.endSeconds-chapter.startSeconds),spokenFloor=Math.max(32,Math.round(seconds*.9));
   var system=buildGenSys(totalSec,li)+'\n\nCHAPTER REPAIR TASK: The complete draft already exists, but this one chapter failed quality control. Return ONLY a complete replacement set of timeline blocks for '+chapter.start+'-'+chapter.end+'. Do not return blocks outside that range and do not return chapter headings or commentary. Start at exactly '+chapter.start+' and keep spoken audio plus its literal B-roll coverage active through the chapter. Write at least '+spokenFloor+' natural VOICEOVER words; do not stretch a few sentences across long timecodes. Preserve the locked chapter purpose, causal progression, project language and factual/biographical boundaries. Do not recap earlier chapters, steal a later chapter\'s payoff, repeat an existing sentence, or add generic poetic filler. Every changed VOICEOVER line needs newly matched BROLL inside the same time range.';
   var nearby=narrativeChapterBlocks(script,{startSeconds:Math.max(0,chapter.startSeconds-18),endSeconds:Math.min(totalSec,chapter.endSeconds+18)},0);
   var user='PROJECT: '+topic+'\n\nFAILED CHAPTER:\n'+JSON.stringify({title:chapter.title,role:chapter.role,start:chapter.start,end:chapter.end,purpose:chapter.purpose,concreteProgress:chapter.concreteProgress,questionIn:chapter.questionIn,turn:chapter.turn,transitionOut:chapter.transitionOut})+'\n\nCURRENT CHAPTER AND NEARBY CONTINUITY (context only; output the failed chapter window only):\n'+nearby;
   return withTimeout(apiRetry(system,buildUserContent(user),'shot_plan_redraft'),90000,'','chapter repair '+chapter.title).then(function(raw){
     var cleaned=String(raw||'').trim(),replacement=narrativeReplacementReport(cleaned,chapter);
     if(!replacement.valid)throw new Error('The automatic chapter repair was incomplete.');
-    return cleaned;
+    return replacement.text;
   });
 }
 function autoRepairNarrativeScript(script,plan,previousFingerprint,state,attempt){
   attempt=Math.max(0,Number(attempt)||0);state=state||{audit:null,rewritten:false};
   var report=narrativeScriptQuality(script,plan),forcedIds=Array.isArray(state.forcedRepairChapterIds)?state.forcedRepairChapterIds:[];
   if(report.valid&&!forcedIds.length)return Promise.resolve({script:script,audit:state.audit||null,rewritten:!!state.rewritten,repaired:attempt>0,repairMode:state.repairMode||'none',quality:report});
-  if(attempt>=2){if(report.valid)return Promise.resolve({script:script,audit:state.audit||null,rewritten:true,repaired:true,repairMode:'safe_quarantine',quality:report});throw new Error('The draft could not complete every chapter after automatic repair. Please try again.');}
-  var chapters=narrativeRepairChapters(report,plan),known={};chapters.forEach(function(ch){known[ch.id]=1;});(plan&&plan.chapters||[]).forEach(function(ch){if(forcedIds.indexOf(ch.id)>=0&&!known[ch.id]){known[ch.id]=1;chapters.push(ch);}});if(!chapters.length)throw new Error('The draft could not identify the chapter that needs repair.');
+  if(attempt>=2)return Promise.resolve({script:script,audit:state.audit||null,rewritten:!!state.rewritten,repaired:attempt>0,repairMode:state.repairMode||'advisory',quality:report,repairIncomplete:!report.valid||!!forcedIds.length});
+  var chapters=narrativeRepairChapters(report,plan),known={};chapters.forEach(function(ch){known[ch.id]=1;});(plan&&plan.chapters||[]).forEach(function(ch){if(forcedIds.indexOf(ch.id)>=0&&!known[ch.id]){known[ch.id]=1;chapters.push(ch);}});if(!chapters.length)return Promise.resolve({script:script,audit:state.audit||null,rewritten:!!state.rewritten,repaired:attempt>0,repairMode:state.repairMode||'advisory',quality:report,repairIncomplete:true});
   var totalSec=(plan&&plan.durationSeconds)||((durMin+durMax)/2*60),li=langInstr(inputLang,'shot plan content');
   setLoadProgress('s2',91,'Completing '+chapters.length+' short chapter'+(chapters.length===1?'':'s'),'Keeping the story intact while filling only the missing section');
   var tasks=chapters.map(function(chapter){return function(){return repairNarrativeChapter(script,plan,chapter,totalSec,li);};});
   return runLimited(tasks,Math.min(2,tasks.length)).then(function(replacements){
-    var repaired=script;chapters.forEach(function(chapter,index){if(!replacements[index])throw new Error('The automatic chapter repair did not return a usable section.');repaired=replaceNarrativeChapter(repaired,chapter,replacements[index]);});
+    var repaired=script,applied=0,failedIds=[];chapters.forEach(function(chapter,index){if(!replacements[index]){failedIds.push(chapter.id);return;}repaired=replaceNarrativeChapter(repaired,chapter,replacements[index]);applied++;});
+    if(!applied){if(attempt<1)return autoRepairNarrativeScript(script,plan,previousFingerprint,state,attempt+1);return {script:script,audit:state.audit||null,rewritten:!!state.rewritten,repaired:false,repairMode:state.repairMode||'advisory',quality:report,repairIncomplete:true};}
     repaired=compactGeneratedYouTubePlan(repaired,totalSec);
-    return epistemicGateCandidateScript(repaired,'shot_plan_redraft',previousFingerprint).then(function(safe){return autoRepairNarrativeScript(safe.script,plan,previousFingerprint,{audit:safe.audit||state.audit,rewritten:!!(state.rewritten||safe.rewritten),repairMode:safe.repairMode||state.repairMode,forcedRepairChapterIds:safe.forcedRepairChapterIds||[]},attempt+1);});
+    return epistemicGateCandidateScript(repaired,'shot_plan_redraft',previousFingerprint).then(function(safe){var remaining=(safe.forcedRepairChapterIds||[]).concat(failedIds).filter(function(id,index,list){return list.indexOf(id)===index;});return autoRepairNarrativeScript(safe.script,plan,previousFingerprint,{audit:safe.audit||state.audit,rewritten:!!(state.rewritten||safe.rewritten),repairMode:safe.repairMode||state.repairMode,forcedRepairChapterIds:remaining},attempt+1);});
   });
 }
 window.gdNarrativeChapterTarget=narrativeChapterTarget;
