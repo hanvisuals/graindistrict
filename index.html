@@ -3707,14 +3707,16 @@ function epistemicBlockedLines(candidate,audit){
   return Object.keys(byLine).map(function(key){return byLine[key];}).sort(function(a,b){return a.lineNumber-b.lineNumber;});
 }
 function epistemicLineRepairPrompt(){
-  return 'You are GrainDistrict\'s biography safety editor. Repair only the listed VOICEOVER lines; the rest of the long draft is intentionally withheld and must remain byte-for-byte unchanged. For each item, return replacement spoken content that preserves its useful project-specific meaning, chapter purpose and causal role while removing only unsupported creator biography. A present opinion or intention may remain. An action, memory, visit, purchase, possession, feeling or observation may belong to the creator only when AUTHORIZED FIRST-PARTY ASSERTIONS support it. Otherwise use a neutral present observation, a filmable action stated without claiming it already happened, or an explicit hypothetical. Do not delete the substance, add a generic safety sentence, repeat one replacement across items, or invent a new fact. Return ONLY JSON: [{"lineNumber":12,"content":"replacement spoken words only"}]. No labels, timecodes, markdown or commentary.'+narrativePlanContext(currentNarrativePlan)+epistemicContext();
+  return 'You are GrainDistrict\'s biography safety editor. Repair only the listed VOICEOVER lines; the rest of the long draft is intentionally withheld and must remain byte-for-byte unchanged. For each item, return replacement spoken content that preserves its useful project-specific meaning, chapter purpose and causal role while removing only unsupported creator biography. Preserve the same concrete visible nouns, objects, places and physical actions so the existing literal B-roll remains valid; change only the unsupported ownership, tense or certainty of the personal claim. A present opinion or intention may remain. An action, memory, visit, purchase, possession, feeling or observation may belong to the creator only when AUTHORIZED FIRST-PARTY ASSERTIONS support it. Otherwise use a neutral present observation, a filmable action stated without claiming it already happened, or an explicit hypothetical. Do not delete the substance, add a generic safety sentence, repeat one replacement across items, or invent a new fact. Return ONLY JSON: [{"lineNumber":12,"content":"replacement spoken words only"}]. No labels, timecodes, markdown or commentary.'+narrativePlanContext(currentNarrativePlan)+epistemicContext();
 }
+function epistemicVisualAnchorTokens(value){var seen={};return epistemicTokens(value).map(function(token){return token.slice(0,Math.min(5,token.length));}).filter(function(token){if(token.length<3||seen[token])return false;seen[token]=1;return true;});}
+function epistemicRepairKeepsVisualMeaning(original,replacement){var before=epistemicVisualAnchorTokens(original),after=epistemicVisualAnchorTokens(replacement),set={};after.forEach(function(token){set[token]=1;});return before.length<2||before.some(function(token){return set[token];});}
 function parseEpistemicLineRepairs(raw,items){
   var text=String(raw||'').trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'').trim(),match=text.match(/\[[\s\S]*\]/),rows=[];
   if(match){try{rows=JSON.parse(match[0]);}catch(error){rows=[];}}
   if(!Array.isArray(rows))rows=[];
   var expected={};items.forEach(function(item){expected[item.lineNumber]=1;});var seen={},out=[];
-  rows.forEach(function(row){var lineNumber=Math.round(Number(row&&row.lineNumber)),content=String(row&&row.content||'').replace(/\s+/g,' ').trim();if(!expected[lineNumber]||seen[lineNumber]||!content||/\[(?:VOICEOVER|BROLL|MUSIC|TRANSITION)\]/i.test(content)||/\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}/.test(content))return;seen[lineNumber]=1;out.push({lineNumber:lineNumber,content:content});});
+  rows.forEach(function(row){var lineNumber=Math.round(Number(row&&row.lineNumber)),content=String(row&&row.content||'').replace(/\s+/g,' ').trim(),source=items.filter(function(item){return item.lineNumber===lineNumber;})[0];if(!expected[lineNumber]||seen[lineNumber]||!content||/\[(?:VOICEOVER|BROLL|MUSIC|TRANSITION)\]/i.test(content)||/\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}/.test(content)||!source||!epistemicRepairKeepsVisualMeaning(source.original,content))return;seen[lineNumber]=1;out.push({lineNumber:lineNumber,content:content});});
   if(out.length!==items.length)throw new Error('Biography line repair returned an incomplete patch.');return out;
 }
 function applyEpistemicLineRepairs(candidate,repairs){
@@ -3727,11 +3729,6 @@ function epistemicRewriteScript(candidate,audit,attempt,dirtyRanges){
   var batches=[];for(var i=0;i<blocked.length;i+=4)batches.push(blocked.slice(i,i+4));var sourceLines=String(candidate||'').split(/\r?\n/),sys=epistemicLineRepairPrompt();
   var tasks=batches.map(function(items){return function(){var payload=items.map(function(item){return {lineNumber:item.lineNumber,blockedClauses:item.blockedClauses,original:item.original,before:sourceLines[item.lineNumber-2]||'',after:sourceLines[item.lineNumber]||''};});return withTimeout(apiRetry(sys,'VOICEOVER LINE REPAIR ITEMS:\n'+JSON.stringify(payload),'epistemic_rewrite'),60000,null,'biography line repair').then(function(raw){if(!raw)throw new Error('Biography line repair timed out.');return parseEpistemicLineRepairs(raw,items);});};});
   return runLimited(tasks,3).then(function(results){if(results.some(function(rows){return !Array.isArray(rows);}))throw new Error('Biography line repair did not complete every batch.');var applied=applyEpistemicLineRepairs(candidate,[].concat.apply([],results)),nextAudit=epistemicAuditScript(applied.script,'epistemic_rewrite');var allRanges=dirtyRanges.concat(applied.dirtyRanges);if(nextAudit.status==='clear')return {script:applied.script,dirtyRanges:allRanges};return epistemicRewriteScript(applied.script,nextAudit,attempt+1,allRanges);});
-}
-function syncEpistemicRewriteVisuals(result){
-  var ranges=normalizeBrollVisualDirtyRanges(result&&result.dirtyRanges||[]);if(!ranges.length)return Promise.resolve(result);var previous=canonicalClone(brollVisualDirtyRanges,[]);brollVisualDirtyRanges=ranges;
-  setLoadProgress('s2',90,'Matching visuals to the protected voiceover','Rebuilding only the shots beneath the corrected spoken lines');
-  return syncBrollWithFinalVoiceover(result.script).then(function(sync){result.script=sync.text;result.visualsRebuilt=sync.changed;result.dirtyRanges=[];return result;},function(error){brollVisualDirtyRanges=previous;throw error;});
 }
 function epistemicPromoteLocalRepair(candidate,audit,parentFingerprint){
   /* A generic sentence cannot safely replace a lived event: it may pass the
@@ -4023,7 +4020,7 @@ function autoRepairNarrativeScript(script,plan,previousFingerprint,state,attempt
   return runLimited(tasks,Math.min(2,tasks.length)).then(function(replacements){
     var repaired=script;chapters.forEach(function(chapter,index){if(!replacements[index])throw new Error('The automatic chapter repair did not return a usable section.');repaired=replaceNarrativeChapter(repaired,chapter,replacements[index]);});
     repaired=compactGeneratedYouTubePlan(repaired,totalSec);
-    return epistemicGateCandidateScript(repaired,'shot_plan_redraft',previousFingerprint).then(syncEpistemicRewriteVisuals).then(function(safe){return autoRepairNarrativeScript(safe.script,plan,previousFingerprint,{audit:safe.audit||state.audit,rewritten:!!(state.rewritten||safe.rewritten)},attempt+1);});
+    return epistemicGateCandidateScript(repaired,'shot_plan_redraft',previousFingerprint).then(function(safe){return autoRepairNarrativeScript(safe.script,plan,previousFingerprint,{audit:safe.audit||state.audit,rewritten:!!(state.rewritten||safe.rewritten)},attempt+1);});
   });
 }
 window.gdNarrativeChapterTarget=narrativeChapterTarget;
@@ -7139,8 +7136,6 @@ function genScript(){
     }
     setLoadProgress('s2',88,'Protecting your voice','Checking facts, personal history and project boundaries');
     return projectType==='youtube'?epistemicGateCandidateScript(planText,'shot_plan',previousFingerprint):Promise.resolve({script:planText,audit:null,rewritten:false});
-  }).then(function(result){
-    return projectType==='youtube'?syncEpistemicRewriteVisuals(result):result;
   }).then(function(result){
     return projectType==='youtube'?autoRepairNarrativeScript(result.script,currentNarrativePlan,previousFingerprint,result,0):result;
   }).then(function(result){
