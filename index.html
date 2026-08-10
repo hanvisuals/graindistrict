@@ -3859,7 +3859,7 @@ function creativeContractGenerationReference(){
   var validation=validateCreativeContract(creativeContract,{requireLocked:true});if(!validation.valid)return null;
   return {contractId:creativeContract.id,contractRevision:creativeContract.revision,contractHash:creativeContractHash(creativeContract)};
 }
-function creativeContractBoundFeature(feature){return /^(shot_plan|shot_plan_segment|shot_plan_redraft|shot_plan_fallback|shot_plan_continuation|plan_outline|script_revision|epistemic_rewrite|block_revision|block_shot_details|shot_details_batch|storyboard_prompt|storyboard_revision)$/.test(String(feature||''));}
+function creativeContractBoundFeature(feature){return /^(shot_plan|shot_plan_segment|shot_plan_redraft|shot_plan_fallback|shot_plan_continuation|plan_outline|script_revision|epistemic_rewrite|broll_sync|block_revision|block_shot_details|shot_details_batch|storyboard_prompt|storyboard_revision)$/.test(String(feature||''));}
 function recordCreativeGeneration(feature,reference,text){
   if(!reference)return null;var entry={id:'generation:'+canonicalIdToken(),feature:String(feature||'ai_request'),generatedFrom:canonicalClone(reference,reference),outputHash:'output:'+creativeContractHashText(String(text||'')),createdAt:Date.now()};
   creativeGenerationRecords.push(entry);if(/shot_plan|script_revision/.test(entry.feature))currentScriptGeneratedFrom=canonicalClone(reference,reference);renderScriptContract();return entry;
@@ -7669,7 +7669,72 @@ function buildCanvasSys(li){
     'You are a cinematographer. Return ONLY a valid JSON array. No explanation, no markdown.\n'+
     'Format: [{"i":0,"shots":[{"k":"props","t":"..."},{"k":"action","t":"..."},{"k":"emotion","t":"..."},{"k":"tech","t":"..."}]}]\n'+
     'k must be: props, action, emotion, or tech. props = a concrete list of key props/objects needed in this scene (the block itself already covers lens, framing and camera movement, do not repeat that here).'+propSemanticsRule()+' tech = lens, lighting, movement, grain, analog film stock.\n'+
-    'Write all "t" values in the same language as the script blocks.'+stylePack('shots')+(li?'\n'+li:'');
+      'Write all "t" values in the same language as the script blocks.'+stylePack('shots')+(li?'\n'+li:'');
+}
+
+/* Script Studio lets the creator make the spoken words final before the visual
+   board exists. The generated B-roll still belongs to the first draft unless
+   we deliberately reconcile it here. Keep the timeline/block structure fixed
+   and ask only for replacement descriptions, using the final overlapping
+   voiceover as the authority. */
+function brollVoiceoverContext(block,blocks){
+  var start=tcToSec(block.tcStart),end=tcToSec(block.tcEnd);
+  var voices=(blocks||[]).filter(function(candidate){
+    return candidate.type==='voiceover'&&tcToSec(candidate.tcEnd)>start&&tcToSec(candidate.tcStart)<end;
+  });
+  if(!voices.length){
+    voices=(blocks||[]).filter(function(candidate){return candidate.type==='voiceover';}).sort(function(a,b){
+      function distance(candidate){var aStart=tcToSec(candidate.tcStart),aEnd=tcToSec(candidate.tcEnd);return aEnd<=start?start-aEnd:(aStart>=end?aStart-end:0);}
+      return distance(a)-distance(b);
+    }).slice(0,1);
+  }
+  return voices.map(function(voice){return voice.tcStart+'-'+voice.tcEnd+' - '+voice.content;});
+}
+function parseBrollSyncResponse(raw){
+  var text=String(raw||'').trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'').trim();
+  var match=text.match(/\[[\s\S]*\]/);if(!match)throw new Error('No B-roll alignment list returned.');
+  var rows=JSON.parse(match[0]);if(!Array.isArray(rows))throw new Error('Invalid B-roll alignment list.');
+  return rows;
+}
+function syncBrollWithFinalVoiceover(text){
+  text=String(text||'').trim();
+  var blocks=parseBlocks(text),voices=blocks.filter(function(block){return block.type==='voiceover';});
+  var targets=blocks.map(function(block,index){return {block:block,index:index};}).filter(function(item){return item.block.type==='broll';});
+  if(projectType!=='youtube'||!voices.length||!targets.length)return Promise.resolve({text:text,changed:false,updated:0,total:targets.length});
+  var sys='You are GrainDistrict\'s B-roll continuity editor. The FINAL VOICEOVER supplied for every item is authoritative; ignore any wording from an earlier draft. For each BROLL item, decide whether its existing visual directly supports the final overlapping voiceover. If it does, copy the existing description exactly. If it does not, replace it with one concrete, filmable visual that depicts the objects, actions or idea actually spoken in that final voiceover. Preserve every supplied index. Return one result for every item and no extra items. Do not return timecodes, labels, explanations or markdown. Do not invent facts, people, locations, possessions or biography. Keep the language of the existing plan. Return ONLY JSON: [{"i":0,"t":"visual description"}].'+creatorDnaContext()+creativeContractContext()+truthLedgerContext();
+  var chunks=[],CH=24;
+  for(var i=0;i<targets.length;i+=CH)chunks.push(targets.slice(i,i+CH));
+  var tasks=chunks.map(function(chunk){return function(){
+    var payload=chunk.map(function(item){return {i:item.index,start:item.block.tcStart,end:item.block.tcEnd,finalVoiceover:brollVoiceoverContext(item.block,blocks),existingBroll:item.block.content};});
+    return withTimeout(apiRetry(sys,'BROLL ITEMS:\n'+JSON.stringify(payload),'broll_sync'),60000,null,'B-roll alignment').then(function(raw){if(!raw)throw new Error('B-roll alignment timed out.');return parseBrollSyncResponse(raw);});
+  };});
+  return runLimited(tasks,3).then(function(results){
+    var replacements={},expected={};targets.forEach(function(item){expected[item.index]=1;});
+    results.forEach(function(rows){
+      if(!Array.isArray(rows))throw new Error('Could not align B-roll with the final voiceover.');
+      rows.forEach(function(row){
+        var index=Number(row&&row.i),value=String(row&&row.t||'').replace(/\s+/g,' ').trim();
+        if(!expected[index]||!value||replacements[index])return;
+        replacements[index]=value.slice(0,700);
+      });
+    });
+    var missing=targets.filter(function(item){return !replacements[item.index];});
+    if(missing.length)throw new Error('The visual plan did not cover every final voiceover line. Please try again.');
+    var changed=0;targets.forEach(function(item){if(replacements[item.index]!==item.block.content){blocks[item.index].content=replacements[item.index];changed++;}});
+    var syncedText=changed?blocks.map(formatPlanBlock).join('\n'):text;
+    window.__lastBrollSyncReport={changed:changed,total:targets.length};
+    return {text:syncedText,changed:changed>0,updated:changed,total:targets.length};
+  });
+}
+function renderCanvasScriptPreview(blocks){
+  var spWrap=document.getElementById('spWrap');spWrap.innerHTML='';
+  (blocks||[]).forEach(function(b){
+    var item=document.createElement('div');item.className='sp-item';
+    var tp=document.createElement('span');tp.className='sp-type';tp.textContent='['+b.type.toUpperCase()+']';
+    item.appendChild(tp);item.appendChild(document.createTextNode(b.tcStart+'-'+b.tcEnd+' '+b.content));
+    spWrap.appendChild(item);
+  });
+  return spWrap;
 }
 
 function setCanvasBuildProgress(value,label){
@@ -7677,7 +7742,8 @@ function setCanvasBuildProgress(value,label){
   if(bar)bar.style.width=value+'%';if(track)track.setAttribute('aria-valuenow',String(Math.round(value)));if(copy&&label)copy.textContent=label;if(number)number.textContent=Math.round(value)+'%';
 }
 function buildCanvas(){
-  var text=document.getElementById('scriptTa').value.trim();
+  var scriptTa=document.getElementById('scriptTa');
+  var text=scriptTa.value.trim();
   var blocks=parseBlocks(text);
   if(!blocks.length){alert('No valid blocks found. Check the format.');return;}
 
@@ -7686,14 +7752,7 @@ function buildCanvas(){
 
   // populate script panel before s5 shows
   document.getElementById('ctopic').textContent=topic;
-  var spWrap=document.getElementById('spWrap');
-  spWrap.innerHTML='';
-  blocks.forEach(function(b){
-    var item=document.createElement('div');item.className='sp-item';
-    var tp=document.createElement('span');tp.className='sp-type';tp.textContent='['+b.type.toUpperCase()+']';
-    item.appendChild(tp);item.appendChild(document.createTextNode(b.tcStart+'-'+b.tcEnd+' '+b.content));
-    spWrap.appendChild(item);
-  });
+  var spWrap=renderCanvasScriptPreview(blocks);
   spWrap.classList.add('visible');
   document.getElementById('blockList').style.display='none';
   document.getElementById('blockDetail').style.display='none';
@@ -7707,7 +7766,7 @@ function buildCanvas(){
   cl.style.display='flex';cl.classList.remove('fade-out');
   setCanvasBuildProgress(8,'Preparing structure');
   var clMsg=document.getElementById('clMsg');
-  var clMsgs=['preparing your canvas...','imagining each shot...','thinking about light...','choosing the lenses...','almost there...'];
+  var clMsgs=['matching B-roll to your final voiceover...','imagining each shot...','thinking about light...','choosing the lenses...','almost there...'];
   var clIdx=0;
   var clInt=setInterval(function(){
     clIdx=(clIdx+1)%clMsgs.length;
@@ -7719,8 +7778,14 @@ function buildCanvas(){
     s5El.classList.remove('screen-slide-in');
     scale=1;px=60;py=80;selId=null;selImgId=null;selNoteId=null;selectedNodeIds=[];selectedImgIds=[];selectedNoteIds=[];
 
-    var li=langInstr(inputLang,'shot descriptions');
-    var sys=buildCanvasSys(li);
+    var syncPromise=projectType==='youtube'?syncBrollWithFinalVoiceover(text):Promise.resolve({text:text,changed:false,updated:0,total:0});
+    if(projectType==='youtube')setCanvasBuildProgress(12,'Matching B-roll to final voiceover');
+    syncPromise.then(function(syncResult){
+      text=syncResult.text;blocks=parseBlocks(text);
+      if(!blocks.length)throw new Error('No valid blocks remained after B-roll alignment.');
+      if(syncResult.changed){scriptTa.value=text;renderCanvasScriptPreview(blocks);if(window.gdAutosaveProject)window.gdAutosaveProject(true);}
+      var li=langInstr(inputLang,'shot descriptions');
+      var sys=buildCanvasSys(li);
     // in cut-by-cut youtube plans, shot ideas belong to the visual cuts - skip audio blocks
     var idxBlocks=blocks.map(function(b,i){return{b:b,i:i};});
     if(projectType==='youtube')idxBlocks=idxBlocks.filter(function(o){return !AUDIO_BLOCKS[o.b.type];});
@@ -7739,7 +7804,8 @@ function buildCanvas(){
       }).then(function(result){completedChunks++;setCanvasBuildProgress(18+(completedChunks/Math.max(1,chunks.length))*67,'Designing each visual beat');return result;});
     });
 
-    Promise.all(chunkPromises).then(function(chunkResults){
+      return Promise.all(chunkPromises);
+    }).then(function(chunkResults){
       clearInterval(clInt);
       setCanvasBuildProgress(92,'Organizing the connected board');
       resetLocationViewState();
@@ -10513,7 +10579,7 @@ document.addEventListener('mouseup',function(e){
     try{return new Date(ts).toLocaleString(undefined,withTime?{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}:{month:'short',day:'numeric'});}catch(e){return '—';}
   }
   function featureLabel(id){
-    var labels={creative_brief:'Creative brief',creative_contract:'Project direction',shot_plan:'Shot plan',script_revision:'Script revision',plan_outline:'Plan outline',
+    var labels={creative_brief:'Creative brief',creative_contract:'Project direction',shot_plan:'Shot plan',script_revision:'Script revision',broll_sync:'B-roll alignment',plan_outline:'Plan outline',
       shot_plan_segment:'Plan segment',shot_plan_redraft:'Segment redraft',shot_plan_fallback:'Plan fallback',
       shot_plan_continuation:'Plan continuation',shot_details_batch:'Shot details',block_shot_details:'Block planning',
       block_revision:'Block revision',translation:'Translation',location_bible:'Location bible',
