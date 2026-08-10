@@ -10,7 +10,7 @@ const { chromium } = require('./node_modules/playwright');
   await page.waitForTimeout(250);
   const ok=(n,c,x)=>console.log((c?'PASS':'FAIL')+' - '+n+(x!==undefined&&!c?' '+JSON.stringify(x).slice(0,360):''));
 
-  const r=await page.evaluate(()=>{
+  const r=await page.evaluate(async()=>{
     projectType='youtube';tone='introspective';durMin=7;durMax=7;
     const profile=ytPacingProfile(420);
     const prompt=buildGenSys(420,'');
@@ -43,11 +43,23 @@ const { chromium } = require('./node_modules/playwright');
     nodes=[{id:991,content:'Wide shot at Brooklyn Bridge'}];projectBreakdown=null;
     const savedDetail=shotDetailText({parentId:991,k:'props',t:'Bridge'});
     const durationCleaned=parseBlocks('[BROLL] 00:00-00:05 - Wide shot. Holds 7 seconds.\n[VOICEOVER] 00:00-00:05 - He holds the camera and waits.');
-    return {profile,prompt,canvasPrompt:buildCanvasSys(''),compact,blocks,cuts,label:planStatsLabel(compact),audit:planQualityReport(compact,24),bible,old,cleaned,placeBible,placeCleaned,detailCleaned,generatedCleaned,mergedPlace,savedDetail,durationCleaned};
+    const sparsePlan='[VOICEOVER] 00:00-07:00 - Bu video birkaç kısa cümleyi uzun bir zaman çizgisine yayıyor.';
+    const sparseDuration=planDurationReport(sparsePlan,420,0);
+    const densePlan='[VOICEOVER] 00:00-07:00 - '+Array(620).fill('anlatım').join(' ');
+    const denseDuration=planDurationReport(densePlan,420,0);
+    const originalApiRetry=apiRetry,runtimeCalls=[];
+    apiRetry=(sys,user,feature)=>{runtimeCalls.push(feature);return Promise.resolve(feature==='shot_plan_fallback'?densePlan:sparsePlan);};
+    const recoveredPlan=await genPlanChunked(prompt,'Create a seven-minute plan',420,'');
+    apiRetry=originalApiRetry;
+    const recoveredDuration=planDurationReport(recoveredPlan,420,0);
+    return {profile,prompt,canvasPrompt:buildCanvasSys(''),compact,blocks,cuts,label:planStatsLabel(compact),audit:planQualityReport(compact,24),bible,old,cleaned,placeBible,placeCleaned,detailCleaned,generatedCleaned,mergedPlace,savedDetail,durationCleaned,sparseDuration,denseDuration,runtimeCalls,recoveredDuration};
   });
 
   ok('a seven-minute reflective film aims near seventy camera shots',r.profile.targetCuts===70,r.profile);
   ok('the prompt carries the finite whole-film range',r.prompt.includes(r.profile.minCuts+'-'+r.profile.maxCuts+' BROLL camera shots'));
+  ok('a seven-minute timecode cannot hide an almost empty spoken script',r.sparseDuration.runtimeComplete&&!r.sparseDuration.voiceComplete&&!r.sparseDuration.complete,r.sparseDuration);
+  ok('a genuinely filled seven-minute script passes the runtime density gate',r.denseDuration.runtimeComplete&&r.denseDuration.audioComplete&&r.denseDuration.voiceComplete&&r.denseDuration.complete,r.denseDuration);
+  ok('an underfilled long plan is retried through the patient full-plan path before promotion',r.runtimeCalls.includes('shot_plan_fallback')&&r.recoveredDuration.complete,{calls:r.runtimeCalls,report:r.recoveredDuration});
   ok('one voice line normally gets one or two shots',/normally needs 1-2 BROLL/.test(r.prompt));
   ok('literal semantic coverage is required',/must show that exact object or action/.test(r.prompt));
   ok('voiceover specificity cannot fabricate creator memories, dates, studies or statistics',/NEVER invent a first-person memory/.test(r.prompt)&&/NEVER invent a street age/.test(r.prompt)&&/Verified Truth Ledger/.test(r.prompt),r.prompt);
