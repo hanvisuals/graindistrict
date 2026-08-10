@@ -27,7 +27,7 @@ try{
     ai:getComputedStyle(document.getElementById('aiModeSwitch')).display,
     action:document.getElementById('gobtnTxt').textContent
   }));
-  ok('the intake asks for one topic and keeps three optional answers preselected',calmStart.questions===3&&calmStart.selected===3&&calmStart.action==='Shape my video',calmStart);
+  ok('the intake asks for one topic and keeps four optional answers preselected',calmStart.questions===4&&calmStart.selected===4&&calmStart.action==='Shape my video',calmStart);
   ok('runtime is an upfront 1-20 minute decision while advanced production plumbing stays hidden',calmStart.duration!=='none'&&calmStart.durationMin==='1'&&calmStart.durationMax==='20'&&calmStart.durationValue==='3'&&calmStart.recce==='none'&&calmStart.ai==='none',calmStart);
 
   const durationBox=await page.locator('#videoDuration').boundingBox();
@@ -46,6 +46,7 @@ try{
   if(process.env.QA_DIR)await page.screenshot({path:path.join(process.env.QA_DIR,'calm-intake.png'),fullPage:true});
 
   await page.click('[data-question="production"] [data-value="on-camera"]');
+  await page.fill('#storyContextIn','The real starting point is supplied; the result is still unknown.');
   await page.evaluate(()=>{
     window.__calmCalls=[];
     api=function(sys,user,feature){
@@ -85,7 +86,7 @@ try{
     sections:getComputedStyle(document.querySelector('.cc-sections')).display,
     action:document.getElementById('creativeContractLockText').textContent,
     calls:window.__calmCalls.map(x=>x.feature),
-    guidanceInPrompt:/THREE QUICK CHOICES/.test(window.__calmCalls[0].user)&&/Creator can appear on camera/.test(window.__calmCalls[0].user),
+    guidanceInPrompt:/PROJECT STORY GROUNDING/.test(window.__calmCalls[0].user)&&/Creator can appear on camera/.test(window.__calmCalls[0].user)&&/central process has not happened yet/.test(window.__calmCalls[0].user)&&/result is still unknown/.test(window.__calmCalls[0].user),
     durationInPrompt:/DURATION:\napproximately 4 minutes/.test(window.__calmCalls[0].user)
   }));
   ok('the progress reaches 100 before a three-decision summary replaces it',!directionReady.building&&directionReady.progress===100&&directionReady.snapshot==='grid'&&directionReady.snapshotItems===3&&directionReady.sections==='none',directionReady);
@@ -109,7 +110,7 @@ try{
   ok('the bar fills only when the finished voiceover replaces the loading screen',studio.screen==='s3'&&studio.progress===100,studio);
   ok('Script Studio opens as chaptered voiceover with production notes hidden',studio.reader!=='none'&&studio.editor==='none'&&studio.lines.length===4&&!studio.lines.join(' ').includes('subway platform'),studio);
   if(process.env.QA_DIR)await page.screenshot({path:path.join(process.env.QA_DIR,'calm-voiceover.png'),fullPage:true});
-  ok('the quick answers and target runtime survive canonical save and restore',studio.saved.canonical.creative.guidance.outcome==='feel'&&studio.saved.canonical.creative.guidance.production==='on-camera'&&studio.saved.canonical.creative.durationRange.min===4&&studio.saved.canonical.creative.durationRange.max===4,{guidance:studio.saved.canonical.creative.guidance,duration:studio.saved.canonical.creative.durationRange});
+  ok('the quick answers and target runtime survive canonical save and restore',studio.saved.canonical.creative.guidance.outcome==='feel'&&studio.saved.canonical.creative.guidance.production==='on-camera'&&studio.saved.canonical.creative.guidance.stage==='pre-shoot'&&/result is still unknown/.test(studio.saved.canonical.creative.guidance.context)&&studio.saved.canonical.creative.durationRange.min===4&&studio.saved.canonical.creative.durationRange.max===4,{guidance:studio.saved.canonical.creative.guidance,duration:studio.saved.canonical.creative.durationRange});
 
   await page.click('#scriptViewToggle');
   const production=await page.evaluate(()=>({reader:getComputedStyle(document.getElementById('voiceoverReader')).display,editor:getComputedStyle(document.getElementById('scriptTa')).display,label:document.getElementById('scriptViewToggle').textContent}));
