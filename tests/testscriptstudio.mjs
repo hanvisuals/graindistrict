@@ -82,19 +82,43 @@ const accepted=await page.evaluate(()=>({
   panel:document.getElementById('scriptRevision').classList.contains('show'),
   undo:document.getElementById('scriptVersionBtn').classList.contains('show'),
   versions:scriptVersions.length,
+  dirty:brollVisualDirtyRanges,
   save:document.getElementById('gdSaveState').textContent
 }));
 ok('accept changes only the selected words and preserves every surrounding block',/I thought beginning again needed a grand moment\./.test(accepted.script)&&/Static wide shot of the apartment desk/.test(accepted.script)&&/opening the same notebook/.test(accepted.script)&&!/had to feel dramatic/.test(accepted.script),accepted.script);
-ok('accepted revisions are versioned and autosaved',!accepted.panel&&accepted.undo&&accepted.versions===1&&/saved/i.test(accepted.save),accepted);
+ok('accepted revisions are versioned, mark their visual dependency stale and autosave',!accepted.panel&&accepted.undo&&accepted.versions===1&&accepted.dirty.length===1&&accepted.dirty[0].start===0&&accepted.dirty[0].end===6&&/saved/i.test(accepted.save),accepted);
 
 const brollSync=await page.evaluate(async()=>{
   const finalScript=document.getElementById('scriptTa').value;
   window.__features=[];
-  api=function(sys,user,feature){window.__features.push({feature,user:String(user)});return Promise.resolve('[{"i":1,"t":"Close-up of a small handwritten note beside the open notebook."}]');};
+  api=function(sys,user,feature){window.__features.push({feature,user:String(user)});return Promise.resolve('[{"beat":0,"start":"00:00","end":"00:06","t":"Close-up of a small handwritten note beside the open notebook."}]');};
   const result=await syncBrollWithFinalVoiceover(finalScript);
   return {result,call:window.__features[0],buildUsesSync:/syncBrollWithFinalVoiceover\(text\)/.test(String(buildCanvas))};
 });
-ok('B-roll is reconciled against the accepted final voiceover before the visual board is built',brollSync.call&&brollSync.call.feature==='broll_sync'&&/needed a grand moment/.test(brollSync.call.user)&&!/had to feel dramatic/.test(brollSync.call.user)&&/Close-up of a small handwritten note/.test(brollSync.result.text)&&/I thought beginning again needed a grand moment/.test(brollSync.result.text)&&brollSync.result.updated===1&&brollSync.buildUsesSync,brollSync);
+ok('stale B-roll is rebuilt from only the accepted final voiceover before the visual board',brollSync.call&&brollSync.call.feature==='broll_replan'&&/needed a grand moment/.test(brollSync.call.user)&&!/had to feel dramatic|Static wide shot of the apartment desk/.test(brollSync.call.user)&&/Close-up of a small handwritten note/.test(brollSync.result.text)&&/I thought beginning again needed a grand moment/.test(brollSync.result.text)&&brollSync.result.updated===1&&brollSync.buildUsesSync,brollSync);
+
+const screenshotFixture=await page.evaluate(async()=>{
+  const finalScript='[VOICEOVER] 00:37-00:45 - New York has been filmed more than any other city on earth — Taxi Driver on those rain-slicked midtown streets, Breakfast at Tiffany\'s outside the Fifth Avenue flagship, When Harry Met Sally in Central Park, The French Connection under the elevated tracks in Brooklyn.\n[BROLL] 00:37-00:45 - Slow tracking shot along brownstones while films like "Rear Window", "Do the Right Thing", and "Midnight Cowboy" are listed.';
+  brollVisualDirtyRanges=[];markBrollVisualRangeDirty(37,45,'accepted_voiceover_revision');window.__features=[];
+  api=function(sys,user,feature){window.__features.push({feature,user:String(user)});return Promise.resolve('[{"beat":0,"start":"00:37","end":"00:39","t":"Yellow taxi reflections slide across a rain-slicked Midtown street."},{"beat":1,"start":"00:39","end":"00:41","t":"The Fifth Avenue Tiffany flagship fills the frame from street level."},{"beat":2,"start":"00:41","end":"00:43","t":"A couple walks along a recognizable Central Park path."},{"beat":3,"start":"00:43","end":"00:45","t":"An elevated train crosses above a Brooklyn street."}]');};
+  const result=await syncBrollWithFinalVoiceover(finalScript),call=window.__features[0];
+  return {result,call,blocks:parseBlocks(result.text)};
+});
+ok('the reported New York failure is split into literal shots and cannot inherit old film references',screenshotFixture.call&&screenshotFixture.call.feature==='broll_replan'&&!/Rear Window|Do the Right Thing|Midnight Cowboy|brownstones/.test(screenshotFixture.call.user)&&screenshotFixture.blocks.filter(block=>block.type==='broll').length===4&&/Taxi flagship|Tiffany flagship/.test(screenshotFixture.result.text)&&/Central Park/.test(screenshotFixture.result.text)&&/Brooklyn/.test(screenshotFixture.result.text)&&!/Rear Window|Do the Right Thing|Midnight Cowboy/.test(screenshotFixture.result.text),screenshotFixture);
+
+const beatGuard=await page.evaluate(()=>{
+  const voiceover=[{start:'00:37',end:'00:45',text:'Taxi Driver in Midtown, Breakfast at Tiffany\'s on Fifth Avenue, When Harry Met Sally in Central Park, The French Connection in Brooklyn.'}],range={start:37,end:45},beats=brollVisualBeats(voiceover),spec={...range,voiceover,beats,minimumShots:brollVisualBeatFloor(range,beats)};
+  try{validateBrollReplanRows([{beat:0,start:'00:37',end:'00:39',t:'Midtown street.'},{beat:0,start:'00:39',end:'00:41',t:'Another Midtown street.'},{beat:0,start:'00:41',end:'00:43',t:'A third Midtown street.'},{beat:0,start:'00:43',end:'00:45',t:'A fourth Midtown street.'}],spec);return '';}
+  catch(error){return error.message;}
+});
+ok('structural validation rejects a full timeline that visually skips revised voiceover examples',/skipped a concrete beat/.test(beatGuard),beatGuard);
+
+const deletedVoiceover=await page.evaluate(async()=>{
+  const edited='[BROLL] 00:00-00:06 - This visual belonged only to the deleted voiceover.\n[VOICEOVER] 00:06-00:12 - This second line remains.\n[BROLL] 00:06-00:12 - The second line remains visible.';
+  brollVisualDirtyRanges=[];markBrollVisualRangeDirty(0,6,'manual_voiceover_edit');let calls=0;api=function(){calls++;return Promise.resolve('[]');};
+  const result=await syncBrollWithFinalVoiceover(edited);return {result,calls};
+});
+ok('deleting a revised voiceover also removes only its orphaned B-roll without an AI guess',deletedVoiceover.calls===0&&!/belonged only/.test(deletedVoiceover.result.text)&&/second line remains visible/i.test(deletedVoiceover.result.text)&&deletedVoiceover.result.removed===1,deletedVoiceover);
 
 await page.evaluate(()=>undoLastScriptRevision());
 await page.waitForTimeout(180);
@@ -129,10 +153,11 @@ if(process.env.QA_DIR)await page.screenshot({path:process.env.QA_DIR+'/script-se
 
 await page.evaluate(()=>{
   document.getElementById('scriptTa').value='[VOICEOVER] 00:00-00:06 - The final line is about a handwritten note.\n[BROLL] 00:00-00:06 - An old visual of an empty apartment desk.';
+  brollVisualDirtyRanges=[];markBrollVisualRangeDirty(0,6,'manual_voiceover_edit');
   window.__features=[];
   api=function(sys,user,feature){
     window.__features.push({feature,user:String(user)});
-    if(feature==='broll_sync')return Promise.resolve('[{"i":1,"t":"Close-up of the handwritten note as the pen finishes the last word."}]');
+    if(feature==='broll_replan')return Promise.resolve('[{"beat":0,"start":"00:00","end":"00:06","t":"Close-up of the handwritten note as the pen finishes the last word."}]');
     if(feature==='shot_details_batch')return Promise.resolve('[{"i":1,"shots":[]}]');
     return Promise.resolve('[]');
   };
@@ -145,7 +170,7 @@ const board=await page.evaluate(()=>({
   broll:(nodes.find(node=>node.type==='broll')||{}).content,
   features:window.__features.map(call=>call.feature)
 }));
-ok('the visual board nodes use the re-aligned B-roll instead of the first-draft visual',board.screen==='s5'&&/final line/.test(board.voiceover)&&/handwritten note/.test(board.broll)&&!/empty apartment desk/.test(board.broll)&&board.features[0]==='broll_sync'&&board.features.includes('shot_details_batch'),board);
+ok('the visual board nodes use structurally rebuilt B-roll instead of the first-draft visual',board.screen==='s5'&&/final line/.test(board.voiceover)&&/handwritten note/.test(board.broll)&&!/empty apartment desk/.test(board.broll)&&board.features[0]==='broll_replan'&&board.features.includes('shot_details_batch'),board);
 ok('Script Studio raises no page errors',pageError===null,pageError);
 
 await browser.close();
