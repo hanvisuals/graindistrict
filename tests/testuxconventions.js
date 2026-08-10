@@ -40,9 +40,14 @@ const { pathToFileURL } = require('url');
     window.__apiCalls=[];
     api=function(sys,content,feature){
       window.__apiCalls.push({sys:String(sys),content:JSON.stringify(content),feature});
-      return Promise.resolve(feature==='creative_contract'
-        ?'{"format":"story","viewer":"People interested in craft","promise":"See the baker real night process","structure":"arrival to first loaf","visualSystem":"70% B-roll and 30% graphics","proof":"real process","pacing":"reflective","avoid":["filler"]}'
-        :'[VOICEOVER] 00:00-04:00 - The city sleeps.');
+      if(feature==='creative_contract')return Promise.resolve('{"format":"story","viewer":"People interested in craft","promise":"See the baker real night process","structure":"arrival to first loaf","visualSystem":"70% B-roll and 30% graphics","proof":"real process","pacing":"reflective","avoid":["filler"]}');
+      if(feature==='narrative_plan')return Promise.resolve(JSON.stringify({narrativeMode:'documentary',centralQuestion:'What changes between arrival and the first loaf?',viewerJourney:'An invisible night shift becomes a visible chain of craft decisions.',openingApproach:'Open on the locked bakery door becoming a working room.',endingPayoff:'The first loaf makes the night process legible.',chapters:[
+        {title:'Opening the Bakery',role:'opening',start:'00:00',end:'00:45',purpose:'Enter the work through a visible change of state.',concreteProgress:'The dark bakery is unlocked and prepared.',questionIn:'What begins before the city wakes?',turn:'An empty room becomes a workplace.',transitionOut:'The prepared room needs its first material.'},
+        {title:'Dough Takes Shape',role:'development',start:'00:45',end:'01:30',purpose:'Show the first craft decisions.',concreteProgress:'Ingredients become measured and mixed dough.',questionIn:'Which decisions shape the loaf?',turn:'Texture becomes the baker\'s evidence.',transitionOut:'The dough now requires time and attention.'},
+        {title:'Waiting Is Work',role:'complication',start:'01:30',end:'02:15',purpose:'Reveal the quiet middle of the process.',concreteProgress:'The baker checks fermentation and adjusts the schedule.',questionIn:'What happens when the visible action slows?',turn:'Waiting becomes an active judgment.',transitionOut:'That judgment is tested by the oven.'},
+        {title:'The First Loaf',role:'resolution',start:'02:15',end:'03:00',purpose:'Resolve the night through its first result.',concreteProgress:'The first loaf leaves the oven and is inspected.',questionIn:'Did the overnight decisions work?',turn:'The finished crust carries the process visibly.',transitionOut:''}
+      ]}));
+      return Promise.resolve('[VOICEOVER] 00:00-00:45 - The bakery begins when a locked, dark room is turned into a place ready for work.\n[BROLL] 00:00-00:45 - The door opens and each work surface is prepared.\n[VOICEOVER] 00:45-01:30 - Flour, water and time become decisions the baker can read through changing texture.\n[BROLL] 00:45-01:30 - Measured ingredients become dough under the mixer.\n[VOICEOVER] 01:30-02:15 - The quiet middle is not empty waiting; each check can change the night schedule.\n[BROLL] 01:30-02:15 - Fermentation is checked and one tray is moved.\n[VOICEOVER] 02:15-03:00 - The first loaf makes every earlier judgment visible in its shape, color and crust.\n[BROLL] 02:15-03:00 - The first loaf leaves the oven and is inspected.');
     };
     ensureFullPlan=function(sys,text){return Promise.resolve(text);};
   });
@@ -69,7 +74,7 @@ const { pathToFileURL } = require('url');
     {screen:document.querySelector('.screen.active').id,constraints:projectConstraints,brief:projectBrief,calls:window.__apiCalls,briefScreen:!!document.getElementById('s_brief'),reader:getComputedStyle(document.getElementById('voiceoverReader')).display,editor:getComputedStyle(document.getElementById('scriptTa')).display}
   ));
   ok('Creating the voiceover opens the calm reader without reviving the old brief screen',studio.screen==='s3'&&!studio.briefScreen&&studio.brief===''&&studio.reader!=='none'&&studio.editor==='none',studio);
-  ok('Optional real constraints reach both the direction and the voiceover request',studio.calls.length===2&&studio.calls[0].feature==='creative_contract'&&studio.calls[1].feature==='shot_plan'&&/35mm lens/.test(studio.calls[0].content)&&/PROJECT-SPECIFIC CREATIVE CONTRACT/.test(studio.calls[1].sys),studio.calls);
+  ok('Optional real constraints reach direction, chapter planning and voiceover',studio.calls.length===3&&studio.calls[0].feature==='creative_contract'&&studio.calls[1].feature==='narrative_plan'&&studio.calls[2].feature==='shot_plan'&&/35mm lens/.test(studio.calls[0].content)&&/PROJECT-SPECIFIC CREATIVE CONTRACT/.test(studio.calls[2].sys)&&/LOCKED NARRATIVE PLAN/.test(studio.calls[2].sys),studio.calls);
 
   await page.evaluate(()=>{
     show('s5');nodes=[{id:1,type:'broll',tcStart:'00:00',tcEnd:'00:03',content:'Bakery exterior',shots:[],x:60,y:80,grp:0}];
