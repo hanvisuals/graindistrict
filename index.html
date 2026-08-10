@@ -2230,6 +2230,29 @@ body.free-mode .port-dot:hover{background:var(--board-gold);border-color:#f8e8a8
 #s1 .s1-form-shell>div,#s1 .s1-form-shell>section,#s1 .s1-form-shell>button{grid-column:1/-1;}
 #s1 .s1-topic-block{padding:19px 20px!important;}
 #s1 .s1-topic-block .ita{min-height:118px;font-size:18px;line-height:1.55;}
+.video-duration-intent{position:relative;gap:14px!important;padding:18px 20px 17px!important;overflow:hidden;}
+.video-duration-intent::after{content:'';position:absolute;right:-38px;top:-58px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(215,185,88,.08),transparent 68%);pointer-events:none;}
+.video-duration-head{position:relative;z-index:1;display:flex;align-items:flex-start;justify-content:space-between;gap:18px;}
+.video-duration-copy{min-width:0;}
+#s1 .video-duration-copy .ilabel{margin-bottom:5px;color:rgba(215,185,88,.7);}
+.video-duration-copy p{max-width:440px;font-family:var(--sans);font-size:10px;line-height:1.5;color:rgba(255,255,255,.28);}
+.video-duration-value{flex:0 0 auto;min-width:76px;padding:8px 10px;border:1px solid rgba(215,185,88,.2);border-radius:10px;background:rgba(215,185,88,.07);font-family:var(--mono);font-size:11px;letter-spacing:.04em;text-align:center;color:#f4e6b7;}
+.video-duration-control{position:relative;z-index:1;}
+.video-duration-range{--duration-progress:10.53%;display:block;width:100%;height:34px;margin:0;appearance:none;-webkit-appearance:none;border:0;outline:0;cursor:pointer;background:linear-gradient(90deg,rgba(215,185,88,.92) 0 var(--duration-progress),rgba(255,255,255,.1) var(--duration-progress) 100%) center/100% 3px no-repeat;}
+.video-duration-range::-webkit-slider-runnable-track{height:3px;background:transparent;}
+.video-duration-range::-webkit-slider-thumb{width:20px;height:20px;margin-top:-8.5px;-webkit-appearance:none;border:3px solid #0a0b0a;border-radius:50%;background:#ead071;box-shadow:0 0 0 1px rgba(234,208,113,.65),0 4px 15px rgba(0,0,0,.45),0 0 18px rgba(215,185,88,.18);transition:transform .16s,box-shadow .16s;}
+.video-duration-range::-moz-range-track{height:3px;background:rgba(255,255,255,.1);}
+.video-duration-range::-moz-range-progress{height:3px;background:rgba(215,185,88,.92);}
+.video-duration-range::-moz-range-thumb{width:16px;height:16px;border:3px solid #0a0b0a;border-radius:50%;background:#ead071;box-shadow:0 0 0 1px rgba(234,208,113,.65),0 4px 15px rgba(0,0,0,.45);}
+.video-duration-range:hover::-webkit-slider-thumb{transform:scale(1.12);box-shadow:0 0 0 1px rgba(234,208,113,.8),0 5px 18px rgba(0,0,0,.5),0 0 24px rgba(215,185,88,.25);}
+.video-duration-range:focus-visible{border-radius:8px;box-shadow:0 0 0 2px rgba(215,185,88,.32);}
+.video-duration-scale{position:relative;height:9px;margin-top:-2px;font-family:var(--mono);font-size:6px;letter-spacing:.08em;color:rgba(255,255,255,.2);pointer-events:none;}
+.video-duration-scale span{position:absolute;top:0;transform:translateX(-50%);}
+.video-duration-scale span:first-child{left:0;transform:none;}
+.video-duration-scale span:nth-child(2){left:21.05%;}
+.video-duration-scale span:nth-child(3){left:47.37%;}
+.video-duration-scale span:nth-child(4){left:73.68%;}
+.video-duration-scale span:last-child{right:0;transform:none;}
 .guided-questions{gap:0!important;padding:5px!important;border:1px solid rgba(255,255,255,.07);border-radius:18px;background:rgba(5,6,5,.36);}
 .guided-head{display:flex;align-items:flex-end;justify-content:space-between;gap:22px;padding:14px 15px 15px;border-bottom:1px solid rgba(255,255,255,.06);}
 .guided-head span{display:block;margin-bottom:6px;font-family:var(--mono);font-size:6px;letter-spacing:.16em;text-transform:uppercase;color:rgba(215,185,88,.72);}
@@ -2332,6 +2355,11 @@ body.free-mode .port-dot:hover{background:var(--board-gold);border-color:#f8e8a8
 }
 @media(max-width:600px){
   #s1 .s1-topic-block .ita{font-size:16px;}
+  .video-duration-intent{padding:16px!important;}
+  .video-duration-head{align-items:center;}
+  .video-duration-copy p{font-size:9px;}
+  .video-duration-value{min-width:70px;}
+  .video-duration-range{height:44px;}
   .guided-options{display:flex;overflow-x:auto;padding-bottom:2px;scrollbar-width:none;}
   .guided-options button{flex:0 0 auto;min-width:132px;}
   .guided-head p{display:none;}
@@ -2605,6 +2633,21 @@ body.free-mode .port-dot:hover{background:var(--board-gold);border-color:#f8e8a8
         <span class="mv-hint-text" id="mvHintText">Describe the mood -- dark, romantic, euphoric?</span>
       </div>
     </div>
+    <div class="s1-youtube-only video-duration-intent">
+      <div class="video-duration-head">
+        <div class="video-duration-copy">
+          <div class="ilabel">approximate video length</div>
+          <p>Sets the pacing, story depth and number of planned shots.</p>
+        </div>
+        <output class="video-duration-value" id="videoDurationValue" for="videoDuration" aria-live="polite">≈ 3 min</output>
+      </div>
+      <div class="video-duration-control">
+        <input class="video-duration-range" id="videoDuration" type="range" min="1" max="20" step="1" value="3" aria-label="Approximate video length in minutes" aria-valuetext="Approximately 3 minutes" oninput="setVideoDuration(this.value,false)" onchange="setVideoDuration(this.value,true)">
+        <div class="video-duration-scale" aria-hidden="true"><span>1 min</span><span>5</span><span>10</span><span>15</span><span>20 min</span></div>
+        <input id="durMin" type="hidden" value="3">
+        <input id="durMax" type="hidden" value="3">
+      </div>
+    </div>
     <section class="guided-questions s1-youtube-only" id="guidedQuestions" aria-label="A few quick choices">
       <div class="guided-head"><div><span>Optional guidance</span><h2>Three quick choices. Or keep our suggestions.</h2></div><p>Nothing here is required. We use your topic and Creator DNA to preselect a strong starting point.</p></div>
       <div class="guided-question" data-question="outcome">
@@ -2632,22 +2675,10 @@ body.free-mode .port-dot:hover{background:var(--board-gold);border-color:#f8e8a8
         </div>
       </div>
     </section>
-    <button class="s1-advanced-toggle s1-youtube-only" id="projectAdvancedToggle" type="button" onclick="toggleProjectAdvanced()" aria-expanded="false"><span>Production details</span><small>Optional · duration, locations and exact limits</small><i>+</i></button>
+    <button class="s1-advanced-toggle s1-youtube-only" id="projectAdvancedToggle" type="button" onclick="toggleProjectAdvanced()" aria-expanded="false"><span>Production details</span><small>Optional · locations and exact limits</small><i>+</i></button>
     <div class="s1-youtube-only s1-advanced-field quick-constraints">
       <div class="ilabel">anything we should work around? <span>optional</span></div>
       <textarea id="quickConstraintsIn" rows="2" placeholder="One room, solo shoot, no budget, two hours of daylight..."></textarea>
-    </div>
-    <div class="s1-youtube-only s1-advanced-field">
-      <div>
-        <div class="ilabel">video duration</div>
-        <div class="dur-row">
-          <span class="dur-lbl">from</span>
-          <input class="dur-input" id="durMin" type="number" min="1" max="30" value="2">
-          <span class="dur-lbl">to</span>
-          <input class="dur-input" id="durMax" type="number" min="1" max="30" value="4">
-          <span class="dur-lbl">minutes</span>
-        </div>
-      </div>
     </div>
     <div class="s1-music-only s1-advanced-field">
       <div class="song-row">
@@ -3932,7 +3963,7 @@ function buildCreativeContract(skipDetails){
   if(skipDetails&&constraints)constraints.value='';
   projectConstraints=constraints?constraints.value.trim():'';projectBrief='';
   setCreativeContractBusy(true,'Reading your idea + DNA');
-  var user='VIDEO IDEA:\n'+topic+'\n\nTHREE QUICK CHOICES:\n'+projectGuidanceContext()+'\n\nDURATION:\n'+durMin+'-'+durMax+' minutes\n\nSELECTED TONE / FORMAT:\n'+tone+' / '+fmt+'\n\nREAL PRODUCTION RESOURCES AND LIMITS:\n'+(projectConstraints||'No project-specific production details were supplied. Stay within the Creator DNA capabilities.');
+  var user='VIDEO IDEA:\n'+topic+'\n\nTHREE QUICK CHOICES:\n'+projectGuidanceContext()+'\n\nDURATION:\n'+videoDurationPrompt()+'\n\nSELECTED TONE / FORMAT:\n'+tone+' / '+fmt+'\n\nREAL PRODUCTION RESOURCES AND LIMITS:\n'+(projectConstraints||'No project-specific production details were supplied. Stay within the Creator DNA capabilities.');
   var previous=creativeContract?normalizeCreativeContract(creativeContract,creativeContract.source):null;
   api(creativeContractPrompt(),user,'creative_contract').then(function(raw){
     var parsed=parseCreativeContract(raw),structured=parsed&&parsed.format&&typeof parsed.format==='object'?Object.assign({},parsed,{schema:CREATIVE_CONTRACT_SCHEMA,schemaVersion:2}):parsed,candidate=normalizeCreativeContract(structured,'ai');
@@ -4647,7 +4678,30 @@ function skipCreatorDna(){
   if(dnaReturnScreen==='s_dna_hub'){renderCreatorDnaHub();show('s_dna_hub');}else show('s1');
 }
 creatorDNA=loadCreatorDna();
-var durMin=2,durMax=4;
+var durMin=3,durMax=3,videoDurationCommitted=3;
+function clampVideoDuration(value){return Math.max(1,Math.min(20,Math.round(Number(value)||3)));}
+function storedVideoDuration(value,fallback){return Math.max(1,Math.round(Number(value)||fallback||3));}
+function videoDurationTarget(){return clampVideoDuration((Number(durMin||3)+Number(durMax||durMin||3))/2);}
+function videoDurationLabel(){
+  var min=storedVideoDuration(durMin,3),max=storedVideoDuration(durMax,min);if(min>max){var swap=min;min=max;max=swap;}
+  return min===max?min+' min':min+'-'+max+' min';
+}
+function videoDurationPrompt(){
+  var min=storedVideoDuration(durMin,3),max=storedVideoDuration(durMax,min);if(min>max){var swap=min;min=max;max=swap;}
+  return min===max?'approximately '+min+' minute'+(min===1?'':'s'):min+'-'+max+' minutes';
+}
+function paintVideoDuration(value){
+  var v=clampVideoDuration(value),range=document.getElementById('videoDuration'),output=document.getElementById('videoDurationValue'),minInput=document.getElementById('durMin'),maxInput=document.getElementById('durMax');
+  if(range){range.value=v;range.style.setProperty('--duration-progress',(((v-1)/19)*100).toFixed(2)+'%');range.setAttribute('aria-valuetext','Approximately '+v+' minute'+(v===1?'':'s'));}
+  if(output)output.textContent='≈ '+v+' min';
+  if(minInput)minInput.value=durMin;if(maxInput)maxInput.value=durMax;
+}
+function syncVideoDurationControl(){var v=videoDurationTarget();videoDurationCommitted=v;paintVideoDuration(v);}
+function setVideoDuration(value,final){
+  var v=clampVideoDuration(value),changed=v!==videoDurationCommitted;durMin=v;durMax=v;paintVideoDuration(v);
+  if(final&&changed){videoDurationCommitted=v;if(creativeContract){markCreativeContractStale('Video duration changed',creativeContractKey(projectConstraints));renderCreativeContract();renderScriptContract();}}
+  return v;
+}
 var songURL=null,songName='',songDuration=0;
 var songAnalysis=null;
 var recceImages=[];
@@ -4904,12 +4958,13 @@ document.addEventListener('keyup',function(e){
   if(e.code==='Space'){spaceDown=false;if(isPan){isPan=false;document.getElementById('vp').classList.remove('panning');}}
 });
 
-function show(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.getElementById(id).classList.add('active');document.body.classList.toggle('gd-processing',id==='s2'||id==='s4');}
+function show(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.getElementById(id).classList.add('active');document.body.classList.toggle('gd-processing',id==='s2'||id==='s4');if(id==='s1')syncVideoDurationControl();}
 function performNewProject(){
   if(window.gdNewProject)window.gdNewProject();
   canonicalRuntimeProjectId=null;canonicalProjectState=null;canonicalValidationState=null;canonicalMigrationBackup=null;canonicalLastKnownValid=null;canonicalTombstones=[];
   resetLocationViewState();
   nodes=[];attShots=[];imgNodes=[];noteNodes=[];conns=[];nid=1;nodeDrawerClosed={};
+  durMin=3;durMax=3;videoDurationCommitted=3;syncVideoDurationControl();
   topic='';projectBrief='';projectConstraints='';projectGuidance={outcome:'understand',approach:'observe',production:'voice-footage'};projectGuidanceTouched={};creativeContract=null;creativeContractBusy=false;creativeContractHistory=[];creativeGenerationRecords=[];currentScriptGeneratedFrom=null;truthLedger=null;truthResearch=null;firstPartyAssertions=[];scriptEpistemicRevisions=[];currentScriptEpistemic=null;projectBreakdown=null;projectBreakdownKey=null;
   scriptVersions=[];scriptSelectionState=null;scriptRevisionState=null;
   clearRecce();songName='';songDuration=0;songAnalysis=null;songURL=null;
@@ -5809,7 +5864,7 @@ function ytCutRules(totalSec){
 }
 
 function buildGenSys(totalSec,li){
-  var dur=durMin+'-'+durMax+' minutes (~'+Math.round(totalSec)+' seconds)';
+  var dur=videoDurationPrompt()+' (~'+Math.round(totalSec)+' seconds)';
   var base='';
   if(projectType==='music'){
     var approxCuts=Math.round(totalSec/2.5);
@@ -6778,11 +6833,8 @@ function captureSetup(){
     durMax=durMin+(totalSec2%60>0?1:0);
     stopMvHints();
   }else{
-    durMin=Math.max(1,parseInt(document.getElementById('durMin').value,10)||2);
-    durMax=Math.max(1,parseInt(document.getElementById('durMax').value,10)||4);
-    if(durMin>durMax){var swap=durMin;durMin=durMax;durMax=swap;}
-    document.getElementById('durMin').value=durMin;
-    document.getElementById('durMax').value=durMax;
+    var selectedDuration=document.getElementById('videoDuration');
+    setVideoDuration(selectedDuration?selectedDuration.value:videoDurationTarget(),true);
   }
   inputLang=detectLang(topic);
   syncGuidedSetup();
@@ -6885,7 +6937,7 @@ function genScript(){
   var extra=recceContext()+songAnalysisSummary();
   var productionContext='';
   if(projectConstraints)productionContext+='\n\nAvailable production resources and constraints:\n'+projectConstraints;
-  var planMsg='Create shot plan for: '+topic+'. Duration: '+durMin+'-'+durMax+' minutes. Tone: '+tone+productionContext+extra;
+  var planMsg='Create shot plan for: '+topic+'. Duration: '+videoDurationPrompt()+'. Tone: '+tone+productionContext+extra;
   setLoadProgress('s2',28,'Shaping the voiceover','Building a structure around your promise');
   // long plans: draft a beat outline then write segments in parallel instead
   // of one request at a time (much faster for 10+ min cut-by-cut videos)
@@ -7229,6 +7281,22 @@ function planQualityReport(text,totalSec){
   return {blocks:blocks.length,cameraShots:camera,brollCuts:broll,
     overBudget:!!(p&&broll>p.maxCuts),duplicateCount:duplicates.length,duplicates:duplicates};
 }
+function planWordCount(value){
+  return String(value||'').trim().split(/\s+/).filter(function(word){return /[a-z0-9çğıöşü]/i.test(word);}).length;
+}
+function planSpanCoverage(spans,start,end){
+  var sorted=(spans||[]).map(function(span){return [Math.max(start,span[0]),Math.min(end,span[1])];}).filter(function(span){return span[1]>span[0];}).sort(function(a,b){return a[0]-b[0];});
+  var total=0,open=null;sorted.forEach(function(span){if(!open){open=span.slice();return;}if(span[0]<=open[1])open[1]=Math.max(open[1],span[1]);else{total+=open[1]-open[0];open=span.slice();}});if(open)total+=open[1]-open[0];return total;
+}
+function planDurationReport(text,targetEnd,startAt){
+  startAt=Math.max(0,Number(startAt)||0);targetEnd=Math.max(startAt+1,Number(targetEnd)||startAt+1);
+  var blocks=parseBlocks(text||''),timelineEnd=0,audio=[],music=[],voiceWords=0;
+  blocks.forEach(function(block){var start=tcToSec(block.tcStart),end=tcToSec(block.tcEnd);timelineEnd=Math.max(timelineEnd,end);if(block.type==='voiceover'){audio.push([start,end]);voiceWords+=planWordCount(block.content);}else if(block.type==='music'){audio.push([start,end]);music.push([start,end]);}});
+  var duration=targetEnd-startAt,audioSeconds=planSpanCoverage(audio,startAt,targetEnd),musicSeconds=planSpanCoverage(music,startAt,targetEnd);
+  var runtimeFloor=targetEnd-Math.max(12,duration*.08),coverageFloor=duration*.82,spokenSeconds=duration-Math.min(musicSeconds,duration*.25),wordFloor=Math.max(24,Math.floor(spokenSeconds*1.35));
+  var report={targetStart:startAt,targetEnd:targetEnd,targetSeconds:duration,timelineEnd:timelineEnd,audioSeconds:audioSeconds,musicSeconds:musicSeconds,voiceWords:voiceWords,runtimeFloor:runtimeFloor,coverageFloor:coverageFloor,wordFloor:wordFloor};
+  report.runtimeComplete=timelineEnd>=runtimeFloor;report.audioComplete=audioSeconds>=coverageFloor;report.voiceComplete=voiceWords>=wordFloor;report.complete=report.runtimeComplete&&report.audioComplete&&report.voiceComplete;return report;
+}
 function planStatsLabel(text){
   var n=parseBlocks(text||'');
   if(!n.length)return '0 blocks';
@@ -7456,6 +7524,7 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
         +(seg.forbiddenRepeats&&seg.forbiddenRepeats.length?'\nDO NOT REPEAT HERE: '+seg.forbiddenRepeats.join(' | '):'')
         +(otherInfo.length?'\n\nINFORMATION OWNED BY OTHER SEGMENTS - context only. Do not explain, paraphrase or re-establish any of it here:\n- '+otherInfo.join('\n- '):'')
         +(pace?'\n\nCAMERA-SHOT BUDGET FOR THIS SEGMENT: about '+shotBudget+' BROLL shots, hard maximum '+Math.max(shotBudget+1,Math.ceil(segSecs/pace.minHold))+'. This is part of the whole-film budget, so do not compensate for another segment or add alternate angles.':'')
+        +'\n\nSPOKEN-CONTENT FLOOR: This segment lasts '+Math.round(segSecs)+' seconds. Unless the outline explicitly assigns a short music break, write at least '+Math.max(40,Math.round(segSecs*1.45))+' spoken VOICEOVER words in this segment. Never fake runtime by stretching a short sentence across a long timecode.'
         +'\n\nSEMANTIC COVERAGE CHECK: every concrete object or action named by a VOICEOVER line must appear in at least one BROLL whose timecode overlaps that line. A thematically similar generic image is not coverage.'
         // segments are drafted in parallel, so a writer cannot read what came
         // before and two of them kept establishing the same moment twice in a
@@ -7484,9 +7553,8 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
       // ONLY the short segments, still in parallel, before that safety net
       var shortfalls=[];
       texts.forEach(function(t,idx){
-        var segEnd=0;
-        parseBlocks(t).forEach(function(b){var e=tcToSec(b.tcEnd);if(e>segEnd)segEnd=e;});
-        if(tcToSec(segs[idx].end)-segEnd>20)shortfalls.push(idx);
+        var segmentReport=planDurationReport(t,tcToSec(segs[idx].end),tcToSec(segs[idx].start));
+        if(!segmentReport.complete)shortfalls.push(idx);
       });
       if(!shortfalls.length){
         setGenStage('finishing up');
@@ -7503,19 +7571,20 @@ function genPlanChunked(planSys,planMsg,totalSec,li){
       });
     });
   }).then(function(text){
-    // last-resort safety net: if the whole parallel pipeline came back with
-    // nothing usable, don't hand the caller an empty string (which surfaces
-    // as "The AI could not produce a usable plan this time"). Fall back to
-    // the plain single-request path - the same one short videos use, which
-    // has been reliable throughout - and give it a long, patient window.
-    if(parseBlocks(text||'').length)return text;
-    console.warn('[plan] chunked pipeline produced no usable blocks - falling back to a single-pass request');
-    setGenStage('retrying in one pass');
-    // one request writing the WHOLE video is by far the biggest generation
-    // we ever ask for - with a streaming Worker there's no 100s ceiling to
-    // trip over any more, so give it a genuinely patient window
+    // Reaching the requested final timecode is not enough: a model can stretch
+    // a handful of sentences across several minutes. Reject that hollow plan
+    // and retry once with the patient whole-video path.
+    var firstReport=planDurationReport(text||'',totalSec,0);window.__lastPlanDurationReport=firstReport;
+    if(firstReport.complete)return text;
+    console.warn('[plan] chunked pipeline underfilled the selected runtime - falling back to a single-pass request',firstReport);
+    setGenStage('filling the selected runtime');
     return withTimeout(apiRetry(planSys,buildUserContent(planMsg),'shot_plan_fallback'),240000,'','single-pass fallback')
-      .then(function(t){return ensureFullPlan(planSys,(t||'').trim());});
+      .then(function(t){return ensureFullPlan(planSys,(t||'').trim());})
+      .then(function(repaired){
+        var finalReport=planDurationReport(repaired||'',totalSec,0);window.__lastPlanDurationReport=finalReport;
+        if(!finalReport.complete)throw new Error('The draft was shorter than your selected '+videoDurationLabel()+' runtime, so it was not saved. Please try again.');
+        return repaired;
+      });
   });
 }
 
@@ -8579,7 +8648,7 @@ function renderTL(){
       lanes.appendChild(b);
     });
     tl.appendChild(lanes);
-    var tot2=document.createElement('div');tot2.className='tl-total';tot2.textContent=nodes.length+' blocks  '+durMin+'-'+durMax+'min';tl.appendChild(tot2);
+    var tot2=document.createElement('div');tot2.className='tl-total';tot2.textContent=nodes.length+' blocks  '+videoDurationLabel();tl.appendChild(tot2);
     return;
   }
   nodes.forEach(function(node){
@@ -8600,7 +8669,7 @@ function renderTL(){
     b.addEventListener('click',function(){setNodeSelection([node.id],node.id);renderAll();panToNode(node);});
     tl.appendChild(b);
   });
-  var tot=document.createElement('div');tot.className='tl-total';tot.textContent=nodes.length+' cuts  '+durMin+'-'+durMax+'min';tl.appendChild(tot);
+  var tot=document.createElement('div');tot.className='tl-total';tot.textContent=nodes.length+' cuts  '+videoDurationLabel();tl.appendChild(tot);
 }
 
 function reflowAttShots(parentId,heights,nodeHeights){
@@ -11067,6 +11136,7 @@ document.addEventListener('mouseup',function(e){
     nodes=[]; attShots=[]; imgNodes=[]; noteNodes=[]; conns=[]; nid=1;
     nodeDrawerClosed={};
     topic=''; projectBrief=''; projectConstraints=''; projectGuidance={outcome:'understand',approach:'observe',production:'voice-footage'}; projectGuidanceTouched={}; creativeContract=null; creativeContractBusy=false; creativeContractHistory=[]; creativeGenerationRecords=[]; currentScriptGeneratedFrom=null; truthLedger=null; truthResearch=null; firstPartyAssertions=[]; scriptEpistemicRevisions=[]; currentScriptEpistemic=null; projectBreakdown=null; projectBreakdownKey=null;
+    durMin=3;durMax=3;videoDurationCommitted=3;syncVideoDurationControl();
     recceImages=[];
     songName=''; songDuration=0; songAnalysis=null; songURL=null;
     var sta=byId('scriptTa'); if(sta) sta.value='';

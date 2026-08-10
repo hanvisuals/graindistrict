@@ -19,13 +19,25 @@ try{
   const calmStart=await page.evaluate(()=>({
     questions:document.querySelectorAll('.guided-question').length,
     selected:document.querySelectorAll('.guided-options .on').length,
-    duration:getComputedStyle(document.getElementById('durMin').closest('.s1-advanced-field')).display,
+    duration:getComputedStyle(document.querySelector('.video-duration-intent')).display,
+    durationMin:document.getElementById('videoDuration').min,
+    durationMax:document.getElementById('videoDuration').max,
+    durationValue:document.getElementById('videoDuration').value,
     recce:getComputedStyle(document.getElementById('recceGrid').parentElement).display,
     ai:getComputedStyle(document.getElementById('aiModeSwitch')).display,
     action:document.getElementById('gobtnTxt').textContent
   }));
   ok('the intake asks for one topic and keeps three optional answers preselected',calmStart.questions===3&&calmStart.selected===3&&calmStart.action==='Shape my video',calmStart);
-  ok('production controls and AI plumbing stay out of the default path',calmStart.duration==='none'&&calmStart.recce==='none'&&calmStart.ai==='none',calmStart);
+  ok('runtime is an upfront 1-20 minute decision while advanced production plumbing stays hidden',calmStart.duration!=='none'&&calmStart.durationMin==='1'&&calmStart.durationMax==='20'&&calmStart.durationValue==='3'&&calmStart.recce==='none'&&calmStart.ai==='none',calmStart);
+
+  const durationBox=await page.locator('#videoDuration').boundingBox();
+  const durationTrackStart=durationBox.x+10,durationTrackWidth=durationBox.width-20;
+  await page.mouse.move(durationTrackStart+durationTrackWidth*(2/19),durationBox.y+durationBox.height/2);
+  await page.mouse.down();
+  await page.mouse.move(durationTrackStart+durationTrackWidth*(3/19),durationBox.y+durationBox.height/2,{steps:8});
+  await page.mouse.up();
+  const chosenDuration=await page.evaluate(()=>({value:document.getElementById('videoDuration').value,label:document.getElementById('videoDurationValue').textContent,min:durMin,max:durMax,aria:document.getElementById('videoDuration').getAttribute('aria-valuetext')}));
+  ok('dragging the runtime bar sets one approximate target and announces it accessibly',chosenDuration.value==='4'&&/4 min/.test(chosenDuration.label)&&chosenDuration.min===4&&chosenDuration.max===4&&/4 minutes/.test(chosenDuration.aria),chosenDuration);
 
   await page.fill('#topicIn','New York neden yalnız hissettirir?');
   const inferred=await page.evaluate(()=>({guidance:projectGuidance,pressed:[...document.querySelectorAll('.guided-options .on')].map(x=>x.dataset.value)}));
@@ -67,10 +79,11 @@ try{
     sections:getComputedStyle(document.querySelector('.cc-sections')).display,
     action:document.getElementById('creativeContractLockText').textContent,
     calls:window.__calmCalls.map(x=>x.feature),
-    guidanceInPrompt:/THREE QUICK CHOICES/.test(window.__calmCalls[0].user)&&/Creator can appear on camera/.test(window.__calmCalls[0].user)
+    guidanceInPrompt:/THREE QUICK CHOICES/.test(window.__calmCalls[0].user)&&/Creator can appear on camera/.test(window.__calmCalls[0].user),
+    durationInPrompt:/DURATION:\napproximately 4 minutes/.test(window.__calmCalls[0].user)
   }));
   ok('the progress reaches 100 before a three-decision summary replaces it',!directionReady.building&&directionReady.progress===100&&directionReady.snapshot==='grid'&&directionReady.snapshotItems===3&&directionReady.sections==='none',directionReady);
-  ok('the generated direction uses the quick answers and pauses for one simple confirmation',directionReady.action==='Create my voiceover'&&directionReady.calls.join(',')==='creative_contract'&&directionReady.guidanceInPrompt,directionReady);
+  ok('the generated direction uses the quick answers and selected runtime, then pauses for one simple confirmation',directionReady.action==='Create my voiceover'&&directionReady.calls.join(',')==='creative_contract'&&directionReady.guidanceInPrompt&&directionReady.durationInPrompt,directionReady);
   if(process.env.QA_DIR)await page.screenshot({path:path.join(process.env.QA_DIR,'calm-direction.png'),fullPage:true});
 
   await page.click('#creativeContractLock');
@@ -90,7 +103,7 @@ try{
   ok('the bar fills only when the finished voiceover replaces the loading screen',studio.screen==='s3'&&studio.progress===100,studio);
   ok('Script Studio opens as one clean continuous voiceover with production notes hidden',studio.reader!=='none'&&studio.editor==='none'&&studio.lines.length===2&&!studio.lines.join(' ').includes('subway platform'),studio);
   if(process.env.QA_DIR)await page.screenshot({path:path.join(process.env.QA_DIR,'calm-voiceover.png'),fullPage:true});
-  ok('the three quick answers survive canonical save and restore',studio.saved.canonical.creative.guidance.outcome==='feel'&&studio.saved.canonical.creative.guidance.production==='on-camera',studio.saved.canonical.creative.guidance);
+  ok('the quick answers and target runtime survive canonical save and restore',studio.saved.canonical.creative.guidance.outcome==='feel'&&studio.saved.canonical.creative.guidance.production==='on-camera'&&studio.saved.canonical.creative.durationRange.min===4&&studio.saved.canonical.creative.durationRange.max===4,{guidance:studio.saved.canonical.creative.guidance,duration:studio.saved.canonical.creative.durationRange});
 
   await page.click('#scriptViewToggle');
   const production=await page.evaluate(()=>({reader:getComputedStyle(document.getElementById('voiceoverReader')).display,editor:getComputedStyle(document.getElementById('scriptTa')).display,label:document.getElementById('scriptViewToggle').textContent}));
@@ -98,8 +111,9 @@ try{
 
   await page.setViewportSize({width:390,height:844});
   await page.evaluate(()=>{document.getElementById('scriptPlanWrap').className='s3-plan-wrap voiceover-mode';renderVoiceoverReader();});
-  const mobile=await page.evaluate(()=>({scrollW:document.documentElement.scrollWidth,vw:document.documentElement.clientWidth,reader:document.getElementById('voiceoverReader').getBoundingClientRect(),touch:[...document.querySelectorAll('#voiceoverReader button')].every(x=>x.getBoundingClientRect().height>=44)}));
+  const mobile=await page.evaluate(()=>({scrollW:document.documentElement.scrollWidth,vw:document.documentElement.clientWidth,reader:document.getElementById('voiceoverReader').getBoundingClientRect(),touch:[...document.querySelectorAll('#voiceoverReader button')].every(x=>x.getBoundingClientRect().height>=44),durationHeight:parseFloat(getComputedStyle(document.getElementById('videoDuration')).height)}));
   ok('the calm voiceover reader fits phones and keeps comfortable targets',mobile.scrollW<=mobile.vw&&mobile.reader.left>=0&&mobile.reader.right<=mobile.vw&&mobile.touch,mobile);
+  ok('the runtime slider keeps a mobile-sized touch target',mobile.durationHeight>=44,mobile);
   ok('the calm guided flow raises no page errors',errors.length===0,errors);
 } finally {
   await browser.close();
