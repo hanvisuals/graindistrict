@@ -44,9 +44,18 @@ server.listen(8921, async()=>{
 
   // the recalculate button must throw the cached one away and ask again
   await page.evaluate(()=>{window.gdAsk=()=>Promise.resolve(true);requestLocationRefresh();}); await page.waitForTimeout(1200);
-  const after=await page.evaluate(()=>({name:projectBreakdown[0].name,text:document.getElementById('printView').textContent}));
-  ok('recalculate asks for a fresh breakdown', after.name==='Location 2', after.name);
-  ok('and the document shows the new one', /Location 2/.test(after.text)&&!/Location 1/.test(after.text));
+  ok('recalculate asks for a fresh breakdown',
+     await page.evaluate(()=>projectBreakdown[0].name==='Location 2'),
+     await page.evaluate(()=>projectBreakdown[0].name));
+
+  // Recalculating refreshes the locations; it does not reprint. The document
+  // is built by the export itself, so the guarantee worth holding is that the
+  // NEXT export carries the new locations and none of the old ones - which is
+  // what a person actually sees.
+  await clickBarBtn(page,'#btnExport'); await page.waitForTimeout(1200);
+  const after=await page.evaluate(()=>document.getElementById('printView').textContent);
+  ok('and the next export shows the new one, not the old',
+     /Location 2/.test(after)&&!/Location 1/.test(after), after.slice(0,180));
 
   // it has to survive a real save/reopen round trip, through the actual UI,
   // or the next session pays for the breakdown all over again

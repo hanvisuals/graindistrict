@@ -85,12 +85,17 @@ server.listen(8920, async()=>{
             dets:v.querySelectorAll('.pv-det').length,
             oldRows:v.querySelectorAll('.pv-shots').length,
             nested:v.querySelectorAll('.pv-kid').length,
+            // nothing on the board is shot at a location except the camera
+            // blocks, so the rest get sections of their own rather than being
+            // dressed up as a booth "location" or dropped
+            vo:[].map.call(v.querySelectorAll('.pv-vo-row .pv-vo-n'),function(e){return e.textContent;}),
+            cues:[].map.call(v.querySelectorAll('.pv-edit-list [class*=-n]'),function(e){return e.textContent;}),
             btnLabel:document.getElementById('btnExport').textContent,
             btnDisabled:document.getElementById('btnExport').disabled};
   });
 
   ok('export generated a breakdown by itself', r.hasBd);
-  ok('every location made it into the document', r.locCount===3, r.locCount);
+  ok('every place the camera goes made it into the document', r.locCount===2, r.locCount);
   ok('locations are named', /Diner/.test(r.text) && /Subway platform/.test(r.text));
   ok('props to pack are listed', /Worn notebook/.test(r.text) && /Metro card/.test(r.text));
   ok('wardrobe is listed', /Grey hoodie/.test(r.text));
@@ -99,13 +104,25 @@ server.listen(8920, async()=>{
   ok('no kit list any more', !/Shotgun mic/.test(r.text)&&!/100mm macro .*bounce/.test(r.text));
   // the document is ordered the way the day is: a place, then everything that
   // happens there - not the timeline, which is the order you edit in
-  ok('each shot is printed under the location it happens at',
+  ok('each camera shot is printed under the location it happens at',
      JSON.stringify(r.under)===JSON.stringify([
        {loc:'Diner \u2014 interior booth',shots:['01a','01b']},
-       {loc:'Subway platform',shots:['02a']},
-       {loc:'Studio / voice booth',shots:['01','02']}]), r.under);
-  ok('every shot is printed exactly once',
-     r.under.reduce(function(a,l){return a.concat(l.shots);},[]).sort().join()==='01,01a,01b,02,02a', r.under);
+       {loc:'Subway platform',shots:['02a']}]), r.under);
+  ok('every camera shot is printed exactly once',
+     r.under.reduce(function(a,l){return a.concat(l.shots);},[]).sort().join()==='01a,01b,02a', r.under);
+  // A voiceover is not a place you travel to, and the model offering "Studio /
+  // voice booth" as a location does not make it one - locations answer for
+  // what the camera captures. But the lines cannot simply fall out of the
+  // document either: they move to a section of their own.
+  ok('a voice booth is not printed as somewhere to travel to',
+     !/voice booth/i.test(r.under.map(function(l){return l.loc;}).join(' ')), r.under);
+  ok('and the voiceover line is in the document, in its own section',
+     JSON.stringify(r.vo)===JSON.stringify(['01']), r.vo);
+  ok('with the words that get said', /counting the reasons/.test(r.text));
+  // the music block is neither a shot nor a spoken line; it is an edit cue,
+  // and the only wrong answer is for it to vanish
+  ok('the music block is kept too, as an edit note',
+     /Edit notes/.test(r.text)&&/Lo-fi analog synth/.test(r.text), r.cues);
   ok('story order is not lost - the labels travel with the shots',
      /01a/.test(r.text)&&/01b/.test(r.text)&&/02a/.test(r.text));
   ok('nothing is nested any more, the location does the grouping', r.nested===0, r.nested);
