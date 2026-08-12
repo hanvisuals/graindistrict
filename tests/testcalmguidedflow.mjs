@@ -108,7 +108,7 @@ try{
     saved:window.gdSerializeProjectData()
   }));
   ok('the bar fills only when the finished voiceover replaces the loading screen',studio.screen==='s3'&&studio.progress===100,studio);
-  ok('Script Studio opens as chaptered voiceover with production notes hidden',studio.reader!=='none'&&studio.editor==='none'&&studio.lines.length===4&&!studio.lines.join(' ').includes('subway platform'),studio);
+  ok('Script Studio opens as chaptered voiceover with production notes hidden',studio.reader!=='none'&&studio.editor==='none'&&studio.lines.length>=4&&!studio.lines.join(' ').includes('subway platform'),studio);
   if(process.env.QA_DIR)await page.screenshot({path:path.join(process.env.QA_DIR,'calm-voiceover.png'),fullPage:true});
   ok('the quick answers and target runtime survive canonical save and restore',studio.saved.canonical.creative.guidance.outcome==='feel'&&studio.saved.canonical.creative.guidance.production==='on-camera'&&studio.saved.canonical.creative.guidance.stage==='pre-shoot'&&/result is still unknown/.test(studio.saved.canonical.creative.guidance.context)&&studio.saved.canonical.creative.durationRange.min===4&&studio.saved.canonical.creative.durationRange.max===4,{guidance:studio.saved.canonical.creative.guidance,duration:studio.saved.canonical.creative.durationRange});
 

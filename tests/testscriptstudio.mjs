@@ -14,7 +14,7 @@ const ok=(name,pass,detail)=>console.log((pass?'PASS':'FAIL')+' - '+name+(detail
 await page.evaluate(()=>{
   document.getElementById('gdAuthOv').classList.remove('show','gate');
   document.body.classList.remove('gd-gated');
-  projectType='youtube';topic='A quiet film about learning to begin again';tone='introspective';durMin=1;durMax=1;inputLang='en';
+  projectType='youtube';topic='A quiet film about learning to begin again';tone='introspective';durMin=1;durMax=1;inputLang='en';projectGuidance.stage='post-shoot';
   projectConstraints='One camera, one 35mm lens, apartment only';
   document.getElementById('constraintsIn').value=projectConstraints;
   window.__features=[];
