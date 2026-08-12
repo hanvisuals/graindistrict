@@ -38,10 +38,13 @@ const entry=await page.evaluate(()=>({
   brief:projectBrief,
   calls:window.__features,
   title:document.querySelector('.script-studio-title').textContent,
+  researchPanelHidden:document.getElementById('truthLedgerPanel').hidden,
+  automaticResearch:/maybeAutoResearchEvidence\(\)/.test(String(genScript)),
   script:document.getElementById('scriptTa').value,
   save:document.getElementById('gdSaveState').textContent
 }));
 ok('production details go directly to Script Studio',entry.screen==='s3'&&!entry.briefScreen,entry);
+ok('research review stays out of the writing surface and never starts automatically',entry.researchPanelHidden&&!entry.automaticResearch,entry);
 ok('the removed brief is replaced by one chapter-plan call before voiceover writing',entry.calls.length===2&&entry.calls[0].feature==='narrative_plan'&&entry.calls[1].feature==='shot_plan'&&/35mm lens/.test(entry.calls[1].user)&&entry.brief==='',entry.calls);
 ok('the first generated script is immediately saved as a draft',/saved/i.test(entry.save),entry.save);
 

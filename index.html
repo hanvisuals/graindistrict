@@ -2900,7 +2900,7 @@ body.free-mode .port-dot:hover{background:var(--board-gold);border-color:#f8e8a8
           </button>
           <div class="script-contract-body" id="scriptContractBody"></div>
         </section>
-        <section class="truth-ledger" id="truthLedgerPanel" hidden>
+        <section class="truth-ledger" id="truthLedgerPanel" hidden aria-hidden="true">
           <button class="truth-ledger-toggle" type="button" onclick="toggleTruthLedger()" aria-expanded="false">
             <span class="truth-ledger-name">Research check</span><span class="truth-ledger-summary" id="truthLedgerSummary">Checking what needs evidence</span><span class="truth-ledger-mode" id="truthLedgerMode">Adaptive</span><span class="truth-ledger-state" id="truthLedgerState">Current</span><span class="truth-ledger-chevron">&#8964;</span>
           </button>
@@ -4485,7 +4485,11 @@ function truthSourceAssistantHtml(claim,source){
   html+='<div class="truth-source-disclaimer">Research proposes evidence; it never verifies automatically. The final decision stays with you.</div>';return html;
 }
 function renderTruthLedger(){
-  var panel=document.getElementById('truthLedgerPanel'),ta=document.getElementById('scriptTa');if(!panel||!ta)return;var hasScript=projectType==='youtube'&&!!String(ta.value||'').trim();panel.hidden=!hasScript;if(!hasScript)return;
+  var panel=document.getElementById('truthLedgerPanel'),ta=document.getElementById('scriptTa');if(!panel||!ta)return;
+  /* Evidence classification still protects generation internally, but the large
+     research dashboard no longer interrupts Script Studio. */
+  panel.hidden=true;panel.classList.remove('open');panel.setAttribute('aria-hidden','true');
+  var hasScript=projectType==='youtube'&&!!String(ta.value||'').trim();if(!hasScript)return;
   var summary=document.getElementById('truthLedgerSummary'),state=document.getElementById('truthLedgerState'),mode=document.getElementById('truthLedgerMode'),claimsEl=document.getElementById('truthLedgerClaims'),intro=document.getElementById('truthLedgerIntro'),overview=document.getElementById('truthLedgerOverview'),message=document.getElementById('truthLedgerMessage'),researchBtn=document.getElementById('truthResearchBtn');
   if(!truthLedger){panel.classList.remove('needs-review','has-conflict');if(summary)summary.textContent='We will check facts after the draft';if(state)state.textContent='Waiting';if(mode)mode.textContent=truthLedgerStrictness();if(researchBtn){researchBtn.disabled=true;researchBtn.textContent='Check factual claims';}if(overview)overview.innerHTML='';if(claimsEl)claimsEl.innerHTML='<div class="truth-empty">Only externally checkable ideas will appear here. Personal and poetic writing stays out of the research queue.</div>';if(message)message.textContent='';return;}
   truthLedger=normalizeTruthLedger(truthLedger);
@@ -7196,7 +7200,7 @@ function genScript(){
     rebuildTruthLedgerFromScript(planText,{reason:result.rewritten?'generated_script_safety_rewrite':'generated_script',silent:true});
     document.getElementById('wc').textContent=planStatsLabel(planText);
     refreshScriptStudio();
-    return finishLoad('s2','Your voiceover is ready').then(function(){stopLoad();show('s3');maybeAutoResearchEvidence();if(window.gdAutosaveProject)window.gdAutosaveProject(true);});
+    return finishLoad('s2','Your voiceover is ready').then(function(){stopLoad();show('s3');if(window.gdAutosaveProject)window.gdAutosaveProject(true);});
   }).catch(function(e){stopLoad();currentScriptGeneratedFrom=previousGeneratedFrom;currentNarrativePlan=previousNarrativePlan;if(scriptTa)scriptTa.value=previousScript;alert('Error: '+e.message);show(previousScript?'s3':'s1');});
 }
 
