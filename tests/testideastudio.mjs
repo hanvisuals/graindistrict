@@ -62,6 +62,20 @@ try{
   const handoff=await page.evaluate(()=>({screen:document.querySelector('.screen.active').id,topic:document.getElementById('topicIn').value,highlight:document.getElementById('topicIn').classList.contains('idea-applied'),error:document.getElementById('topicErr').classList.contains('show')}));
   ok('choosing a direction returns to the normal project flow with a production-ready seed',handoff.screen==='s1'&&/The Three-Lens Field Test/.test(handoff.topic)&&/Viewer promise:/.test(handoff.topic)&&/Production approach:/.test(handoff.topic)&&handoff.highlight&&!handoff.error,handoff);
 
+  const storyReality=await page.evaluate(()=>{
+    ideaStudioIdeas=[{lane:'simple',title:'I Followed One Rule for Thirty Days and Kept Notes',promise:'A single constraint reveals what habit and resistance actually look like.',concept:'The creator chooses one binary daily rule and keeps a log for thirty days. The episode follows the attempts, missed days, resistance and eventual result.',why:'A bounded experiment creates a complete story engine.',thumbnail:'An open notebook with crossed-out days.',production:'Recreate the month from entries and simple desk footage.',difficulty:'Focused'}];
+    useIdeaDirection(0);
+    return {reality:projectGuidance.storyReality,time:projectGuidance.narratorTime,selected:selectedIdeaDirection,topic:document.getElementById('topicIn').value};
+  });
+  ok('a completed experiment premise is treated as a dramatized retrospective episode even when an older saved idea lacks the new fields',storyReality.reality==='dramatized'&&storyReality.time==='retrospective'&&storyReality.selected&&/Thirty Days/.test(storyReality.topic),storyReality);
+
+  const legacyProjectReality=await page.evaluate(()=>{
+    selectedIdeaDirection=null;projectGuidance.storyReality='factual';projectGuidance.narratorTime='prospective';
+    const seed='I Followed One Rule for Thirty Days and Kept Notes\n\nViewer promise: A single constraint reveals what resistance looks like.\n\nDirection: Keep a daily log through a thirty day experiment and follow its result.\n\nProduction approach: Recreate the month from notebook entries.';
+    suggestProjectGuidance(seed);return {reality:projectGuidance.storyReality,time:projectGuidance.narratorTime};
+  });
+  ok('a previously saved Idea Studio project recovers its story reality directly from the structured topic seed',legacyProjectReality.reality==='dramatized'&&legacyProjectReality.time==='retrospective',legacyProjectReality);
+
   await page.click('#ideaStudioEntry');
   const reopened=await page.evaluate(()=>({cards:document.querySelectorAll('.is-card').length,calls:window.__ideaCalls.length,status:document.getElementById('ideaStudioStatus').textContent}));
   ok('saved directions reopen instantly without spending another AI request',reopened.cards===3&&reopened.calls===1&&/Saved directions/.test(reopened.status),reopened);

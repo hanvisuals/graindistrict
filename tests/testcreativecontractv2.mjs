@@ -67,6 +67,12 @@ try{
   });
   ok('format-aware validation does not force story tension onto demonstrations',formatAware.demo.valid&&!formatAware.story.valid&&formatAware.story.errors.includes('CONTRACT_STORY_QUESTION_REQUIRED'),formatAware);
 
+  const dramatized=await page.evaluate(()=>{
+    const contract=window.gdCreativeContractFallback();contract.format.type='story';contract.storyEngine.productionState='pre_shoot';contract.storyEngine.storyReality='dramatized';contract.storyEngine.narratorTime='retrospective';contract.storyEngine.motivation='No motivation was supplied by the creator; none is invented here.';contract.storyEngine.startingPoint='I followed one rule for thirty days and kept notes.';contract.storyEngine.unresolvedOutcome='';
+    window.gdSetCreativeContract(contract);const result=window.gdLockCreativeContract();return {contract:window.gdGetCreativeContract(),validation:result.validation};
+  });
+  ok('dramatized pre-shoot contracts preserve the completed premise while replacing internal safety copy with viewer-facing motivation',dramatized.validation.valid&&dramatized.contract.storyEngine.storyReality==='dramatized'&&dramatized.contract.storyEngine.narratorTime==='retrospective'&&/followed one rule/i.test(dramatized.contract.storyEngine.startingPoint)&&!/no motivation|none is invented/i.test(dramatized.contract.storyEngine.motivation),dramatized);
+
   const roundTrip=await page.evaluate(saved=>{
     window.gdRestoreProjectData({v:4,canonical:saved.canonical});
     const active=window.gdGetCreativeContract(),again=window.gdSerializeProjectData();
