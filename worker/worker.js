@@ -171,7 +171,37 @@ async function requireUser(request, store) {
 // already attached. D1 has .prepare() and no .get(), which is what produced
 // "env.GD_KV.get is not a function". Both are wrapped in the same tiny
 // key/value interface here so nothing below has to care which one it is.
-let d1Ready = null;
+const d1ReadyByBinding = new WeakMap();
+const D1_RETRY_DELAYS_MS = [80, 200, 500];
+
+function retryableD1Error(err) {
+  const message = String(err && (err.message || err) || '');
+  return /D1_ERROR/i.test(message) &&
+    /(internal error|storage|reset|temporar|network|unavailable|overload)/i.test(message);
+}
+
+function waitMs(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function withD1Retry(operation) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await operation();
+    } catch (err) {
+      if (!retryableD1Error(err) || attempt >= D1_RETRY_DELAYS_MS.length) throw err;
+      // A little jitter keeps simultaneous login requests from retrying in lockstep.
+      await waitMs(D1_RETRY_DELAYS_MS[attempt] + Math.floor(Math.random() * 40));
+    }
+  }
+}
+
+function storageError(err) {
+  if (retryableD1Error(err)) {
+    return json({error: 'Hesap servisine su anda ulasilamiyor. Bu sifrenizle ilgili degil; lutfen birkac saniye sonra tekrar deneyin.'}, 503);
+  }
+  return json({error: err && (err.message || String(err))}, 500);
+}
 
 function makeStore(binding) {
   if (!binding) return null;
@@ -200,37 +230,44 @@ function makeStore(binding) {
   if (typeof binding.prepare === 'function') {
     // the table is created on first use, so there is no SQL to run by hand
     const init = () => {
-      if (!d1Ready) {
-        d1Ready = binding.prepare(
+      let ready = d1ReadyByBinding.get(binding);
+      if (!ready) {
+        ready = withD1Retry(() => binding.prepare(
           'CREATE TABLE IF NOT EXISTS gd_store (k TEXT PRIMARY KEY, v TEXT NOT NULL, meta TEXT)'
-        ).run().catch(e => { d1Ready = null; throw e; });
+        ).run());
+        d1ReadyByBinding.set(binding, ready);
+        ready.catch(() => {
+          if (d1ReadyByBinding.get(binding) === ready) d1ReadyByBinding.delete(binding);
+        });
       }
-      return d1Ready;
+      return ready;
     };
     return {
       kind: 'D1',
       async get(k) {
         await init();
-        const row = await binding.prepare('SELECT v FROM gd_store WHERE k = ?').bind(k).first();
+        const row = await withD1Retry(() =>
+          binding.prepare('SELECT v FROM gd_store WHERE k = ?').bind(k).first());
         return row ? row.v : null;
       },
       async put(k, v, meta) {
         await init();
-        await binding.prepare(
+        await withD1Retry(() => binding.prepare(
           'INSERT INTO gd_store (k, v, meta) VALUES (?, ?, ?) ' +
           'ON CONFLICT(k) DO UPDATE SET v = excluded.v, meta = excluded.meta'
-        ).bind(k, v, meta ? JSON.stringify(meta) : null).run();
+        ).bind(k, v, meta ? JSON.stringify(meta) : null).run());
       },
       async del(k) {
         await init();
-        await binding.prepare('DELETE FROM gd_store WHERE k = ?').bind(k).run();
+        await withD1Retry(() => binding.prepare('DELETE FROM gd_store WHERE k = ?').bind(k).run());
       },
       async list(prefix) {
         await init();
         // a range scan rather than LIKE, so characters like _ and % in a key
         // can never be read as wildcards
-        const r = await binding.prepare('SELECT k, meta FROM gd_store WHERE k >= ? AND k < ?')
-          .bind(prefix, prefix + '\uffff').all();
+        const r = await withD1Retry(() =>
+          binding.prepare('SELECT k, meta FROM gd_store WHERE k >= ? AND k < ?')
+            .bind(prefix, prefix + '\uffff').all());
         return (r.results || []).map(row => {
           let m = {};
           try { m = JSON.parse(row.meta) || {}; } catch (e) {}
@@ -1442,7 +1479,7 @@ export default {
 
         return json({error: 'Bilinmeyen istek.'}, 404);
       } catch (err) {
-        return json({error: err.message || String(err)}, 500);
+        return storageError(err);
       }
     }
 

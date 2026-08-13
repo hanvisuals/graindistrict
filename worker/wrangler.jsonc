@@ -1,0 +1,14 @@
+{
+  "$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
+  "name": "billowing-dust-fa1agrain-api",
+  "main": "worker.js",
+  "compatibility_date": "2026-08-09",
+  "keep_vars": true,
+  "d1_databases": [
+    {
+      "binding": "GD_KV",
+      "database_name": "hanvisuals",
+      "database_id": "6ea831ca-531a-4fea-839e-8636af4144fb"
+    }
+  ]
+}
