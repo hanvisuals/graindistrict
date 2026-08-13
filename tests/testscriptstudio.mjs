@@ -46,7 +46,7 @@ const entry=await page.evaluate(()=>({
 }));
 ok('production details go directly to Script Studio',entry.screen==='s3'&&!entry.briefScreen,entry);
 ok('research review stays out of the writing surface and never starts automatically',entry.researchPanelHidden&&!entry.automaticResearch,entry);
-ok('the removed brief is replaced by chapter planning, voiceover writing and one final editorial pass',entry.calls.length===3&&entry.calls[0].feature==='narrative_plan'&&entry.calls[1].feature==='shot_plan'&&entry.calls[2].feature==='script_revision'&&/35mm lens/.test(entry.calls[1].user)&&entry.brief==='',entry.calls);
+ok('the removed brief is replaced by chapter planning, voiceover writing and a bounded final editorial verification',entry.calls.length>=3&&entry.calls.length<=4&&entry.calls[0].feature==='narrative_plan'&&entry.calls[1].feature==='shot_plan'&&entry.calls.slice(2).every(call=>call.feature==='script_revision')&&/35mm lens/.test(entry.calls[1].user)&&entry.brief==='',entry.calls);
 ok('the first generated script is immediately saved as a draft',/saved/i.test(entry.save),entry.save);
 
 const savedBefore=await page.evaluate(()=>new Promise(resolve=>{
