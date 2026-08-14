@@ -4257,30 +4257,29 @@ function localPreShootChapterFallback(plan,chapter){
   var tr=inputLang==='tr'||/[\u011f\u00fc\u015f\u0131\u00f6\u00e7]/i.test(topic||''),first=chapter.index===1,last=chapter.index===(plan.chapters||[]).length,vo,broll;
   function safeSentence(value,fallback){var text=String(value||'').replace(/\s+/g,' ').trim();if(!text||preShootPerformedProcess(text)||narrativeLeakIssues('[VOICEOVER] 00:00-00:10 - '+text,plan).length)text=fallback;return /[.!?]$/.test(text)?text:text+'.';}
   var motivation=safeSentence(plan&&plan.motivation,tr?'Bu karşılaştırmayı pahalı ekipmana ihtiyaç duymadan gerçek koşullarda sınamak istiyorum.':'I want to test this comparison under real conditions without requiring expensive equipment.');
+  if(!preShootOpeningHasMotivation(motivation))motivation=tr?'Bu projeye başlamak istiyorum çünkü sonucu uydurmadan gerçek koşullarda ne olduğunu öğrenmem gerekiyor.':'I am starting this project because I want to learn what happens under real conditions without inventing the result.';
   var plannedAction=safeSentence(chapter.action||chapter.concreteProgress,tr?'Bir sonraki somut adımı aynı koşulları koruyarak kaydedeceğim.':'I will record the next concrete action while keeping the conditions unchanged.');
-  var question=safeSentence(chapter.questionIn||plan&&plan.centralQuestion,tr?'Sonucu belirleyecek ayrıntının ne olduğunu izleyeceğim.':'I will watch for the exact detail that can decide the result.');
+  var rawQuestion=String(chapter.questionIn||plan&&plan.centralQuestion||'');if(/önceki bölümden kalan soru|question carried from the previous chapter/i.test(rawQuestion))rawQuestion='';
+  var phase=String(chapter.title||'').replace(/\s+/g,' ').trim()||(tr?'Bu adım':'This step'),question=safeSentence(rawQuestion,tr?phase+' aşamasında sonucu belirleyecek ayrıntıyı izleyeceğim.':'At the '+phase.toLowerCase()+' stage, I will watch for the exact detail that can decide the result.');
   if(tr){
     if(first)vo=motivation+' Başlangıç noktam belli: elimdeki koşulları değiştirmeden önce referans durumu ve karar vereceğim ölçütleri kaydedeceğim. '+question;
     else if(last)vo='Açılıştaki sorunun cevabını şimdiden ilan etmeyeceğim. '+question+' Şimdiki kararım, aynı koşulları koruyarak bu ayrıntıyı çekimde kaydetmek ve sonucu yalnızca görünen kanıta göre seçmek.';
-    else vo=[
-      'Çekim sırasında tek bir planlı eylemi, sonucunu önceden ilan etmeden izleyeceğim. Aradığım şey başarı ya da başarısızlık değil; hangi kararın bir sonraki adımı değiştirdiği ve o anın nasıl göründüğü.',
-      'Önce mevcut koşulu kaydedeceğim, sonra yalnızca bir değişkeni sınayacağım. Değişiklikten önceki tereddüt ile karardan sonraki farkı aynı bağlam içinde görünür tutacağım. Bir sonraki adımı bu fark belirleyecek.',
-      'Seçeneği ve vazgeçtiğim alternatifi aynı anda göstereceğim; böylece anlatı yoruma değil gözlenebilir bir karara dayanacak. Sonraki adıma ancak bu kararın nedenini gösteren ayrıntıyı kaydettikten sonra geçeceğim.'
-    ][chapter.index%3]+' '+plannedAction+' '+question;
+    else vo=phase+' aşamasında '+plannedAction.charAt(0).toLocaleLowerCase('tr-TR')+plannedAction.slice(1)+' Sonucu önceden ilan etmek yerine, '+phase.toLocaleLowerCase('tr-TR')+' aşamasındaki kararın hangi ayrıntıda görünür olduğunu kaydedeceğim. '+question;
     broll='Planlanan eylem ve karar noktası aynı görsel bağlam içinde izlenir. '+plannedAction;
   }else{
     if(first)vo=motivation+' The starting point is clear: before changing the conditions, I will record the reference state and the criteria for the decision. '+question;
     else if(last)vo='I will not declare the answer to the opening question in advance. '+question+' My present commitment is to preserve the same conditions, capture that detail during filming and choose the result only from visible evidence.';
-    else vo=[
-      'During filming I will follow one planned action without predicting its result. The useful evidence will be the decision itself: what changes the next step, what remains uncertain and which detail makes that change visible.',
-      'I will record the starting condition, then test only one variable. The hesitation before the change and the difference after the decision will remain visible in the same context. That contrast will determine the next step.',
-      'I will keep the chosen option and the alternative I reject visible together, so the story rests on an observable decision instead of interpretation. I will move forward only after the reason for that decision can be seen.'
-    ][chapter.index%3]+' '+plannedAction+' '+question;
+    else vo='At the '+phase.toLowerCase()+' stage, '+plannedAction.charAt(0).toLowerCase()+plannedAction.slice(1)+' Instead of predicting the result, I will record the exact detail that makes the '+phase.toLowerCase()+' decision visible. '+question;
     broll='Planned coverage of the action and its decision point; do not present an outcome before it happens. '+plannedAction;
   }
   var seconds=Math.max(1,chapter.endSeconds-chapter.startSeconds),sentences=(String(vo).match(/[^.!?]+[.!?]+|[^.!?]+$/g)||[vo]).map(function(sentence){return sentence.trim();}).filter(Boolean),pieces=Math.max(1,sentences.length),rows=[];
   sentences.forEach(function(spoken,i){var start=Math.round(chapter.startSeconds+seconds*i/pieces),end=Math.round(chapter.startSeconds+seconds*(i+1)/pieces);rows.push('[VOICEOVER] '+fmtPlanTime(start)+'-'+fmtPlanTime(end)+' - '+spoken);rows.push('[BROLL] '+fmtPlanTime(start)+'-'+fmtPlanTime(end)+' - '+broll+' '+(tr?'Plan adımı ':'Coverage step ')+(i+1)+'.');});
   return rows.join('\n');
+}
+function localNarrativeDraftFallback(plan){
+  var totalSec=(plan&&plan.durationSeconds)||((durMin+durMax)/2*60),report=validateNarrativePlan(plan,totalSec),safePlan=report&&report.plan;
+  if(!report.valid||!safePlan||safePlan.productionState!=='pre_shoot'||safePlan.storyReality!=='factual')return '';
+  return safePlan.chapters.map(function(chapter){return localPreShootChapterFallback(safePlan,chapter);}).join('\n');
 }
 function applyLocalPreShootFallback(script,plan,report){if(!plan||plan.storyReality!=='factual')return {script:script,chapters:[]};var repaired=script,chapters=narrativeRepairChapters({issues:(report&&report.issues||[]).filter(function(issue){return /^PRE_SHOOT_/.test(issue.code||'');})},plan);chapters.forEach(function(chapter){repaired=replaceNarrativeChapter(repaired,chapter,localPreShootChapterFallback(plan,chapter));});return {script:repaired,chapters:chapters};}
 function autoRepairNarrativeScript(script,plan,previousFingerprint,state,attempt){
@@ -4334,6 +4333,7 @@ window.gdNarrativeLeakIssues=function(script,plan){return canonicalClone(narrati
 window.gdNarrativeEditorialIssues=function(script,plan){return canonicalClone(narrativeEditorialIssues(script,plan),[]);};
 window.gdNarrativeReplacementReport=function(text,chapter){return canonicalClone(narrativeReplacementReport(text,chapter),null);};
 window.gdReplaceNarrativeChapter=replaceNarrativeChapter;
+window.gdLocalNarrativeDraftFallback=localNarrativeDraftFallback;
 window.gdParseNarrativeEditorialRevision=function(raw,script,plan){return canonicalClone(parseNarrativeEditorialRevision(raw,script,plan),null);};
 function creativeContractBoundFeature(feature){return /^(narrative_plan|narrative_plan_repair|shot_plan|shot_plan_segment|shot_plan_redraft|shot_plan_fallback|shot_plan_continuation|plan_outline|script_revision|epistemic_rewrite|broll_sync|broll_replan|block_revision|block_shot_details|shot_details_batch|storyboard_prompt|storyboard_revision)$/.test(String(feature||''));}
 function recordCreativeGeneration(feature,reference,text){
@@ -7477,9 +7477,10 @@ function genScript(){
     setLoadProgress('s2',34,'Writing chapter by chapter','Turning the approved progression into natural spoken scenes');
     // Longer plans use the locked chapters as parallel writing units. Shorter
     // plans still receive the same chapter contract in one coherent request.
-    return (totalSec>240
+    var writingPromise=(totalSec>240
       ? genPlanChunked(planSys,planMsg,totalSec,li,narrativePlan)
       : api(planSys,buildUserContent(planMsg),'shot_plan').then(function(t){return ensureFullPlan(planSys,t);}));
+    return writingPromise.catch(function(error){var localDraft=localNarrativeDraftFallback(narrativePlan);if(!localDraft)throw error;console.warn('[shot plan] using safe local prospective draft:',error&&error.message?error.message:error);setLoadProgress('s2',64,'Opening a safe editable draft','The writing service is unavailable; preserving your chapters and factual boundaries locally');return localDraft;});
   });
 
   planPromise.then(function(planResult){
