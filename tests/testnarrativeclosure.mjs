@@ -37,7 +37,7 @@ try{
     const investigationLines=[
       'I put the cassette on the desk and ask who recorded it.',
       'I hear a sound, but something in it is hard to place.',
-      'There is a clue and a feeling that someone was waiting.',
+      'The first note is dated 1971 and the second 1984. Their different handwriting means copying was impossible, so the hypothesis ended.',
       'A thing in the background creates an atmosphere I cannot name.',
       'Geri sarma tuşuna basılır ve kaset yeniden dinlenir.',
       'Bu kişinin adını bilmiyorum. Kaseti kapatıyorum; geriye yalnızca bir his kalıyor.'
@@ -54,8 +54,9 @@ try{
   ok('Project Direction cannot make an open question contradict a concrete payoff',/leave the question open[^\n]+not a substitute for a payoff/i.test(result.directionPrompt)&&/must never contradict desiredState, transformation, payoff/i.test(result.directionPrompt),result.directionPrompt);
   ok('investigation voiceover must name repeated generic clues',result.investigationIssues.some(issue=>issue.code==='INVESTIGATION_CLUE_UNNAMED'),result.investigationIssues);
   ok('passive production directions cannot leak into first-person voiceover',result.investigationIssues.some(issue=>issue.code==='VOICEOVER_STAGE_DIRECTION'),result.investigationIssues);
+  ok('an investigation cannot eliminate copying with dates and handwriting that still permit it',result.investigationIssues.some(issue=>issue.code==='INVESTIGATION_WEAK_ELIMINATION'),result.investigationIssues);
   ok('an investigation cannot evade the who/where/what promised by its central question',result.investigationIssues.some(issue=>issue.code==='INVESTIGATION_QUESTION_UNANSWERED'),result.investigationIssues);
-  ok('the plan and direction prompts require named clues and same-specificity answers',/three named, perceptible clues/i.test(result.directionPrompt)&&/same level of specificity/i.test(result.planPrompt)&&/anonymous portrait/i.test(result.planPrompt),{directionPrompt:result.directionPrompt,planPrompt:result.planPrompt});
+  ok('the plan and direction prompts require named clues, valid elimination and same-specificity answers',/three named, perceptible clues/i.test(result.directionPrompt)&&/later-dated document can copy an earlier one/i.test(result.directionPrompt)&&/same level of specificity/i.test(result.planPrompt)&&/anonymous portrait/i.test(result.planPrompt),{directionPrompt:result.directionPrompt,planPrompt:result.planPrompt});
 }finally{await browser.close();}
 
 if(fails)process.exit(1);
