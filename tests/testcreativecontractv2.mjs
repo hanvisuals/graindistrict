@@ -93,6 +93,17 @@ try{
   const fallback=await page.evaluate(()=>{const c=window.gdCreativeContractFallback();return {contract:c,validation:window.gdValidateCreativeContract(c)};});
   ok('fallback generation always produces a valid v2 Contract',fallback.contract.schemaVersion===2&&fallback.validation.valid,fallback);
 
+  const guidedFallback=await page.evaluate(()=>{
+    const previous={topic,inputLang,fmt,creatorDNA:JSON.parse(JSON.stringify(creatorDNA||null)),projectGuidance:JSON.parse(JSON.stringify(projectGuidance||{}))};
+    topic='Evde ucuz bir masa lambası, beyaz kâğıt ve siyah kartla cam şişedeki yansımaları üç yöntemle karşılaştırmak istiyorum.';
+    inputLang='tr';fmt='vlog';creatorDNA={v:1,outcome:'feel',carrier:'story',presence:'voice',pace:'reflective'};
+    projectGuidance={outcome:'do',approach:'explain',production:'voice-footage',stage:'pre-shoot',storyReality:'factual',narratorTime:'prospective',context:'Pahalı ekipman olmadan hangi aracın hangi yansımayı kontrol ettiğini öğrenmek istiyorum.'};
+    const contract=window.gdCreativeContractFallback(),validation=window.gdValidateCreativeContract(contract);
+    topic=previous.topic;inputLang=previous.inputLang;fmt=previous.fmt;creatorDNA=previous.creatorDNA;projectGuidance=previous.projectGuidance;
+    return {contract,validation};
+  });
+  ok('fallback respects explicit Turkish explanation guidance instead of reverting to Creator DNA story mode',guidedFallback.validation.valid&&guidedFallback.contract.format.type==='demo'&&/hangi seçenek hangi durumda işe yarayacak/i.test(guidedFallback.contract.storyEngine.drivingQuestion)&&/referans koşulu|tek değişken/i.test(guidedFallback.contract.storyEngine.structure)&&!/what changes|motivation ->/i.test(guidedFallback.contract.storyEngine.drivingQuestion+' '+guidedFallback.contract.storyEngine.structure),guidedFallback);
+
   await page.setViewportSize({width:390,height:844});
   await page.evaluate(()=>{renderCreativeContract();show('s_equipment');});
   const mobile=await page.evaluate(()=>({overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth,sections:document.querySelectorAll('.cc-section').length,fields:[...document.querySelectorAll('.cc-field')].every(x=>x.getBoundingClientRect().width<=document.getElementById('creativeContractPanel').getBoundingClientRect().width)}));
