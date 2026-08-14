@@ -44,7 +44,18 @@ try{
       'Bu kişinin adını bilmiyorum. Kaseti kapatıyorum; geriye yalnızca bir his kalıyor.'
     ];
     const investigationScript=investigationPlan.chapters.map((chapter,index)=>'[VOICEOVER] '+chapter.start+'-'+fmtTime(Math.min(chapter.endSeconds,chapter.startSeconds+18))+' - '+investigationLines[index]).join('\n');
-    return {issues,resolvedIssues,unclearIssues:window.gdNarrativeEditorialIssues(unclearOpening,plan),povIssues:window.gdNarrativeEditorialIssues(povDrift,plan),repeatIssues:window.gdNarrativeEditorialIssues(repeatedDiscovery,plan),questionIssues:window.gdNarrativeEditorialIssues(questionEnding,plan),investigationIssues:window.gdNarrativeEditorialIssues(investigationScript,investigationPlan),directionPrompt:creativeContractPrompt(),planPrompt:window.gdNarrativePlanPrompt(360,'')};
+    inputLang='tr';topic='Koridordaki ampul neden açık kaldı? Üç somut ipucuyla araştırılan tamamen kurmaca bir hikâye.';projectGuidance={stage:'post-shoot',storyReality:'fictional',narratorTime:'retrospective',context:'Taşınma bandı, kutu izi ve anahtardaki not sonunda komşunun son kutuyu alabilmesi için ampulü açık bıraktığını kanıtlar.'};creativeContract=creativeContractFallback();
+    const mysteryPlan=window.gdNarrativeFallbackPlan(360);mysteryPlan.productionState='post_shoot';mysteryPlan.storyReality='fictional';mysteryPlan.narratorTime='retrospective';mysteryPlan.narrativeMode='investigation';mysteryPlan.centralQuestion='Ampul neden açık kaldı?';mysteryPlan.storyBible.discovery='Komşu, taşınırken son kutuyu alabilmek için koridor ampulünü açık bıraktı.';mysteryPlan.storyBible.endingAction='Komşu son kutuyu alır, ben duvardaki anahtarla ampulü kapatırım ve koridor kararır.';
+    const mysteryLines=[
+      'Koridorda tek bir ışık gece yarısından sonra da yanıyordu; kapı önünde durup ampulün nedenini merak ettim.',
+      'İlk açıklamam boş dairede unutulan ampuldü; fakat kapının altındaki sarı taşınma bandı yeni görünüyordu.',
+      'Koridor zeminindeki kutu biçimli temiz iz ikinci ipucuydu; ağır bir kutunun yakın zamanda kaldırıldığını gösteriyordu.',
+      'Anahtara iliştirilmiş kısa not üçüncü ipucuydu; son kutu sözleri, ampulün unutulduğu açıklamasını geçersiz kıldı.',
+      'Komşu son kutuyu almaya geldiğinde üç iz aynı nedeni gösterdi: ışık, taşınmanın son dönüşü için açık bırakılmıştı.',
+      'Komşu kutuyu merdivene taşıdı; ben duvardaki anahtarla ampulü kapattım ve koridor sessizce karardı.'
+    ];
+    const mysteryScript=mysteryPlan.chapters.map((chapter,index)=>'[VOICEOVER] '+chapter.start+'-'+fmtTime(Math.min(chapter.endSeconds,chapter.startSeconds+28))+' - '+mysteryLines[index]).join('\n');
+    return {issues,resolvedIssues,unclearIssues:window.gdNarrativeEditorialIssues(unclearOpening,plan),povIssues:window.gdNarrativeEditorialIssues(povDrift,plan),repeatIssues:window.gdNarrativeEditorialIssues(repeatedDiscovery,plan),questionIssues:window.gdNarrativeEditorialIssues(questionEnding,plan),investigationIssues:window.gdNarrativeEditorialIssues(investigationScript,investigationPlan),mysteryIssues:window.gdNarrativeEditorialIssues(mysteryScript,mysteryPlan),mysteryQuality:window.gdNarrativeScriptQuality(mysteryScript,mysteryPlan),mysteryChapters:mysteryPlan.chapters.map(ch=>ch.title),directionPrompt:creativeContractPrompt(),planPrompt:window.gdNarrativePlanPrompt(360,'')};
   });
   ok('a completed action cannot restart across a chapter boundary',result.issues.some(issue=>issue.code==='VOICEOVER_CHAPTER_BOUNDARY_RESTART'),result.issues);
   ok('the final line cannot retreat into unnamed uncertainty',result.issues.some(issue=>issue.code==='ENDING_DISCOVERY_UNNAMED'),result.issues);
@@ -58,6 +69,8 @@ try{
   ok('passive production directions cannot leak into first-person voiceover',result.investigationIssues.some(issue=>issue.code==='VOICEOVER_STAGE_DIRECTION'),result.investigationIssues);
   ok('an investigation cannot eliminate copying with dates and handwriting that still permit it',result.investigationIssues.some(issue=>issue.code==='INVESTIGATION_WEAK_ELIMINATION'),result.investigationIssues);
   ok('an investigation cannot evade the who/where/what promised by its central question',result.investigationIssues.some(issue=>issue.code==='INVESTIGATION_QUESTION_UNANSWERED'),result.investigationIssues);
+  ok('a fictional clue chain resolves the exact why-question and lands on a physical final image',result.mysteryIssues.length===0&&result.mysteryChapters.at(-2)==='Yanıt'&&result.mysteryChapters.at(-1)==='Son görüntü',result);
+  ok('the resolved fictional investigation also clears chapter coverage and script-quality gates',result.mysteryQuality.valid,result.mysteryQuality);
   ok('the plan and direction prompts require named clues, valid elimination and same-specificity answers',/three named, perceptible clues/i.test(result.directionPrompt)&&/later-dated document can copy an earlier one/i.test(result.directionPrompt)&&/same level of specificity/i.test(result.planPrompt)&&/anonymous portrait/i.test(result.planPrompt),{directionPrompt:result.directionPrompt,planPrompt:result.planPrompt});
   ok('the plan requires arithmetic and causal mechanisms to match the observed result',/arithmetically compatible/i.test(result.planPrompt)&&/do not confuse arrival with departure/i.test(result.planPrompt),result.planPrompt);
 }finally{await browser.close();}
