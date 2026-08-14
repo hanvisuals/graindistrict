@@ -89,6 +89,27 @@ try{
   },generated.saved);
   ok('canonical-only backups reopen with the same Project Direction',roundTrip.viewer==='Busy solo filmmakers building their first practical kit'&&roundTrip.format==='presenter'&&roundTrip.screen==='s3'&&roundTrip.visible,roundTrip);
 
+  await page.evaluate(()=>{show('s_equipment');renderCreativeContract();});
+  await page.click('#creativeContractDetails');
+  await page.fill('#ccDesiredState','They can name the waiting posture before choosing their first practical kit.');
+  await page.waitForTimeout(1450);
+  const persistedDraft=await page.evaluate(()=>new Promise((resolve,reject)=>{
+    const open=indexedDB.open('graindistrict',1);
+    open.onerror=()=>reject(open.error);
+    open.onsuccess=()=>{
+      const db=open.result,request=db.transaction('projects','readonly').objectStore('projects').getAll();
+      request.onerror=()=>reject(request.error);
+      request.onsuccess=()=>{
+        const latest=(request.result||[]).sort((a,b)=>(b.updated_at||0)-(a.updated_at||0))[0],saved=latest&&latest.data,c=saved&&saved.canonical&&saved.canonical.creative&&saved.canonical.creative.contract;
+        if(saved)window.gdRestoreProjectData(saved);
+        const restored=window.gdGetCreativeContract();
+        resolve({count:(request.result||[]).length,status:c&&c.status,revision:c&&c.revision,desired:c&&c.audience&&c.audience.desiredState,recovery:!!(saved&&saved.recovery),restoredStatus:restored&&restored.status,restoredRevision:restored&&restored.revision,restoredDesired:restored&&restored.audience&&restored.audience.desiredState});
+      };
+    };
+  }));
+  ok('fine-tuned Project Direction drafts autosave from their own screen and survive a real IndexedDB reopen',persistedDraft.count>0&&persistedDraft.status==='draft'&&persistedDraft.revision===2&&/waiting posture/.test(persistedDraft.desired||'')&&!persistedDraft.recovery&&persistedDraft.restoredStatus==='draft'&&persistedDraft.restoredRevision===2&&persistedDraft.restoredDesired===persistedDraft.desired,persistedDraft);
+
+  await page.evaluate(saved=>window.gdRestoreProjectData({v:4,canonical:saved.canonical}),generated.saved);
   await page.setViewportSize({width:390,height:844});
   await page.evaluate(()=>{document.getElementById('constraintsIn').value=projectConstraints;renderCreativeContract();show('s_equipment');});
   const mobile=await page.evaluate(()=>({overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth,panel:document.getElementById('creativeContractPanel').getBoundingClientRect(),fields:[...document.querySelectorAll('.cc-field')].map(x=>x.getBoundingClientRect().width),viewport:document.documentElement.clientWidth,snapshot:getComputedStyle(document.getElementById('creativeContractSnapshot')).display,sections:getComputedStyle(document.querySelector('.cc-sections')).display,details:document.getElementById('creativeContractDetails').textContent,state:document.getElementById('creativeContractState').textContent}));
