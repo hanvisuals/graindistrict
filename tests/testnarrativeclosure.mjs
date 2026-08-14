@@ -24,11 +24,11 @@ try{
     const rows=plan.chapters.map((chapter,index)=>{
       let line=distinctBeats[index]||'The notebook and pen record a distinct decision in this part of the month.';
       if(index===4)line='I sat down and read the notebook from the beginning. All of it, in one sitting.';
-      if(index===5)line='I read the whole notebook in one sitting. I still do not know if the rule changed anything, or if it only made something visible.';
+      if(index===5)line='I read the whole notebook in one sitting. The question I started with is still here. I still have it. I have it more precisely now. That might be the only answer available.';
       return '[VOICEOVER] '+chapter.start+'-'+fmtTime(Math.min(chapter.endSeconds,chapter.startSeconds+18))+' - '+line;
     }).join('\n');
     const issues=window.gdNarrativeEditorialIssues(rows,plan);
-    const resolved=rows.replace('I read the whole notebook in one sitting. I still do not know if the rule changed anything, or if it only made something visible.','The pages showed that my hand was already waiting for a signal before the phone arrived. I close the notebook and leave the phone face-down on the desk.');
+    const resolved=rows.replace('I read the whole notebook in one sitting. The question I started with is still here. I still have it. I have it more precisely now. That might be the only answer available.','The pages showed that my hand was already waiting for a signal before the phone arrived. I close the notebook and leave the phone face-down on the desk.');
     const resolvedIssues=window.gdNarrativeEditorialIssues(resolved,plan);
     return {issues,resolvedIssues};
   });
