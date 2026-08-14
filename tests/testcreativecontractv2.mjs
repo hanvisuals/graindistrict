@@ -104,6 +104,15 @@ try{
   });
   ok('fallback respects explicit Turkish explanation guidance instead of reverting to Creator DNA story mode',guidedFallback.validation.valid&&guidedFallback.contract.format.type==='demo'&&/hangi seçenek hangi durumda işe yarayacak/i.test(guidedFallback.contract.storyEngine.drivingQuestion)&&/referans koşulu|tek değişken/i.test(guidedFallback.contract.storyEngine.structure)&&/bu karşılaştırmada.*aynı koşullarda.*görünür kanıt/i.test(guidedFallback.contract.promise.statement)&&!/istiyorum|what changes|motivation ->/i.test(guidedFallback.contract.promise.statement+' '+guidedFallback.contract.storyEngine.drivingQuestion+' '+guidedFallback.contract.storyEngine.structure),guidedFallback);
 
+  const structuredFallback=await page.evaluate(()=>{
+    const previous={topic,inputLang,fmt,creatorDNA:JSON.parse(JSON.stringify(creatorDNA||null)),projectGuidance:JSON.parse(JSON.stringify(projectGuidance||{})),creativeContract:JSON.parse(JSON.stringify(creativeContract||null))};
+    topic="Yeni baslayan bir filmmaker icin kucuk odada bes dusuk butceli isik duzenini, hangi durumda ise yaradigi ve nerede bozulduguyla anlatan rehber.";inputLang='tr';fmt='vlog';creatorDNA={v:1,outcome:'learn',carrier:'story',presence:'voice',pace:'balanced'};projectGuidance={outcome:'do',approach:'explain',production:'voice-footage',stage:'evergreen',storyReality:'factual',narratorTime:'timeless',context:'Kucuk odada calisan izleyicinin kendi sinirina gore bir baslangic duzeni secebilmesini istiyorum.'};
+    const contract=window.gdCreativeContractFallback();creativeContract=contract;const plan=window.gdNarrativeFallbackPlan(300),validation=window.gdValidateCreativeContract(contract);
+    topic=previous.topic;inputLang=previous.inputLang;fmt=previous.fmt;creatorDNA=previous.creatorDNA;projectGuidance=previous.projectGuidance;creativeContract=previous.creativeContract;
+    return {contract,plan,validation};
+  });
+  ok('a numbered evergreen guide keeps its selection math and receives a structured-list arc',structuredFallback.validation.valid&&structuredFallback.contract.format.type==='presenter'&&/beş seçeneği aynı karar ölçütleriyle/i.test(structuredFallback.contract.promise.statement)&&/hangi koşulda.*hangi sınırda bozulur/i.test(structuredFallback.contract.storyEngine.drivingQuestion)&&/beş seçeneği ayrı kullanım durumu ve sınırıyla/i.test(structuredFallback.contract.storyEngine.structure)&&structuredFallback.plan.narrativeMode==='structured_list',structuredFallback);
+
   await page.setViewportSize({width:390,height:844});
   await page.evaluate(()=>{renderCreativeContract();show('s_equipment');});
   const mobile=await page.evaluate(()=>({overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth,sections:document.querySelectorAll('.cc-section').length,fields:[...document.querySelectorAll('.cc-field')].every(x=>x.getBoundingClientRect().width<=document.getElementById('creativeContractPanel').getBoundingClientRect().width)}));
