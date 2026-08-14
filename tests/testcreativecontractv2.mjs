@@ -102,7 +102,7 @@ try{
     topic=previous.topic;inputLang=previous.inputLang;fmt=previous.fmt;creatorDNA=previous.creatorDNA;projectGuidance=previous.projectGuidance;
     return {contract,validation};
   });
-  ok('fallback respects explicit Turkish explanation guidance instead of reverting to Creator DNA story mode',guidedFallback.validation.valid&&guidedFallback.contract.format.type==='demo'&&/hangi seçenek hangi durumda işe yarayacak/i.test(guidedFallback.contract.storyEngine.drivingQuestion)&&/referans koşulu|tek değişken/i.test(guidedFallback.contract.storyEngine.structure)&&!/what changes|motivation ->/i.test(guidedFallback.contract.storyEngine.drivingQuestion+' '+guidedFallback.contract.storyEngine.structure),guidedFallback);
+  ok('fallback respects explicit Turkish explanation guidance instead of reverting to Creator DNA story mode',guidedFallback.validation.valid&&guidedFallback.contract.format.type==='demo'&&/hangi seçenek hangi durumda işe yarayacak/i.test(guidedFallback.contract.storyEngine.drivingQuestion)&&/referans koşulu|tek değişken/i.test(guidedFallback.contract.storyEngine.structure)&&/bu karşılaştırmada.*aynı koşullarda.*görünür kanıt/i.test(guidedFallback.contract.promise.statement)&&!/istiyorum|what changes|motivation ->/i.test(guidedFallback.contract.promise.statement+' '+guidedFallback.contract.storyEngine.drivingQuestion+' '+guidedFallback.contract.storyEngine.structure),guidedFallback);
 
   await page.setViewportSize({width:390,height:844});
   await page.evaluate(()=>{renderCreativeContract();show('s_equipment');});
