@@ -53,7 +53,10 @@ try{
   ok('the flow pauses on three plain-language decisions before voiceover generation',prepared.action==='Create my voiceover'&&prepared.calls.length===1,prepared);
 
   await page.click('#creativeContractDetails');
+  await page.evaluate(()=>{window.__directionAutosaves=0;window.__originalDirectionAutosave=window.gdAutosaveProject;window.gdAutosaveProject=function(){window.__directionAutosaves++;};});
   await page.fill('#ccViewer','Busy solo filmmakers building their first practical kit');
+  const directionAutosaves=await page.evaluate(()=>{const count=window.__directionAutosaves;window.gdAutosaveProject=window.__originalDirectionAutosave;return count;});
+  ok('fine-tuning Project Direction schedules the automatic save promised by the interface',directionAutosaves>0,directionAutosaves);
   await page.click('#creativeContractLock');
   await page.waitForTimeout(260);
   const generated=await page.evaluate(()=>{

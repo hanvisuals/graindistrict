@@ -30,11 +30,18 @@ try{
     const issues=window.gdNarrativeEditorialIssues(rows,plan);
     const resolved=rows.replace('I read the whole notebook in one sitting. The question I started with is still here. I still have it. I have it more precisely now. That might be the only answer available.','The pages showed that my hand was already waiting for a signal before the phone arrived. I close the notebook and leave the phone face-down on the desk.');
     const resolvedIssues=window.gdNarrativeEditorialIssues(resolved,plan);
-    return {issues,resolvedIssues};
+    const unclearOpening=resolved.replace('I open the notebook and write the first date at the top of the page.','I did that twice before I sat up.');
+    const povDrift=resolved.replace('I close the notebook','The hand closes the notebook');
+    const repeatedDiscovery=resolved.replace('The pages showed that my hand was already waiting for a signal before the phone arrived. I close the notebook and leave the phone face-down on the desk.','My mind was already arranged to receive before it formed a thought of its own.\n[VOICEOVER] 05:40-06:00 - The pages showed that my mind was already arranged to receive before it formed a thought of its own. I close the notebook and leave the phone face-down on the desk.');
+    return {issues,resolvedIssues,unclearIssues:window.gdNarrativeEditorialIssues(unclearOpening,plan),povIssues:window.gdNarrativeEditorialIssues(povDrift,plan),repeatIssues:window.gdNarrativeEditorialIssues(repeatedDiscovery,plan),directionPrompt:creativeContractPrompt()};
   });
   ok('a completed action cannot restart across a chapter boundary',result.issues.some(issue=>issue.code==='VOICEOVER_CHAPTER_BOUNDARY_RESTART'),result.issues);
   ok('the final line cannot retreat into unnamed uncertainty',result.issues.some(issue=>issue.code==='ENDING_DISCOVERY_UNNAMED'),result.issues);
   ok('a named discovery followed by the locked physical action clears both closure failures',!result.resolvedIssues.some(issue=>/VOICEOVER_CHAPTER_BOUNDARY_RESTART|ENDING_DISCOVERY_UNNAMED|ENDING_ACTION_MISSING/.test(issue.code)),result.resolvedIssues);
+  ok('an opening cannot act on an unnamed pronoun before identifying its object',result.unclearIssues.some(issue=>issue.code==='OPENING_REFERENT_UNCLEAR'),result.unclearIssues);
+  ok('first-person voiceover cannot turn its final action into an external stage direction',result.povIssues.some(issue=>issue.code==='VOICEOVER_POV_DRIFT'),result.povIssues);
+  ok('the discovery cannot be repeated in nearly identical consecutive closing beats',result.repeatIssues.some(issue=>issue.code==='ENDING_DISCOVERY_REPEATED'),result.repeatIssues);
+  ok('Project Direction cannot make an open question contradict a concrete payoff',/leave the question open[^\n]+not a substitute for a payoff/i.test(result.directionPrompt)&&/must never contradict desiredState, transformation, payoff/i.test(result.directionPrompt),result.directionPrompt);
 }finally{await browser.close();}
 
 if(fails)process.exit(1);
