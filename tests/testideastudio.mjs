@@ -76,6 +76,13 @@ try{
   });
   ok('a previously saved Idea Studio project recovers its story reality directly from the structured topic seed',legacyProjectReality.reality==='dramatized'&&legacyProjectReality.time==='retrospective',legacyProjectReality);
 
+  const directTopicReality=await page.evaluate(()=>{
+    selectedIdeaDirection=null;projectGuidance.storyReality='factual';projectGuidance.narratorTime='prospective';
+    const seed='Dramatize edilmiş, geriye dönük bir video: Bir apartman saatinin neden 04:17’de durduğunu araştırıyorum.';
+    suggestProjectGuidance(seed);return {reality:projectGuidance.storyReality,time:projectGuidance.narratorTime,parsed:window.gdInferExplicitTopicStoryGrounding(seed)};
+  });
+  ok('an explicit Turkish direct topic preserves dramatized retrospective story grounding',directTopicReality.reality==='dramatized'&&directTopicReality.time==='retrospective'&&directTopicReality.parsed?.storyReality==='dramatized',directTopicReality);
+
   await page.click('#ideaStudioEntry');
   const reopened=await page.evaluate(()=>({cards:document.querySelectorAll('.is-card').length,calls:window.__ideaCalls.length,status:document.getElementById('ideaStudioStatus').textContent}));
   ok('saved directions reopen instantly without spending another AI request',reopened.cards===3&&reopened.calls===1&&/Saved directions/.test(reopened.status),reopened);
