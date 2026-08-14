@@ -4095,7 +4095,10 @@ function preShootPerformedProcess(value){
   var turkishResultMethod=/\b(?:sorun\w*|parlama\w*|yansima\w*|golge\w*|dolgu\w*|renk\w*|etiket\w*|kenar\w*|detay\w*)\b[^.!?]{0,100}\b(?:beyaz kagit\w*|siyah kart\w*|kagit\w*|kart\w*|difuzor\w*|reflektor\w*|yontem\w*|kurulum\w*|kombinasyon\w*|test\w*)\b[^.!?]{0,90}\b(?:var|yok|verdi|birakti|kesti|degisti|degisiyor|kayboldu|kayboluyor|azaldi|azaliyor|artti|artiyor|okunuyor|okunmuyor|gorunuyor|gorunmuyor|etkilendi|etkileniyor|etkilenmiyor|kaldi|kaliyor|duruyor|karanliklasti|karanliklasiyor|kuculdu|kuculuyor|yumusadi|yumusuyor|sekil degistirdi|sekil degistiriyor|ele alindi|ele alinmis|cozuldu|kontrol edildi|kontrol edilmis)\b/.test(s);
   var observedInventory=/\b(?:we now have|now we have|there are now)\b[^.!?]{0,55}\b(?:frames?|images?|photos?|results?)\b/.test(s)||/\b(?:artik )?(?:elimizde|onumuzde)\b[^.!?]{0,55}\b(?:kare|goruntu|fotograf|sonuc)(?:ler|lar)?\b[^.!?]{0,20}\bvar\b/.test(s);
   var observedResultSummary=/\b(?:result|results|sonuc|sonuclar)\b[^.!?]{0,130}\b(?:gave|left|removed|reduced|increased|worked|failed|verdi|birakti|azaltti|artirdi|kesti|karartti|ise yaradi|yetersiz kaldi)\b/.test(s);
-  if(observedFrame||observedMethodResult||observedInflectedFrame||turkishMethodResult||turkishResultMethod||observedInventory||observedResultSummary)return true;
+  var performedFirstPerson=/\b(?:i|we)\s+(?:compared|examined|reviewed|evaluated|completed|finished)\b/.test(s)||/\b(?:incele|karsilastir|degerlendir|tamamla|bitir)(?:dim|dik|tim|tik|dum|duk|tum|tuk)\b/.test(s);
+  var personalObserved=/\b(?:bana|bize)\b[^.!?]{0,55}\b(?:gosteriyor|kanitliyor|soyluyor|anlatiyor)\b/.test(s);
+  var specificSetupState=/\b(?:first|second|third|birinci|ikinci|ucuncu|bu|her)\s+(?:setup|method|test|kurulum|yontem|test)\w*\b[^.!?]{0,180}\b(?:trace|reflection|glare|image|result|iz|yansima|parlama|goruntu|sonuc)\w*\b[^.!?]{0,90}\b(?:appears?|differs?|is different|beliriyor|ayri|farkli|degisiyor|kuculuyor|kayboluyor|karanliklasiyor)\b/.test(s);
+  if(observedFrame||observedMethodResult||observedInflectedFrame||turkishMethodResult||turkishResultMethod||observedInventory||observedResultSummary||performedFirstPerson||personalObserved||specificSetupState)return true;
   if(preShootProspective(s))return false;
   if(ordinalEvent||counted)return true;
   var explicit=new RegExp('\\b'+process+'(?:\\w*)\\b[^.!?]{0,90}\\b(?:became|becomes|stopped|stops|failed|fails|worked|works|changed|changes|arrived|arrives|appeared|appears|showed|shows|revealed|reveals|ended|ends|came out|turned out|was crossed out|were crossed out|is different|are different|oldu|oluyor|durdu|duruyor|basarisiz oldu|ise yaradi|degisti|degisiyor|ortaya cikti|ortaya cikiyor|geldi|gosterdi|gosteriyor|bitti|sonuclandi|uzeri cizildi|farkli)\\b','i').test(s);
@@ -4111,7 +4114,7 @@ function preShootTruthIssues(script,plan){
   voice.forEach(function(block){if(!preShootPerformedProcess(block.content))return;var chapter=narrativeChapterAt(tcToSec(block.tcStart),p);issues.push({code:'PRE_SHOOT_OUTCOME_FICTION',text:block.content,chapter:chapter&&chapter.title||'',chapterId:chapter&&chapter.id||'',startSeconds:tcToSec(block.tcStart),message:'The draft presents an unperformed process beat as observed fact.'});});
   var first=p.chapters&&p.chapters[0],last=p.chapters&&p.chapters[p.chapters.length-1];
   if(first){var opening=voice.filter(function(block){return tcToSec(block.tcStart)<first.endSeconds&&tcToSec(block.tcEnd)>first.startSeconds;}).map(function(block){return block.content;}).join(' ');if(!preShootOpeningHasMotivation(opening))issues.push({code:'PRE_SHOOT_MOTIVATION_MISSING',chapter:first.title,chapterId:first.id,startSeconds:first.startSeconds,message:'The opening names a task but not an honest reason for beginning it now.'});}
-  if(last){var ending=voice.filter(function(block){return tcToSec(block.tcStart)<last.endSeconds&&tcToSec(block.tcEnd)>last.startSeconds;}).map(function(block){return block.content;}).join(' ');if(!preShootEndingHasCommitment(ending))issues.push({code:'PRE_SHOOT_ENDING_NO_COMMITMENT',chapter:last.title,chapterId:last.id,startSeconds:last.startSeconds,message:'The ending retreats into uncertainty without a present decision, criterion or observation to capture.'});}
+  if(last){var endingBlocks=voice.filter(function(block){return tcToSec(block.tcStart)<last.endSeconds&&tcToSec(block.tcEnd)>last.startSeconds;}),ending=endingBlocks.slice(-2).map(function(block){return block.content;}).join(' ');if(!preShootEndingHasCommitment(ending))issues.push({code:'PRE_SHOOT_ENDING_NO_COMMITMENT',chapter:last.title,chapterId:last.id,startSeconds:last.startSeconds,message:'The ending retreats into uncertainty without a present decision, criterion or observation to capture.'});}
   return issues;
 }
 function narrativeLeakIssues(script,plan){
@@ -4246,24 +4249,28 @@ function repairNarrativeChapter(script,plan,chapter,totalSec,li){
 }
 function localPreShootChapterFallback(plan,chapter){
   var tr=inputLang==='tr'||/[\u011f\u00fc\u015f\u0131\u00f6\u00e7]/i.test(topic||''),first=chapter.index===1,last=chapter.index===(plan.chapters||[]).length,vo,broll;
+  function safeSentence(value,fallback){var text=String(value||'').replace(/\s+/g,' ').trim();if(!text||preShootPerformedProcess(text)||narrativeLeakIssues('[VOICEOVER] 00:00-00:10 - '+text,plan).length)text=fallback;return /[.!?]$/.test(text)?text:text+'.';}
+  var motivation=safeSentence(plan&&plan.motivation,tr?'Bu karşılaştırmayı pahalı ekipmana ihtiyaç duymadan gerçek koşullarda sınamak istiyorum.':'I want to test this comparison under real conditions without requiring expensive equipment.');
+  var plannedAction=safeSentence(chapter.action||chapter.concreteProgress,tr?'Bir sonraki somut adımı aynı koşulları koruyarak kaydedeceğim.':'I will record the next concrete action while keeping the conditions unchanged.');
+  var question=safeSentence(chapter.questionIn||plan&&plan.centralQuestion,tr?'Sonucu belirleyecek ayrıntının ne olduğunu izleyeceğim.':'I will watch for the exact detail that can decide the result.');
   if(tr){
-    if(first)vo='Bu videoyu şimdi yapmak istiyorum çünkü bu fikri yalnızca düşünmek yerine gerçek bir süreçte sınamak istiyorum. Şu anda elimde konu, mevcut koşullar ve cevaplanmamış bir soru var. İlk kararı ve hangi değişim anını izleyeceğimi netleştirerek başlayacağım.';
-    else if(last)vo='Şimdiki kararım ilk eylemi, seçim kriterini ve değişim anını görünür kılmak. Çekimde karar anını ve açılıştaki soruya gerçekten cevap verebilecek ayrıntıyı kaydedeceğim. Sonucun yönünü o ayrıntı belirleyecek.';
+    if(first)vo=motivation+' Başlangıç noktam belli: elimdeki koşulları değiştirmeden önce referans durumu ve karar vereceğim ölçütleri kaydedeceğim. '+question;
+    else if(last)vo='Açılıştaki sorunun cevabını şimdiden ilan etmeyeceğim. '+question+' Şimdiki kararım, aynı koşulları koruyarak bu ayrıntıyı çekimde kaydetmek ve sonucu yalnızca görünen kanıta göre seçmek.';
     else vo=[
       'Çekim sırasında tek bir planlı eylemi, sonucunu önceden ilan etmeden izleyeceğim. Aradığım şey başarı ya da başarısızlık değil; hangi kararın bir sonraki adımı değiştirdiği ve o anın nasıl göründüğü.',
       'Önce mevcut koşulu kaydedeceğim, sonra yalnızca bir değişkeni sınayacağım. Değişiklikten önceki tereddüt ile karardan sonraki farkı aynı bağlam içinde görünür tutacağım. Bir sonraki adımı bu fark belirleyecek.',
       'Seçeneği ve vazgeçtiğim alternatifi aynı anda göstereceğim; böylece anlatı yoruma değil gözlenebilir bir karara dayanacak. Sonraki adıma ancak bu kararın nedenini gösteren ayrıntıyı kaydettikten sonra geçeceğim.'
-    ][chapter.index%3];
-    broll='Planlanan eylem ve karar noktası aynı görsel bağlam içinde izlenir.';
+    ][chapter.index%3]+' '+plannedAction+' '+question;
+    broll='Planlanan eylem ve karar noktası aynı görsel bağlam içinde izlenir. '+plannedAction;
   }else{
-    if(first)vo='I want to make this video now because I want to test the idea through a real process instead of only thinking about it. At the starting point I have the subject, the available conditions and an unanswered question. I will begin by defining the first decision and the change worth watching.';
-    else if(last)vo='The present commitment is to make the first action, the selection criterion and the moment of change visible. During filming I will capture the decision and the detail that can honestly answer the opening question. That observation will decide where the conclusion belongs.';
+    if(first)vo=motivation+' The starting point is clear: before changing the conditions, I will record the reference state and the criteria for the decision. '+question;
+    else if(last)vo='I will not declare the answer to the opening question in advance. '+question+' My present commitment is to preserve the same conditions, capture that detail during filming and choose the result only from visible evidence.';
     else vo=[
       'During filming I will follow one planned action without predicting its result. The useful evidence will be the decision itself: what changes the next step, what remains uncertain and which detail makes that change visible.',
       'I will record the starting condition, then test only one variable. The hesitation before the change and the difference after the decision will remain visible in the same context. That contrast will determine the next step.',
       'I will keep the chosen option and the alternative I reject visible together, so the story rests on an observable decision instead of interpretation. I will move forward only after the reason for that decision can be seen.'
-    ][chapter.index%3];
-    broll='Planned coverage of the action and its decision point; do not present an outcome before it happens.';
+    ][chapter.index%3]+' '+plannedAction+' '+question;
+    broll='Planned coverage of the action and its decision point; do not present an outcome before it happens. '+plannedAction;
   }
   var seconds=Math.max(1,chapter.endSeconds-chapter.startSeconds),sentences=(String(vo).match(/[^.!?]+[.!?]+|[^.!?]+$/g)||[vo]).map(function(sentence){return sentence.trim();}).filter(Boolean),pieces=Math.max(1,sentences.length),rows=[];
   sentences.forEach(function(spoken,i){var start=Math.round(chapter.startSeconds+seconds*i/pieces),end=Math.round(chapter.startSeconds+seconds*(i+1)/pieces);rows.push('[VOICEOVER] '+fmtPlanTime(start)+'-'+fmtPlanTime(end)+' - '+spoken);rows.push('[BROLL] '+fmtPlanTime(start)+'-'+fmtPlanTime(end)+' - '+broll+' '+(tr?'Plan adımı ':'Coverage step ')+(i+1)+'.');});
