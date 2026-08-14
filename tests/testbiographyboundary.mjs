@@ -28,6 +28,8 @@ try{
       "[VOICEOVER] 00:20-00:30 - Manhattan'daki bir kafede calismaya basladim."
     ].join('\n');
     const unsafeAudit=window.gdAuditScriptEpistemics(unsafe,'shot_plan');
+    const plannedAudit=window.gdAuditScriptEpistemics('[VOICEOVER] 00:00-00:10 - Kamerayı sabitleyeceğim, siyah kartı şişenin yanına yerleştireceğim ve aynı kadrajı kaydedeceğim.','shot_plan');
+    const mixedAudit=window.gdAuditScriptEpistemics("[VOICEOVER] 00:00-00:10 - New York'a taşındım ve yarın aynı sokağı yeniden çekeceğim.",'shot_plan');
     const unsafeClaims=window.gdExtractTruthClaims(unsafe);
     const inference=unsafeClaims.find(x=>/milyonlarca insan varsa/i.test(x.statement));
     const personal=unsafeClaims.filter(x=>x.researchEligibility==='forbidden_personal');
@@ -55,12 +57,14 @@ try{
     const legacyV2=JSON.parse(JSON.stringify(saved));legacyV2.canonical.schemaVersion=2;delete legacyV2.canonical.script.epistemic;delete legacyV2.canonical.creative.firstPartyAssertions;
     window.gdRestoreProjectData(legacyV2);
     const migrated=window.gdSerializeProjectData().canonical;
-    return {assertions0,sanitized,unsafe,unsafeAudit,personal,inference,locked,gate,fallbackGate,history,assertions1,authorized,schema:saved.canonical.schemaVersion,canonicalEpi,canonicalAssertions,migratedVersion:migrated.schemaVersion,migratedEpi:migrated.script.epistemic};
+    return {assertions0,sanitized,unsafe,unsafeAudit,plannedAudit,mixedAudit,personal,inference,locked,gate,fallbackGate,history,assertions1,authorized,schema:saved.canonical.schemaVersion,canonicalEpi,canonicalAssertions,migratedVersion:migrated.schemaVersion,migratedEpi:migrated.script.epistemic};
   });
 
   ok('a topic alone creates no first-party authority',result.assertions0.length===0,result.assertions0);
   ok('Project Direction rewrites unsupported personal requirements into observable or researchable proof',result.sanitized.proofRequirements[0].authorityRequirement==='external_or_observable'&&!/bizzat|kisisel deneyim/i.test(result.sanitized.proofRequirements[0].statement)&&result.sanitized.provenance.epistemicBoundary.changes.length===2,result.sanitized);
   ok('the exact New York failure fixture is blocked before promotion',result.unsafeAudit.status==='blocked'&&result.unsafeAudit.blocked.length>=3,result.unsafeAudit);
+  ok('prospective filming actions are plans rather than invented creator biography',result.plannedAudit.status==='clear'&&result.plannedAudit.atoms.every(x=>x.assertionMode==='prospective'),result.plannedAudit);
+  ok('a future plan cannot conceal an unsupported past life event in the same sentence',result.mixedAudit.status==='blocked'&&result.mixedAudit.blocked.length===1,result.mixedAudit);
   ok('creator biography can never become an external research task',result.personal.length>=3&&result.personal.every(x=>x.required===false&&x.researchEligibility==='forbidden_personal'),result.personal);
   ok('a conditional narrative inference is not mislabeled as a recommendation requiring a source',!result.inference||result.inference.required===false,result.inference);
   ok('a blocked AI draft is quarantined, safely rewritten and only the clean revision is promoted',result.gate.rewritten===true&&result.gate.audit.status==='clear'&&result.history.some(x=>x.status==='quarantined')&&result.history.some(x=>x.status==='promoted'),result.history);
