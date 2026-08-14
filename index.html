@@ -4413,6 +4413,7 @@ function handleCreativeContractAction(){
   var locked=creativeContract.status==='locked'?{contract:creativeContract,validation:validateCreativeContract(creativeContract,{requireLocked:true})}:lockCreativeContract();
   if(!locked.validation.valid){var state=document.getElementById('creativeContractState');if(state)state.textContent='Needs review / '+locked.validation.issues[0].message;return;}
   creativeContract=locked.contract;renderCreativeContract();
+  if(window.gdAutosaveProject)window.gdAutosaveProject(true);
   if(!hasScript){genScript();return;}
   var prompt={title:'Regenerate this script?',message:'Your current script is already saved. A new script will be generated from the updated Project Direction.',ok:'Regenerate'};
   var answer=window.gdAsk?window.gdAsk(prompt):Promise.resolve(window.confirm(prompt.message));
@@ -11655,8 +11656,8 @@ document.addEventListener('mouseup',function(e){
 
   /* ---------- autosave ---------- */
   function onProject(){
-    var board=byId('s5'),script=byId('s3');
-    return !!((board&&board.classList.contains('active'))||(script&&script.classList.contains('active')));
+    var board=byId('s5'),script=byId('s3'),direction=byId('s_equipment');
+    return !!((board&&board.classList.contains('active'))||(script&&script.classList.contains('active'))||(direction&&direction.classList.contains('active')));
   }
   function hasContent(){
     var ta=byId('scriptTa');
