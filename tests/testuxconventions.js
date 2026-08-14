@@ -38,6 +38,32 @@ const { pathToFileURL } = require('url');
 
   await page.evaluate(()=>{
     window.__apiCalls=[];
+    const finalScript=[
+      '[VOICEOVER] 00:00-00:15 - I want to understand how a night-shift baker turns a locked, dark room into a working bakery before the city wakes, without pretending I already know the result.',
+      '[BROLL] 00:00-00:15 - A key enters the bakery door, the lock turns, and the dark room opens beyond it.',
+      '[VOICEOVER] 00:15-00:30 - Before the baker touches the first bowl, I will record the empty steel table, the cold oven door and the clock above the flour shelf.',
+      '[BROLL] 00:15-00:30 - The camera moves from the empty steel table to the cold oven door and then the wall clock.',
+      '[VOICEOVER] 00:30-00:45 - The opening question is simple: which small decisions will change this room between the first key turn and the first loaf leaving the oven?',
+      '[BROLL] 00:30-00:45 - The key, empty table and oven door appear in three separate, steady close shots.',
+      '[VOICEOVER] 00:45-01:00 - At the steel table, I will follow each measured scoop of flour and water, because the baker reads exact quantities before texture can offer any clue.',
+      '[BROLL] 00:45-01:00 - Flour and water are measured beside a metal bowl on the steel table.',
+      '[VOICEOVER] 01:00-01:15 - The mixer bowl will give me the next visible decision: when to keep the hook moving and when to stop and examine the dough by hand.',
+      '[BROLL] 01:00-01:15 - A mixer hook turns inside the bowl, then the baker reaches toward the dough.',
+      '[VOICEOVER] 01:15-01:30 - I will watch the baker press one finger into the dough and note what that small mark changes about the timing of the next step.',
+      '[BROLL] 01:15-01:30 - One finger presses the dough while a notebook and clock remain visible beside the bowl.',
+      '[VOICEOVER] 01:30-01:45 - When the dough reaches the tray, the obvious action will slow down, so the camera will stay close to the surface instead of searching for artificial movement.',
+      '[BROLL] 01:30-01:45 - The dough rests on a tray while the camera holds on its surface and the baker checks the clock.',
+      '[VOICEOVER] 01:45-02:00 - A tray that appears still can require another decision, and I will look for the baker checking its edge, temperature and changing resistance.',
+      '[BROLL] 01:45-02:00 - The baker lifts the tray edge, checks the dough surface and touches a thermometer.',
+      '[VOICEOVER] 02:00-02:15 - That quiet interval matters because it will reveal whether waiting here means doing nothing or repeatedly deciding when the dough is ready to move.',
+      '[BROLL] 02:00-02:15 - The wall clock, tray and baker alternate in three patient shots as the dough remains covered.',
+      '[VOICEOVER] 02:15-02:30 - At the oven, I will keep the earlier clock and notebook in view so the first loaf can be read against the decisions that led to it.',
+      '[BROLL] 02:15-02:30 - The closed oven, wall clock and open notebook share the frame beside the waiting tray.',
+      '[VOICEOVER] 02:30-02:45 - The camera will stay on the baker opening the oven, lifting the loaf and checking its crust, but I will not declare what those details mean in advance.',
+      '[BROLL] 02:30-02:45 - The baker opens the oven, lifts the first loaf and turns it slowly under the work light.',
+      '[VOICEOVER] 02:45-03:00 - I will place the notebook beside the loaf, write down the visible crust, shape and timing, and let those recorded details answer the opening question after filming.',
+      '[BROLL] 02:45-03:00 - A notebook is placed beside the loaf and a pen records the crust, shape and time.'
+    ].join('\n');
     api=function(sys,content,feature){
       window.__apiCalls.push({sys:String(sys),content:JSON.stringify(content),feature});
       if(feature==='creative_contract')return Promise.resolve('{"format":"story","viewer":"People interested in craft","promise":"See the baker real night process","structure":"arrival to first loaf","visualSystem":"70% B-roll and 30% graphics","proof":"real process","pacing":"reflective","avoid":["filler"]}');
@@ -47,7 +73,7 @@ const { pathToFileURL } = require('url');
         {title:'Waiting Is Work',role:'complication',start:'01:30',end:'02:15',purpose:'Reveal the quiet middle of the process.',concreteProgress:'The baker checks fermentation and adjusts the schedule.',questionIn:'What happens when the visible action slows?',turn:'Waiting becomes an active judgment.',transitionOut:'That judgment is tested by the oven.'},
         {title:'The First Loaf',role:'resolution',start:'02:15',end:'03:00',purpose:'Resolve the night through its first result.',concreteProgress:'The first loaf leaves the oven and is inspected.',questionIn:'Did the overnight decisions work?',turn:'The finished crust carries the process visibly.',transitionOut:''}
       ]}));
-      if(feature==='script_revision')return Promise.resolve(JSON.stringify({script:'[VOICEOVER] 00:00-00:45 - The bakery begins when a locked, dark room is turned into a place ready for work.\n[BROLL] 00:00-00:45 - The door opens and each work surface is prepared.\n[VOICEOVER] 00:45-01:30 - Flour, water and time become decisions the baker can read through changing texture.\n[BROLL] 00:45-01:30 - Measured ingredients become dough under the mixer.\n[VOICEOVER] 01:30-02:15 - The quiet middle is not empty waiting; each check can change the night schedule.\n[BROLL] 01:30-02:15 - Fermentation is checked and one tray is moved.\n[VOICEOVER] 02:15-03:00 - The first loaf makes every earlier judgment visible in its shape, color and crust.\n[BROLL] 02:15-03:00 - The first loaf leaves the oven and is inspected.',notes:['continuity checked']}));
+      if(feature==='script_revision')return Promise.resolve(JSON.stringify({script:finalScript,notes:['continuity and runtime checked']}));
       return Promise.resolve('[VOICEOVER] 00:00-00:45 - The bakery begins when a locked, dark room is turned into a place ready for work.\n[BROLL] 00:00-00:45 - The door opens and each work surface is prepared.\n[VOICEOVER] 00:45-01:30 - Flour, water and time become decisions the baker can read through changing texture.\n[BROLL] 00:45-01:30 - Measured ingredients become dough under the mixer.\n[VOICEOVER] 01:30-02:15 - The quiet middle is not empty waiting; each check can change the night schedule.\n[BROLL] 01:30-02:15 - Fermentation is checked and one tray is moved.\n[VOICEOVER] 02:15-03:00 - The first loaf makes every earlier judgment visible in its shape, color and crust.\n[BROLL] 02:15-03:00 - The first loaf leaves the oven and is inspected.');
     };
     ensureFullPlan=function(sys,text){return Promise.resolve(text);};
