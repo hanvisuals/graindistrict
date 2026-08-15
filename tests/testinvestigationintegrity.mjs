@@ -18,7 +18,7 @@ try{
     const plan=window.gdNarrativeFallbackPlan(360);plan.productionState='post_shoot';plan.storyReality='fictional';plan.narratorTime='retrospective';plan.narrativeMode='investigation';plan.storyBible.chronologyMode='causal';plan.centralQuestion='Kâğıt uçakları kim bırakıyor ve neden hep aynı banka bırakıyor?';plan.storyBible.discovery='Ayşe Taş, oğlu Emre için uçakları aynı banka bırakıyordu.';plan.storyBible.endingAction='Bankın üstündeki kâğıt uçak rüzgârla kayar, ama uçmaz — banka geri düşer.';
     const flawed=[
       'İlk kâğıt uçağın içindeki cümleyi sadece ben biliyordum; başka hiç kimse bilmiyordu.',
-      'İkinci hafta bankın sol kolunda E.T. harflerini buldum ve oymayı yakından gördüm.',
+      'İkinci hafta bankın sol kolunda E.T. harflerini buldum. İki saat görüş mesafesinde bekledim; uçak oraya geldi ama ben yine görmedim.',
       'Dördüncü haftada çöp kutusunun dibinde farklı el yazılı yarım bir kâğıt not buldum.',
       'Üçüncü haftanın sonunda çöp kutusunun dibinde aynı farklı el yazılı kâğıt notu yeniden buldum. Sağ el ve sol el farkı aynı kişiyi kanıtlıyordu; iki kişi ihtimali çöktü.',
       'Emre Taş dört yıl önce bir trafik kazasında hayatını kaybetmişti.',
@@ -26,7 +26,7 @@ try{
     ];
     const resolved=[
       'İlk kâğıt uçağın içindeki cümle çocukluğumdan tanıdık geliyordu.',
-      'İkinci hafta bankın sol kolunda E.T. harflerini buldum ve oymayı yakından gördüm.',
+      'İkinci hafta bankın sol kolunda E.T. harflerini buldum. Bir kamyon görüşümü kestiği sırada uçak oraya geldi; bank yeniden göründüğünde uçağı fark ettim.',
       'Üçüncü hafta çöp kutusunun dibinde farklı el yazılı yarım bir kâğıt not buldum.',
       'Dördüncü hafta kamera kaydı Ayşe Taş her iki notu da yazarken görüntülendi; bu doğrudan kayıt iki kişi ihtimalini eledi.',
       'Emre Taş dört yıl önce bir trafik kazasında hayatını kaybetmişti.',
@@ -39,11 +39,12 @@ try{
   ok('Turkish ordinal weeks cannot move backward in an investigation',codes.includes('VOICEOVER_CHRONOLOGY_BACKTRACK'),result.flawed);
   ok('the same physical clue cannot be discovered in two chapters',codes.includes('INVESTIGATION_EVIDENCE_RESTART'),result.flawed);
   ok('handwriting and handedness alone cannot identify one author',codes.includes('INVESTIGATION_WEAK_ELIMINATION'),result.flawed);
+  ok('an object cannot arrive unseen during uninterrupted observation',codes.includes('INVESTIGATION_OBSERVATION_GAP'),result.flawed);
   ok('one named death cannot drift from four years to two years',codes.includes('VOICEOVER_FIXED_FACT_CONTRADICTION'),result.flawed);
   ok('a private-only opening cannot later become a shared book source',codes.includes('VOICEOVER_EXCLUSIVITY_CONTRADICTION'),result.flawed);
   ok('the final image must keep its slide, failed flight and return actions',codes.includes('ENDING_ACTION_INCOMPLETE'),result.flawed);
-  ok('direct evidence, one chronology and the complete final action clear all six blockers',!result.resolved.some(issue=>/^(VOICEOVER_CHRONOLOGY_BACKTRACK|INVESTIGATION_EVIDENCE_RESTART|INVESTIGATION_WEAK_ELIMINATION|VOICEOVER_FIXED_FACT_CONTRADICTION|VOICEOVER_EXCLUSIVITY_CONTRADICTION|ENDING_ACTION_INCOMPLETE)$/.test(issue.code)),result.resolved);
-  ok('direction and plan prompts now lock independent authorship evidence and single-discovery clues',/does not identify the writer/i.test(result.directionPrompt)&&/discover each physical clue (?:once|in exactly one ordered beat)/i.test(result.planPrompt)&&/elapsed duration/i.test(result.planPrompt),{directionPrompt:result.directionPrompt,planPrompt:result.planPrompt});
+  ok('direct evidence, one chronology and the complete final action clear all seven blockers',!result.resolved.some(issue=>/^(VOICEOVER_CHRONOLOGY_BACKTRACK|INVESTIGATION_EVIDENCE_RESTART|INVESTIGATION_WEAK_ELIMINATION|INVESTIGATION_OBSERVATION_GAP|VOICEOVER_FIXED_FACT_CONTRADICTION|VOICEOVER_EXCLUSIVITY_CONTRADICTION|ENDING_ACTION_INCOMPLETE)$/.test(issue.code)),result.resolved);
+  ok('direction and plan prompts lock independent authorship evidence, single-discovery clues and possible observation',/does not identify the writer/i.test(result.directionPrompt)&&/discover each physical clue (?:once|in exactly one ordered beat)/i.test(result.planPrompt)&&/elapsed duration/i.test(result.planPrompt)&&/cannot arrive unseen/i.test(result.planPrompt),{directionPrompt:result.directionPrompt,planPrompt:result.planPrompt});
   ok('a whole-script timeout routes serious continuity findings into targeted chapter repair',/repairBlockingNarrativeScript/.test(result.editorSource)&&/targetedFallback/.test(result.editorSource),result.editorSource);
   ok('an exhausted continuity repair preserves an editable draft instead of returning to intake with an alert',/blockingEditorialIssues/.test(result.assertSource)&&!/unresolved continuity or evidence contradiction/.test(result.assertSource),result.assertSource);
   ok('a downstream editor failure opens the last safety-reviewed draft instead of discarding it',/recoverableDraft/.test(result.generationSource)&&/generated_script_recovered/.test(result.generationSource)&&/show\('s3'\)/.test(result.generationSource),result.generationSource);
