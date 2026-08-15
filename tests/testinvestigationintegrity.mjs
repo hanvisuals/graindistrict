@@ -33,7 +33,7 @@ try{
       'Emre Taş aynı trafik kazasında dört yıl önce hayatını kaybetmişti. Cümle ortak bir çocukluk kitabından geliyordu. Bankın üstündeki kâğıt uçak rüzgârla kaydı, ama uçmadı; banka geri düştü.'
     ];
     function timeline(lines){return plan.chapters.map((chapter,index)=>'[VOICEOVER] '+chapter.start+'-'+fmtTime(Math.min(chapter.endSeconds,chapter.startSeconds+45))+' - '+lines[index]).join('\n');}
-    return {flawed:window.gdNarrativeEditorialIssues(timeline(flawed),plan),resolved:window.gdNarrativeEditorialIssues(timeline(resolved),plan),directionPrompt:creativeContractPrompt(),planPrompt:window.gdNarrativePlanPrompt(360,'')};
+    return {flawed:window.gdNarrativeEditorialIssues(timeline(flawed),plan),resolved:window.gdNarrativeEditorialIssues(timeline(resolved),plan),directionPrompt:creativeContractPrompt(),planPrompt:window.gdNarrativePlanPrompt(360,''),editorSource:String(editorialPolishNarrativeScript),assertSource:String(assertNarrativeScriptQuality)};
   });
   const codes=result.flawed.map(issue=>issue.code);
   ok('Turkish ordinal weeks cannot move backward in an investigation',codes.includes('VOICEOVER_CHRONOLOGY_BACKTRACK'),result.flawed);
@@ -44,6 +44,8 @@ try{
   ok('the final image must keep its slide, failed flight and return actions',codes.includes('ENDING_ACTION_INCOMPLETE'),result.flawed);
   ok('direct evidence, one chronology and the complete final action clear all six blockers',!result.resolved.some(issue=>/^(VOICEOVER_CHRONOLOGY_BACKTRACK|INVESTIGATION_EVIDENCE_RESTART|INVESTIGATION_WEAK_ELIMINATION|VOICEOVER_FIXED_FACT_CONTRADICTION|VOICEOVER_EXCLUSIVITY_CONTRADICTION|ENDING_ACTION_INCOMPLETE)$/.test(issue.code)),result.resolved);
   ok('direction and plan prompts now lock independent authorship evidence and single-discovery clues',/does not identify the writer/i.test(result.directionPrompt)&&/discover each physical clue (?:once|in exactly one ordered beat)/i.test(result.planPrompt)&&/elapsed duration/i.test(result.planPrompt),{directionPrompt:result.directionPrompt,planPrompt:result.planPrompt});
+  ok('a whole-script timeout routes serious continuity findings into targeted chapter repair',/repairBlockingNarrativeScript/.test(result.editorSource)&&/targetedFallback/.test(result.editorSource),result.editorSource);
+  ok('an exhausted continuity repair preserves an editable draft instead of returning to intake with an alert',/blockingEditorialIssues/.test(result.assertSource)&&!/unresolved continuity or evidence contradiction/.test(result.assertSource),result.assertSource);
 }finally{await browser.close();}
 
 if(failures)process.exit(1);
