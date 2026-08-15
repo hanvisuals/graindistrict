@@ -7562,7 +7562,7 @@ function pcContinue(){
 
 function genScript(){
   show('s2');startLoad('s2');
-  var scriptTa=document.getElementById('scriptTa'),previousScript=scriptTa?scriptTa.value:'',previousFingerprint=previousScript?truthLedgerScriptFingerprint(previousScript):'',previousGeneratedFrom=canonicalClone(currentScriptGeneratedFrom,null),previousNarrativePlan=canonicalClone(currentNarrativePlan,null);
+  var scriptTa=document.getElementById('scriptTa'),previousScript=scriptTa?scriptTa.value:'',previousFingerprint=previousScript?truthLedgerScriptFingerprint(previousScript):'',previousGeneratedFrom=canonicalClone(currentScriptGeneratedFrom,null),previousNarrativePlan=canonicalClone(currentNarrativePlan,null),recoverableDraft='';
   var totalSec=(durMin+durMax)/2*60;
   var li=langInstr(inputLang,'shot plan content');
   var extra=recceContext()+songAnalysisSummary();
@@ -7597,22 +7597,28 @@ function genScript(){
     setLoadProgress('s2',88,'Protecting your voice','Checking facts, personal history and project boundaries');
     return projectType==='youtube'?epistemicGateCandidateScript(planText,'shot_plan',previousFingerprint):Promise.resolve({script:planText,audit:null,rewritten:false});
   }).then(function(result){
+    if(result&&parseBlocks(result.script||'').length)recoverableDraft=result.script;
     return projectType==='youtube'?autoRepairNarrativeScript(result.script,currentNarrativePlan,previousFingerprint,result,0):result;
   }).then(function(result){
+    if(result&&parseBlocks(result.script||'').length)recoverableDraft=result.script;
     if(projectType!=='youtube')return result;
     return editorialPolishNarrativeScript(result.script,currentNarrativePlan,previousFingerprint).then(function(polished){
       if(polished.editorialSkipped)return result;
       polished.repaired=!!(result.repaired||polished.rewritten);polished.rewriteChain={chapterRepair:result.repairMode||'none',wholeScript:'editorial'};return polished;
     });
   }).then(function(result){
-    var planText=result.script;projectBrief='';
+    var planText=result.script;if(parseBlocks(planText||'').length)recoverableDraft=planText;projectBrief='';
     if(projectType==='youtube')assertNarrativeScriptQuality(planText,currentNarrativePlan);
     scriptTa.value=planText;brollVisualDirtyRanges=[];
     rebuildTruthLedgerFromScript(planText,{reason:result.rewritten?'generated_script_safety_rewrite':'generated_script',silent:true});
     document.getElementById('wc').textContent=planStatsLabel(planText);
     refreshScriptStudio();
     return finishLoad('s2','Your voiceover is ready').then(function(){stopLoad();show('s3');if(window.gdAutosaveProject)window.gdAutosaveProject(true);});
-  }).catch(function(e){stopLoad();currentScriptGeneratedFrom=previousGeneratedFrom;currentNarrativePlan=previousNarrativePlan;if(scriptTa)scriptTa.value=previousScript;alert('Error: '+e.message);show(previousScript?'s3':'s1');});
+  }).catch(function(e){
+    stopLoad();window.__lastGenerationError={message:e&&e.message||String(e),stack:e&&e.stack||'',hasRecoverableDraft:!!recoverableDraft,at:Date.now()};console.error('[generation] preserving last safe draft after downstream failure',window.__lastGenerationError);
+    if(projectType==='youtube'&&recoverableDraft&&parseBlocks(recoverableDraft).length){scriptTa.value=recoverableDraft;brollVisualDirtyRanges=[];var recoveryQuality=narrativeScriptQuality(recoverableDraft,currentNarrativePlan);recoveryQuality.editorialIssues=narrativeEditorialIssues(recoverableDraft,currentNarrativePlan);recoveryQuality.recoveredAfterError=true;window.__lastNarrativeQuality=canonicalClone(recoveryQuality,recoveryQuality);rebuildTruthLedgerFromScript(recoverableDraft,{reason:'generated_script_recovered',silent:true});document.getElementById('wc').textContent=planStatsLabel(recoverableDraft);refreshScriptStudio();show('s3');if(window.gdAutosaveProject)window.gdAutosaveProject(true);return;}
+    currentScriptGeneratedFrom=previousGeneratedFrom;currentNarrativePlan=previousNarrativePlan;if(scriptTa)scriptTa.value=previousScript;alert('Error: '+(e&&e.message||e));show(previousScript?'s3':'s1');
+  });
 }
 
 /* The plan is edited as plain text but reads far better with its block types
