@@ -401,6 +401,16 @@ commit. It should confirm that the opening retains the supplied real-world trigg
 all test actions remain prospective, the result remains unknown, and the ending names
 what will be observed rather than pretending the comparison has already happened.
 
+The next live attempt used three stain pre-treatments on identical white fabric. Its
+Project Direction was correct, but voiceover generation paused at the AI boundary
+because chapter six repeated chapter five's title, concrete progression and turn. The
+chapter pipeline now treats punctuation-only title variations as duplicates, performs
+one deterministic structural stabilization after the model repair, synchronizes the
+matching Story Bible beat, and validates the locked plan once more immediately before
+the writing calls. `tests/testnarrativechapters.mjs` contains the exact duplicated-final-
+chapter regression. This stain project still needs to be regenerated on the resulting
+deployment and its complete voiceover read as the final live verification.
+
 ## 13. How a new Codex chat should begin
 
 For a new task in this project:
