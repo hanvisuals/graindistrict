@@ -37,6 +37,15 @@ try{
       '[VOICEOVER] 05:00-05:25 - Kör tadım bitti, gözlemler kağıtta; cevap bu çekimde.'
     ].join('\n');
     const coffeeLiveIssues=window.gdPreShootTruthIssues(coffeeLive,plan),coffeeLiveCodes=coffeeLiveIssues.map(issue=>issue.code);
+    const stainLive=[
+      '[VOICEOVER] 02:00-02:20 - Leke üzerine soğuk su akıtılıyor, ardından kumaş bastırılıyor.',
+      '[VOICEOVER] 02:20-02:40 - Soğuk su ön işlemi tamamlandı ve kumaş bir kenara ayrılıyor.',
+      '[VOICEOVER] 03:20-03:40 - Masada üç kumaş parçası duruyor; her biri farklı bir ön işlem gördü.',
+      '[VOICEOVER] 04:00-04:20 - Üç ön işlem de uygulandı ve parçalar aynı koşullarda yıkandı.',
+      '[VOICEOVER] 04:40-05:00 - Üç parça kurumaya bırakıldı.',
+      '[VOICEOVER] 05:00-05:20 - Yıkama öncesi ve sonrası görüntüler aynı koşullarda kaydedildi.'
+    ].join('\n');
+    const stainLiveIssues=window.gdPreShootTruthIssues(stainLive,plan),stainLiveCodes=stainLiveIssues.map(issue=>issue.code);
     const rawPlan=JSON.parse(JSON.stringify(plan));rawPlan.motivation='Bu projeyi gerçek koşullarda test etmek istiyorum.';rawPlan.storyBible.initialMotivation=rawPlan.motivation;
     const renormalized=window.gdNormalizeNarrativePlan(rawPlan,360);
     const local=window.gdLocalNarrativeDraftFallback(plan),localIssues=window.gdPreShootTruthIssues(local,plan),localVoice=parseBlocks(local).filter(block=>block.type==='voiceover').map(block=>block.content).join(' ');
@@ -47,7 +56,7 @@ try{
       'Fark kulaklarınıza geldi.',
       'Bu tabloyu sonuç yazdırdı ve en iyi aday belli.'
     ].map(text=>({text,flagged:window.gdPreShootTruthIssues('[VOICEOVER] 00:00-00:20 - '+projectGuidance.context+'\n[VOICEOVER] 04:00-04:20 - '+text+'\n[VOICEOVER] 05:40-06:00 - Çekimde aynı ölçütleri kaydedeceğim.',plan).some(issue=>issue.code==='PRE_SHOOT_OUTCOME_FICTION')}));
-    return {unsafeIssues,unsafeCodes,coffeeLiveIssues,coffeeLiveCodes,renormalizedMotivation:renormalized.motivation,contractMotivation:creativeContract.storyEngine.motivation,localIssues,localVoice,prompt,explicitOutcomeChecks};
+    return {unsafeIssues,unsafeCodes,coffeeLiveIssues,coffeeLiveCodes,stainLiveIssues,stainLiveCodes,renormalizedMotivation:renormalized.motivation,contractMotivation:creativeContract.storyEngine.motivation,localIssues,localVoice,prompt,explicitOutcomeChecks};
   });
   ok('the locked contract preserves the creator supplied failed-interview motivation',/Geçen hafta.*röportajı.*yankı.*yayınlayamadım/i.test(result.contractMotivation),result);
   ok('narrative normalization cannot replace locked factual motivation with generic AI copy',result.renormalizedMotivation===result.contractMotivation,result);
@@ -56,6 +65,7 @@ try{
   ok('fixed-then-changed and multi-factor single-variable claims are rejected',result.unsafeCodes.filter(code=>code==='PRE_SHOOT_TEST_CONTROL_CONTRADICTION').length>=2,result.unsafeIssues);
   ok('planned controls cannot be rewritten as measured facts about the earlier trigger',result.coffeeLiveCodes.includes('PRE_SHOOT_UNSUPPORTED_BASELINE'),result.coffeeLiveIssues);
   ok('live-present cups, filled tables and completed tastings are rejected before filming',result.coffeeLiveCodes.filter(code=>code==='PRE_SHOOT_OUTCOME_FICTION').length>=3,result.coffeeLiveIssues);
+  ok('passive live-present and completed fabric treatments are rejected before filming',result.stainLiveCodes.filter(code=>code==='PRE_SHOOT_OUTCOME_FICTION').length>=6,result.stainLiveIssues);
   ok('the deterministic outage fallback keeps the concrete motivation and remains prospectively safe',/Geçen hafta.*röportajı.*yankı.*yayınlayamadım/i.test(result.localVoice)&&result.localIssues.length===0,result.localIssues);
   ok('planning prompt defines single-variable versus configuration comparison math',/single-variable test or a practical configuration comparison/i.test(result.prompt)&&/Distance and microphone position are the same variable/i.test(result.prompt)&&/background noise, echo and clarity/i.test(result.prompt),result.prompt);
   ok('pre-shoot integrity changes introduce no page errors',errors.length===0,errors);
