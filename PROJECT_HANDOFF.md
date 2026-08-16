@@ -354,7 +354,33 @@ validation rather than another broad rewrite:
 Avoid endlessly adding generic prompt prose. Prefer a concrete failing example, the
 smallest invariant that rejects or repairs it, and a representative live test.
 
-## 11. How a new Codex chat should begin
+## 11. August 15 pre-shoot comparison hardening
+
+A six-minute live practical-guide test about recording interview audio with a phone
+exposed three remaining failures: the supplied failed-interview motivation was replaced
+with generic copy, unfilmed results were written as if data and a winner already existed,
+and the script declared distance fixed before changing distance/microphone position.
+
+The production code now:
+
+- locks creator-supplied factual pre-shoot motivation through Creative Contract and
+  Narrative Plan normalization, and verifies that the opening uses its distinctive
+  factual anchors;
+- rejects additional unfilmed-result language such as data already being on screen, a
+  visible best candidate, an audience having heard the difference, or a result table
+  already proving the answer;
+- detects fixed-then-changed controls and multi-factor setups falsely described as
+  single-variable tests;
+- tells Creative Contract, chapter planning, chapter repair and final editorial passes
+  to distinguish a single-variable test from a practical configuration comparison;
+- preserves the concrete supplied motivation in the deterministic offline fallback.
+
+Focused regression coverage is in `tests/testpreshotintegrity.mjs`. It passed together
+with narrative chapters, Creative Contract v2, B-roll dependency refresh and narrative
+closure suites. A fresh live project on the deployed commit is still required to verify
+the model-facing behavior end to end.
+
+## 12. How a new Codex chat should begin
 
 For a new task in this project:
 
@@ -364,4 +390,3 @@ For a new task in this project:
 4. Treat live code and tests as authoritative if they have changed since this handoff.
 5. Briefly tell the user what state was recovered, then continue from the requested
    product step without asking them to retell the entire history.
-
