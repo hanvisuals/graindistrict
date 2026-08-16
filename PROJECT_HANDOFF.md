@@ -377,10 +377,31 @@ The production code now:
 
 Focused regression coverage is in `tests/testpreshotintegrity.mjs`. It passed together
 with narrative chapters, Creative Contract v2, B-roll dependency refresh and narrative
-closure suites. A fresh live project on the deployed commit is still required to verify
-the model-facing behavior end to end.
+closure suites.
 
-## 12. How a new Codex chat should begin
+## 12. August 16 live coffee test and prospective-process hardening
+
+A fresh six-minute live project compared one coffee bean at three water temperatures.
+The direction screen correctly preserved the supplied motivation and locked every
+variable except temperature, but the generated voiceover exposed a second pre-shoot
+failure class:
+
+- future controls were rewritten as historical evidence (for example, the scale,
+  grinder and timer supposedly had already stayed identical every morning);
+- the unperformed test was narrated in the live present (the first cup was ready,
+  brewing was under way, the table was filled and the tasting had finished).
+
+The production validator and prompts now reject both behaviors. A planned control may
+not become an invented fact about the earlier trigger, and no central test action,
+prepared sample, filled result table or completed tasting may be narrated before filming.
+The exact coffee failure is covered in `tests/testpreshotintegrity.mjs`.
+
+A new live project in a different domain must be generated on the resulting deployed
+commit. It should confirm that the opening retains the supplied real-world trigger,
+all test actions remain prospective, the result remains unknown, and the ending names
+what will be observed rather than pretending the comparison has already happened.
+
+## 13. How a new Codex chat should begin
 
 For a new task in this project:
 

@@ -28,6 +28,15 @@ try{
       '[VOICEOVER] 05:00-05:25 - Fark kulaklarınıza geldi. Bu tabloyu sonuç yazdırdı ve en iyi aday belli.'
     ].join('\n');
     const unsafeIssues=window.gdPreShootTruthIssues(unsafe,plan),unsafeCodes=unsafeIssues.map(issue=>issue.code);
+    const coffeeLive=[
+      '[VOICEOVER] 00:00-00:35 - Aynı paketten art arda üç sabah kahve yaptım: doz aynı, öğütüm aynı, süre aynı. Terazi her sabah aynı gramı gösteriyordu. Tarifi değiştirmemiştim.',
+      '[VOICEOVER] 01:00-01:25 - Sabit kalacak dört parametreyi şimdi planlıyorum; yalnızca su sıcaklığı değişecek.',
+      '[VOICEOVER] 02:00-02:25 - Her üç demleme için dozu ve süreyi aynı tutacağım.',
+      '[VOICEOVER] 03:00-03:25 - İlk fincan hazır, etiketli, yan tarafta bekliyor. Şimdi ikinci sıcaklığa geçiyorum.',
+      '[VOICEOVER] 04:00-04:25 - Tabloda dokuz hücrenin tamamı doldu ve etiketler açık.',
+      '[VOICEOVER] 05:00-05:25 - Kör tadım bitti, gözlemler kağıtta; cevap bu çekimde.'
+    ].join('\n');
+    const coffeeLiveIssues=window.gdPreShootTruthIssues(coffeeLive,plan),coffeeLiveCodes=coffeeLiveIssues.map(issue=>issue.code);
     const rawPlan=JSON.parse(JSON.stringify(plan));rawPlan.motivation='Bu projeyi gerçek koşullarda test etmek istiyorum.';rawPlan.storyBible.initialMotivation=rawPlan.motivation;
     const renormalized=window.gdNormalizeNarrativePlan(rawPlan,360);
     const local=window.gdLocalNarrativeDraftFallback(plan),localIssues=window.gdPreShootTruthIssues(local,plan),localVoice=parseBlocks(local).filter(block=>block.type==='voiceover').map(block=>block.content).join(' ');
@@ -38,13 +47,15 @@ try{
       'Fark kulaklarınıza geldi.',
       'Bu tabloyu sonuç yazdırdı ve en iyi aday belli.'
     ].map(text=>({text,flagged:window.gdPreShootTruthIssues('[VOICEOVER] 00:00-00:20 - '+projectGuidance.context+'\n[VOICEOVER] 04:00-04:20 - '+text+'\n[VOICEOVER] 05:40-06:00 - Çekimde aynı ölçütleri kaydedeceğim.',plan).some(issue=>issue.code==='PRE_SHOOT_OUTCOME_FICTION')}));
-    return {unsafeIssues,unsafeCodes,renormalizedMotivation:renormalized.motivation,contractMotivation:creativeContract.storyEngine.motivation,localIssues,localVoice,prompt,explicitOutcomeChecks};
+    return {unsafeIssues,unsafeCodes,coffeeLiveIssues,coffeeLiveCodes,renormalizedMotivation:renormalized.motivation,contractMotivation:creativeContract.storyEngine.motivation,localIssues,localVoice,prompt,explicitOutcomeChecks};
   });
   ok('the locked contract preserves the creator supplied failed-interview motivation',/Geçen hafta.*röportajı.*yankı.*yayınlayamadım/i.test(result.contractMotivation),result);
   ok('narrative normalization cannot replace locked factual motivation with generic AI copy',result.renormalizedMotivation===result.contractMotivation,result);
   ok('a generic opening is rejected when it omits the supplied concrete trigger',result.unsafeCodes.includes('PRE_SHOOT_MOTIVATION_MISSING'),result.unsafeIssues);
   ok('unfilmed data, winner and audience-reaction language is rejected',result.explicitOutcomeChecks.every(check=>check.flagged),result.explicitOutcomeChecks);
   ok('fixed-then-changed and multi-factor single-variable claims are rejected',result.unsafeCodes.filter(code=>code==='PRE_SHOOT_TEST_CONTROL_CONTRADICTION').length>=2,result.unsafeIssues);
+  ok('planned controls cannot be rewritten as measured facts about the earlier trigger',result.coffeeLiveCodes.includes('PRE_SHOOT_UNSUPPORTED_BASELINE'),result.coffeeLiveIssues);
+  ok('live-present cups, filled tables and completed tastings are rejected before filming',result.coffeeLiveCodes.filter(code=>code==='PRE_SHOOT_OUTCOME_FICTION').length>=3,result.coffeeLiveIssues);
   ok('the deterministic outage fallback keeps the concrete motivation and remains prospectively safe',/Geçen hafta.*röportajı.*yankı.*yayınlayamadım/i.test(result.localVoice)&&result.localIssues.length===0,result.localIssues);
   ok('planning prompt defines single-variable versus configuration comparison math',/single-variable test or a practical configuration comparison/i.test(result.prompt)&&/Distance and microphone position are the same variable/i.test(result.prompt)&&/background noise, echo and clarity/i.test(result.prompt),result.prompt);
   ok('pre-shoot integrity changes introduce no page errors',errors.length===0,errors);
